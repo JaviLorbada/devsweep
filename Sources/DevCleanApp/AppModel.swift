@@ -468,6 +468,70 @@ final class AppModel {
         }
     }
 
+    // MARK: Xcodes and runtimes
+
+    /// The runtime waiting on the removal sheet.
+    var runtimeToRemove: SimulatorRuntime?
+    private(set) var isRemovingRuntime = false
+    var runtimeRemovalError: String?
+
+    var staleDays: Int { engine?.config.staleDays ?? 90 }
+
+    /// The selected runtime, or the first flagged one, or the first.
+    var currentRuntime: SimulatorRuntime? {
+        let runtimes = extras?.runtimes ?? []
+        return runtimes.first { $0.id == selectedRuntime }
+            ?? runtimes.first { $0.flagReason(staleDays: staleDays) != nil }
+            ?? runtimes.first
+    }
+
+    var currentXcode: InstalledXcode? {
+        let xcodes = extras?.xcodes ?? []
+        return xcodes.first { $0.path == selectedXcode } ?? xcodes.first { $0.isSelected } ?? xcodes.first
+    }
+
+    /// The subtitle under each screen's title.
+    var subtitle: String {
+        switch screen {
+        case .overview:
+            return statusLine
+        case .simulatorRuntimes:
+            guard let runtimes = extras?.runtimes else { return isLoadingExtras ? "Listing runtimes" : "" }
+            let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"
+            return "\(SizeText.of(kilobytes: runtimesKilobytes ?? 0)) in \(count). devclean never removes these on its own."
+        case .xcodeVersions:
+            guard let xcodes = extras?.xcodes else { return isLoadingExtras ? "Listing Xcodes" : "" }
+            let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
+            return "\(SizeText.of(kilobytes: xcodesKilobytes ?? 0)) in \(count). devclean never removes these."
+        }
+    }
+
+    /// Removes the runtime on the sheet through simctl, then lists runtimes again.
+    func removeRuntime(_ runtime: SimulatorRuntime) async {
+        guard let engine, !isRemovingRuntime else { return }
+        isRemovingRuntime = true
+        runtimeRemovalError = nil
+        let removed = await engine.removeRuntime(runtime)
+        isRemovingRuntime = false
+        if removed {
+            runtimeToRemove = nil
+            selectedRuntime = nil
+            await refreshExtras()
+            diskSpace = engine.diskSpace()
+        } else {
+            runtimeRemovalError = "simctl couldn't remove it. Run the command in Terminal to see why; "
+                + "a simulator using it may still be running."
+        }
+    }
+
+    func refreshExtras() async {
+        guard let engine else { return }
+        isLoadingExtras = true
+        let fresh = await engine.extras()
+        withAnimation { extras = fresh }
+        isLoadingExtras = false
+    }
+
     /// Asks the apps to quit, as choosing Quit would, and waits up to 15 seconds.
     private func quit(_ apps: [DeveloperApp]) async -> Bool {
         let running = apps.flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0.bundleIdentifier) }

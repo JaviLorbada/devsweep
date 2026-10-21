@@ -19,7 +19,7 @@ struct ContentView: View {
                 }
             }
             .navigationTitle(title)
-            .navigationSubtitle(model.statusLine)
+            .navigationSubtitle(model.subtitle)
             .toolbar { toolbar }
         }
         .inspector(isPresented: $showsInspector) {
@@ -52,6 +52,10 @@ struct ContentView: View {
             }
         } message: { pending in
             Text(CleanPrompt.message(for: pending, moveToTrash: model.moveToTrash))
+        }
+        .sheet(item: $model.runtimeToRemove) { runtime in
+            RemoveRuntimeSheet(runtime: runtime)
+                .environment(model)
         }
         .alert(
             model.notice?.title ?? "",
@@ -199,6 +203,7 @@ struct Badge: View {
     var body: some View {
         Text(text)
             .font(.caption2.weight(.semibold))
+            .lineLimit(1)
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)

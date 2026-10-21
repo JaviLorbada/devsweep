@@ -13,7 +13,7 @@ script in the dotfiles repo, and keep its safety rules word for word.
 | M1, engine and CLI parity | Done. The bats suite passes unchanged against the Swift binary. |
 | M2, app shell | Done. Window, sidebar, ring, items, inspector, live scan. No cleaning yet. |
 | M3, cleaning in the app | Done. Clean per item or marked, Trash with Put back, delete for good, quit prompt, Blocks. |
-| M4, extras screens | Not started |
+| M4, extras screens | Done. Runtimes and Xcode versions, Remove runtime with confirmation, Reveal in Finder. |
 
 ## Requirements
 
@@ -105,6 +105,25 @@ Cleaning:
   alone is reported in an alert and in the notes under the items.
 - Put Back is offered until the next scan. After that the folders are still
   in the Trash, where Finder can put them back.
+
+Xcodes and runtimes (never touched by a scan or a clean):
+
+- Simulator runtimes: one row per runtime with its last use, a bar, its
+  size, and a badge when it looks unused (90 days or more, or no
+  simulators). The inspector says why it is flagged, what removing it does,
+  and the exact command. Remove Runtime opens a sheet that shows that
+  command again and runs it only on confirmation, through
+  `Engine.removeRuntime`, which refuses ids `simctl` could read as options.
+  The installed Xcodes follow, and a note that Archives are never listed.
+- Xcode versions: each Xcode with its version and build, the one
+  `xcode-select` points at, last opened, size, and Reveal in Finder. devclean
+  never removes an Xcode.
+
+The CoreDevice install cache lives in another app's container. The first
+time anything run from a given app reads it, macOS asks whether that app may
+access data from other apps, and the read waits until someone answers. The
+CLI and the app behave the same: the scan pauses on that item until the
+prompt is answered, and a refusal shows up as an unknown size, not an error.
 
 Colors: marks use the palette from HANDOFF section 4; chrome uses system
 materials and semantic colors, so light and dark both work. The light
@@ -236,5 +255,14 @@ folders are searched, and `warning`, for the script's warnings.
 
 ## What is left
 
-- M4: the runtimes and Xcode versions screens.
-- Release work (signing, notarization, distribution) is out of scope for now.
+- M5, release: Developer ID signing, notarization, GitHub Releases, the
+  Homebrew cask, Sparkle. Not started; `scripts/build-app.sh` only signs ad
+  hoc for local use, with a placeholder bundle id (`local.devclean.DevClean`).
+- Still undecided in HANDOFF section 6: app name and bundle id, icon, a menu
+  bar presence, preferences for project folders and the stale-runtime
+  threshold (today they come from the same environment variables as the
+  CLI, and 90 days), and more scanners.
+- The light palette needs the same color-blindness check the dark one had.
+- The app's own logic (prompts, marks, selection) has no automated tests;
+  what it calls in the kit does. It was checked through `scripts/snapshot.sh`.
+- Put Back is offered only until the next scan.

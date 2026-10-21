@@ -6,7 +6,8 @@ import SwiftUI
 /// Development aid: with `DEVCLEAN_SNAPSHOT=/path/file.png` set, waits for the
 /// scan to finish, draws the window's content into that file and quits.
 /// `DEVCLEAN_SNAPSHOT_SCREEN` picks `overview`, `scanning`, `blocks`, `runtimes`,
-/// `xcodes`, `cleaned` (cleans what is marked first) or `putback` (then puts
+/// `xcodes`, `remove-runtime` (shows the removal sheet, never confirms it),
+/// `cleaned` (cleans what is marked first) or `putback` (then puts
 /// the SwiftPM cache back). Cleaning must only ever run against a fake home,
 /// with `DEVCLEAN_TRASH_FOLDER` set;
 /// `DEVCLEAN_SNAPSHOT_APPEARANCE` picks `dark` or `light`;
@@ -29,6 +30,9 @@ enum Snapshotter {
         switch environment["DEVCLEAN_SNAPSHOT_SCREEN"] {
         case "blocks": model.chartStyle = .blocks
         case "runtimes": model.screen = .simulatorRuntimes
+        case "remove-runtime":
+            // Shows the sheet only; nothing here presses Remove.
+            model.screen = .simulatorRuntimes
         case "xcodes": model.screen = .xcodeVersions
         case "scanning": model.rewindScan(toMeasured: 5)
         case "cleaned", "putback":
@@ -45,6 +49,9 @@ enum Snapshotter {
         if let id = environment["DEVCLEAN_SNAPSHOT_SELECT"], !id.isEmpty {
             model.select(snapshotID: id)
         }
+        if environment["DEVCLEAN_SNAPSHOT_SCREEN"] == "remove-runtime" {
+            model.runtimeToRemove = model.currentRuntime
+        }
         try? await Task.sleep(for: .milliseconds(600))
 
         let renderer = ImageRenderer(content: SnapshotLayout()
@@ -55,7 +62,8 @@ enum Snapshotter {
             let rep = NSBitmapImageRep(cgImage: image)
             try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: output))
         }
-        NSApplication.shared.terminate(nil)
+        // Not terminate(_:), which waits on an open sheet.
+        exit(0)
     }
 }
 
@@ -108,6 +116,16 @@ private struct SnapshotLayout: View {
         }
         .frame(width: 1280, height: 860)
         .background(Color(nsColor: .windowBackgroundColor))
+        .overlay {
+            if let runtime = model.runtimeToRemove {
+                ZStack {
+                    Color.black.opacity(0.35)
+                    RemoveRuntimeSheet(runtime: runtime)
+                        .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
+                        .shadow(radius: 20)
+                }
+            }
+        }
     }
 }
 
@@ -119,7 +137,7 @@ private struct SnapshotHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(model.screen == .overview ? "Overview" : model.screen == .xcodeVersions ? "Xcode versions" : "Simulator runtimes")
                     .font(.title2.weight(.semibold))
-                Text(model.statusLine).font(.callout).foregroundStyle(.secondary)
+                Text(model.subtitle).font(.callout).foregroundStyle(.secondary)
             }
             Spacer()
             if model.screen == .overview {

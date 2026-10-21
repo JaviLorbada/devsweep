@@ -85,4 +85,25 @@ public struct Engine: Sendable {
     public func diskSpace() -> DiskSpace? {
         DiskSpace.of(config.home)
     }
+
+    /// Lists installed Xcodes and simulator runtimes again, without scanning the items.
+    public func extras() async -> Extras {
+        let context = ScanContext(
+            config: config,
+            policy: policy,
+            tools: tools,
+            projects: ProjectSearch(roots: [], homeReal: policy.homeReal),
+            measurer: measurer,
+            warn: { _ in }
+        )
+        return await ExtrasScanner.scan(in: context)
+    }
+
+    /// Removes a simulator runtime with `xcrun simctl runtime delete <id>`,
+    /// the command the report shows. A scan never calls this; only an explicit
+    /// request does. Ids that simctl could read as an option are refused.
+    public func removeRuntime(_ runtime: SimulatorRuntime) async -> Bool {
+        guard !runtime.id.isEmpty, !runtime.id.hasPrefix("-") else { return false }
+        return await tools.simctl.deleteRuntime(runtime.id)
+    }
 }

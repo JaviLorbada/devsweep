@@ -7,7 +7,7 @@
 # scans, draws its window into a file and quits. Nothing is cleaned.
 #
 # Usage: scripts/snapshot.sh [output folder] [screen...]
-#   screens: overview scanning blocks runtimes xcodes cleaned putback,
+#   screens: overview scanning blocks runtimes xcodes remove-runtime cleaned putback,
 #            any with -light (default: overview)
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
@@ -130,8 +130,9 @@ for screen in "${screens[@]}"; do
   home="$work/home-$name"
   make_home "$home"
   select=""
-  [[ "$screen" == runtimes ]] && select="4C1F2B8E-0D3A-4F6B-9C21-7E5A1B2C3DA2"
+  [[ "$screen" == runtimes || "$screen" == remove-runtime ]] && select="4C1F2B8E-0D3A-4F6B-9C21-7E5A1B2C3DA2"
   HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_TRASH_FOLDER="$work/trash-$name" \
+    DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
     DEVCLEAN_SNAPSHOT="$out/$name.png" DEVCLEAN_SNAPSHOT_SCREEN="$screen" \
     DEVCLEAN_SNAPSHOT_APPEARANCE="$appearance" DEVCLEAN_SNAPSHOT_SELECT="$select" \
     "$app/Contents/MacOS/DevClean" >/dev/null 2>&1 &
