@@ -29,6 +29,10 @@ fi
 fill() { mkdir -p "$1"; echo "data" > "$1/file"; }
 plist() { printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict>%s</dict></plist>\n' "$2" > "$1"; }
 
+# make_home <folder> [big]: with "big", the SwiftPM cache holds 1.4 GB so the
+# report shows GB. The --run copies leave it out: APFS can give two identical
+# freshly written files different block counts, so two copies of a big file
+# don't measure the same, whoever measures them.
 make_home() {
   local home="$1" ws="$1/Workspace" dd="$1/Library/Developer/Xcode/DerivedData" n
   mkdir -p "$ws"
@@ -64,7 +68,9 @@ make_home() {
 
   # Caches
   fill "$home/Library/Caches/org.swift.swiftpm/repositories"
-  dd if=/dev/zero of="$home/Library/Caches/org.swift.swiftpm/repositories/pack" bs=1024 count=1500000 2>/dev/null
+  if [[ "${2:-}" == big ]]; then
+    dd if=/dev/zero of="$home/Library/Caches/org.swift.swiftpm/repositories/pack" bs=1024 count=1500000 2>/dev/null
+  fi
   fill "$home/.npm/_cacache"; fill "$home/.npm/_npx"
   fill "$home/Library/Caches/CocoaPods"; fill "$home/Library/Caches/JetBrains/Toolbox/download"
 
@@ -162,7 +168,7 @@ compare() {
 }
 
 make_stubs "$work/stubs"
-make_home "$work/home"
+make_home "$work/home" big
 failed=0
 
 run_one bash-report "$script" "$work/home"
