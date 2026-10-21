@@ -103,6 +103,12 @@ final class AppModel {
     init(environment: [String: String] = ProcessInfo.processInfo.environment) {
         let workspaceApps = WorkspaceRunningApps()
         self.workspaceApps = workspaceApps
+        // Opened from Finder, the app gets launchd's short PATH, without
+        // Homebrew. Its usual places go last, so a PATH given on purpose wins.
+        var environment = environment
+        let path = environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        let missing = ["/opt/homebrew/bin", "/usr/local/bin"].filter { !path.split(separator: ":").contains(Substring($0)) }
+        environment["PATH"] = ([path] + missing).joined(separator: ":")
         var tools = Tools.live(environment: environment)
         tools.runningApps = workspaceApps
         #if DEBUG

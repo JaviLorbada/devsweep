@@ -11,7 +11,7 @@ script in the dotfiles repo, and keep its safety rules word for word.
 | Milestone | State |
 |---|---|
 | M1, engine and CLI parity | Done. The bats suite passes unchanged against the Swift binary. |
-| M2, app shell | Done. Window, sidebar, ring, items, inspector, live scan. No cleaning yet. |
+| M2, app shell | Done. Window, sidebar, ring, items, inspector, live scan. |
 | M3, cleaning in the app | Done. Clean per item or marked, Trash with Put back, delete for good, quit prompt, Blocks. |
 | M4, extras screens | Done. Runtimes and Xcode versions, Remove runtime with confirmation, Reveal in Finder. |
 
@@ -44,17 +44,22 @@ swift run DevCleanApp             # or run it unbundled while developing
 The window scans as soon as it opens, in report mode: it reads the home
 folder and deletes nothing until you clean something. It reads `HOME` and
 the same environment variables as the CLI, so launching the binary with
-another `HOME` and `PATH` points it at a fake home and stub tools.
+another `HOME` and `PATH` points it at a fake home and stub tools. An app
+opened from Finder gets a short `PATH` without Homebrew, so the app adds
+`/opt/homebrew/bin` and `/usr/local/bin` at the end of whatever `PATH` it has.
 
 `scripts/snapshot.sh [folder] [screen...]` builds a debug bundle, makes a
 fake home with something in every item and stubs for the tools, and has the
 app draw its window into PNG files: `overview`, `scanning`, `blocks`,
-`runtimes`, `xcodes`, `cleaned`, `putback`, each also as `name-light`.
-`cleaned` cleans what starts marked and `putback` then puts the SwiftPM cache
-back, so those two exercise the real cleaning code; each screen gets a fresh
-fake home, the Trash is pointed at a folder inside it, and the stubs refuse
-`simctl delete` and `brew cleanup`. It never touches the real home folder. Grabbing the real window needs screen recording permission, so
-the debug build draws the same content views with `ImageRenderer` instead;
+`runtimes`, `xcodes`, `remove-runtime`, `cleaned`, `putback`, each also as
+`name-light`. `remove-runtime` shows the confirmation sheet and never
+confirms it. `cleaned` cleans what starts marked and `putback` then puts the
+SwiftPM cache back, so those two exercise the real cleaning code; each
+screen gets a fresh fake home, the Trash is pointed at a folder inside it,
+and the stubs refuse `simctl delete` and `brew cleanup`. It never touches the
+real home folder. Grabbing the real window needs screen recording
+permission, so the debug build draws the same content views with
+`ImageRenderer` instead;
 controls that AppKit draws (checkboxes, link buttons, glass buttons) come
 out as placeholders in those images, and the toolbar is approximated.
 
@@ -211,7 +216,10 @@ with a corrupt index and one tracked in git; two Xcodes; four runtimes), runs
 the bash script and the binary against it with the same stubs, and diffs
 standard output, standard error, exit status and the log of every stub call.
 With `RUN=1` it also runs `--run --yes` on two fresh copies and compares what
-each printed and which files are left.
+each printed and which files are left. Those copies leave out the 1.4 GB
+file: APFS can give two identical, freshly written files different block
+counts (seen here: 3,024,040 against 3,015,056 for the same 1.5 GB of
+zeros), so two copies of it never measure the same, whoever measures them.
 
 ```bash
 RUN=1 scripts/compare.sh
