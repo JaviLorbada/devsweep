@@ -11,7 +11,7 @@ script in the dotfiles repo, and keep its safety rules word for word.
 | Milestone | State |
 |---|---|
 | M1, engine and CLI parity | Done. The bats suite passes unchanged against the Swift binary. |
-| M2, app shell | Not started |
+| M2, app shell | Done. Window, sidebar, ring, items, inspector, live scan. No cleaning yet. |
 | M3, cleaning in the app | Not started |
 | M4, extras screens | Not started |
 
@@ -33,6 +33,55 @@ swift test                        # the swift-testing suite
 `--run` deletes, after asking. Try it against a fake home first, the way the
 tests do; never with `--yes` on a machine you care about until you trust it.
 
+## The app
+
+```bash
+scripts/build-app.sh              # builds build/DevClean.app (release, signed ad hoc)
+open build/DevClean.app
+swift run DevCleanApp             # or run it unbundled while developing
+```
+
+The window scans as soon as it opens, in report mode: it reads the home
+folder and deletes nothing until you clean something. It reads `HOME` and
+the same environment variables as the CLI, so launching the binary with
+another `HOME` and `PATH` points it at a fake home and stub tools.
+
+`scripts/snapshot.sh [folder] [screen...]` builds a debug bundle, makes a
+fake home with something in every item and stubs for the tools, and has the
+app draw its window into PNG files: `overview`, `scanning`, `blocks`,
+`runtimes`, `xcodes`, each also as `name-light`. It never touches the real
+home folder. Grabbing the real window needs screen recording permission, so
+the debug build draws the same content views with `ImageRenderer` instead;
+controls that AppKit draws (checkboxes, link buttons, glass buttons) come
+out as placeholders in those images, and the toolbar is approximated.
+
+What is in the window:
+
+- Sidebar: Overview; the five families with their color and size, which
+  select the family's biggest item; Xcode versions and Simulator runtimes
+  with their sizes; and a meter for the boot volume (used, reclaimable, free).
+- Toolbar: title and status line, a capsule with the item being measured
+  and a thin progress bar, Ring or Blocks, Scan Again that turns into Stop.
+- Ring: Swift Charts `SectorMark` rings, families inside and their items
+  outside, two degrees or so apart, the total in the hole. Items not measured
+  yet are drawn in a faint tone at their size from the last scan (or the
+  average so far), so the ring is whole from the start and fills in. Clicking
+  a segment selects it; the others dim. To the right, a stacked family bar
+  and the family legend with share and size.
+- Items: mark, color, name and family, a proportional bar, size, and the
+  row's state (Waiting, a pulsing Measuring, Not measured if the scan was
+  stopped). Measured items sort largest first as they arrive.
+- Inspector: family, name, size and state, where it lives with Reveal in
+  Finder, what cleaning does, and for DerivedData what is inside: the
+  compilation and module caches and each project with its last build, a bar
+  and a "project gone" badge.
+
+Colors: marks use the palette from HANDOFF section 4; chrome uses system
+materials and semantic colors, so light and dark both work. The light
+appearance moves each ramp one step darker, so the lightest steps stay
+visible on a light card. That light ramp is my choice and has not been
+checked for color blindness the way the dark one was.
+
 ## Layout
 
 ```
@@ -49,10 +98,12 @@ Sources/DevCleanKit/          the engine, no UI imports
   Report/       the text report, byte for byte what bin/devclean prints
   CommandLine/  the script's argument rules and its main flow as a session
 Sources/devclean/             the CLI on swift-argument-parser
-Sources/DevCleanApp/          the SwiftUI app (M2)
+Sources/DevCleanApp/          the SwiftUI app: model, views, palette, debug snapshots
 Tests/DevCleanKitTests/       swift-testing, a fake home per test, fake tools
 scripts/bats.sh               runs the original bats suite against the binary
 scripts/compare.sh            diffs the bash script and the binary on one fake home
+scripts/build-app.sh          wraps the app executable into build/DevClean.app
+scripts/snapshot.sh           draws the window for a fake home into PNG files
 ```
 
 ## How the CLI matches the script
@@ -155,7 +206,6 @@ folders are searched, and `warning`, for the script's warnings.
 
 ## What is left
 
-- M2: the app window.
 - M3: cleaning in the app.
 - M4: the runtimes and Xcode versions screens.
 - Release work (signing, notarization, distribution) is out of scope for now.
