@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>devclean overview</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#9EC5F4}a:hover{color:#CDE2FB}
+button{font-family:inherit;font-size:inherit}
+@keyframes dc-pulse{0%,100%{opacity:.35}50%{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1280px; height: 860px; box-sizing: border-box; display: flex; flex-direction: row; background: #1F1F22; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; font-family: -apple-system, 'SF Pro Text', Inter, system-ui, sans-serif; color: #F2F2F4; font-size: 13px; -webkit-font-smoothing: antialiased">
+
+  <aside style="width: 232px; flex-shrink: 0; box-sizing: border-box; background: rgba(255,255,255,0.04); border-right: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; padding: 14px 10px 16px 12px; gap: 2px">
+    <div style="display: flex; gap: 8px; padding: 2px 4px 14px 4px" aria-hidden="true">
+      <span style="width: 12px; height: 12px; border-radius: 6px; background: #FF5F57; display: block"></span>
+      <span style="width: 12px; height: 12px; border-radius: 6px; background: #FEBC2E; display: block"></span>
+      <span style="width: 12px; height: 12px; border-radius: 6px; background: #28C840; display: block"></span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; background: rgba(255,255,255,0.10); font-weight: 500">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="#F2F2F4" stroke-width="2.4" stroke-dasharray="22 10" stroke-linecap="round"></circle></svg>
+      <span>Overview</span>
+    </div>
+
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9A9AA2; padding: 16px 10px 4px 10px">Caches</div>
+    <sc-for list="{{fams}}" as="fam" hint-placeholder-count="5">
+      <button onClick="{{fam.pick}}" style="display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; border: 0; background: transparent; color: #F2F2F4; text-align: left; cursor: pointer; width: 100%">
+        <span style="width: 8px; height: 8px; border-radius: 4px; background: {{fam.color}}; display: block; flex-shrink: 0"></span>
+        <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{fam.name}}</span>
+        <span style="font-size: 12px; color: #A1A1A8; font-variant-numeric: tabular-nums">{{fam.size}}</span>
+      </button>
+    </sc-for>
+
+    <div style="font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #9A9AA2; padding: 16px 10px 4px 10px">Also worth a look</div>
+    <a href="Extras.dc.html" style="display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; color: #F2F2F4; text-decoration: none">
+      <span style="flex: 1">Xcode versions</span>
+      <span style="font-size: 12px; color: #A1A1A8; font-variant-numeric: tabular-nums">27.0 GB</span>
+    </a>
+    <a href="Extras.dc.html" style="display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; color: #F2F2F4; text-decoration: none">
+      <span style="flex: 1">Simulator runtimes</span>
+      <span style="font-size: 12px; color: #A1A1A8; font-variant-numeric: tabular-nums">19.9 GB</span>
+    </a>
+
+    <div style="flex: 1"></div>
+
+    <div style="padding: 0 6px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-size: 12px; font-weight: 600">Macintosh HD</span>
+        <span style="font-size: 11px; color: #A1A1A8; font-variant-numeric: tabular-nums">{{freeNow}} free of 494 GB</span>
+      </div>
+      <div style="display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden">
+        <span style="width: {{diskUsedW}}; background: rgba(255,255,255,0.22); display: block; transition: width 0.4s"></span>
+        <span style="width: {{diskReclaimW}}; background: #3987E5; display: block; transition: width 0.4s"></span>
+        <span style="flex: 1; background: rgba(255,255,255,0.06); display: block"></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #A1A1A8">
+        <span style="width: 8px; height: 8px; border-radius: 2px; background: #3987E5; display: block"></span>
+        <span>{{reclaimable}} reclaimable</span>
+      </div>
+    </div>
+  </aside>
+
+  <main style="flex: 1; min-width: 0; box-sizing: border-box; padding: 18px 22px 18px 22px; display: flex; flex-direction: column; gap: 14px">
+
+    <div style="display: flex; align-items: center; gap: 12px; min-height: 44px">
+      <div style="display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.1">Overview</h1>
+        <span style="font-size: 12px; color: #A1A1A8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{statusLine}}</span>
+      </div>
+      <sc-if value="{{scanning}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10)">
+          <span style="font-size: 12px; color: #F2F2F4; white-space: nowrap">{{scanLabel}}</span>
+          <span style="width: 96px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); overflow: hidden; display: block">
+            <span style="display: block; height: 4px; width: {{progress}}; background: #F2F2F4; border-radius: 2px; transition: width 0.3s"></span>
+          </span>
+        </div>
+      </sc-if>
+      <div style="display: flex; padding: 2px; border-radius: 8px; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.10)" role="group" aria-label="Chart style">
+        <button onClick="{{setRing}}" aria-pressed="{{ringMode}}" style="padding: 4px 12px; border-radius: 6px; border: 0; background: {{ringBtnBg}}; color: #F2F2F4; font-size: 12px; font-weight: {{ringBtnWeight}}; cursor: pointer">Ring</button>
+        <button onClick="{{setBlocks}}" aria-pressed="{{blocksMode}}" style="padding: 4px 12px; border-radius: 6px; border: 0; background: {{blocksBtnBg}}; color: #F2F2F4; font-size: 12px; font-weight: {{blocksBtnWeight}}; cursor: pointer">Blocks</button>
+      </div>
+      <button onClick="{{scanButton}}" style="padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.08); color: #F2F2F4; font-size: 12px; font-weight: 500; cursor: pointer">{{scanButtonLabel}}</button>
+    </div>
+
+    <section style="background: #27272B; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 16px 20px; height: 280px; box-sizing: border-box; display: flex; align-items: center; gap: 28px">
+
+      <sc-if value="{{ringMode}}" hint-placeholder-val="{{ true }}">
+        <div style="position: relative; width: 240px; height: 240px; flex-shrink: 0">
+          <div style="position: absolute; left: 0; top: 0; width: 240px; height: 240px; border-radius: 50%; background: {{outerRing}}; -webkit-mask: radial-gradient(circle, transparent 90px, #000 90.5px); mask: radial-gradient(circle, transparent 90px, #000 90.5px)"></div>
+          <div style="position: absolute; left: 36px; top: 36px; width: 168px; height: 168px; border-radius: 50%; background: {{innerRing}}; -webkit-mask: radial-gradient(circle, transparent 66px, #000 66.5px); mask: radial-gradient(circle, transparent 66px, #000 66.5px)"></div>
+          <div style="position: absolute; left: 0; top: 0; width: 240px; height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px">
+            <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1">{{hero}}</span>
+            <span style="font-size: 12px; color: #A1A1A8">{{heroLabel}}</span>
+          </div>
+        </div>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; gap: 2px; height: 8px; border-radius: 4px; overflow: hidden">
+            <sc-for list="{{fams}}" as="fam" hint-placeholder-count="5">
+              <span style="flex: {{fam.fx}} 1 0px; background: {{fam.color}}; display: block; transition: flex 0.4s"></span>
+            </sc-for>
+          </div>
+          <sc-for list="{{fams}}" as="fam" hint-placeholder-count="5">
+            <button onClick="{{fam.pick}}" style="display: flex; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 7px; border: 0; background: transparent; color: #F2F2F4; text-align: left; cursor: pointer; width: 100%">
+              <span style="width: 10px; height: 10px; border-radius: 3px; background: {{fam.color}}; display: block; flex-shrink: 0"></span>
+              <span style="flex: 1; min-width: 0; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{fam.name}}</span>
+              <span style="font-size: 12px; color: #A1A1A8; font-variant-numeric: tabular-nums; width: 44px; text-align: right">{{fam.share}}</span>
+              <span style="font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; width: 68px; text-align: right">{{fam.size}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{blocksMode}}" hint-placeholder-val="{{ false }}">
+        <div style="width: 140px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1">{{hero}}</span>
+            <span style="font-size: 12px; color: #A1A1A8">{{heroLabel}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <sc-for list="{{fams}}" as="fam" hint-placeholder-count="5">
+              <button onClick="{{fam.pick}}" style="display: flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: #F2F2F4; text-align: left; cursor: pointer; font-size: 12px">
+                <span style="width: 8px; height: 8px; border-radius: 2px; background: {{fam.color}}; display: block; flex-shrink: 0"></span>
+                <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{fam.name}}</span>
+                <span style="color: #A1A1A8; font-variant-numeric: tabular-nums">{{fam.size}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="position: relative; width: 504px; height: 244px; flex-shrink: 0">
+          <sc-for list="{{cells}}" as="cell" hint-placeholder-count="11">
+            <button onClick="{{cell.select}}" aria-pressed="{{cell.selected}}" style="position: absolute; left: {{cell.x}}px; top: {{cell.y}}px; width: {{cell.w}}px; height: {{cell.h}}px; box-sizing: border-box; background: {{cell.bg}}; border: 1px solid {{cell.border}}; border-radius: 6px; padding: 7px 9px; text-align: left; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; overflow: hidden; cursor: pointer; color: #F2F2F4; transition: left 0.4s, top 0.4s, width 0.4s, height 0.4s, background 0.25s">
+              <sc-if value="{{cell.showLabel}}" hint-placeholder-val="{{ true }}">
+                <span style="font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{cell.name}}</span>
+                <span style="font-size: 11px; color: #D7D7DC; font-variant-numeric: tabular-nums">{{cell.size}}</span>
+              </sc-if>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+
+    </section>
+
+    <section style="background: #27272B; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px; min-height: 34px; box-sizing: border-box">
+        <span style="font-weight: 600">Items</span>
+        <span style="font-size: 12px; color: #A1A1A8">{{itemsNote}}</span>
+        <div style="flex: 1"></div>
+        <button onClick="{{selectAll}}" style="border: 0; background: transparent; color: #9EC5F4; font-size: 12px; font-weight: 500; cursor: pointer; padding: 2px 6px">Mark all</button>
+        <button onClick="{{selectNone}}" style="border: 0; background: transparent; color: #9EC5F4; font-size: 12px; font-weight: 500; cursor: pointer; padding: 2px 6px">Mark none</button>
+      </div>
+      <sc-for list="{{items}}" as="item" hint-placeholder-count="11">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 0 14px; height: 32px; box-sizing: border-box; border-top: 1px solid rgba(255,255,255,0.06); background: {{item.rowBg}}">
+          <input type="checkbox" aria-label="Mark {{item.name}} for cleaning" checked="{{item.marked}}" disabled="{{item.notLive}}" onChange="{{item.toggle}}" style="width: 14px; height: 14px; margin: 0; accent-color: #3987E5; flex-shrink: 0">
+          <span style="width: 8px; height: 8px; border-radius: 4px; background: {{item.color}}; display: block; flex-shrink: 0"></span>
+          <button onClick="{{item.select}}" style="flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; border: 0; background: transparent; color: #F2F2F4; text-align: left; cursor: pointer; padding: 0; height: 32px">
+            <span style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.name}}</span>
+            <span style="font-size: 11px; color: #9A9AA2; white-space: nowrap">{{item.familyName}}</span>
+          </button>
+          <span style="width: 120px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.07); overflow: hidden; display: block; flex-shrink: 0">
+            <span style="display: block; height: 4px; width: {{item.barW}}; background: {{item.color}}; border-radius: 2px; transition: width 0.4s"></span>
+          </span>
+          <span style="font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; width: 60px; text-align: right; flex-shrink: 0; color: {{item.sizeColor}}">{{item.sizeCell}}</span>
+          <sc-if value="{{item.live}}" hint-placeholder-val="{{ true }}">
+            <button onClick="{{item.clean}}" style="width: 76px; padding: 3px 0; border-radius: 6px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #F2F2F4; font-size: 11px; font-weight: 500; cursor: pointer; flex-shrink: 0">Clean</button>
+          </sc-if>
+          <sc-if value="{{item.cleaned}}" hint-placeholder-val="{{ false }}">
+            <span style="width: 76px; font-size: 11px; font-weight: 600; color: #4CC46A; text-align: center; flex-shrink: 0">{{cleanedWord}}</span>
+          </sc-if>
+          <sc-if value="{{item.pending}}" hint-placeholder-val="{{ false }}">
+            <span style="width: 76px; font-size: 11px; color: #9A9AA2; text-align: center; flex-shrink: 0; animation: {{item.pendingAnim}}">{{item.pendingWord}}</span>
+          </sc-if>
+        </div>
+      </sc-for>
+    </section>
+
+    <div style="display: flex; align-items: center; gap: 14px; margin-top: auto; min-height: 36px">
+      <label style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: #A1A1A8; cursor: pointer"><input type="checkbox" checked="{{trash}}" onChange="{{toggleTrash}}" style="accent-color: #3987E5; margin: 0; width: 14px; height: 14px">Move to Trash, so anything can be put back</label>
+      <div style="flex: 1"></div>
+      <span style="font-size: 12px; color: #A1A1A8; font-variant-numeric: tabular-nums">{{markedNote}}</span>
+      <button onClick="{{cleanMarked}}" disabled="{{noneMarked}}" style="padding: 7px 16px; border-radius: 999px; border: 0; background: {{primaryBg}}; color: #1F1F22; font-size: 13px; font-weight: 600; cursor: pointer">{{cleanLabel}}</button>
+    </div>
+
+  </main>
+
+  <aside style="width: 300px; flex-shrink: 0; box-sizing: border-box; background: rgba(255,255,255,0.025); border-left: 1px solid rgba(255,255,255,0.07); padding: 20px 18px 18px 18px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9A9AA2">
+      <span style="width: 8px; height: 8px; border-radius: 4px; background: {{sel.famColor}}; display: block"></span>
+      <span>{{sel.familyName}}</span>
+    </div>
+    <h2 style="margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25">{{sel.name}}</h2>
+    <div style="display: flex; align-items: baseline; gap: 10px">
+      <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1">{{sel.size}}</span>
+      <span style="font-size: 12px; color: {{sel.stateColor}}; font-weight: 500">{{sel.stateWord}}</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 5px">
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9A9AA2">Where</span>
+      <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; line-height: 1.5; color: #D7D7DC; word-break: break-all">{{sel.where}}</span>
+      <button style="align-self: flex-start; padding: 0; border: 0; background: transparent; color: #9EC5F4; font-size: 12px; font-weight: 500; cursor: pointer">Reveal in Finder</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 5px">
+      <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9A9AA2">What happens</span>
+      <p style="margin: 0; font-size: 12px; line-height: 1.5; color: #D7D7DC">{{sel.note}}</p>
+    </div>
+
+    <sc-if value="{{sel.hasParts}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9A9AA2">Inside</span>
+        <sc-for list="{{sel.parts}}" as="part" hint-placeholder-count="7">
+          <div style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px">
+              <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{part.name}}</span>
+              <sc-if value="{{part.gone}}" hint-placeholder-val="{{ false }}">
+                <span style="font-size: 10px; font-weight: 600; color: #F2B264; background: rgba(242,178,100,0.14); border-radius: 4px; padding: 1px 6px">project gone</span>
+              </sc-if>
+              <span style="font-size: 11px; color: #9A9AA2; white-space: nowrap">{{part.status}}</span>
+              <span style="font-variant-numeric: tabular-nums; font-weight: 600; width: 56px; text-align: right">{{part.size}}</span>
+            </div>
+            <span style="height: 3px; border-radius: 2px; background: rgba(255,255,255,0.07); overflow: hidden; display: block">
+              <span style="display: block; height: 3px; width: {{part.barW}}; background: {{sel.color}}; border-radius: 2px"></span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <div style="flex: 1"></div>
+
+    <sc-if value="{{sel.live}}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{sel.clean}}" style="width: 100%; padding: 8px 14px; border-radius: 8px; border: 0; background: #F2F2F4; color: #1F1F22; font-size: 13px; font-weight: 600; cursor: pointer">{{sel.cleanLabel}}</button>
+    </sc-if>
+    <sc-if value="{{sel.cleaned}}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{sel.putBack}}" style="width: 100%; padding: 8px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.06); color: #F2F2F4; font-size: 13px; font-weight: 600; cursor: pointer">Put back</button>
+    </sc-if>
+    <sc-if value="{{sel.pending}}" hint-placeholder-val="{{ false }}">
+      <button disabled style="width: 100%; padding: 8px 14px; border-radius: 8px; border: 0; background: rgba(255,255,255,0.18); color: #1F1F22; font-size: 13px; font-weight: 600">Measuring</button>
+    </sc-if>
+  </aside>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"freeze":{"editor":"int","default":0,"min":0,"max":11,"section":"Scan"},"view":{"editor":"enum","default":"ring","options":["ring","blocks"],"section":"Chart"},"$preview":{"width":1280,"height":860}}'>
+class Component extends DCLogic {
+  state = {
+    revealed: 0,
+    marked: { 'derived-data': true, 'swiftpm-cache': true, 'device-support': true },
+    cleaned: {},
+    selected: 'derived-data',
+    trash: true,
+    view: ''
+  };
+
+  componentDidMount() { if (!this.frozen()) { this.startScan(); } }
+  componentWillUnmount() { this.stopScan(); }
+
+  frozen() { return Number(this.props.freeze || 0) > 0; }
+
+  stopScan() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+  }
+
+  startScan() {
+    this.stopScan();
+    this.setState({ revealed: 0, cleaned: {} });
+    this.timer = setInterval(() => {
+      const total = this.items().length;
+      const next = Math.min((this.state.revealed || 0) + 1, total);
+      if (next >= total) { this.stopScan(); }
+      this.setState({ revealed: next });
+    }, 420);
+  }
+
+  families() {
+    return [
+      { id: 'xcode', name: 'Xcode', color: '#3987E5' },
+      { id: 'swift', name: 'Swift packages', color: '#D95926' },
+      { id: 'brew', name: 'Homebrew', color: '#199E70' },
+      { id: 'npm', name: 'npm', color: '#C98500' },
+      { id: 'tools', name: 'Other tools', color: '#D55181' }
+    ];
+  }
+
+  items() {
+    return [
+      { id: 'derived-data', fam: 'xcode', name: 'Xcode DerivedData', short: 'DerivedData', where: '~/Library/Developer/Xcode/DerivedData', mb: 25395, color: '#1C5CAB', note: 'Build products, indexes and the shared compilation and module caches. Xcode rebuilds them on the next build, so the first build after cleaning is slower.' },
+      { id: 'swiftpm-cache', fam: 'swift', name: 'SwiftPM package cache', short: 'SwiftPM cache', where: '~/Library/Caches/org.swift.swiftpm', mb: 6246, color: '#D95926', note: 'Shared clones of every package you have resolved. The next package resolve downloads what it needs again.' },
+      { id: 'device-support', fam: 'xcode', name: 'Old Device Support', short: 'Device Support', count: 3, where: '~/Library/Developer/Xcode/<OS> DeviceSupport, all but the newest per device model', mb: 4710, color: '#3987E5', note: 'Debug symbols for OS versions your devices no longer run. The newest version per device model stays; Xcode copies symbols again when a device connects.' },
+      { id: 'simulators', fam: 'xcode', name: 'Simulators without a runtime', short: 'Simulators', count: 5, where: '~/Library/Developer/CoreSimulator/Devices, runtime no longer installed', mb: 3277, color: '#6DA7EC', note: 'Simulator devices whose iOS version is no longer installed, so they cannot boot. Removed through simctl, never with rm.' },
+      { id: 'swiftpm-builds', fam: 'swift', name: 'SwiftPM .build folders', short: '.build folders', count: 4, where: '.build next to a Package.swift, in ~/Developer and ~/Projects', mb: 2970, color: '#EE9A74', note: 'Build output of local packages. Folders tracked in git are skipped. Comes back on the next swift build.' },
+      { id: 'homebrew', fam: 'brew', name: 'Homebrew old versions and downloads', short: 'Homebrew', where: 'brew cleanup --prune=all', mb: 2355, color: '#199E70', note: 'Outdated formula versions and the download cache. Homebrew measures and removes these itself.' },
+      { id: 'xcode-builds', fam: 'xcode', name: 'Xcode build folders', short: 'Xcode build folders', count: 2, where: 'build next to a project or Package.swift, in ~/Developer and ~/Projects', mb: 1843, color: '#9EC5F4', note: 'Output xcodebuild left next to a project. Only folders holding real Xcode output count; other folders called build are left alone.' },
+      { id: 'npm-cache', fam: 'npm', name: 'npm cache', short: 'npm cache', where: '~/.npm/_cacache and _npx', mb: 1434, color: '#C98500', note: 'Downloaded packages and npx runs. npm fetches again on the next install.' },
+      { id: 'device-installs', fam: 'xcode', name: 'Device install cache', short: 'Device install cache', where: '~/Library/Containers/com.apple.CoreDevice.CoreDeviceService/Data/Library/Caches/AppInstallationBinaryDeltas', mb: 1126, color: '#CDE2FB', note: 'Cached app installs for physical devices. Rebuilt on the next install to a device.' },
+      { id: 'tool-caches', fam: 'tools', name: 'Tool caches', short: 'Tool caches', count: 3, where: 'CocoaPods, Carthage, Playwright in ~/Library/Caches', mb: 922, color: '#D55181', note: 'Download caches of CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox. Each tool downloads again when needed.' },
+      { id: 'gradle-builds', fam: 'tools', name: 'Gradle build folders', short: 'Gradle build folders', count: 1, where: 'build next to a Gradle build file, in ~/Developer and ~/Projects', mb: 614, color: '#EA9DBD', note: 'Build output next to a Gradle file. Gradle rebuilds it on the next build.' }
+    ];
+  }
+
+  parts() {
+    return [
+      { name: 'Compilation cache, all projects', status: '', gone: false, mb: 11878 },
+      { name: 'Atlas', status: 'built 2026-10-19', gone: false, mb: 6349 },
+      { name: 'Fieldwork', status: 'built 2026-09-02', gone: false, mb: 2253 },
+      { name: 'Module cache, all projects', status: '', gone: false, mb: 2150 },
+      { name: 'WeatherDemo', status: '', gone: true, mb: 1536 },
+      { name: 'Recipes', status: 'built 2026-03-11', gone: false, mb: 819 },
+      { name: '3 more projects', status: '', gone: false, mb: 410 }
+    ];
+  }
+
+  fmt(mb) {
+    return mb >= 1024 ? (mb / 1024).toFixed(1) + ' GB' : Math.round(mb) + ' MB';
+  }
+
+  rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255) + ', ' + a + ')';
+  }
+
+  blend(hex, surface, t) {
+    const a = parseInt(hex.slice(1), 16);
+    const b = parseInt(surface.slice(1), 16);
+    const ch = (sh) => Math.round(((a >> sh) & 255) * t + ((b >> sh) & 255) * (1 - t));
+    const two = (v) => ('0' + v.toString(16)).slice(-2);
+    return '#' + two(ch(16)) + two(ch(8)) + two(ch(0));
+  }
+
+  ring(segs, surface, gapDeg) {
+    const total = segs.reduce((a, s) => a + s.mb, 0) || 1;
+    const stops = [];
+    let acc = 0;
+    segs.forEach((s) => {
+      const span = (s.mb / total) * 360;
+      const g = Math.min(gapDeg, span / 3);
+      const a0 = acc;
+      const a1 = acc + span;
+      stops.push(surface + ' ' + a0.toFixed(2) + 'deg ' + (a0 + g / 2).toFixed(2) + 'deg');
+      stops.push(s.color + ' ' + (a0 + g / 2).toFixed(2) + 'deg ' + (a1 - g / 2).toFixed(2) + 'deg');
+      stops.push(surface + ' ' + (a1 - g / 2).toFixed(2) + 'deg ' + a1.toFixed(2) + 'deg');
+      acc = a1;
+    });
+    return 'conic-gradient(from -90deg, ' + stops.join(', ') + ')';
+  }
+
+  squarify(list, W, H) {
+    const total = list.reduce((a, c) => a + c.mb, 0) || 1;
+    const rest = list.map((c) => ({ id: c.id, area: (c.mb / total) * W * H }));
+    const out = [];
+    let x = 0, y = 0, w = W, h = H;
+    let row = [];
+    const worst = (r, side) => {
+      const s = r.reduce((a, c) => a + c.area, 0);
+      let m = 0;
+      r.forEach((c) => {
+        const v = Math.max((side * side * c.area) / (s * s), (s * s) / (side * side * c.area));
+        if (v > m) { m = v; }
+      });
+      return m;
+    };
+    const layout = (r) => {
+      const s = r.reduce((a, c) => a + c.area, 0);
+      if (w >= h) {
+        const sw = s / Math.max(h, 1);
+        let cy = y;
+        r.forEach((c) => { const ch = c.area / Math.max(sw, 0.001); out.push({ id: c.id, x: x, y: cy, w: sw, h: ch }); cy += ch; });
+        x += sw; w -= sw;
+      } else {
+        const sh = s / Math.max(w, 1);
+        let cx = x;
+        r.forEach((c) => { const cw = c.area / Math.max(sh, 0.001); out.push({ id: c.id, x: cx, y: y, w: cw, h: sh }); cx += cw; });
+        y += sh; h -= sh;
+      }
+    };
+    while (rest.length) {
+      const next = rest[0];
+      const side = Math.max(Math.min(w, h), 1);
+      if (row.length === 0 || worst(row, side) >= worst(row.concat([next]), side)) {
+        row.push(next);
+        rest.shift();
+      } else {
+        layout(row);
+        row = [];
+      }
+    }
+    if (row.length) { layout(row); }
+    return out;
+  }
+
+  renderVals() {
+    const self = this;
+    const s = this.state;
+    const surface = '#27272B';
+    const all = this.items();
+    const famList = this.families();
+    const total = all.length;
+    const freeze = Number(this.props.freeze || 0);
+    const revealed = freeze > 0 ? Math.min(freeze, total) : Math.min(s.revealed || 0, total);
+    const scanning = revealed < total;
+    const marked = s.marked || {};
+    const cleaned = s.cleaned || {};
+    const selectedId = s.selected || 'derived-data';
+    const trash = s.trash !== false;
+    const view = s.view || this.props.view || 'ring';
+    const famById = {};
+    famList.forEach((f) => { famById[f.id] = f; });
+    const maxMb = all[0].mb;
+    const sum = (list) => list.reduce((a, c) => a + c.mb, 0);
+
+    const items = all.map((it, i) => {
+      const isRevealed = i < revealed;
+      const isCleaned = isRevealed && !!cleaned[it.id];
+      const live = isRevealed && !isCleaned;
+      const isMarked = live && !!marked[it.id];
+      const isSel = selectedId === it.id;
+      const fam = famById[it.fam];
+      const dimmed = !isSel;
+      const fullName = it.name + (it.count ? ' (' + it.count + ')' : '');
+      const nextId = it.id;
+      return {
+        id: it.id,
+        fam: it.fam,
+        name: fullName,
+        short: it.short,
+        where: it.where,
+        note: it.note,
+        mb: it.mb,
+        color: it.color,
+        familyName: fam.name,
+        famColor: fam.color,
+        size: self.fmt(it.mb),
+        sizeCell: isRevealed ? self.fmt(it.mb) : '',
+        sizeColor: isCleaned ? '#9A9AA2' : '#F2F2F4',
+        live: live,
+        cleaned: isCleaned,
+        pending: !isRevealed,
+        notLive: !live,
+        marked: isMarked,
+        selected: isSel,
+        rowBg: isSel ? 'rgba(57, 135, 229, 0.12)' : 'transparent',
+        barW: (isRevealed ? Math.round((it.mb / maxMb) * 100) : 0) + '%',
+        pendingWord: i === revealed ? 'Measuring' : 'Waiting',
+        pendingAnim: i === revealed ? 'dc-pulse 1.2s ease-in-out infinite' : 'none',
+        segColor: !isRevealed ? 'rgba(255,255,255,0.06)' : (isCleaned ? 'rgba(255,255,255,0.10)' : (dimmed ? self.blend(it.color, surface, 0.55) : it.color)),
+        hasParts: it.id === 'derived-data',
+        parts: it.id === 'derived-data' ? self.parts().map((p) => ({ name: p.name, status: p.status, gone: p.gone, size: self.fmt(p.mb), barW: Math.round((p.mb / 11878) * 100) + '%' })) : [],
+        select: () => { self.setState({ selected: nextId }); },
+        toggle: () => {
+          if (!live) { return; }
+          const next = Object.assign({}, self.state.marked || {});
+          next[nextId] = !next[nextId];
+          self.setState({ marked: next });
+        },
+        clean: () => {
+          const next = Object.assign({}, self.state.cleaned || {});
+          next[nextId] = true;
+          self.setState({ cleaned: next, selected: nextId });
+        },
+        putBack: () => {
+          const next = Object.assign({}, self.state.cleaned || {});
+          delete next[nextId];
+          self.setState({ cleaned: next });
+        }
+      };
+    });
+
+    const byId = {};
+    items.forEach((x) => { byId[x.id] = x; });
+    const liveItems = items.filter((x) => x.live);
+    const markedItems = items.filter((x) => x.marked);
+    const cleanedItems = items.filter((x) => x.cleaned);
+    const reclaimableMb = sum(liveItems);
+    const markedMb = sum(markedItems);
+    const cleanedMb = sum(cleanedItems);
+    const diskMb = 505856;
+    const freeNowMb = 62771 + cleanedMb;
+    const usedOtherMb = diskMb - freeNowMb - reclaimableMb;
+
+    const famOrder = ['xcode', 'swift', 'brew', 'npm', 'tools'];
+    const grouped = [];
+    famOrder.forEach((fid) => { items.forEach((x) => { if (x.fam === fid) { grouped.push(x); } }); });
+    const outerSegs = grouped.map((x) => ({ mb: x.mb, color: x.segColor }));
+    const innerSegs = famOrder.map((fid) => {
+      const members = items.filter((x) => x.fam === fid);
+      const anyRevealed = members.some((x) => !x.pending);
+      const allCleaned = members.every((x) => x.cleaned || x.pending) && anyRevealed;
+      const selectedHere = members.some((x) => x.selected);
+      const fam = famById[fid];
+      const color = !anyRevealed ? 'rgba(255,255,255,0.06)' : (allCleaned ? 'rgba(255,255,255,0.10)' : (selectedHere ? fam.color : self.blend(fam.color, surface, 0.55)));
+      return { mb: sum(members), color: color };
+    });
+
+    const fams = famList.map((f) => {
+      const members = liveItems.filter((x) => x.fam === f.id);
+      const mb = sum(members);
+      const biggest = members[0] || null;
+      return {
+        id: f.id,
+        name: f.name,
+        color: f.color,
+        size: mb > 0 ? self.fmt(mb) : '0 MB',
+        share: reclaimableMb > 0 ? Math.round((mb / reclaimableMb) * 100) + '%' : '',
+        fx: mb > 0 ? mb : 0,
+        pick: () => { if (biggest) { self.setState({ selected: biggest.id }); } }
+      };
+    });
+
+    const cells = self.squarify(liveItems, 504, 244).map((r) => {
+      const it = byId[r.id];
+      const pad = 1.5;
+      const w = Math.max(r.w - pad * 2, 0);
+      const h = Math.max(r.h - pad * 2, 0);
+      return {
+        id: r.id,
+        x: Math.round(r.x + pad),
+        y: Math.round(r.y + pad),
+        w: Math.round(w),
+        h: Math.round(h),
+        name: it.short,
+        size: it.size,
+        selected: it.selected,
+        showLabel: w >= 78 && h >= 36,
+        bg: self.rgba(it.color, it.selected ? 0.55 : 0.3),
+        border: it.selected ? it.color : self.rgba(it.color, 0.6),
+        select: it.select
+      };
+    });
+
+    const sel = byId[selectedId] || items[0];
+    const nextItem = scanning ? all[revealed] : null;
+    const noneMarked = markedItems.length === 0;
+    const ringMode = view !== 'blocks';
+
+    let statusLine;
+    if (scanning) {
+      statusLine = 'Scanning ' + (revealed + 1) + ' of ' + total + ' items';
+    } else {
+      statusLine = 'Scanned just now, 11 items. Xcode and Simulator are closed.';
+    }
+    if (cleanedMb > 0) {
+      statusLine = statusLine + ' ' + self.fmt(cleanedMb) + (trash ? ' moved to Trash this session.' : ' deleted this session.');
+    }
+
+    return {
+      scanning: scanning,
+      scanLabel: nextItem ? ('Measuring ' + nextItem.short) : '',
+      progress: Math.round((revealed / total) * 100) + '%',
+      scanButton: () => {
+        if (self.frozen()) { return; }
+        if (scanning) { self.stopScan(); self.setState({ revealed: total }); } else { self.startScan(); }
+      },
+      scanButtonLabel: scanning ? 'Stop' : 'Scan again',
+      statusLine: statusLine,
+      hero: self.fmt(reclaimableMb),
+      heroLabel: scanning ? 'found so far' : 'reclaimable',
+      reclaimable: self.fmt(reclaimableMb),
+      freeNow: self.fmt(freeNowMb),
+      diskUsedW: ((usedOtherMb / diskMb) * 100).toFixed(1) + '%',
+      diskReclaimW: ((reclaimableMb / diskMb) * 100).toFixed(1) + '%',
+      ringMode: ringMode,
+      blocksMode: !ringMode,
+      ringBtnBg: ringMode ? 'rgba(255,255,255,0.14)' : 'transparent',
+      blocksBtnBg: ringMode ? 'transparent' : 'rgba(255,255,255,0.14)',
+      ringBtnWeight: ringMode ? '600' : '500',
+      blocksBtnWeight: ringMode ? '500' : '600',
+      setRing: () => { self.setState({ view: 'ring' }); },
+      setBlocks: () => { self.setState({ view: 'blocks' }); },
+      outerRing: self.ring(outerSegs, surface, 1.8),
+      innerRing: self.ring(innerSegs, surface, 2.4),
+      fams: fams,
+      cells: cells,
+      items: items,
+      itemsNote: scanning ? (revealed + ' of 11 measured, largest first') : '11, largest first',
+      cleanedWord: trash ? 'In Trash' : 'Deleted',
+      trash: trash,
+      toggleTrash: () => { self.setState({ trash: !(self.state.trash !== false) }); },
+      selectAll: () => {
+        const next = {};
+        all.forEach((x) => { next[x.id] = true; });
+        self.setState({ marked: next });
+      },
+      selectNone: () => { self.setState({ marked: {} }); },
+      noneMarked: noneMarked,
+      markedNote: noneMarked ? 'Nothing marked' : (markedItems.length + ' marked, ' + self.fmt(markedMb)),
+      primaryBg: noneMarked ? 'rgba(255,255,255,0.25)' : '#F2F2F4',
+      cleanLabel: noneMarked ? 'Clean marked' : ('Clean ' + self.fmt(markedMb)),
+      cleanMarked: () => {
+        const next = Object.assign({}, self.state.cleaned || {});
+        markedItems.forEach((x) => { next[x.id] = true; });
+        self.setState({ cleaned: next });
+      },
+      sel: {
+        name: sel.name,
+        familyName: sel.familyName,
+        famColor: sel.famColor,
+        color: sel.color,
+        size: sel.size,
+        where: sel.where,
+        note: sel.note,
+        hasParts: sel.hasParts && !sel.pending,
+        parts: sel.parts,
+        live: sel.live,
+        cleaned: sel.cleaned,
+        pending: sel.pending,
+        stateWord: sel.pending ? 'measuring' : (sel.cleaned ? (trash ? 'in Trash' : 'deleted') : 'reclaimable'),
+        stateColor: sel.cleaned ? '#4CC46A' : '#A1A1A8',
+        cleanLabel: 'Clean ' + sel.short,
+        clean: sel.clean,
+        putBack: sel.putBack
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
