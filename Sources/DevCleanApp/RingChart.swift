@@ -59,9 +59,13 @@ struct RingChart: View {
         Family.allCases.map { family in
             let rows = family.items.compactMap { model.rows[$0] }
             let weight = rows.reduce(0) { $0 + model.chartWeight($1) }
-            let measured = rows.contains { $0.state == .measured }
+            let measured = rows.contains(where: \.wasMeasured)
+            let reclaimable = rows.filter { $0.isLive || $0.state == .cleaned }
+            let allCleaned = !reclaimable.isEmpty && reclaimable.allSatisfy { $0.state == .cleaned }
             let color: Color = if !measured {
                 Palette.placeholder
+            } else if allCleaned {
+                Palette.cleaned
             } else if selectedFamily == nil || selectedFamily == family {
                 Palette.color(family)
             } else {
@@ -75,6 +79,8 @@ struct RingChart: View {
         switch row.state {
         case .waiting, .measuring, .notMeasured:
             return Palette.placeholder
+        case .cleaning, .cleaned:
+            return Palette.cleaned
         case .measured:
             if model.selection == nil || model.selection == row.item { return Palette.color(row.item) }
             return Palette.color(row.item).opacity(0.42)
@@ -181,11 +187,3 @@ struct FamilyLegend: View {
     }
 }
 
-/// Placeholder until the treemap lands.
-struct BlocksChart: View {
-    var body: some View {
-        Text("Blocks arrive with cleaning.")
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-}

@@ -58,7 +58,7 @@ final class FakeTools: @unchecked Sendable {
             git: gitClient,
             runningApps: FakeRunningApps(log: log, running: running),
             lastUsedDates: FakeLastUsed(dates: lastUsed),
-            trash: FolderTrash(folder: trashFolder, log: log)
+            trash: LoggingTrash(trash: FolderTrash(folder: trashFolder), log: log)
         )
     }
 
@@ -200,25 +200,18 @@ struct FakeGit: GitClient {
 }
 
 /// A Trash inside the fake home, so tests never touch the real one.
-struct FolderTrash: TrashService {
-    let folder: String
+struct LoggingTrash: TrashService {
+    let trash: FolderTrash
     let log: CallLog
 
     func trash(_ path: String) throws -> String {
-        try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
-        var destination = "\(folder)/\(FileSystem.basename(path))"
-        var counter = 1
-        while FileSystem.existsOrIsSymlink(destination) {
-            counter += 1
-            destination = "\(folder)/\(FileSystem.basename(path)) \(counter)"
-        }
-        try FileManager.default.moveItem(atPath: path, toPath: destination)
+        let destination = try trash.trash(path)
         log.record("trash \(path)")
         return destination
     }
 
     func putBack(_ trashed: String, to original: String) throws {
-        try FileManager.default.moveItem(atPath: trashed, toPath: original)
+        try trash.putBack(trashed, to: original)
         log.record("put back \(original)")
     }
 }

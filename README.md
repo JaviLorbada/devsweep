@@ -12,7 +12,7 @@ script in the dotfiles repo, and keep its safety rules word for word.
 |---|---|
 | M1, engine and CLI parity | Done. The bats suite passes unchanged against the Swift binary. |
 | M2, app shell | Done. Window, sidebar, ring, items, inspector, live scan. No cleaning yet. |
-| M3, cleaning in the app | Not started |
+| M3, cleaning in the app | Done. Clean per item or marked, Trash with Put back, delete for good, quit prompt, Blocks. |
 | M4, extras screens | Not started |
 
 ## Requirements
@@ -49,8 +49,11 @@ another `HOME` and `PATH` points it at a fake home and stub tools.
 `scripts/snapshot.sh [folder] [screen...]` builds a debug bundle, makes a
 fake home with something in every item and stubs for the tools, and has the
 app draw its window into PNG files: `overview`, `scanning`, `blocks`,
-`runtimes`, `xcodes`, each also as `name-light`. It never touches the real
-home folder. Grabbing the real window needs screen recording permission, so
+`runtimes`, `xcodes`, `cleaned`, `putback`, each also as `name-light`.
+`cleaned` cleans what starts marked and `putback` then puts the SwiftPM cache
+back, so those two exercise the real cleaning code; each screen gets a fresh
+fake home, the Trash is pointed at a folder inside it, and the stubs refuse
+`simctl delete` and `brew cleanup`. It never touches the real home folder. Grabbing the real window needs screen recording permission, so
 the debug build draws the same content views with `ImageRenderer` instead;
 controls that AppKit draws (checkboxes, link buttons, glass buttons) come
 out as placeholders in those images, and the toolbar is approximated.
@@ -74,12 +77,39 @@ What is in the window:
 - Inspector: family, name, size and state, where it lives with Reveal in
   Finder, what cleaning does, and for DerivedData what is inside: the
   compilation and module caches and each project with its last build, a bar
-  and a "project gone" badge.
+  and a "project gone" badge. At the bottom: Clean, Put Back, or a disabled
+  Measuring.
+- Blocks: the live items as a squarified treemap (the layout is
+  `Treemap.squarify` in the kit), tinted with each item's color, labeled where
+  the cell is big enough, the selected one stronger. Cells slide into place as
+  items are measured or cleaned.
+
+Cleaning:
+
+- The three biggest items start marked once the scan ends, unless you
+  changed the marks during the scan. Clean on a row or in the inspector
+  cleans one item; the footer button cleans everything marked.
+- "Move to Trash, so anything can be put back" is on by default and uses
+  `FileManager.trashItem`, so Finder's Put Back works too. Put Back in the
+  inspector moves the folders back, but only if nothing has taken their place
+  and the folder that held them still resolves to the same place in home.
+  Turned off, cleaning deletes for good, after a confirmation.
+- Simulators and Homebrew are removed by `simctl` and `brew` whatever the
+  mode, so they can't be put back; cleaning them always asks first.
+- When an Xcode item is about to be cleaned and Xcode or Simulator is open,
+  the app asks to quit them ("Quit and Clean"), or to clean only the other
+  items, or to cancel. Quitting is the normal request, so Xcode still asks
+  about unsaved work; if it doesn't quit within 15 seconds nothing is
+  cleaned. The check runs again right before each Xcode item.
+- Every path goes through the kit's recheck before it moves. Anything left
+  alone is reported in an alert and in the notes under the items.
+- Put Back is offered until the next scan. After that the folders are still
+  in the Trash, where Finder can put them back.
 
 Colors: marks use the palette from HANDOFF section 4; chrome uses system
 materials and semantic colors, so light and dark both work. The light
 appearance moves each ramp one step darker, so the lightest steps stay
-visible on a light card. That light ramp is my choice and has not been
+visible on a light card. That light ramp is a proposal and has not been
 checked for color blindness the way the dark one was.
 
 ## Layout
@@ -206,6 +236,5 @@ folders are searched, and `warning`, for the script's warnings.
 
 ## What is left
 
-- M3: cleaning in the app.
 - M4: the runtimes and Xcode versions screens.
 - Release work (signing, notarization, distribution) is out of scope for now.

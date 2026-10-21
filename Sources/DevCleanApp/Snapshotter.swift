@@ -5,7 +5,10 @@ import SwiftUI
 
 /// Development aid: with `DEVCLEAN_SNAPSHOT=/path/file.png` set, waits for the
 /// scan to finish, draws the window's content into that file and quits.
-/// `DEVCLEAN_SNAPSHOT_SCREEN` picks `overview`, `scanning`, `blocks`, `runtimes` or `xcodes`;
+/// `DEVCLEAN_SNAPSHOT_SCREEN` picks `overview`, `scanning`, `blocks`, `runtimes`,
+/// `xcodes`, `cleaned` (cleans what is marked first) or `putback` (then puts
+/// the SwiftPM cache back). Cleaning must only ever run against a fake home,
+/// with `DEVCLEAN_TRASH_FOLDER` set;
 /// `DEVCLEAN_SNAPSHOT_APPEARANCE` picks `dark` or `light`;
 /// `DEVCLEAN_SNAPSHOT_SELECT` picks an item id or runtime id to select.
 ///
@@ -28,6 +31,15 @@ enum Snapshotter {
         case "runtimes": model.screen = .simulatorRuntimes
         case "xcodes": model.screen = .xcodeVersions
         case "scanning": model.rewindScan(toMeasured: 5)
+        case "cleaned", "putback":
+            // The confirmed step directly: never the quit prompt, which would
+            // ask the real Xcode to quit.
+            await model.confirmClean(AppModel.PendingClean(items: model.markedRows.map(\.item), stage: .confirm))
+            model.notice = nil
+            if environment["DEVCLEAN_SNAPSHOT_SCREEN"] == "putback" {
+                await model.putBack(.swiftpmCache)
+                model.selection = .swiftpmCache
+            }
         default: break
         }
         if let id = environment["DEVCLEAN_SNAPSHOT_SELECT"], !id.isEmpty {

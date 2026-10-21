@@ -39,7 +39,7 @@ struct ItemDetails: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if let breakdown = row.result?.derivedData, row.state == .measured, !(row.result?.isEmpty ?? true) {
+            if let breakdown = row.result?.derivedData, row.wasMeasured, !(row.result?.isEmpty ?? true) {
                 DerivedDataParts(breakdown: breakdown, color: Palette.color(item))
             }
         }
@@ -63,7 +63,7 @@ struct ItemDetails: View {
                     .contentTransition(.numericText())
                 Text(stateWord(row))
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(row.state == .cleaned ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
             }
         }
     }
@@ -104,6 +104,7 @@ struct ItemDetails: View {
         case .waiting, .notMeasured: "–"
         case .measuring: SizeText.of(bytes: row.progressBytes)
         case .measured: !row.sizeKnown && row.kilobytes == 0 ? "?" : SizeText.of(kilobytes: row.kilobytes)
+        case .cleaning, .cleaned: SizeText.of(kilobytes: row.kilobytes)
         }
     }
 
@@ -112,6 +113,8 @@ struct ItemDetails: View {
         case .waiting: "waiting"
         case .measuring: "measuring"
         case .notMeasured: "not measured"
+        case .cleaning: "cleaning"
+        case .cleaned: row.canPutBack ? "in Trash" : "deleted"
         case .measured:
             if !row.sizeKnown { "size unknown" }
             else if row.result?.isEmpty ?? true { "nothing to clean" }
@@ -203,27 +206,37 @@ struct DerivedDataParts: View {
     }
 }
 
-/// The inspector's bottom button.
+/// The inspector's bottom button: Clean, Put back, or a disabled Measuring.
 struct InspectorAction: View {
+    @Environment(AppModel.self) private var model
     let row: AppModel.Row
 
     var body: some View {
         switch row.state {
         case .waiting, .measuring:
-            Button("Measuring") {}
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
-                .disabled(true)
+            wide(Button("Measuring") {}.buttonStyle(.glassProminent).disabled(true))
         case .measured where row.isLive:
-            Button("Clean \(row.item.shortName)") {}
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-                .frame(maxWidth: .infinity)
-                .disabled(true)
-                .help("Cleaning comes in the next milestone.")
+            wide(Button("Clean \(row.item.shortName)") {
+                Task { await model.requestClean([row.item]) }
+            }
+            .buttonStyle(.glassProminent)
+            .disabled(model.isScanning || model.isCleaning))
+        case .cleaning:
+            wide(Button("Cleaning") {}.buttonStyle(.glass).disabled(true))
+        case .cleaned where row.canPutBack:
+            wide(Button("Put Back") {
+                Task { await model.putBack(row.item) }
+            }
+            .buttonStyle(.glass)
+            .help("Move it from the Trash back where it was"))
         default:
             EmptyView()
         }
+    }
+
+    private func wide(_ button: some View) -> some View {
+        button
+            .controlSize(.large)
+            .frame(maxWidth: .infinity)
     }
 }

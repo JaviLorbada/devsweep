@@ -25,6 +25,9 @@ final class AppModel {
         case measured
         /// The scan stopped before reaching it.
         case notMeasured
+        case cleaning
+        /// Moved to the Trash or deleted; `outcome` says which.
+        case cleaned
     }
 
     struct Row: Identifiable {
@@ -32,12 +35,34 @@ final class AppModel {
         var state: RowState = .waiting
         var result: ItemResult?
         var progressBytes: Int64 = 0
+        var outcome: CleanOutcome?
 
         var id: Item { item }
         var kilobytes: Int64 { result?.kilobytes ?? progressBytes / 1024 }
         /// Measured, with something to reclaim.
         var isLive: Bool { state == .measured && !(result?.isEmpty ?? true) }
         var sizeKnown: Bool { result?.sizeKnown ?? true }
+        /// Measured at some point, whatever happened since.
+        var wasMeasured: Bool { [.measured, .cleaning, .cleaned].contains(state) }
+        var canPutBack: Bool { state == .cleaned && (outcome?.canPutBack ?? false) }
+    }
+
+    /// A clean waiting on an answer: quit Xcode first, or confirm.
+    struct PendingClean: Identifiable {
+        enum Stage {
+            case quitApps([DeveloperApp])
+            case confirm
+        }
+
+        let id = UUID()
+        let items: [Item]
+        let stage: Stage
+    }
+
+    struct Notice: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
     }
 
     var screen: Screen = .overview
@@ -48,6 +73,13 @@ final class AppModel {
     /// The Xcode selected on the Xcode versions screen, by its path.
     var selectedXcode: String?
     var marked: Set<Item> = []
+    /// Clean by moving to the Trash, so anything can be put back; off deletes for good.
+    var moveToTrash = true
+    var pendingClean: PendingClean?
+    var notice: Notice?
+    private(set) var isCleaning = false
+    private(set) var trashedThisSession: Int64 = 0
+    private(set) var deletedThisSession: Int64 = 0
     private(set) var rows: [Item: Row] = [:]
     private(set) var scanOrder: [Item] = []
     private(set) var isScanning = false
@@ -73,6 +105,12 @@ final class AppModel {
         self.workspaceApps = workspaceApps
         var tools = Tools.live(environment: environment)
         tools.runningApps = workspaceApps
+        #if DEBUG
+        // Trying the app against a fake home shouldn't fill the real Trash.
+        if let folder = environment["DEVCLEAN_TRASH_FOLDER"] {
+            tools.trash = FolderTrash(folder: folder)
+        }
+        #endif
         do {
             engine = try Engine(config: ScanConfig.fromEnvironment(environment), tools: tools)
             startupError = nil
@@ -93,7 +131,7 @@ final class AppModel {
     // MARK: Scanning
 
     func scan() {
-        guard let engine, !isScanning else { return }
+        guard let engine, !isScanning, !isCleaning else { return }
         for (item, row) in rows where row.result != nil {
             previousKilobytes[item] = row.kilobytes
         }
@@ -150,7 +188,7 @@ final class AppModel {
         guard isScanning else { return }
         // Stopped before the end: what wasn't reached stays unmeasured.
         withAnimation {
-            for item in scanOrder where rows[item]?.state != .measured {
+            for item in scanOrder where !(rows[item]?.wasMeasured ?? false) {
                 rows[item]?.state = .notMeasured
                 rows[item]?.progressBytes = 0
             }
@@ -205,7 +243,7 @@ final class AppModel {
     /// Measured items largest first, then the one being measured, then the rest in scan order.
     var orderedRows: [Row] {
         let all = scanOrder.compactMap { rows[$0] }
-        let measured = all.filter { $0.state == .measured }.sorted { $0.kilobytes > $1.kilobytes }
+        let measured = all.filter(\.wasMeasured).sorted { $0.kilobytes > $1.kilobytes }
         return measured + all.filter { $0.state == .measuring } + all.filter { $0.state == .waiting || $0.state == .notMeasured }
     }
 
@@ -223,11 +261,11 @@ final class AppModel {
 
     /// The family's size once any of its items is measured, nil before.
     func measuredKilobytes(of family: Family) -> Int64? {
-        let measured = family.items.contains { rows[$0]?.state == .measured }
+        let measured = family.items.contains { rows[$0]?.wasMeasured ?? false }
         return measured ? kilobytes(of: family) : nil
     }
 
-    var measuredCount: Int { scanOrder.filter { rows[$0]?.state == .measured }.count }
+    var measuredCount: Int { scanOrder.filter { rows[$0]?.wasMeasured ?? false }.count }
 
     var currentItem: Item? { scanOrder.first { rows[$0]?.state == .measuring } }
 
@@ -239,13 +277,13 @@ final class AppModel {
     /// it took last time or the average so far, so the ring is whole from the start.
     func chartWeight(_ row: Row) -> Double {
         switch row.state {
-        case .measured:
+        case .measured, .cleaning, .cleaned:
             return Double(max(row.kilobytes, 0))
         case .notMeasured:
             return 0
         case .waiting, .measuring:
             if let previous = previousKilobytes[row.item] { return Double(max(previous, 1)) }
-            let measured = scanOrder.compactMap { rows[$0] }.filter { $0.state == .measured }
+            let measured = scanOrder.compactMap { rows[$0] }.filter(\.wasMeasured)
             let total = measured.reduce(0) { $0 + Double($1.kilobytes) }
             return measured.isEmpty || total == 0 ? 1 : total / Double(measured.count)
         }
@@ -261,7 +299,14 @@ final class AppModel {
         let scanned = unmeasured > 0
             ? "Stopped after \(measuredCount) of \(scanOrder.count) items."
             : "Scanned just now, \(scanOrder.count) items."
-        return "\(scanned) \(runningAppsSentence)"
+        var line = "\(scanned) \(runningAppsSentence)"
+        if trashedThisSession > 0 {
+            line += " \(SizeText.of(kilobytes: trashedThisSession)) moved to Trash this session."
+        }
+        if deletedThisSession > 0 {
+            line += " \(SizeText.of(kilobytes: deletedThisSession)) deleted this session."
+        }
+        return line
     }
 
     var runningAppsSentence: String {
@@ -295,6 +340,145 @@ final class AppModel {
         marked = []
     }
     #endif
+
+    // MARK: Cleaning
+
+    /// Starts cleaning `items`: asks to quit Xcode and Simulator when an Xcode
+    /// item needs them closed, and asks to confirm anything that can't be put back.
+    func requestClean(_ items: [Item]) async {
+        guard !isScanning, !isCleaning else { return }
+        let items = items.filter { rows[$0]?.isLive ?? false }
+        guard !items.isEmpty else { return }
+        await refreshRunningApps()
+        let blocking = DeveloperApp.allCases.filter(runningApps.contains)
+        if items.contains(where: \.needsXcodeClosed), !blocking.isEmpty {
+            pendingClean = PendingClean(items: items, stage: .quitApps(blocking))
+        } else {
+            confirmOrClean(items)
+        }
+    }
+
+    /// Quits Xcode and Simulator, then goes on with the clean.
+    func quitAppsAndClean(_ pending: PendingClean) async {
+        pendingClean = nil
+        guard case .quitApps(let apps) = pending.stage else { return }
+        if await quit(apps) {
+            confirmOrClean(pending.items, afterAlert: true)
+        } else {
+            notice = Notice(
+                title: "\(apps.map(\.rawValue).joined(separator: " and ")) didn't quit",
+                message: "Nothing was cleaned. Quit them yourself, for example after saving your work, and clean again."
+            )
+        }
+    }
+
+    /// Goes on with the items that don't need Xcode closed.
+    func cleanSkippingXcodeItems(_ pending: PendingClean) {
+        pendingClean = nil
+        let rest = pending.items.filter { !$0.needsXcodeClosed }
+        if !rest.isEmpty { confirmOrClean(rest, afterAlert: true) }
+    }
+
+    func confirmClean(_ pending: PendingClean) async {
+        pendingClean = nil
+        await performClean(pending.items)
+    }
+
+    /// Whether these items need a yes first: everything does when deleting
+    /// for good, and Simulators and Homebrew always, since their tools delete them.
+    func needsConfirmation(_ items: [Item]) -> Bool {
+        !moveToTrash || items.contains(where: \.cleanedByItsTool)
+    }
+
+    /// - Parameter afterAlert: an alert is closing, so give it a moment
+    ///   before showing the next one.
+    private func confirmOrClean(_ items: [Item], afterAlert: Bool = false) {
+        if needsConfirmation(items) {
+            Task {
+                if afterAlert { try? await Task.sleep(for: .milliseconds(300)) }
+                pendingClean = PendingClean(items: items, stage: .confirm)
+            }
+        } else {
+            Task { await performClean(items) }
+        }
+    }
+
+    private func performClean(_ items: [Item]) async {
+        guard let engine, !isCleaning else { return }
+        isCleaning = true
+        let mode: CleanMode = moveToTrash ? .trash : .delete
+        var problems: [String] = []
+
+        for item in items {
+            guard let row = rows[item], row.isLive, let result = row.result else { continue }
+            // Xcode may have been opened since the question was asked.
+            if item.needsXcodeClosed {
+                await refreshRunningApps()
+                if !runningApps.isEmpty {
+                    problems.append("Skipped \(item.name): \(runningAppsSentence)")
+                    continue
+                }
+            }
+            withAnimation { rows[item]?.state = .cleaning }
+            let outcome = await engine.clean(result, mode: mode)
+            problems += outcome.warnings
+            let removedSomething = !outcome.removed.isEmpty || outcome.toolSucceeded == true
+            withAnimation(.easeInOut(duration: 0.4)) {
+                if removedSomething {
+                    rows[item]?.state = .cleaned
+                    rows[item]?.outcome = outcome
+                    marked.remove(item)
+                    if outcome.canPutBack {
+                        trashedThisSession += result.kilobytes
+                    } else {
+                        deletedThisSession += result.kilobytes
+                    }
+                } else {
+                    rows[item]?.state = .measured
+                }
+            }
+        }
+
+        isCleaning = false
+        diskSpace = engine.diskSpace()
+        warnings += problems
+        if !problems.isEmpty {
+            notice = Notice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
+        }
+    }
+
+    /// Moves what cleaning `item` put in the Trash back where it was.
+    func putBack(_ item: Item) async {
+        guard let engine, let row = rows[item], row.canPutBack, let outcome = row.outcome else { return }
+        let result = await engine.putBack(outcome)
+        withAnimation(.easeInOut(duration: 0.4)) {
+            if !result.restored.isEmpty {
+                rows[item]?.state = .measured
+                rows[item]?.outcome = nil
+                trashedThisSession = max(0, trashedThisSession - row.kilobytes)
+            }
+        }
+        diskSpace = engine.diskSpace()
+        if !result.failed.isEmpty {
+            notice = Notice(
+                title: "Some folders couldn't be put back",
+                message: "Something now stands where they were, or the folder that held them changed. They are still in the Trash:\n"
+                    + result.failed.map(tilde).joined(separator: "\n")
+            )
+        }
+    }
+
+    /// Asks the apps to quit, as choosing Quit would, and waits up to 15 seconds.
+    private func quit(_ apps: [DeveloperApp]) async -> Bool {
+        let running = apps.flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0.bundleIdentifier) }
+        running.forEach { $0.terminate() }
+        for _ in 0..<60 {
+            if running.allSatisfy(\.isTerminated) { break }
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        await refreshRunningApps()
+        return running.allSatisfy(\.isTerminated)
+    }
 
     // MARK: Finder
 

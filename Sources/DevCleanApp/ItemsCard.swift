@@ -74,7 +74,8 @@ struct ItemRow: View {
             }
             .buttonStyle(.plain)
 
-            ThinBar(fraction: row.state == .measured ? Double(row.kilobytes) / largest : 0, color: Palette.color(row.item))
+            ThinBar(fraction: row.wasMeasured ? Double(row.kilobytes) / largest : 0,
+                    color: row.state == .cleaned ? Palette.cleaned : Palette.color(row.item))
                 .frame(width: 120)
 
             Text(sizeText)
@@ -99,6 +100,7 @@ struct ItemRow: View {
         switch row.state {
         case .waiting, .notMeasured: ""
         case .measuring: row.progressBytes > 0 ? SizeText.of(bytes: row.progressBytes) : ""
+        case .cleaning, .cleaned: SizeText.of(kilobytes: row.kilobytes)
         case .measured:
             if !row.sizeKnown && row.kilobytes == 0 { "Unknown" }
             else if row.result?.isEmpty ?? true { "none" }
@@ -109,6 +111,7 @@ struct ItemRow: View {
 
 /// The trailing cell of a row: what can be done now, or what is happening.
 struct RowAction: View {
+    @Environment(AppModel.self) private var model
     let row: AppModel.Row
 
     var body: some View {
@@ -119,11 +122,20 @@ struct RowAction: View {
             Pulsing { Text("Measuring").font(.caption).foregroundStyle(.secondary) }
         case .notMeasured:
             Text("Not measured").font(.caption).foregroundStyle(.secondary)
+        case .cleaning:
+            ProgressView().controlSize(.small)
+        case .cleaned:
+            Text(row.canPutBack ? "In Trash" : "Deleted")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.green)
         case .measured:
             if row.isLive {
-                Button("Clean") {}
-                    .controlSize(.small)
-                    .disabled(true)
+                Button("Clean") {
+                    model.selection = row.item
+                    Task { await model.requestClean([row.item]) }
+                }
+                .controlSize(.small)
+                .disabled(model.isScanning || model.isCleaning)
             }
         }
     }

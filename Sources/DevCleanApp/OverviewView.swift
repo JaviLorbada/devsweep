@@ -77,20 +77,26 @@ struct OverviewFooter: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        @Bindable var model = model
         HStack(spacing: 14) {
-            Text("Cleaning comes in the next milestone.")
+            Toggle("Move to Trash, so anything can be put back", isOn: $model.moveToTrash)
+                .toggleStyle(.checkbox)
                 .font(.callout)
                 .foregroundStyle(.secondary)
+                .help("Off deletes for good, after asking")
             Spacer()
             Text(model.markedRows.isEmpty ? "Nothing marked" : "\(model.markedRows.count) marked, \(SizeText.of(kilobytes: model.markedKilobytes))")
                 .font(.callout)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
                 .contentTransition(.numericText())
-            Button(model.markedRows.isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))") {}
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-                .disabled(true)
+            Button(model.markedRows.isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))") {
+                Task { await model.requestClean(model.markedRows.map(\.item)) }
+            }
+            .buttonStyle(.glassProminent)
+            .controlSize(.large)
+            .keyboardShortcut(.defaultAction)
+            .disabled(model.markedRows.isEmpty || model.isScanning || model.isCleaning)
         }
     }
 }

@@ -32,12 +32,48 @@ struct ContentView: View {
             }
             .inspectorColumnWidth(300)
         }
+        .alert(
+            pendingTitle,
+            isPresented: Binding(get: { model.pendingClean != nil }, set: { if !$0 { model.pendingClean = nil } }),
+            presenting: model.pendingClean
+        ) { pending in
+            switch pending.stage {
+            case .quitApps:
+                Button("Quit and Clean") { Task { await model.quitAppsAndClean(pending) } }
+                if pending.items.contains(where: { !$0.needsXcodeClosed }) {
+                    Button("Clean the Others") { model.cleanSkippingXcodeItems(pending) }
+                }
+                Button("Cancel", role: .cancel) {}
+            case .confirm:
+                Button(model.moveToTrash ? "Clean" : "Delete", role: model.moveToTrash ? nil : .destructive) {
+                    Task { await model.confirmClean(pending) }
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+        } message: { pending in
+            Text(CleanPrompt.message(for: pending, moveToTrash: model.moveToTrash))
+        }
+        .alert(
+            model.notice?.title ?? "",
+            isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } }),
+            presenting: model.notice
+        ) { _ in
+            Button("OK") {}
+        } message: { notice in
+            Text(notice.message)
+        }
         .task {
             model.scan()
             #if DEBUG
             await Snapshotter.runIfAsked(model)
             #endif
         }
+    }
+
+    private var pendingTitle: String {
+        guard let pending = model.pendingClean else { return "" }
+        let size = SizeText.of(kilobytes: pending.items.compactMap { model.rows[$0]?.kilobytes }.reduce(0, +))
+        return CleanPrompt.title(for: pending, size: size, moveToTrash: model.moveToTrash)
     }
 
     private var title: String {
