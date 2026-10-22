@@ -28,7 +28,7 @@ cat > "$app/Contents/Info.plist" <<'EOF'
 <dict>
   <key>CFBundleName</key><string>DevClean</string>
   <key>CFBundleDisplayName</key><string>DevClean</string>
-  <key>CFBundleIdentifier</key><string>local.devclean.DevClean</string>
+  <key>CFBundleIdentifier</key><string>com.javilorbada.devclean</string>
   <key>CFBundleExecutable</key><string>DevClean</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1</string>

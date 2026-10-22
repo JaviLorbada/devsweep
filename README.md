@@ -315,8 +315,9 @@ folders are searched, and `warning`, for the script's warnings.
 
 - M5, release: Developer ID signing, notarization, GitHub Releases, the
   Homebrew cask, Sparkle. Not started; `scripts/build-app.sh` only signs ad
-  hoc for local use, with a placeholder bundle id (`local.devclean.DevClean`).
-- Still undecided in HANDOFF section 6: app name and bundle id, icon, a menu
+  hoc for local use. The bundle id is `com.javilorbada.devclean`.
+- Still undecided in HANDOFF section 6: the final app name (DevClean for
+  now), icon, a menu
   bar presence, preferences for project folders and the stale-runtime
   threshold (today they come from the same environment variables as the
   CLI, and 90 days), and more scanners.
