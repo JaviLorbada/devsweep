@@ -243,8 +243,12 @@ final class AppModel {
             }
             flushProgress()
             finishScan()
+            scanTask = nil
         }
     }
+
+    /// Whether a scan's task is still winding down, even after `isScanning` turned false.
+    var isScanTaskRunning: Bool { scanTask != nil }
 
     func stopScan() {
         scanTask?.cancel()

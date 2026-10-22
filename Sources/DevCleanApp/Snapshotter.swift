@@ -24,7 +24,7 @@ enum Snapshotter {
         let dark = environment["DEVCLEAN_SNAPSHOT_APPEARANCE"] != "light"
         NSApplication.shared.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 
-        while model.isScanning || model.isLoadingExtras {
+        while model.isScanning || model.isLoadingExtras || model.isScanTaskRunning {
             try? await Task.sleep(for: .milliseconds(200))
         }
         switch environment["DEVCLEAN_SNAPSHOT_SCREEN"] {

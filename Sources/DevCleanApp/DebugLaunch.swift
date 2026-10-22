@@ -41,7 +41,7 @@ enum DebugLaunch {
         trace("window \(Int(mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
         var lastWidth = mainWindow?.frame.width ?? 0
         let start = Date()
-        while model.isScanning || model.isLoadingExtras {
+        while model.isScanning || model.isLoadingExtras || model.isScanTaskRunning {
             if Task.isCancelled { trace("cancelled while waiting"); return }
             try? await Task.sleep(for: .milliseconds(100))
             let width = mainWindow?.frame.width ?? 0
