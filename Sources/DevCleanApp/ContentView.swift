@@ -1,15 +1,20 @@
+import AppKit
 import DevCleanKit
 import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    @State private var showsInspector = true
+    /// Whether you want the inspector; it shows when the window also has room.
+    @State private var wantsInspector = true
+    @State private var inspectorHasRoom = true
 
     var body: some View {
         @Bindable var model = model
         NavigationSplitView {
             SidebarView()
-                .navigationSplitViewColumnWidth(232)
+                .navigationSplitViewColumnWidth(
+                    min: WindowLayout.sidebar.min, ideal: WindowLayout.sidebar.ideal, max: WindowLayout.sidebar.max
+                )
         } detail: {
             Group {
                 switch model.screen {
@@ -22,7 +27,7 @@ struct ContentView: View {
             .navigationSubtitle(model.subtitle)
             .toolbar { toolbar }
         }
-        .inspector(isPresented: $showsInspector) {
+        .inspector(isPresented: inspectorShown) {
             Group {
                 switch model.screen {
                 case .overview: ItemInspector()
@@ -30,7 +35,12 @@ struct ContentView: View {
                 case .simulatorRuntimes: RuntimeInspector()
                 }
             }
-            .inspectorColumnWidth(300)
+            .inspectorColumnWidth(
+                min: WindowLayout.inspector.min, ideal: WindowLayout.inspector.ideal, max: WindowLayout.inspector.max
+            )
+        }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+            updateInspectorRoom(for: width)
         }
         .alert(
             pendingTitle,
@@ -67,11 +77,47 @@ struct ContentView: View {
             Text(notice.message)
         }
         .task {
+            #if DEBUG
+            if DebugLaunch.isRequested { FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8)) }
+            #endif
             model.scan()
             #if DEBUG
             await Snapshotter.runIfAsked(model)
             await DebugLaunch.run(model)
             #endif
+        }
+    }
+
+    /// Shown when wanted and there is room. Asking for it in a window too
+    /// narrow for three columns widens the window first.
+    private var inspectorShown: Binding<Bool> {
+        Binding {
+            wantsInspector && inspectorHasRoom
+        } set: { show in
+            if inspectorHasRoom {
+                wantsInspector = show
+            } else if show {
+                // Collapsed for room: showing it widens the window. A "false"
+                // written back while collapsed is the collapse, not you.
+                wantsInspector = true
+                WindowSizing.widen(to: WindowLayout.inspectorReturnWidth)
+            }
+        }
+    }
+
+    /// Collapses the inspector below `inspectorCollapseWidth` and brings it
+    /// back above `inspectorReturnWidth`. The change waits for the current
+    /// layout pass to end and isn't animated, so AppKit never collapses a
+    /// column in the middle of one.
+    private func updateInspectorRoom(for width: CGFloat) {
+        let hasRoom = inspectorHasRoom
+            ? width >= WindowLayout.inspectorCollapseWidth
+            : width >= WindowLayout.inspectorReturnWidth
+        guard hasRoom != inspectorHasRoom else { return }
+        Task { @MainActor in
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) { inspectorHasRoom = hasRoom }
         }
     }
 
@@ -114,7 +160,7 @@ struct ContentView: View {
         }
         ToolbarItem {
             Button("Inspector", systemImage: "sidebar.trailing") {
-                showsInspector.toggle()
+                inspectorShown.wrappedValue.toggle()
             }
             .help("Show or hide the inspector")
         }
@@ -130,13 +176,31 @@ struct ScanCapsule: View {
             Text(model.currentItem.map { "Measuring \($0.shortName)" } ?? "Listing Xcodes and runtimes")
                 .font(.callout)
                 .lineLimit(1)
+                .frame(maxWidth: 180, alignment: .leading)
             ProgressView(value: model.scanProgress)
                 .progressViewStyle(.linear)
-                .frame(width: 96)
+                .frame(width: 64)
                 .animation(.easeInOut(duration: 0.3), value: model.scanProgress)
         }
         .padding(.horizontal, 6)
-        .fixedSize()
+    }
+}
+
+/// Resizes the main window.
+enum WindowSizing {
+    /// Makes the key window at least `width` wide, growing to the right as far
+    /// as the screen allows and then to the left.
+    @MainActor
+    static func widen(to width: CGFloat) {
+        guard let window = NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first(where: \.isVisible),
+              window.frame.width < width else { return }
+        var frame = window.frame
+        frame.size.width = width
+        if let visible = window.screen?.visibleFrame {
+            frame.size.width = min(frame.width, visible.width)
+            if frame.maxX > visible.maxX { frame.origin.x = max(visible.minX, visible.maxX - frame.width) }
+        }
+        window.setFrame(frame, display: true, animate: true)
     }
 }
 

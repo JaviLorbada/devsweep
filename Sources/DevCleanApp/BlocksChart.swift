@@ -25,7 +25,7 @@ struct BlocksChart: View {
                         } label: {
                             HStack(spacing: 8) {
                                 RoundedRectangle(cornerRadius: 2).fill(Palette.color(family)).frame(width: 8, height: 8)
-                                Text(family.name).lineLimit(1)
+                                Text(family.name).lineLimit(1).truncationMode(.tail)
                                 Spacer(minLength: 4)
                                 Text(model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
                                     .foregroundStyle(.secondary)
@@ -38,7 +38,7 @@ struct BlocksChart: View {
                     }
                 }
             }
-            .frame(width: 176)
+            .frame(width: 150)
 
             GeometryReader { proxy in
                 TreemapCells(size: proxy.size)

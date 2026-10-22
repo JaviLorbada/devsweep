@@ -58,3 +58,21 @@ let sampleExtras = Extras(
                          daysSinceUsed: nil, simulatorCount: 1),
     ]
 )
+
+/// Results with every item measured, long labels and a full DerivedData breakdown.
+let sampleResults: [ItemResult] = Item.allCases.enumerated().map { index, item in
+    let breakdown = item == .derivedData ? DerivedDataBreakdown(
+        compilationCacheKilobytes: 43_000_000, moduleCacheKilobytes: 4_300_000, otherKilobytes: 6_000_000,
+        projects: (1...8).map { n in
+            DerivedDataProject(name: "AVeryLongFolderName-\(n)/AnEvenLongerProjectName", status: n == 3 ? .gone : .built("2026-10-2\(n % 10)"),
+                               kilobytes: Int64(47_000_000 / n), folder: "/dd/P\(n)", workspacePath: "/w/P\(n)")
+        }
+    ) : nil
+    return ItemResult(
+        item: item,
+        paths: (0..<(index + 1)).map { "/Users/someone/Library/Somewhere/Deep/Inside/A/Long/Path/\(item.rawValue)-\($0)" },
+        kilobytes: Int64(200_000_000 / (index + 1)),
+        location: "~/Library/Containers/com.apple.CoreDevice.CoreDeviceService/Data/Library/Caches/\(item.rawValue)",
+        derivedData: breakdown
+    )
+}

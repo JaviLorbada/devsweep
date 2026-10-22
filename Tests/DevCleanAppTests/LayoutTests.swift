@@ -51,3 +51,47 @@ extension LayoutTests {
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
 }
+
+extension LayoutTests {
+    @Test("The overview fits the narrowest center column")
+    func overviewWidth() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home, extras: sampleExtras)
+        model.showResults(sampleResults)
+        for style in AppModel.ChartStyle.allCases {
+            model.chartStyle = style
+            let size = minimumSize(of: OverviewContent(), model: model)
+            #expect(size.width <= WindowLayout.centerMinimumWidth, "\(style.rawValue) needs \(size.width) points")
+        }
+        let footer = minimumSize(of: OverviewFooter().padding(.horizontal, 22), model: model)
+        #expect(footer.width <= WindowLayout.centerMinimumWidth, "the footer needs \(footer.width) points")
+    }
+
+    @Test("The item inspector never asks the window for more height")
+    func itemInspectorHeight() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        model.showResults(sampleResults)
+        model.selection = .derivedData
+        let size = minimumSize(of: ItemInspector(), model: model)
+        #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
+    }
+
+    @Test("The inspector collapses before the columns would have to shrink below their minimums")
+    func collapseOrder() {
+        let threeColumns = WindowLayout.sidebar.min + WindowLayout.centerMinimumWidth + WindowLayout.inspector.min + WindowLayout.dividers
+        #expect(WindowLayout.inspectorCollapseWidth > threeColumns)
+        #expect(WindowLayout.inspectorReturnWidth > WindowLayout.inspectorCollapseWidth)
+        #expect(WindowLayout.minimumWidth == WindowLayout.sidebar.min + WindowLayout.centerMinimumWidth + WindowLayout.dividers)
+        #expect(WindowLayout.minimumWidth < 900, "900 points must still show the sidebar and the center")
+    }
+
+    @Test("The ring shrinks with its card, and the table drops its bar first")
+    func scaling() {
+        #expect(RingChart.diameter(forWidth: 800) == 240)
+        #expect(RingChart.diameter(forWidth: 376) < 200)
+        #expect(RingChart.diameter(forWidth: 100) == 150)
+        #expect(!ItemsCard.showsBar(forWidth: WindowLayout.centerMinimumWidth))
+        #expect(ItemsCard.showsBar(forWidth: 900))
+    }
+}

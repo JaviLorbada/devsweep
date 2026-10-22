@@ -6,30 +6,46 @@ import SwiftUI
 struct ItemsCard: View {
     @Environment(AppModel.self) private var model
 
+    /// The bar is the first column to go when the center column narrows.
+    static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
+
+    static let headerHeight: CGFloat = 34
+    static let rowHeight: CGFloat = 33
+
+    /// Sized from the width it is given (its height is fixed by its rows), so
+    /// its minimum never follows the width it last had.
     var body: some View {
         let rows = model.orderedRows
+        GeometryReader { proxy in
+            table(rows: rows, showsBar: Self.showsBar(forWidth: proxy.size.width))
+        }
+        .frame(height: Self.headerHeight + CGFloat(rows.count) * Self.rowHeight)
+        .card()
+    }
+
+    private func table(rows: [AppModel.Row], showsBar: Bool) -> some View {
         let largest = Double(max(rows.map(\.kilobytes).max() ?? 1, 1))
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("Items").fontWeight(.semibold)
+                Text("Items").fontWeight(.semibold).layoutPriority(1)
                 Text(note)
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Spacer()
+                    .lineLimit(1)
+                Spacer(minLength: 0)
                 Button("Mark all") { model.markAll() }
                 Button("Mark none") { model.markNone() }
             }
             .buttonStyle(.link)
             .font(.callout)
             .padding(.horizontal, 14)
-            .frame(minHeight: 34)
+            .frame(height: Self.headerHeight)
 
             ForEach(rows) { row in
                 Divider().opacity(0.6)
-                ItemRow(row: row, largest: largest)
+                ItemRow(row: row, largest: largest, showsBar: showsBar)
             }
         }
-        .card()
     }
 
     private var note: String {
@@ -42,6 +58,7 @@ struct ItemRow: View {
     @Environment(AppModel.self) private var model
     let row: AppModel.Row
     let largest: Double
+    var showsBar = true
 
     var body: some View {
         let selected = model.selection == row.item
@@ -63,6 +80,7 @@ struct ItemRow: View {
                     Text(row.result?.label ?? row.item.name)
                         .fontWeight(.medium)
                         .lineLimit(1)
+                        .layoutPriority(1)
                     Text(row.item.family.name)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -74,14 +92,17 @@ struct ItemRow: View {
             }
             .buttonStyle(.plain)
 
-            ThinBar(fraction: row.wasMeasured ? Double(row.kilobytes) / largest : 0,
-                    color: row.state == .cleaned ? Palette.cleaned : Palette.color(row.item))
-                .frame(width: 120)
+            if showsBar {
+                ThinBar(fraction: row.wasMeasured ? Double(row.kilobytes) / largest : 0,
+                        color: row.state == .cleaned ? Palette.cleaned : Palette.color(row.item))
+                    .frame(width: 120)
+            }
 
             Text(sizeText)
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(row.isLive ? .primary : .secondary)
+                .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
                 .contentTransition(.numericText())
 

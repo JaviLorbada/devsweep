@@ -8,29 +8,48 @@ import SwiftUI
 struct RingChart: View {
     @Environment(AppModel.self) private var model
 
+    /// The ring's diameter: 240 points when there is room, down to 150 in
+    /// the narrowest center column, so the legend keeps its share.
+    static func diameter(forWidth width: CGFloat) -> CGFloat {
+        min(240, max(150, (width - 20) * 0.45))
+    }
+
+    /// Sized from the width it is given, never from what it last had: a view
+    /// whose minimum follows its current width makes the window grow without end.
     var body: some View {
-        HStack(spacing: 28) {
+        GeometryReader { proxy in
+            content(width: proxy.size.width)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+    }
+
+    private func content(width: CGFloat) -> some View {
+        let diameter = Self.diameter(forWidth: width)
+        return HStack(spacing: diameter < 200 ? 18 : 28) {
             ZStack {
                 Ring(segments: outerSegments, innerRatio: 0.75, inset: 1.6) { select($0) }
-                    .frame(width: 240, height: 240)
+                    .frame(width: diameter, height: diameter)
                 Ring(segments: innerSegments, innerRatio: 0.786, inset: 1.6) { select($0) }
-                    .frame(width: 168, height: 168)
+                    .frame(width: diameter * 0.7, height: diameter * 0.7)
                 VStack(spacing: 2) {
                     Text(SizeText.of(kilobytes: model.reclaimableKilobytes))
-                        .font(.system(size: 30, weight: .bold))
+                        .font(.system(size: diameter < 200 ? 22 : 30, weight: .bold))
                         .monospacedDigit()
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                         .contentTransition(.numericText())
                     Text(model.isScanning ? "found so far" : "reclaimable")
-                        .font(.callout)
+                        .font(diameter < 200 ? .caption : .callout)
                         .foregroundStyle(.secondary)
                 }
+                .frame(width: diameter * 0.5)
                 .allowsHitTesting(false)
             }
-            .frame(width: 240, height: 240)
+            .frame(width: diameter, height: diameter)
             .animation(.easeInOut(duration: 0.4), value: model.reclaimableKilobytes)
             .animation(.easeInOut(duration: 0.25), value: model.selection)
 
-            FamilyLegend()
+            FamilyLegend(showsShare: width - diameter > 260)
                 .frame(maxWidth: .infinity)
         }
     }
@@ -134,6 +153,7 @@ struct Ring: View {
 /// A thin stacked bar of the families, and one line per family with its share and size.
 struct FamilyLegend: View {
     @Environment(AppModel.self) private var model
+    var showsShare = true
 
     var body: some View {
         let total = Double(max(model.reclaimableKilobytes, 1))
@@ -165,14 +185,17 @@ struct FamilyLegend: View {
                         HStack(spacing: 10) {
                             RoundedRectangle(cornerRadius: 3).fill(Palette.color(family)).frame(width: 10, height: 10)
                             Text(family.name).fontWeight(.medium).lineLimit(1)
-                            Spacer()
-                            Text(model.reclaimableKilobytes > 0 && measured ? "\(Int((Double(kilobytes) / total * 100).rounded()))%" : "")
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-                                .frame(width: 44, alignment: .trailing)
+                            Spacer(minLength: 4)
+                            if showsShare {
+                                Text(model.reclaimableKilobytes > 0 && measured ? "\(Int((Double(kilobytes) / total * 100).rounded()))%" : "")
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: 44, alignment: .trailing)
+                            }
                             Text(measured ? SizeText.of(kilobytes: kilobytes) : "–")
                                 .fontWeight(.semibold)
-                                .frame(width: 72, alignment: .trailing)
+                                .lineLimit(1)
+                                .frame(width: 64, alignment: .trailing)
                         }
                         .monospacedDigit()
                         .padding(.horizontal, 8)

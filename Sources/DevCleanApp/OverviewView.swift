@@ -77,18 +77,28 @@ struct OverviewFooter: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        GeometryReader { proxy in
+            bar(wide: proxy.size.width >= 640)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .frame(height: 32)
+    }
+
+    private func bar(wide: Bool) -> some View {
         @Bindable var model = model
-        HStack(spacing: 14) {
-            Toggle("Move to Trash, so anything can be put back", isOn: $model.moveToTrash)
+        return HStack(spacing: 14) {
+            Toggle(wide ? "Move to Trash, so anything can be put back" : "Move to Trash", isOn: $model.moveToTrash)
                 .toggleStyle(.checkbox)
                 .font(.callout)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
                 .help("Off deletes for good, after asking")
-            Spacer()
+            Spacer(minLength: 0)
             Text(model.markedRows.isEmpty ? "Nothing marked" : "\(model.markedRows.count) marked, \(SizeText.of(kilobytes: model.markedKilobytes))")
                 .font(.callout)
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
                 .contentTransition(.numericText())
             Button(model.markedRows.isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))") {
                 Task { await model.requestClean(model.markedRows.map(\.item)) }
@@ -97,6 +107,7 @@ struct OverviewFooter: View {
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
             .disabled(model.markedRows.isEmpty || model.isScanning || model.isCleaning)
+            .layoutPriority(1)
         }
     }
 }

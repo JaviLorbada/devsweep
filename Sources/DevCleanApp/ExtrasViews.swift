@@ -23,7 +23,8 @@ struct RuntimesContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ExtrasCard(title: "Runtimes", note: "flagged after \(model.staleDays) days unused or with no simulators") {
+            ExtrasCard(title: "Runtimes", note: "flagged after \(model.staleDays) days unused or with no simulators",
+                       rowCount: model.extras?.runtimes.count ?? 0) {
                 if let runtimes = model.extras?.runtimes, !runtimes.isEmpty {
                     let largest = Double(runtimes.map(\.kilobytes).max() ?? 1)
                     ForEach(runtimes) { runtime in
@@ -66,7 +67,8 @@ private struct XcodesCard: View {
 
     var body: some View {
         let xcodes = model.extras?.xcodes ?? []
-        ExtrasCard(title: "Xcode versions", note: xcodes.count > 1 ? "each keeps its own compilation cache in DerivedData" : "") {
+        ExtrasCard(title: "Xcode versions", note: xcodes.count > 1 ? "each keeps its own compilation cache in DerivedData" : "",
+                   rowCount: xcodes.count) {
             if xcodes.isEmpty {
                 EmptyExtrasRow(text: model.isLoadingExtras ? "Listing Xcodes…" : "No Xcode found in the applications folders.")
             } else {
@@ -86,22 +88,27 @@ private struct XcodesCard: View {
 private struct ExtrasCard<Rows: View>: View {
     let title: String
     let note: String
+    /// Rows the card holds, each 41 points with its divider.
+    let rowCount: Int
     @ViewBuilder let rows: Rows
-    @State private var width: CGFloat = 0
 
+    /// Sized from the width it is given (its height is fixed by its rows), so
+    /// its minimum never follows the width it last had.
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Text(title).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
-                Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
-                Spacer(minLength: 0)
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                HStack(spacing: 10) {
+                    Text(title).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
+                    Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .frame(height: 34)
+                rows
             }
-            .padding(.horizontal, 14)
-            .frame(minHeight: 34)
-            rows
+            .environment(\.extrasColumns, ExtrasColumns(width: proxy.size.width))
         }
-        .environment(\.extrasColumns, ExtrasColumns(width: width))
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .frame(height: 34 + CGFloat(max(rowCount, 1)) * 41)
         .card()
     }
 }

@@ -351,6 +351,17 @@ final class AppModel {
         engine?.policy.tilde(path) ?? path
     }
 
+    /// Shows results as if a scan had just measured them, without scanning.
+    /// For tests.
+    func showResults(_ results: [ItemResult]) {
+        for result in results {
+            rows[result.item]?.result = result
+            rows[result.item]?.state = .measured
+        }
+        lastScan = Date()
+        selection = orderedRows.first?.item
+    }
+
     #if DEBUG
     /// Puts the model back to the moment `measured` items were done, for snapshots.
     func rewindScan(toMeasured measured: Int) {
