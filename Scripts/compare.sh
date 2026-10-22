@@ -12,7 +12,8 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-dotfiles="${1:-${DOTFILES:-$HOME/Documents/Workspace/dotfiles}}"
+dotfiles="${1:-${DOTFILES:-}}"
+[[ -n "$dotfiles" ]] || { echo "compare.sh: give the dotfiles checkout as an argument or in DOTFILES" >&2; exit 2; }
 script="$dotfiles/bin/devclean"
 [[ -x "$script" ]] || { echo "compare.sh: $script not found" >&2; exit 1; }
 

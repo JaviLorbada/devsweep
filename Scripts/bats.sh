@@ -14,7 +14,8 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-dotfiles="${1:-${DOTFILES:-$HOME/Documents/Workspace/dotfiles}}"
+dotfiles="${1:-${DOTFILES:-}}"
+[[ -n "$dotfiles" ]] || { echo "bats.sh: give the dotfiles checkout as an argument or in DOTFILES" >&2; exit 2; }
 shift || true
 
 for file in test/devclean.bats test/test_helper.bash; do

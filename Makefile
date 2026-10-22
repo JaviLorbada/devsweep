@@ -10,7 +10,7 @@ test:
 	swift test --parallel
 
 # The bash script's bats suite against the binary, then both side by side on a
-# fake home. Needs DEVCLEAN_DOTFILES pointing at a checkout of the dotfiles.
+# fake home. Needs DOTFILES pointing at a checkout of the dotfiles repository.
 acceptance:
 	./Scripts/bats.sh
 	RUN=1 ./Scripts/compare.sh
