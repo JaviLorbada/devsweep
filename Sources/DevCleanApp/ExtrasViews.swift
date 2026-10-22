@@ -539,7 +539,7 @@ enum RuntimeWords {
 
 enum XcodeWords {
     static func note(_ xcode: InstalledXcode, installedCount: Int) -> String {
-        var text = "devclean never removes an Xcode. To remove one you no longer need, quit it and move it to the Trash."
+        var text = "\(ProductInfo.name) never removes an Xcode. To remove one you no longer need, quit it and move it to the Trash."
         if installedCount > 1 {
             text += " Each Xcode keeps its own compilation cache in DerivedData, so one you remove stops adding to it."
         }

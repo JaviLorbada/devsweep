@@ -112,7 +112,7 @@ public enum Report {
 
     /// Installed Xcodes and simulator runtimes, which devclean never deletes.
     public static func extras(_ extras: Extras, staleDays: Int, policy: PathPolicy, style: ReportStyle = .plain) -> String {
-        var text = "Also worth a look. devclean never deletes these:\n\n"
+        var text = "Also worth a look. \(ProductInfo.cliName) never deletes these:\n\n"
 
         text += "Xcode versions\n"
         for xcode in extras.xcodes {
@@ -148,7 +148,7 @@ public enum Report {
     /// The last line of a report that deleted nothing.
     public static func closing(foundAnything: Bool) -> String {
         foundAnything
-            ? "Nothing deleted. Run 'devclean --run' to delete the caches in the first list.\n"
+            ? "Nothing deleted. Run '\(ProductInfo.cliName) --run' to delete the caches in the first list.\n"
             : "Nothing to clean.\n"
     }
 

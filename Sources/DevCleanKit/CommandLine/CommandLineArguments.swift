@@ -38,7 +38,7 @@ public struct CommandLineOptions: Sendable, Equatable {
             case "-h", "--help":
                 return .help
             default:
-                return .failure("Unknown option: \(argument) (see devclean --help)")
+                return .failure("Unknown option: \(argument) (see \(ProductInfo.cliName) --help)")
             }
             index += 1
         }
@@ -57,7 +57,7 @@ public struct CommandLineOptions: Sendable, Equatable {
     }
 
     public static let usage = """
-        Usage: devclean [--run [--yes]] [--skip ITEMS] [--projects DIRS]
+        Usage: \(ProductInfo.cliName) [--run [--yes]] [--skip ITEMS] [--projects DIRS]
 
         Shows how much space developer caches take up. With --run, deletes them.
         Everything listed is rebuilt or downloaded again when needed; the cost is
@@ -94,7 +94,7 @@ public struct CommandLineOptions: Sendable, Equatable {
         projects that no longer exist.
 
         The report also lists installed Xcodes and simulator runtimes, and flags
-        runtimes unused for 90+ days. devclean never deletes those; it shows how
+        runtimes unused for 90+ days. \(ProductInfo.cliName) never deletes those; it shows how
         to remove them yourself.
 
         Never touched: Xcode Archives (their dSYMs symbolicate crash reports),

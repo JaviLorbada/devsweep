@@ -783,21 +783,21 @@ final class AppModel {
         case .simulatorRuntimes:
             guard let runtimes = extras?.runtimes else { return isLoadingExtras ? "Listing runtimes" : "" }
             let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"
-            return "\(SizeText.of(kilobytes: runtimesKilobytes ?? 0)) in \(count). devclean never removes these on its own."
+            return "\(SizeText.of(kilobytes: runtimesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these on its own."
         case .xcodeVersions:
             guard let xcodes = extras?.xcodes else { return isLoadingExtras ? "Listing Xcodes" : "" }
             let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
-            return "\(SizeText.of(kilobytes: xcodesKilobytes ?? 0)) in \(count). devclean never removes these."
+            return "\(SizeText.of(kilobytes: xcodesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
         case .androidStudios:
             guard let studios = android?.studios else { return isLoadingAndroid ? "Listing Android Studio" : "" }
             let count = studios.count == 1 ? "1 install" : "\(studios.count) installs"
-            return "\(SizeText.of(kilobytes: androidStudiosKilobytes ?? 0)) in \(count). devclean never removes these."
+            return "\(SizeText.of(kilobytes: androidStudiosKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
         case .androidSDK:
             guard android != nil else { return isLoadingAndroid ? "Listing the SDK and emulators" : "" }
-            return "\(SizeText.of(kilobytes: androidSDKKilobytes ?? 0)) in the SDK and emulators. devclean never removes these."
+            return "\(SizeText.of(kilobytes: androidSDKKilobytes ?? 0)) in the SDK and emulators. \(ProductInfo.name) never removes these."
         case .gradleCaches:
             guard android != nil else { return isLoadingAndroid ? "Listing Gradle's caches" : "" }
-            return "\(SizeText.of(kilobytes: gradleCachesKilobytes ?? 0)) in ~/.gradle. devclean never removes these."
+            return "\(SizeText.of(kilobytes: gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) never removes these."
         }
     }
 

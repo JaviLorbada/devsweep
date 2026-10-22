@@ -8,7 +8,7 @@ struct MenuBarLabel: View {
 
     var body: some View {
         Text("\(Image(systemName: "internaldrive")) \(model.diskSpace.map { SizeText.of(kilobytes: $0.availableKilobytes) } ?? "")")
-            .accessibilityLabel(model.diskSpace.map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "DevClean")
+            .accessibilityLabel(model.diskSpace.map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "\(ProductInfo.name)")
     }
 }
 
@@ -62,7 +62,7 @@ struct MenuBarPanel: View {
                 Button(model.isScanning ? "Scanning…" : "Scan Now") { model.scan() }
                     .disabled(model.isScanning || model.isCleaning || model.engine == nil)
                 Spacer()
-                Button("Open DevClean") {
+                Button("Open \(ProductInfo.name)") {
                     openWindow(id: "main")
                     NSApplication.shared.activate()
                 }
@@ -79,7 +79,7 @@ extension AppModel {
     /// "Last scanned 3 hours ago." under the totals, or what is happening.
     var menuBarStatus: String {
         if isScanning { return "Scanning, \(measuredCount) of \(scanOrder.count) items measured." }
-        if let lastScan { return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while DevClean runs." }
+        if let lastScan { return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while \(ProductInfo.name) runs." }
         if let previousScanDate { return "Last scanned \(Self.relative(previousScanDate, to: now))." }
         return "Not scanned yet."
     }

@@ -28,7 +28,7 @@ enum GrowthCheck {
         return Alert(
             title: "DerivedData grew by \(SizeText.of(kilobytes: growth))",
             body: "It holds \(SizeText.of(kilobytes: current)) now, up from \(SizeText.of(kilobytes: previous)) at the last scan. "
-                + "Open DevClean to clean it."
+                + "Open \(ProductInfo.name) to clean it."
         )
     }
 }

@@ -1,4 +1,5 @@
 import AppKit
+import DevCleanKit
 import SwiftUI
 
 @main
@@ -25,7 +26,7 @@ struct DevCleanApp: App {
     }
 
     var body: some Scene {
-        Window("DevClean", id: "main") {
+        Window(ProductInfo.name, id: "main") {
             ContentView()
                 .environment(model)
                 .containerBackground(Palette.backdrop, for: .window)

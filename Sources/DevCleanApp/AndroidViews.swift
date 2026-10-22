@@ -69,7 +69,7 @@ private struct AndroidScreen<Cards: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             cards
-            Text("devclean only lists these. Remove them from Android Studio, or in Finder.")
+            Text("\(ProductInfo.name) only lists these. Remove them from Android Studio, or in Finder.")
                 .font(.callout)
                 .foregroundStyle(.muted)
         }

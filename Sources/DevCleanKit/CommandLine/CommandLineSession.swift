@@ -40,7 +40,7 @@ public enum CommandLineSession {
 
         if options.run, !engine.config.skipsEverythingXcodeUses {
             for app in DeveloperApp.allCases where await tools.runningApps.isRunning(app) {
-                terminal.warn("Quit \(app.rawValue) first, then run devclean --run again.")
+                terminal.warn("Quit \(app.rawValue) first, then run \(ProductInfo.cliName) --run again.")
                 return 1
             }
         }
@@ -122,7 +122,7 @@ public struct StandardTerminal: Terminal {
     }
 
     public func warn(_ message: String) {
-        Self.write(STDERR_FILENO, "devclean: \(message)\n")
+        Self.write(STDERR_FILENO, "\(ProductInfo.cliName): \(message)\n")
     }
 
     public func readLine() -> String? {

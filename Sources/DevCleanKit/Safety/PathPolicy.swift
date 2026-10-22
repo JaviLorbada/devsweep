@@ -9,7 +9,7 @@ public enum PreflightError: Error, Sendable, Equatable, CustomStringConvertible 
     public var description: String {
         switch self {
         case .runningAsRoot:
-            "Don't run devclean with sudo. Everything it cleans belongs to your user."
+            "Don't run \(ProductInfo.cliName) with sudo. Everything it cleans belongs to your user."
         case .badHome:
             "HOME must be your home folder."
         case .unknownItem(let id):

@@ -6,7 +6,7 @@ import Foundation
 @main
 struct DevCleanCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
-        commandName: "devclean",
+        commandName: ProductInfo.cliName,
         abstract: "Shows how much space developer caches take up. With --run, deletes them.",
         helpNames: []
     )

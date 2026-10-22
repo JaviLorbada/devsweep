@@ -23,13 +23,13 @@ private struct GeneralSettings: View {
         @Bindable var preferences = model.preferences
         Form {
             Section {
-                Toggle("Scan when DevClean opens", isOn: $preferences.scanOnLaunch)
+                Toggle("Scan when \(ProductInfo.name) opens", isOn: $preferences.scanOnLaunch)
                 Picker("Cleaning", selection: $preferences.moveToTrash) {
                     Text("Moves to the Trash").tag(true)
                     Text("Deletes for good, after asking").tag(false)
                 }
             } footer: {
-                Text("Where cleaning starts out each time DevClean opens; the window's checkbox changes it for one session.")
+                Text("Where cleaning starts out each time \(ProductInfo.name) opens; the window's checkbox changes it for one session.")
                     .settingsFooter()
             }
             Section {
@@ -45,7 +45,7 @@ private struct GeneralSettings: View {
                     LabeledContent("Notify when DerivedData grows by", value: "\(preferences.derivedDataGrowthGigabytes) GB")
                 }
             } footer: {
-                Text("While DevClean runs it scans again once a day, and says so when DerivedData grew by more than this since the scan before.")
+                Text("While \(ProductInfo.name) runs it scans again once a day, and says so when DerivedData grew by more than this since the scan before.")
                     .settingsFooter()
             }
         }

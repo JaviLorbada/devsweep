@@ -36,7 +36,7 @@ public struct ScanStore: Sendable {
     /// home folder the scan describes, so a fake home keeps its own.
     public static func standard(home: String) -> ScanStore {
         ScanStore(url: URL(fileURLWithPath: home)
-            .appending(components: "Library", "Application Support", "DevClean", "last-scan.json"))
+            .appending(components: "Library", "Application Support", ProductInfo.applicationSupportFolder, "last-scan.json"))
     }
 
     /// The saved scan of `home`, or nil when there is none, it can't be read,
