@@ -43,6 +43,11 @@ enum Palette {
     static let cleaned = Color.primary.opacity(0.12)
     /// The reclaimable part of the disk meter.
     static let reclaimable = Color(light: 0x2A78D6, dark: 0x3987E5)
+
+    /// The window behind the panels, a step darker than them.
+    static let backdrop = Color(light: 0xE2E2E5, dark: 0x161618)
+    /// The rounded panels the sidebar, the center and the inspector sit in.
+    static let panel = Color(light: 0xF9F9FA, dark: 0x262628)
 }
 
 extension Color {

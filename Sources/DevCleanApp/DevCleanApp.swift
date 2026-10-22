@@ -17,6 +17,7 @@ struct DevCleanApp: App {
         Window("DevClean", id: "main") {
             ContentView()
                 .environment(model)
+                .containerBackground(Palette.backdrop, for: .window)
                 // A fixed ideal size: SwiftUI animates the window to the
                 // content's ideal size whenever an animated change alters it,
                 // and with flexible content that size followed every scan event.

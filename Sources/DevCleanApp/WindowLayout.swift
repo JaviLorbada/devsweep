@@ -22,13 +22,17 @@ enum WindowLayout {
     static let minimumHeight: CGFloat = 560
     /// Room for the split view's dividers.
     static let dividers: CGFloat = 10
+    /// The space around and between the rounded panels the columns sit in.
+    static let gap: CGFloat = 8
+    static let panelCornerRadius: CGFloat = 12
 
     /// The window never gets narrower than the sidebar and the center at
     /// their minimums, so nothing is ever clipped.
-    static let minimumWidth = sidebar.min + centerMinimumWidth + dividers
+    static let minimumWidth = sidebar.min + dividers + gap + centerMinimumWidth + gap
 
-    /// The detail area holds the center at its minimum and the inspector.
-    static let detailWidthWithInspector = centerMinimumWidth + inspectorWidth + 1
+    /// The detail area holds the center at its minimum and the inspector,
+    /// each in its panel.
+    static let detailWidthWithInspector = gap + centerMinimumWidth + gap + inspectorWidth + gap
     /// The inspector hides, the way Mail collapses a pane, when the detail
     /// area gets narrower than this, before the center would have to go
     /// below its minimum; it comes back from `inspectorShowFrom`, a little

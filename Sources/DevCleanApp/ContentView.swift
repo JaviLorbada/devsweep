@@ -20,7 +20,7 @@ struct ContentView: View {
             // inspector: showing or hiding that one resizes the window, and with
             // the window also resizing on its own the two fed each other until
             // AppKit gave up mid-layout.
-            HStack(spacing: 0) {
+            HStack(spacing: WindowLayout.gap) {
                 Group {
                     switch model.screen {
                     case .overview: OverviewView()
@@ -28,9 +28,9 @@ struct ContentView: View {
                     case .simulatorRuntimes: SimulatorRuntimesView()
                     }
                 }
-                .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity)
+                .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
+                .panel()
                 if wantsInspector && inspectorHasRoom {
-                    Divider()
                     Group {
                         switch model.screen {
                         case .overview: ItemInspector()
@@ -40,10 +40,12 @@ struct ContentView: View {
                     }
                     .frame(width: WindowLayout.inspectorWidth)
                     .frame(maxHeight: .infinity)
-                    .background(.background.secondary)
+                    .panel()
                     .transition(.move(edge: .trailing))
                 }
             }
+            .padding([.horizontal, .bottom], WindowLayout.gap)
+            .background(Palette.backdrop)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
                 updateInspectorRoom(forDetailWidth: width)
             }
@@ -53,6 +55,7 @@ struct ContentView: View {
             .navigationTitle(title)
             .navigationSubtitle(model.subtitle)
             .toolbar { toolbar }
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
         .alert(
             pendingTitle,
@@ -212,6 +215,17 @@ extension ScanCapsule {
     }
 }
 
+/// One of the window's columns as a rounded panel on the darker backdrop.
+struct PanelModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: WindowLayout.panelCornerRadius, style: .continuous)
+        content
+            .background(Palette.panel, in: shape)
+            .clipShape(shape)
+            .overlay(shape.strokeBorder(.separator.opacity(0.5)))
+    }
+}
+
 /// A rounded panel on the window background, for charts and lists.
 struct CardModifier: ViewModifier {
     func body(content: Content) -> some View {
@@ -223,6 +237,7 @@ struct CardModifier: ViewModifier {
 
 extension View {
     func card() -> some View { modifier(CardModifier()) }
+    func panel() -> some View { modifier(PanelModifier()) }
 }
 
 /// The small upper-case headings used in the inspector.
