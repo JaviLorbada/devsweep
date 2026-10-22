@@ -212,7 +212,7 @@ private struct RuntimeRow: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
-        .background(selected ? Color.accentColor.opacity(0.14) : .clear)
+        .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { model.selectedRuntime = runtime.id }
     }
@@ -272,7 +272,7 @@ private struct XcodeRow: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
-        .background(selected ? Color.accentColor.opacity(0.14) : .clear)
+        .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture {
             model.selectedXcode = xcode.path
