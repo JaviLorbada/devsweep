@@ -135,7 +135,7 @@ private struct ItemSettings: View {
 
 private extension Text {
     func settingsFooter() -> some View {
-        font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+        font(.callout).foregroundStyle(.muted).fixedSize(horizontal: false, vertical: true)
     }
 }
 

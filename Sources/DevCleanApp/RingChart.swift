@@ -40,17 +40,38 @@ struct RingChart: View {
                         .contentTransition(.numericText())
                     Text(model.isScanning ? (model.showsPrevious ? "updating" : "found so far") : "reclaimable")
                         .font(diameter < 200 ? .caption : .callout)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                 }
                 .frame(width: diameter * 0.5)
                 .allowsHitTesting(false)
             }
             .frame(width: diameter, height: diameter)
-            .animation(.easeInOut(duration: 0.4), value: model.reclaimableKilobytes)
-            .animation(.easeInOut(duration: 0.25), value: model.selection)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Reclaimable space")
+            .accessibilityValue(SizeText.of(kilobytes: model.reclaimableKilobytes))
+            .accessibilityChildren { segmentElements }
+            .animation(Motion.animation(.easeInOut(duration: 0.4)), value: model.reclaimableKilobytes)
+            .animation(Motion.animation(.easeInOut(duration: 0.25)), value: model.selection)
 
             FamilyLegend(showsShare: width - diameter > 260)
                 .frame(maxWidth: .infinity)
+        }
+    }
+
+    /// Each family, then its items, with their sizes, as VoiceOver reads the ring.
+    private var segmentElements: some View {
+        ForEach(Family.allCases) { family in
+            Rectangle()
+                .accessibilityLabel("\(family.name), \(model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "not measured")")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.pick(family) }
+            ForEach(family.items.filter { model.rows[$0] != nil }) { item in
+                let row = model.rows[item]
+                Rectangle()
+                    .accessibilityLabel("\(item.name), \(row.map { SizeText.of(kilobytes: $0.shownKilobytes) } ?? "")")
+                    .accessibilityAddTraits(model.selection == item ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { model.selection = item }
+            }
         }
     }
 
@@ -196,7 +217,7 @@ struct FamilyLegend: View {
                             if showsShare {
                                 Text(model.reclaimableKilobytes > 0 && measured ? "\(Int((Double(kilobytes) / total * 100).rounded()))%" : "")
                                     .font(.callout)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(.muted)
                                     .frame(width: 44, alignment: .trailing)
                             }
                             Text(measured ? SizeText.of(kilobytes: kilobytes) : "–")
@@ -213,7 +234,7 @@ struct FamilyLegend: View {
                 }
             }
         }
-        .animation(.easeInOut(duration: 0.4), value: model.reclaimableKilobytes)
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: model.reclaimableKilobytes)
     }
 }
 

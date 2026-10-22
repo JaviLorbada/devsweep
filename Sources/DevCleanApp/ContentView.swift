@@ -235,7 +235,7 @@ struct Eyebrow: View {
             .font(.caption.weight(.semibold))
             .textCase(.uppercase)
             .tracking(0.4)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.muted)
     }
 }
 

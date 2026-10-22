@@ -140,7 +140,7 @@ private struct SnapshotHeader: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(model.screen == .overview ? "Overview" : model.screen == .xcodeVersions ? "Xcode versions" : "Simulator runtimes")
                     .font(.title2.weight(.semibold))
-                Text(model.subtitle).font(.callout).foregroundStyle(.secondary)
+                Text(model.subtitle).font(.callout).foregroundStyle(.muted)
             }
             Spacer()
             if model.screen == .overview {
@@ -182,19 +182,19 @@ private struct SnapshotSidebar: View {
                     Text(family.name)
                     Spacer()
                     Text(model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
-                        .foregroundStyle(.secondary).monospacedDigit()
+                        .foregroundStyle(.muted).monospacedDigit()
                 }
             }
             heading("Also worth a look")
             row(highlighted: model.screen == .xcodeVersions) {
                 Text("Xcode versions")
                 Spacer()
-                Text(model.xcodesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.secondary).monospacedDigit()
+                Text(model.xcodesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted).monospacedDigit()
             }
             row(highlighted: model.screen == .simulatorRuntimes) {
                 Text("Simulator runtimes")
                 Spacer()
-                Text(model.runtimesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.secondary).monospacedDigit()
+                Text(model.runtimesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted).monospacedDigit()
             }
             Spacer()
             DiskMeter().padding(.horizontal, 6)
@@ -205,7 +205,7 @@ private struct SnapshotSidebar: View {
     }
 
     private func heading(_ text: String) -> some View {
-        Text(text).font(.caption.weight(.semibold)).foregroundStyle(.secondary).padding(.horizontal, 10).padding(.top, 16).padding(.bottom, 4)
+        Text(text).font(.caption.weight(.semibold)).foregroundStyle(.muted).padding(.horizontal, 10).padding(.top, 16).padding(.bottom, 4)
     }
 
     private func row<Content: View>(highlighted: Bool = false, @ViewBuilder _ content: () -> Content) -> some View {

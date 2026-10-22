@@ -44,7 +44,7 @@ struct ItemDetails: View {
                 Eyebrow(text: "What happens")
                 Text(item.whatHappens)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let breakdown = row.shownResult?.derivedData, row.wasMeasured || row.showsPrevious, !(row.shownResult?.isEmpty ?? true) {
@@ -66,12 +66,12 @@ struct ItemDetails: View {
                 .font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(heroSize(row))
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                     .contentTransition(.numericText())
                 Text(stateWord(row))
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(row.state == .cleaned ? AnyShapeStyle(.green) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(row.state == .cleaned ? AnyShapeStyle(.green) : AnyShapeStyle(.muted))
             }
         }
     }
@@ -82,7 +82,7 @@ struct ItemDetails: View {
             Eyebrow(text: "Where")
             Text(row.shownResult?.location ?? "")
                 .font(.caption.monospaced())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
             if paths.count > 1 {
@@ -90,7 +90,7 @@ struct ItemDetails: View {
                     ForEach(showsAllPaths ? paths : Array(paths.prefix(Self.pathsShown)), id: \.self) { path in
                         Text(model.tilde(path))
                             .font(.caption2.monospaced())
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.muted)
                             .lineLimit(1)
                             .truncationMode(.middle)
                             .help(model.tilde(path))
@@ -204,7 +204,7 @@ struct DerivedDataParts: View {
                             .help(part.path.map(model.tilde) ?? "")
                         if part.gone { Badge(text: "project gone", color: .orange) }
                         Spacer(minLength: 4)
-                        Text(part.status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                        Text(part.status).font(.caption).foregroundStyle(.muted).lineLimit(1)
                         Text(SizeText.of(kilobytes: part.kilobytes))
                             .fontWeight(.semibold)
                             .monospacedDigit()
@@ -217,7 +217,7 @@ struct DerivedDataParts: View {
             }
             Text("Each part comes back as you build; projects you no longer build stay gone.")
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.muted)
         }
     }
 }

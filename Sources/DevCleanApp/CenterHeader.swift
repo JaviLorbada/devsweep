@@ -42,7 +42,7 @@ struct CenterHeader: View {
                     .lineLimit(1)
                 Text(model.subtitle)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -85,14 +85,14 @@ struct ScanCapsule: View {
             if showsText {
                 Text(capsuleText)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(maxWidth: 150, alignment: .leading)
             }
             ProgressView(value: model.scanProgress)
                 .progressViewStyle(.linear)
                 .frame(width: 64)
-                .animation(.easeInOut(duration: 0.3), value: model.scanProgress)
+                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: model.scanProgress)
         }
         .padding(.horizontal, 14)
         .frame(height: ChartStylePicker.height)
@@ -148,7 +148,7 @@ struct ChartStylePicker: View {
                 }
             }
             .font(.callout.weight(.medium))
-            .foregroundStyle(selected ? .primary : .secondary)
+            .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.muted))
             .padding(.horizontal, showsText ? 14 : 10)
             .frame(maxHeight: .infinity)
             .background {

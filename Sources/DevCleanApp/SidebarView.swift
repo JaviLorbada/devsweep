@@ -73,7 +73,7 @@ private struct SidebarSize: View {
         Text(kilobytes.map { SizeText.of(kilobytes: $0) } ?? "–")
             .font(.callout)
             .monospacedDigit()
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.muted)
             .contentTransition(.numericText())
     }
 }
@@ -97,7 +97,7 @@ struct DiskMeter: View {
                     Text("\(SizeText.of(kilobytes: space.availableKilobytes)) free of \(SizeText.wholeGigabytes(kilobytes: space.totalKilobytes))")
                         .font(.caption)
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .contentTransition(.numericText())
@@ -113,13 +113,13 @@ struct DiskMeter: View {
                 .clipShape(Capsule())
             }
             .frame(height: 6)
-            .animation(.easeInOut(duration: 0.4), value: reclaimable)
+            .animation(Motion.animation(.easeInOut(duration: 0.4)), value: reclaimable)
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 2).fill(Palette.reclaimable).frame(width: 8, height: 8)
                 Text("\(SizeText.of(kilobytes: model.reclaimableKilobytes)) reclaimable")
                     .font(.caption)
                     .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .contentTransition(.numericText())
             }
         }

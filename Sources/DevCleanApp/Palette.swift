@@ -52,6 +52,31 @@ enum Palette {
     static let panel = Color(light: 0xF9F9FA, dark: 0x262628)
 }
 
+/// Text a step quieter than the primary label that still reads at 4.5:1 or
+/// more on every surface in the window, in both appearances; the system's
+/// secondary label is 3.9:1 on the light panels. On a selected row it turns
+/// light, as `.secondary` does.
+struct MutedStyle: ShapeStyle {
+    func resolve(in environment: EnvironmentValues) -> Color {
+        if environment.backgroundProminence == .increased { return Color.white.opacity(0.85) }
+        return Color(nsColor: NSColor(rgb: environment.colorScheme == .dark ? 0x9A9AA0 : 0x636368))
+    }
+}
+
+extension ShapeStyle where Self == MutedStyle {
+    static var muted: MutedStyle { MutedStyle() }
+}
+
+/// Animations that respect Reduce Motion: none when it is on.
+@MainActor
+enum Motion {
+    static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+
+    static func animation(_ animation: Animation = .default) -> Animation? {
+        reduced ? nil : animation
+    }
+}
+
 extension Color {
     /// A color that follows the appearance it is drawn in.
     init(light: UInt32, dark: UInt32) {

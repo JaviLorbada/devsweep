@@ -11,12 +11,12 @@ struct BlocksChart: View {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(SizeText.of(kilobytes: model.reclaimableKilobytes))
-                        .font(.system(size: 30, weight: .bold))
+                        .font(.largeTitle.weight(.bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
                     Text(model.isScanning ? (model.showsPrevious ? "updating" : "found so far") : "reclaimable")
                         .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                 }
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Family.allCases) { family in
@@ -28,7 +28,7 @@ struct BlocksChart: View {
                                 Text(family.name).lineLimit(1).truncationMode(.tail)
                                 Spacer(minLength: 4)
                                 Text(model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(.muted)
                                     .monospacedDigit()
                             }
                             .font(.callout)
@@ -60,7 +60,7 @@ private struct TreemapCells: View {
                     .fill(Palette.placeholder)
                     .overlay {
                         Text(model.isScanning ? "Measuring…" : "Nothing to clean")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.muted)
                     }
             }
             ForEach(cells, id: \.id) { cell in
@@ -70,7 +70,7 @@ private struct TreemapCells: View {
             }
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .animation(.easeInOut(duration: 0.4), value: cells.map(\.frame))
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: cells.map(\.frame))
     }
 }
 
@@ -94,7 +94,7 @@ private struct TreemapCell: View {
                     Text(SizeText.of(kilobytes: row.shownKilobytes))
                         .font(.caption)
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                 }
             }
             .padding(.horizontal, 9)
@@ -107,6 +107,8 @@ private struct TreemapCell: View {
         }
         .buttonStyle(.plain)
         .help("\(row.item.name), \(SizeText.of(kilobytes: row.shownKilobytes))\(row.showsPrevious ? ", last scan" : "")")
+        .accessibilityLabel("\(row.item.name), \(SizeText.of(kilobytes: row.shownKilobytes))\(row.showsPrevious ? ", last scan" : "")")
+        .accessibilityAddTraits(selected ? .isSelected : [])
         .offset(x: frame.minX, y: frame.minY)
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }

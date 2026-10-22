@@ -292,7 +292,7 @@ final class AppModel {
         case .projectFolders(let folders):
             projectFolders = folders
         case .started(let item):
-            withAnimation(.easeInOut(duration: 0.25)) { rows[item]?.state = .measuring }
+            withAnimation(Motion.animation(.easeInOut(duration: 0.25))) { rows[item]?.state = .measuring }
         case .progress(let item, let bytes):
             // Several walks report thousands of times a second; the screen
             // shows the latest count about ten times a second.
@@ -307,7 +307,7 @@ final class AppModel {
             warnings.append(message)
         case .finished(let result):
             pendingProgress[result.item] = nil
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
                 rows[result.item]?.result = result
                 rows[result.item]?.state = .measured
             }
@@ -317,17 +317,17 @@ final class AppModel {
             lastScan = Date()
             now = Date()
             previousScanDate = nil
-            withAnimation { isScanning = false }
+            withAnimation(Motion.animation()) { isScanning = false }
             applyDefaultMarks()
             if selection == nil { selection = orderedRows.first?.item }
             finishTiming()
         case .extras(let extras):
-            withAnimation { self.extras = extras }
+            withAnimation(Motion.animation()) { self.extras = extras }
             isLoadingExtras = false
             extrasDone = secondsSinceScanStarted
             finishTiming()
         case .android(let report):
-            withAnimation { android = report }
+            withAnimation(Motion.animation()) { android = report }
             isLoadingAndroid = false
             androidDone = secondsSinceScanStarted
             finishTiming()
@@ -364,7 +364,7 @@ final class AppModel {
         isLoadingAndroid = false
         guard isScanning else { return }
         // Stopped before the end: what wasn't reached stays unmeasured.
-        withAnimation {
+        withAnimation(Motion.animation()) {
             for item in scanOrder where !(rows[item]?.wasMeasured ?? false) {
                 rows[item]?.state = .notMeasured
                 rows[item]?.progressBytes = 0
@@ -659,11 +659,11 @@ final class AppModel {
                     continue
                 }
             }
-            withAnimation { rows[item]?.state = .cleaning }
+            withAnimation(Motion.animation()) { rows[item]?.state = .cleaning }
             let outcome = await engine.clean(result, mode: mode)
             problems += outcome.warnings
             let removedSomething = !outcome.removed.isEmpty || outcome.toolSucceeded == true
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
                 if removedSomething {
                     rows[item]?.state = .cleaned
                     rows[item]?.outcome = outcome
@@ -692,7 +692,7 @@ final class AppModel {
     func putBack(_ item: Item) async {
         guard let engine, let row = rows[item], row.canPutBack, let outcome = row.outcome else { return }
         let result = await engine.putBack(outcome)
-        withAnimation(.easeInOut(duration: 0.4)) {
+        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
             if !result.restored.isEmpty {
                 rows[item]?.state = .measured
                 rows[item]?.outcome = nil
@@ -799,7 +799,7 @@ final class AppModel {
         guard let engine else { return }
         isLoadingExtras = true
         let fresh = await engine.extras()
-        withAnimation { extras = fresh }
+        withAnimation(Motion.animation()) { extras = fresh }
         isLoadingExtras = false
     }
 

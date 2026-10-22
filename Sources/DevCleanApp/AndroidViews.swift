@@ -71,7 +71,7 @@ private struct AndroidScreen<Cards: View>: View {
             cards
             Text("devclean only lists these. Remove them from Android Studio, or in Finder.")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 18)
@@ -120,7 +120,7 @@ private struct AndroidRow: View {
                 } else if !entry.detail.isEmpty {
                     Text(entry.detail)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -129,7 +129,7 @@ private struct AndroidRow: View {
             if columns.showsDate {
                 Text(AndroidWords.lastUse(entry) ?? "")
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(width: 120, alignment: .leading)
             }
@@ -158,9 +158,12 @@ private struct AndroidRow: View {
         .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { model.selectedAndroidEntry = entry.path }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(entry.title), \(SizeText.of(kilobytes: entry.kilobytes))")
+        .focusable()
+        .onKeyPress(.space) { model.selectedAndroidEntry = entry.path; return .handled }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(entry.title), \(SizeText.of(kilobytes: entry.kilobytes))\(flagged ? ", looks unused" : "")")
         .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAction(named: "Select") { model.selectedAndroidEntry = entry.path }
     }
 }
 
@@ -204,11 +207,11 @@ struct AndroidDetails: View {
             Text(entry.title).font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(SizeText.of(kilobytes: entry.kilobytes))
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                 Text(reason == nil ? AndroidWords.state(entry) : "looks unused")
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(reason == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
+                    .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
             section("Where") {
                 Text(model.tilde(entry.path))
@@ -233,7 +236,7 @@ struct AndroidDetails: View {
             Eyebrow(text: title)
             content()
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

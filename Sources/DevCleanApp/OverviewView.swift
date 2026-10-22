@@ -14,7 +14,7 @@ struct OverviewView: View {
                 .padding(.vertical, 12)
                 .background(.bar)
         }
-        .animation(.easeInOut(duration: 0.4), value: model.chartStyle)
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: model.chartStyle)
     }
 }
 
@@ -64,7 +64,7 @@ struct WarningsNote: View {
             Label(warnings.count == 1 ? "1 note from the scan" : "\(warnings.count) notes from the scan",
                   systemImage: "exclamationmark.triangle")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
@@ -90,14 +90,14 @@ struct OverviewFooter: View {
             Toggle(wide ? "Move to Trash, so anything can be put back" : "Move to Trash", isOn: $model.moveToTrash)
                 .toggleStyle(.checkbox)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .lineLimit(1)
                 .help("Off deletes for good, after asking")
             Spacer(minLength: 0)
             Text(model.markedRows.isEmpty ? "Nothing marked" : "\(model.markedRows.count) marked, \(SizeText.of(kilobytes: model.markedKilobytes))")
                 .font(.callout)
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .lineLimit(1)
                 .contentTransition(.numericText())
             Button(model.markedRows.isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))") {

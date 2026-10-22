@@ -32,7 +32,7 @@ struct ItemsCard: View {
                 Text("Items").fontWeight(.semibold).layoutPriority(1)
                 Text(note)
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .lineLimit(1)
                 Spacer(minLength: 0)
                 Button("Mark all") { model.markAll() }
@@ -89,7 +89,7 @@ struct ItemRow: View {
                         .layoutPriority(1)
                     Text(row.item.family.name)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                         .lineLimit(1)
                     Spacer(minLength: 0)
                 }
@@ -106,7 +106,7 @@ struct ItemRow: View {
             Text(sizeText)
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(row.isLive ? AnyShapeStyle(.primary) : row.showsPrevious ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+                .foregroundStyle(row.isLive ? AnyShapeStyle(.primary) : row.showsPrevious ? AnyShapeStyle(.muted) : AnyShapeStyle(.muted))
                 .help(row.showsPrevious ? "From the last scan" : "")
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
@@ -120,7 +120,10 @@ struct ItemRow: View {
         .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { model.selection = row.item }
-        .animation(.easeInOut(duration: 0.4), value: row.kilobytes)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(row.result?.label ?? row.item.name), \(sizeText.isEmpty ? RowWords.state(row) : sizeText)")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: row.kilobytes)
     }
 
     private var barColor: Color {
@@ -146,6 +149,18 @@ struct ItemRow: View {
     }
 }
 
+enum RowWords {
+    /// What VoiceOver says for a row with no size yet.
+    static func state(_ row: AppModel.Row) -> String {
+        switch row.state {
+        case .waiting: "waiting"
+        case .measuring: "measuring"
+        case .notMeasured: "not measured"
+        default: ""
+        }
+    }
+}
+
 /// The trailing cell of a row: what can be done now, or what is happening.
 struct RowAction: View {
     @Environment(AppModel.self) private var model
@@ -154,11 +169,11 @@ struct RowAction: View {
     var body: some View {
         switch row.state {
         case .waiting:
-            Text("Waiting").font(.caption).foregroundStyle(.secondary)
+            Text("Waiting").font(.caption).foregroundStyle(.muted)
         case .measuring:
-            Pulsing { Text("Measuring").font(.caption).foregroundStyle(.secondary) }
+            Pulsing { Text("Measuring").font(.caption).foregroundStyle(.muted) }
         case .notMeasured:
-            Text("Not measured").font(.caption).foregroundStyle(.secondary)
+            Text("Not measured").font(.caption).foregroundStyle(.muted)
         case .cleaning:
             ProgressView().controlSize(.small)
         case .cleaned:
@@ -180,13 +195,18 @@ struct RowAction: View {
 
 /// Fades its content in and out while it is shown.
 struct Pulsing<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ViewBuilder let content: Content
 
     var body: some View {
-        PhaseAnimator([0.35, 1.0]) { opacity in
-            content.opacity(opacity)
-        } animation: { _ in
-            .easeInOut(duration: 0.6)
+        if reduceMotion {
+            content
+        } else {
+            PhaseAnimator([0.35, 1.0]) { opacity in
+                content.opacity(opacity)
+            } animation: { _ in
+                .easeInOut(duration: 0.6)
+            }
         }
     }
 }

@@ -58,7 +58,7 @@ private struct ArchivesNote: View {
     var body: some View {
         Text("Xcode Archives are never listed: their dSYMs symbolicate crash reports.")
             .font(.callout)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.muted)
     }
 }
 
@@ -99,7 +99,7 @@ struct ExtrasCard<Rows: View>: View {
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
                     Text(title).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
-                    Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                    Text(note).font(.callout).foregroundStyle(.muted).lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
@@ -138,7 +138,7 @@ struct EmptyExtrasRow: View {
         VStack(spacing: 0) {
             Divider().opacity(0.6)
             Text(text)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .frame(height: 40)
@@ -168,7 +168,7 @@ private struct RuntimeRow: View {
                 } else {
                     Text(runtime.simulatorCount == 1 ? "1 simulator" : "\(runtime.simulatorCount) simulators")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                         .lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -177,7 +177,7 @@ private struct RuntimeRow: View {
             if columns.showsDate {
                 Text(runtime.lastUsedDay.map { "used \($0)" } ?? "never used")
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(width: 120, alignment: .leading)
             }
@@ -215,6 +215,12 @@ private struct RuntimeRow: View {
         .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { model.selectedRuntime = runtime.id }
+        .focusable()
+        .onKeyPress(.space) { model.selectedRuntime = runtime.id; return .handled }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(runtime.title), \(SizeText.of(kilobytes: runtime.kilobytes))\(reason.map { ", \($0)" } ?? "")")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAction(named: "Select") { model.selectedRuntime = runtime.id }
     }
 }
 
@@ -236,7 +242,7 @@ private struct XcodeRow: View {
                 if columns != .compact {
                     Text(model.tilde(xcode.path))
                         .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
@@ -246,7 +252,7 @@ private struct XcodeRow: View {
             if columns.showsDate {
                 Text(xcode.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown")
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(width: 120, alignment: .leading)
             }
@@ -274,9 +280,13 @@ private struct XcodeRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture {
-            model.selectedXcode = xcode.path
-        }
+        .onTapGesture { model.selectedXcode = xcode.path }
+        .focusable()
+        .onKeyPress(.space) { model.selectedXcode = xcode.path; return .handled }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(xcode.title), \(SizeText.of(kilobytes: xcode.kilobytes))")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAction(named: "Select") { model.selectedXcode = xcode.path }
     }
 }
 
@@ -321,11 +331,11 @@ struct RuntimeDetails: View {
             Text(runtime.title).font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(SizeText.of(kilobytes: runtime.kilobytes))
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                 Text(reason == nil ? "in use" : "looks unused")
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(reason == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
+                    .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
             Section(reason == nil ? "Usage" : "Why it is flagged") {
                 Text(RuntimeWords.usage(runtime, staleDays: model.staleDays))
@@ -358,7 +368,7 @@ struct RuntimeDetails: View {
                 Eyebrow(text: title)
                 content
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -404,27 +414,27 @@ struct XcodeDetails: View {
             Text(xcode.title).font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(SizeText.of(kilobytes: xcode.kilobytes))
-                    .font(.system(size: 30, weight: .bold))
+                    .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                 Text(xcode.isSelected ? "selected" : "installed")
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
             }
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Where")
                 Text(model.tilde(xcode.path))
                     .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .textSelection(.enabled)
                 Text(xcode.lastOpened.map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened.")
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
             }
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "What happens")
                 Text(XcodeWords.note(xcode, installedCount: installedCount))
                     .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -447,7 +457,7 @@ struct RemoveRuntimeSheet: View {
             Text("Remove \(runtime.title)?")
                 .font(.title3.weight(.semibold))
             Text("This frees \(SizeText.of(kilobytes: runtime.kilobytes)). \(RuntimeWords.whatHappens(runtime))")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Runs")
@@ -466,7 +476,7 @@ struct RemoveRuntimeSheet: View {
             HStack {
                 if model.isRemovingRuntime {
                     ProgressView().controlSize(.small)
-                    Text("Removing…").foregroundStyle(.secondary)
+                    Text("Removing…").foregroundStyle(.muted)
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) {
