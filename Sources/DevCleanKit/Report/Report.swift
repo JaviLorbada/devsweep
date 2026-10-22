@@ -96,7 +96,8 @@ public enum Report {
         if breakdown.otherKilobytes > 0 {
             text += part("Other", breakdown.otherKilobytes)
         }
-        text += "  \(self.left("", 16)) \(style.dim)Each part comes back as you build; projects you no longer build stay gone.\(style.reset)\n"
+        text += "  \(self.left("", 16)) \(style.dim)Each part comes back as you build; projects you no longer build "
+            + "stay gone.\(style.reset)\n"
         return text
     }
 
@@ -104,7 +105,8 @@ public enum Report {
     /// - Parameter totalKilobytes: nil when nothing was found.
     public static func summary(totalKilobytes: Int64?, freeKilobytes: Int64) -> String {
         "  \(self.separator)\n"
-            + "  \(self.left("Total", 55)) \(self.right(totalKilobytes.map { self.human(kilobytes: $0) } ?? "none", 10))\n"
+            + "  \(self.left("Total", 55)) "
+            + "\(self.right(totalKilobytes.map { self.human(kilobytes: $0) } ?? "none", 10))\n"
             + "  \(self.left("Free space now", 55)) \(self.right(self.human(kilobytes: freeKilobytes), 10))\n"
             + "\n"
     }
@@ -120,7 +122,8 @@ public enum Report {
 
         text += "Xcode versions\n"
         for xcode in extras.xcodes {
-            text += "  \(self.left(xcode.title, 24)) \(self.right(self.human(kilobytes: xcode.kilobytes), 10))   \(xcode.note)\n"
+            text += "  \(self.left(xcode.title, 24)) \(self.right(self.human(kilobytes: xcode.kilobytes), 10))   "
+                + "\(xcode.note)\n"
             text += "    \(style.dim)\(policy.tilde(xcode.path))\(style.reset)\n"
         }
         if extras.xcodes.isEmpty {
@@ -134,7 +137,8 @@ public enum Report {
         text += "Simulator runtimes\n"
         var flagged = 0
         for runtime in extras.runtimes {
-            text += "  \(self.left(runtime.title, 24)) \(self.right(self.human(kilobytes: runtime.kilobytes), 10))   \(runtime.note)\n"
+            text += "  \(self.left(runtime.title, 24)) \(self.right(self.human(kilobytes: runtime.kilobytes), 10))   "
+                + "\(runtime.note)\n"
             if let reason = runtime.flagReason(staleDays: staleDays) {
                 flagged += 1
                 text += "    \(style.dim)\(reason). Remove with: \(runtime.removalCommand)\(style.reset)\n"

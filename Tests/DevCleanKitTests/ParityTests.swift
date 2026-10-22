@@ -86,7 +86,8 @@ struct ReportingTests {
     func `devclean shows which project folders it searches`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean(
-            home: home, tools: tools,
+            home: home,
+            tools: tools,
             environment: ["DEVCLEAN_PROJECT_DIRS": "\(home.home)/Workspace:\(home.home)/Missing"])
         #expect(run.status == 0)
         #expect(run.output.contains("Project folders: ~/Workspace (not found: ~/Missing)"))
@@ -498,8 +499,8 @@ struct SafetyRegressionTests {
         // swap ~/Library/Caches for a symlink to a folder outside home.
         let caches = home.path("Library/Caches"), moved = home.outside("moved-caches")
         tools.onDeleteUnavailable = {
-            try! FileManager.default.moveItem(atPath: caches, toPath: moved)
-            try! FileManager.default.createSymbolicLink(atPath: caches, withDestinationPath: moved)
+            must { try FileManager.default.moveItem(atPath: caches, toPath: moved) }
+            must { try FileManager.default.createSymbolicLink(atPath: caches, withDestinationPath: moved) }
         }
 
         let run = await devclean("--run", "--yes", home: home, tools: tools)
@@ -548,7 +549,10 @@ struct SafetyRegressionTests {
         tools.gitEnvironment["GIT_WORK_TREE"] = workTree
 
         let run = await devclean(
-            "--run", "--yes", home: home, tools: tools,
+            "--run",
+            "--yes",
+            home: home,
+            tools: tools,
             environment: ["GIT_DIR": gitDir, "GIT_WORK_TREE": workTree])
         #expect(run.status == 0)
         // Kept because git answered "tracked", not because the query failed

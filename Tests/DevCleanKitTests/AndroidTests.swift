@@ -18,7 +18,8 @@ struct AndroidTests {
         let current = "\(sdk)/system-images/android-35/google_apis/arm64-v8a"
         home.write(
             "\(current)/source.properties",
-            "AndroidVersion.ApiLevel=35\nSystemImage.TagDisplay=Google APIs,Page Size 16KB\nSystemImage.Abi=arm64-v8a\n")
+            "AndroidVersion.ApiLevel=35\nSystemImage.TagDisplay=Google APIs,Page Size "
+                + "16KB\nSystemImage.Abi=arm64-v8a\n")
         home.writeZeros("\(current)/system.img", kilobytes: 64)
         let old = "\(sdk)/system-images/android-30/default/x86_64"
         home.writeZeros("\(old)/system.img", kilobytes: 48)

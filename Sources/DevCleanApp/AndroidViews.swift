@@ -308,12 +308,14 @@ enum AndroidWords {
                 + "Running an emulator changes them, so it is flagged after \(staleDays) days."
         case .systemImage:
             let count = entry.emulatorCount ?? 0
-            let emulators = count == 0 ? "No emulator runs on it." : count == 1 ? "1 emulator runs on it." : "\(count) emulators run on it."
+            let emulators = count == 0 ? "No emulator runs on it." : count == 1 ? "1 emulator runs on "
+                + "it." : "\(count) emulators run on it."
             guard let days = entry.daysUnused() else { return emulators }
             return "\(emulators) It or an emulator on it last changed \(days == 1 ? "1 day" : "\(days) days") ago; "
                 + "it is flagged after \(staleDays) days."
         case .studio:
-            return entry.lastUsed.map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened."
+            return entry.lastUsed.map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was "
+                + "last opened."
         default:
             return nil
         }
@@ -324,11 +326,13 @@ enum AndroidWords {
         case .studio:
             "Move the app to the Trash. Its settings and caches in your Library stay until you remove them."
         case .systemImage, .platform, .buildTools, .sdkPart:
-            "In Android Studio, Settings > Languages & Frameworks > Android SDK: uncheck it and apply. Projects that need it download it again."
+            "In Android Studio, Settings > Languages & Frameworks > Android SDK: uncheck it and apply. Projects that "
+                + "need it download it again."
         case .emulator:
             "In Android Studio's Device Manager, choose Delete from the emulator's menu. Its apps and data go with it."
         case .gradleCache:
-            "Quit Android Studio and run ./gradlew --stop first. Gradle downloads or rebuilds what it needs on the next build, which is slower."
+            "Quit Android Studio and run ./gradlew --stop first. Gradle downloads or rebuilds what it needs on the "
+                + "next build, which is slower."
         }
     }
 }

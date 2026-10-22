@@ -152,6 +152,7 @@ enum JSONKeyOrder {
 /// forms without an offset are local time; date-only forms are UTC.
 enum JavaScriptDate {
     static func parse(_ text: String) -> Double? {
+        // swiftlint:disable:next line_length
         let pattern = #/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:\d{2})?)?$/#
         guard let match = text.wholeMatch(of: pattern) else { return nil }
         var parts = DateComponents()

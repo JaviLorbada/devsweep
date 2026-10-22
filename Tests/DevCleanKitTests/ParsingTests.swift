@@ -35,7 +35,8 @@ struct CommandLineOptionTests {
         #expect(throws: PreflightError.unknownItem("nope")) { try ScanConfig.parseSkip("homebrew,nope,other") }
         #expect(PreflightError.unknownItem("x").description
             ==
-            "Unknown item 'x'. Items: derived-data simulators device-installs device-support swiftpm-cache swiftpm-builds xcode-builds gradle-builds npm-cache homebrew tool-caches")
+            "Unknown item 'x'. Items: derived-data simulators device-installs device-support swiftpm-cache "
+            + "swiftpm-builds xcode-builds gradle-builds npm-cache homebrew tool-caches")
     }
 
     @Test
@@ -127,9 +128,11 @@ struct ToolOutputParsingTests {
     func `runtimes join devices, keep JSON order on ties, and sort by platform then newest version`() throws {
         let runtimes = Data("""
         {
-          "B": { "version": "27.0", "build": "b", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0", "sizeBytes": 1536, "lastUsedAt": "2026-10-20T00:00:00Z" },
+          "B": { "version": "27.0", "build": "b", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+                 "sizeBytes": 1536, "lastUsedAt": "2026-10-20T00:00:00Z" },
           "A": { "version": "27.0", "build": "a", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0" },
-          "W": { "version": "11.0", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.watchOS-11-0", "lastUsedAt": "garbage" },
+          "W": { "version": "11.0", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.watchOS-11-0",
+                 "lastUsedAt": "garbage" },
           "V": { "version": "9.10", "build": "", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-9-10" },
           "T": { "version": "26.1", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.tvOS-26-1" },
           "X": { "version": "9.2", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-9-2" }

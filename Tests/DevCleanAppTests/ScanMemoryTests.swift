@@ -23,7 +23,7 @@ func finishScan(_ model: AppModel) async {
 }
 
 func write(_ kilobytes: Int, to folder: String) {
-    try! FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+    must { try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true) }
     FileManager.default.createFile(atPath: "\(folder)/blob", contents: Data(count: kilobytes * 1024))
 }
 

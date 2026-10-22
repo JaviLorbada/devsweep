@@ -6,7 +6,8 @@ public struct DeviceSupportScanner: Scanner {
     static let systems = ["iOS", "watchOS", "tvOS", "visionOS", "macOS"]
 
     public func location(in context: ScanContext) async -> String {
-        "\(context.policy.tilde("\(context.home)/Library/Developer/Xcode"))/<OS> DeviceSupport, all but the newest per device model"
+        "\(context.policy.tilde("\(context.home)/Library/Developer/Xcode"))/<OS> DeviceSupport, all but the newest "
+            + "per device model"
     }
 
     public func collect(in context: ScanContext) async -> [String] {

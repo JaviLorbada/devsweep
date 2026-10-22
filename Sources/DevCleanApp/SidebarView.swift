@@ -95,7 +95,8 @@ struct DiskMeter: View {
                 Spacer()
                 if let space {
                     Text(
-                        "\(SizeText.of(kilobytes: space.availableKilobytes)) free of \(SizeText.wholeGigabytes(kilobytes: space.totalKilobytes))")
+                        "\(SizeText.of(kilobytes: space.availableKilobytes)) free of "
+                            + "\(SizeText.wholeGigabytes(kilobytes: space.totalKilobytes))")
                         .font(.caption)
                         .monospacedDigit()
                         .foregroundStyle(.muted)

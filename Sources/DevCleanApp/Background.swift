@@ -27,7 +27,8 @@ enum GrowthCheck {
         guard growth > Int64(thresholdGigabytes) * 1024 * 1024 else { return nil }
         return Alert(
             title: "DerivedData grew by \(SizeText.of(kilobytes: growth))",
-            body: "It holds \(SizeText.of(kilobytes: current)) now, up from \(SizeText.of(kilobytes: previous)) at the last scan. "
+            body: "It holds \(SizeText.of(kilobytes: current)) now, up from \(SizeText.of(kilobytes: previous)) at "
+                + "the last scan. "
                 + "Open \(ProductInfo.name) to clean it.")
     }
 }

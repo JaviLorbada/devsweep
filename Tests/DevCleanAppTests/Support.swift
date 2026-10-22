@@ -13,7 +13,7 @@ final class TemporaryHome: @unchecked Sendable {
         let base = FileManager.default.temporaryDirectory.path(percentEncoded: false)
         self.root = (base.hasSuffix("/") ? base : base + "/") + "devclean-app-tests-\(UUID().uuidString)"
         self.path = "\(self.root)/home"
-        try! FileManager.default.createDirectory(atPath: self.path, withIntermediateDirectories: true)
+        must { try FileManager.default.createDirectory(atPath: self.path, withIntermediateDirectories: true) }
     }
 
     deinit {
@@ -97,7 +97,9 @@ let sampleExtras = Extras(
 /// Results with every item measured, long labels and a full DerivedData breakdown.
 let sampleResults: [ItemResult] = Item.allCases.enumerated().map { index, item in
     let breakdown = item == .derivedData ? DerivedDataBreakdown(
-        compilationCacheKilobytes: 43_000_000, moduleCacheKilobytes: 4_300_000, otherKilobytes: 6_000_000,
+        compilationCacheKilobytes: 43_000_000,
+        moduleCacheKilobytes: 4_300_000,
+        otherKilobytes: 6_000_000,
         projects: (1...8).map { n in
             DerivedDataProject(
                 name: "AVeryLongFolderName-\(n)/AnEvenLongerProjectName",
@@ -162,3 +164,12 @@ let sampleAndroid = AndroidReport(
         title: "Dependency and build caches",
         detail: "caches",
         kilobytes: 4_000_000)])
+
+/// Test setup that must not fail: a failure stops the run with the error.
+func must<T>(_ body: () throws -> T, file: StaticString = #file, line: UInt = #line) -> T {
+    do {
+        return try body()
+    } catch {
+        preconditionFailure("setup failed: \(error)", file: file, line: line)
+    }
+}

@@ -202,7 +202,7 @@ struct MeasuringTests {
         process.arguments = ["-sk", path]
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
-        try! process.run()
+        must { try process.run() }
         let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
         process.waitUntilExit()
         return Int64(output.split(separator: "\t").first ?? "0") ?? 0

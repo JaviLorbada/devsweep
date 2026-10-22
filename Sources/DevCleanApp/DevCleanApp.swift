@@ -34,8 +34,12 @@ struct DevCleanApp: App {
                 // content's ideal size whenever an animated change alters it,
                 // and with flexible content that size followed every scan event.
                 .frame(
-                    minWidth: WindowLayout.minimumWidth, idealWidth: 1280, maxWidth: .infinity,
-                    minHeight: WindowLayout.minimumHeight, idealHeight: 860, maxHeight: .infinity)
+                    minWidth: WindowLayout.minimumWidth,
+                    idealWidth: 1280,
+                    maxWidth: .infinity,
+                    minHeight: WindowLayout.minimumHeight,
+                    idealHeight: 860,
+                    maxHeight: .infinity)
         }
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
@@ -71,7 +75,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
         if DebugLaunch.isRequested {
-            let state = "hidden \(NSApplication.shared.isHidden), windows \(NSApplication.shared.windows.map { "\($0.isVisible)/\($0.isMiniaturized)" })"
+            let state = "hidden \(NSApplication.shared.isHidden), windows "
+                + "\(NSApplication.shared.windows.map { "\($0.isVisible)/\($0.isMiniaturized)" })"
             FileHandle.standardError.write(Data("debug launch: launched, \(state)\n".utf8))
         }
         #endif

@@ -114,9 +114,11 @@ private struct TreemapCell: View {
         }
         .buttonStyle(.plain)
         .help(
-            "\(self.row.item.name), \(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
+            "\(self.row.item.name), "
+                + "\(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
         .accessibilityLabel(
-            "\(self.row.item.name), \(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
+            "\(self.row.item.name), "
+                + "\(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
         .accessibilityAddTraits(self.selected ? .isSelected : [])
         .offset(x: self.frame.minX, y: self.frame.minY)
         .transition(.opacity.combined(with: .scale(scale: 0.9)))

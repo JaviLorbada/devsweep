@@ -60,7 +60,8 @@ extension Engine {
                 guard policy.stillSafe(path) else {
                     outcome.skipped.append(path)
                     outcome.warnings.append(
-                        "Skipped \(policy.tilde(path)): it changed since the scan and may now lead outside your home folder.")
+                        "Skipped \(policy.tilde(path)): it changed since the scan and may now lead outside your home "
+                            + "folder.")
                     continue
                 }
                 switch mode {

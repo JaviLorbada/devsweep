@@ -23,25 +23,31 @@ extension Item {
     var whatHappens: String {
         switch self {
         case .derivedData:
-            "Build products, indexes and the shared compilation and module caches. Xcode rebuilds them on the next build, so the first build after cleaning is slower."
+            "Build products, indexes and the shared compilation and module caches. Xcode rebuilds them on the next "
+                + "build, so the first build after cleaning is slower."
         case .swiftpmCache:
             "Shared clones of every package you have resolved. The next package resolve downloads what it needs again."
         case .deviceSupport:
-            "Debug symbols for OS versions your devices no longer run. The newest version per device model stays; Xcode copies symbols again when a device connects."
+            "Debug symbols for OS versions your devices no longer run. The newest version per device model stays; "
+                + "Xcode copies symbols again when a device connects."
         case .simulators:
-            "Simulator devices whose iOS version is no longer installed, so they cannot boot. Removed through simctl, never with rm, so they can't be put back."
+            "Simulator devices whose iOS version is no longer installed, so they cannot boot. Removed through "
+                + "simctl, never with rm, so they can't be put back."
         case .swiftpmBuilds:
             "Build output of local packages. Folders tracked in git are skipped. Comes back on the next swift build."
         case .homebrew:
-            "Outdated formula versions and the download cache. Homebrew measures and removes these itself, so they can't be put back."
+            "Outdated formula versions and the download cache. Homebrew measures and removes these itself, so they "
+                + "can't be put back."
         case .xcodeBuilds:
-            "Output xcodebuild left next to a project. Only folders holding real Xcode output count; other folders called build are left alone."
+            "Output xcodebuild left next to a project. Only folders holding real Xcode output count; other folders "
+                + "called build are left alone."
         case .npmCache:
             "Downloaded packages and npx runs. npm fetches again on the next install."
         case .deviceInstalls:
             "Cached app installs for physical devices. Rebuilt on the next install to a device."
         case .toolCaches:
-            "Download caches of CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox. Each tool downloads again when needed."
+            "Download caches of CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox. Each tool downloads "
+                + "again when needed."
         case .gradleBuilds:
             "Build output next to a Gradle file. Gradle rebuilds it on the next build."
         }

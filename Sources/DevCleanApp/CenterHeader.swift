@@ -107,7 +107,8 @@ struct ScanCapsule: View {
     var capsuleText: String {
         let measuring = self.model.measuringItems
         guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
-        return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and \(measuring.count - 1) more"
+        return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and "
+            + "\(measuring.count - 1) more"
     }
 }
 

@@ -707,7 +707,8 @@ final class AppModel {
         } else {
             self.notice = Notice(
                 title: "\(apps.map(\.rawValue).joined(separator: " and ")) didn't quit",
-                message: "Nothing was cleaned. Quit them yourself, for example after saving your work, and clean again.")
+                message: "Nothing was cleaned. Quit them yourself, for example after saving your work, and clean "
+                    + "again.")
         }
     }
 
@@ -803,7 +804,8 @@ final class AppModel {
         if !result.failed.isEmpty {
             self.notice = Notice(
                 title: "Some folders couldn't be put back",
-                message: "Something now stands where they were, or the folder that held them changed. They are still in the Trash:\n"
+                message: "Something now stands where they were, or the folder that held them changed. They are still "
+                    + "in the Trash:\n"
                     + result.failed.map(self.tilde).joined(separator: "\n"))
         }
     }
@@ -860,21 +862,26 @@ final class AppModel {
         case .simulatorRuntimes:
             guard let runtimes = extras?.runtimes else { return self.isLoadingExtras ? "Listing runtimes" : "" }
             let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"
-            return "\(SizeText.of(kilobytes: self.runtimesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these on its own."
+            return "\(SizeText.of(kilobytes: self.runtimesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never "
+                + "removes these on its own."
         case .xcodeVersions:
             guard let xcodes = extras?.xcodes else { return self.isLoadingExtras ? "Listing Xcodes" : "" }
             let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
-            return "\(SizeText.of(kilobytes: self.xcodesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
+            return "\(SizeText.of(kilobytes: self.xcodesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never "
+                + "removes these."
         case .androidStudios:
             guard let studios = android?.studios else { return self.isLoadingAndroid ? "Listing Android Studio" : "" }
             let count = studios.count == 1 ? "1 install" : "\(studios.count) installs"
-            return "\(SizeText.of(kilobytes: self.androidStudiosKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
+            return "\(SizeText.of(kilobytes: self.androidStudiosKilobytes ?? 0)) in \(count). \(ProductInfo.name) "
+                + "never removes these."
         case .androidSDK:
             guard self.android != nil else { return self.isLoadingAndroid ? "Listing the SDK and emulators" : "" }
-            return "\(SizeText.of(kilobytes: self.androidSDKKilobytes ?? 0)) in the SDK and emulators. \(ProductInfo.name) never removes these."
+            return "\(SizeText.of(kilobytes: self.androidSDKKilobytes ?? 0)) in the SDK and emulators. "
+                + "\(ProductInfo.name) never removes these."
         case .gradleCaches:
             guard self.android != nil else { return self.isLoadingAndroid ? "Listing Gradle's caches" : "" }
-            return "\(SizeText.of(kilobytes: self.gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) never removes these."
+            return "\(SizeText.of(kilobytes: self.gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) "
+                + "never removes these."
         }
     }
 

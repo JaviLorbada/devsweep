@@ -38,6 +38,34 @@ enum DebugLaunch {
     static func run(_ model: AppModel) async {
         let environment = ProcessInfo.processInfo.environment
         guard self.isRequested else { return }
+        await self.setUpWindow(environment)
+        guard await self.waitForScan(model) else { return }
+        await self.applyScreen(model, environment)
+        await self.resizeInTurn(environment)
+        if let tab = environment["DEVCLEAN_SETTINGS"], !tab.isEmpty {
+            await self.captureSettings(tab: tab, to: environment["DEVCLEAN_CAPTURE"])
+        }
+        if !(environment["DEVCLEAN_MENU"] ?? "").isEmpty {
+            await self.captureMenuBarPanel(to: environment["DEVCLEAN_CAPTURE"])
+        }
+        if let output = environment["DEVCLEAN_CAPTURE"], let window = mainWindow {
+            // Drawn as the key window, so controls don't show their inactive look.
+            NSApplication.shared.activate()
+            window.makeKeyAndOrderFront(nil)
+            try? await Task.sleep(for: .milliseconds(500))
+            self.trace("capturing; key window \(window.isKeyWindow), scan button enabled \(model.engine != nil)")
+            self.trace(self.capture(window, to: output) ? "captured \(output)" : "capture failed")
+            if environment["DEVCLEAN_PROBE"] == nil { exit(0) }
+        }
+        self.trace("probing")
+        guard let output = environment["DEVCLEAN_PROBE"] else { return }
+        try? self.probe(model).write(toFile: output, atomically: true, encoding: .utf8)
+        exit(0)
+    }
+
+    /// The appearance, then the width once the launch animation has settled.
+    @MainActor
+    private static func setUpWindow(_ environment: [String: String]) async {
         switch environment["DEVCLEAN_APPEARANCE"] {
         case "light": NSApplication.shared.appearance = NSAppearance(named: .aqua)
         case "dark": NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
@@ -57,11 +85,20 @@ enum DebugLaunch {
             window.setFrame(frame, display: true)
             await self.waitForSteadyWidth()
         }
+    }
+
+    /// Waits for the whole scan, tracing any change of width meanwhile.
+    /// False when cancelled.
+    @MainActor
+    private static func waitForScan(_ model: AppModel) async -> Bool {
         self.trace("window \(Int(self.mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
         var lastWidth = self.mainWindow?.frame.width ?? 0
         let start = Date()
         while model.isScanning || model.isLoadingExtras || model.isScanTaskRunning {
-            if Task.isCancelled { self.trace("cancelled while waiting"); return }
+            if Task.isCancelled {
+                self.trace("cancelled while waiting")
+                return false
+            }
             try? await Task.sleep(for: .milliseconds(100))
             let width = self.mainWindow?.frame.width ?? 0
             if width != lastWidth {
@@ -74,6 +111,12 @@ enum DebugLaunch {
                 lastWidth = width
             }
         }
+        return true
+    }
+
+    /// The screen, the selection and a press, as clicks would make them.
+    @MainActor
+    private static func applyScreen(_ model: AppModel, _ environment: [String: String]) async {
         self.trace("scan done; switching to \(environment["DEVCLEAN_SCREEN"] ?? "-")")
         switch environment["DEVCLEAN_SCREEN"] {
         case "xcodes": model.screen = .xcodeVersions
@@ -91,7 +134,11 @@ enum DebugLaunch {
             self.trace(self.press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
         }
         try? await Task.sleep(for: .seconds(3))
-        // Then any further widths, one after another, as a person dragging would.
+    }
+
+    /// Any further widths, one after another, as a person dragging would.
+    @MainActor
+    private static func resizeInTurn(_ environment: [String: String]) async {
         for width in (environment["DEVCLEAN_THEN_WIDTHS"] ?? "").split(separator: ",").compactMap({ Double($0) }) {
             guard let window = mainWindow else { break }
             var frame = window.frame
@@ -101,57 +148,54 @@ enum DebugLaunch {
             try? await Task.sleep(for: .seconds(1))
             self.trace("then \(Int(window.frame.width)) wide")
         }
-        if let tab = environment["DEVCLEAN_SETTINGS"], !tab.isEmpty, let main = mainWindow {
-            // The app menu's Settings… item, as ⌘, would choose it.
-            if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
-               let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," })
-            {
-                menu.performActionForItem(at: index)
+    }
+
+    /// Opens Settings on a tab, captures it and quits.
+    @MainActor
+    private static func captureSettings(tab: String, to output: String?) async -> Never {
+        let main = self.mainWindow
+        // The app menu's Settings… item, as ⌘, would choose it.
+        if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
+           let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," })
+        {
+            menu.performActionForItem(at: index)
+        }
+        try? await Task.sleep(for: .seconds(1))
+        // The Settings window is the one with a toolbar; the status item has a window too.
+        if let settings = NSApplication.shared.windows
+            .first(where: { $0.isVisible && $0 !== main && $0.toolbar != nil })
+        {
+            // Settings tabs are toolbar items.
+            if let item = settings.toolbar?.items.first(where: { $0.label == tab }), let action = item.action {
+                settings.toolbar?.selectedItemIdentifier = item.itemIdentifier
+                NSApplication.shared.sendAction(action, to: item.target, from: item)
+                self.trace("showed \(tab)")
+            } else {
+                self.trace("no tab \(tab)")
             }
             try? await Task.sleep(for: .seconds(1))
-            if let settings = NSApplication.shared.windows.first(where: { $0.isVisible && $0 !== main }) {
-                // Settings tabs are toolbar items.
-                if let item = settings.toolbar?.items.first(where: { $0.label == tab }), let action = item.action {
-                    settings.toolbar?.selectedItemIdentifier = item.itemIdentifier
-                    NSApplication.shared.sendAction(action, to: item.target, from: item)
-                    self.trace("showed \(tab)")
-                } else {
-                    self.trace("no tab \(tab)")
-                }
-                try? await Task.sleep(for: .seconds(1))
-                if let output = environment["DEVCLEAN_CAPTURE"] {
-                    self.trace(self.capture(settings, to: output) ? "captured \(output)" : "capture failed")
-                }
+            if let output {
+                self.trace(self.capture(settings, to: output) ? "captured \(output)" : "capture failed")
             }
-            exit(0)
         }
-        if !(environment["DEVCLEAN_MENU"] ?? "").isEmpty {
-            let before = Set(NSApplication.shared.windows.map(ObjectIdentifier.init))
-            let button = NSApplication.shared.windows
-                .filter { String(describing: type(of: $0)).contains("StatusBar") }
-                .compactMap { self.findStatusButton(in: $0.contentView) }
-                .first
-            button?.performClick(nil)
-            try? await Task.sleep(for: .seconds(1))
-            let panel = NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
-            self.trace(button == nil ? "no status item" : panel == nil ? "no panel" : "opened the menu bar panel")
-            if let panel, let output = environment["DEVCLEAN_CAPTURE"] {
-                self.trace(self.capture(panel, to: output) ? "captured \(output)" : "capture failed")
-            }
-            exit(0)
+        exit(0)
+    }
+
+    /// Opens the menu bar item's panel, captures it and quits.
+    @MainActor
+    private static func captureMenuBarPanel(to output: String?) async -> Never {
+        let before = Set(NSApplication.shared.windows.map(ObjectIdentifier.init))
+        let button = NSApplication.shared.windows
+            .filter { String(describing: type(of: $0)).contains("StatusBar") }
+            .compactMap { self.findStatusButton(in: $0.contentView) }
+            .first
+        button?.performClick(nil)
+        try? await Task.sleep(for: .seconds(1))
+        let panel = NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
+        self.trace(button == nil ? "no status item" : panel == nil ? "no panel" : "opened the menu bar panel")
+        if let panel, let output {
+            self.trace(self.capture(panel, to: output) ? "captured \(output)" : "capture failed")
         }
-        if let output = environment["DEVCLEAN_CAPTURE"], let window = mainWindow {
-            // Drawn as the key window, so controls don't show their inactive look.
-            NSApplication.shared.activate()
-            window.makeKeyAndOrderFront(nil)
-            try? await Task.sleep(for: .milliseconds(500))
-            self.trace("capturing; key window \(window.isKeyWindow), scan button enabled \(model.engine != nil)")
-            self.trace(self.capture(window, to: output) ? "captured \(output)" : "capture failed")
-            if environment["DEVCLEAN_PROBE"] == nil { exit(0) }
-        }
-        self.trace("probing")
-        guard let output = environment["DEVCLEAN_PROBE"] else { return }
-        try? self.probe(model).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
     }
 
@@ -173,9 +217,9 @@ enum DebugLaunch {
             visited += 1
             guard let element = element as? NSAccessibilityElementProtocol & NSObjectProtocol else { continue }
             let object = element as AnyObject
-            let title = (object.accessibilityLabel?() ?? nil) ?? (object.accessibilityTitle?() ?? nil)
+            let title = object.accessibilityLabel?() ?? object.accessibilityTitle?()
             if title == label, object.accessibilityPerformPress?() == true { return true }
-            if let children = object.accessibilityChildren?() ?? nil { queue.append(contentsOf: children) }
+            if let children = object.accessibilityChildren?() { queue.append(contentsOf: children) }
         }
         return false
     }
@@ -189,8 +233,9 @@ enum DebugLaunch {
         guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage")
         else { return false }
         let createImage = unsafeBitCast(symbol, to: CreateImage.self)
+        guard let windowNumber = UInt32(exactly: window.windowNumber) else { return false }
         // Including just this window; ignoring its shadow, at full resolution.
-        guard let image = createImage(.null, 1 << 3, UInt32(window.windowNumber), 1 << 0 | 1 << 3)?.takeRetainedValue(),
+        guard let image = createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue(),
               let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
         else { return false }
         return (try? png.write(to: URL(fileURLWithPath: path))) != nil
@@ -229,7 +274,8 @@ enum DebugLaunch {
         let size = content.bounds.size
         lines
             .append(
-                "window \(Int(window.frame.width))x\(Int(window.frame.height)) min \(Int(window.minSize.width))x\(Int(window.minSize.height))")
+                "window \(Int(window.frame.width))x\(Int(window.frame.height)) min "
+                    + "\(Int(window.minSize.width))x\(Int(window.minSize.height))")
         lines.append("screen \(model.screen), inspector \(model.debugInspectorShown ? "shown" : "hidden")")
         if let timing = model.scanTiming {
             lines.append(String(

@@ -479,7 +479,8 @@ struct RemoveRuntimeSheet: View {
             Text("Remove \(self.runtime.title)?")
                 .font(.title3.weight(.semibold))
             Text(
-                "This frees \(SizeText.of(kilobytes: self.runtime.kilobytes)). \(RuntimeWords.whatHappens(self.runtime))")
+                "This frees \(SizeText.of(kilobytes: self.runtime.kilobytes)). "
+                    + "\(RuntimeWords.whatHappens(self.runtime))")
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 5) {
@@ -550,7 +551,8 @@ enum RuntimeWords {
 
     static func whatHappens(_ runtime: SimulatorRuntime) -> String {
         var text = "The runtime is removed through Xcode's own tool, after you confirm. "
-            + "Any simulator for \(runtime.platform) \(runtime.version) you create later downloads it again from Xcode, Settings, Components."
+            + "Any simulator for \(runtime.platform) \(runtime.version) you create later downloads it again from "
+            + "Xcode, Settings, Components."
         if runtime.simulatorCount > 0 {
             text += runtime.simulatorCount == 1
                 ? " The simulator that uses it stops working until then."
@@ -562,7 +564,8 @@ enum RuntimeWords {
 
 enum XcodeWords {
     static func note(_ xcode: InstalledXcode, installedCount: Int) -> String {
-        var text = "\(ProductInfo.name) never removes an Xcode. To remove one you no longer need, quit it and move it to the Trash."
+        var text = "\(ProductInfo.name) never removes an Xcode. To remove one you no longer need, quit it and move "
+            + "it to the Trash."
         if installedCount > 1 {
             text += " Each Xcode keeps its own compilation cache in DerivedData, so one you remove stops adding to it."
         }

@@ -30,7 +30,8 @@ private struct GeneralSettings: View {
                 }
             } footer: {
                 Text(
-                    "Where cleaning starts out each time \(ProductInfo.name) opens; the window's checkbox changes it for one session.")
+                    "Where cleaning starts out each time \(ProductInfo.name) opens; the window's checkbox changes it "
+                        + "for one session.")
                     .settingsFooter()
             }
             Section {
@@ -41,7 +42,8 @@ private struct GeneralSettings: View {
                 }
             } footer: {
                 Text(
-                    "Simulator runtimes, system images and emulators untouched this long are flagged. They are only ever listed.")
+                    "Simulator runtimes, system images and emulators untouched this long are flagged. They are only "
+                        + "ever listed.")
                     .settingsFooter()
             }
             Section {
@@ -52,7 +54,8 @@ private struct GeneralSettings: View {
                 }
             } footer: {
                 Text(
-                    "While \(ProductInfo.name) runs it scans again once a day, and says so when DerivedData grew by more than this since the scan before.")
+                    "While \(ProductInfo.name) runs it scans again once a day, and says so when DerivedData grew by "
+                        + "more than this since the scan before.")
                     .settingsFooter()
             }
         }
@@ -132,8 +135,11 @@ private struct ItemSettings: View {
                         Toggle(item.name, isOn: Binding(
                             get: { !preferences.skippedItems.contains(item) },
                             set: { scanned in
-                                if scanned { preferences.skippedItems.remove(item) }
-                                else { preferences.skippedItems.insert(item) }
+                                if scanned {
+                                    preferences.skippedItems.remove(item)
+                                } else {
+                                    preferences.skippedItems.insert(item)
+                                }
                             }))
                             .help(item.whatHappens)
                     }
@@ -141,7 +147,8 @@ private struct ItemSettings: View {
             }
             Section {} footer: {
                 Text(
-                    "Items turned off are left out of the window's scans, from the next one. The command line has its own --skip.")
+                    "Items turned off are left out of the window's scans, from the next one. The command line has "
+                        + "its own --skip.")
                     .settingsFooter()
             }
         }

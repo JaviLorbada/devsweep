@@ -53,9 +53,12 @@ final class FakeTools: @unchecked Sendable {
                 live: LiveGitClient(runner: LiveProcessRunner(environment: self.gitEnvironment)))
         return Tools(
             simctl: FakeSimctl(
-                log: self.log, installed: self.simctlInstalled, listing: self.unavailableListing,
+                log: self.log,
+                installed: self.simctlInstalled,
+                listing: self.unavailableListing,
                 runtimes: self.runtimesJSON,
-                devices: self.devicesJSON, deleteSucceeds: self.simctlDeleteSucceeds,
+                devices: self.devicesJSON,
+                deleteSucceeds: self.simctlDeleteSucceeds,
                 onDelete: self.onDeleteUnavailable),
             brew: FakeBrew(
                 log: self.log,
@@ -322,5 +325,5 @@ extension String {
 /// A file from the test target's Fixtures folder, a package resource.
 func fixture(_ name: String) -> String {
     let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures")!
-    return try! String(contentsOf: url, encoding: .utf8)
+    return must { try String(contentsOf: url, encoding: .utf8) }
 }

@@ -52,7 +52,8 @@ struct ItemsCard: View {
 
     private var note: String {
         let count = self.model.scanOrder.count
-        return self.model.isScanning ? "\(self.model.measuredCount) of \(count) measured, largest first" : "\(count), largest first"
+        return self.model.isScanning ? "\(self.model.measuredCount) of \(count) measured, largest "
+            + "first" : "\(count), largest first"
     }
 }
 
@@ -124,7 +125,8 @@ struct ItemRow: View {
         .onTapGesture { self.model.selection = self.row.item }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
-            "\(self.row.result?.label ?? self.row.item.name), \(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
+            "\(self.row.result?.label ?? self.row.item.name), "
+                + "\(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
     }

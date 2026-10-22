@@ -26,7 +26,8 @@ enum CleanPrompt {
             let byTool = pending.items.filter(\.cleanedByItsTool)
             let rest = pending.items.filter { !$0.cleanedByItsTool }
             var message = "\(names(byTool.map(\.shortName))) \(byTool.count == 1 ? "is" : "are") removed by "
-                + "\(self.names(byTool.map { $0 == .simulators ? "simctl" : "brew" })), so \(byTool.count == 1 ? "it" : "they") can't be put back."
+                + "\(self.names(byTool.map { $0 == .simulators ? "simctl" : "brew" })), so "
+                + "\(byTool.count == 1 ? "it" : "they") can't be put back."
             if !rest.isEmpty { message += " The rest moves to the Trash." }
             return message
         }

@@ -63,8 +63,7 @@ struct RingChart: View {
     private var segmentElements: some View {
         ForEach(Family.allCases) { family in
             Rectangle()
-                .accessibilityLabel(
-                    "\(family.name), \(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "not measured")")
+                .accessibilityLabel(self.familyLabel(family))
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { self.model.pick(family) }
             ForEach(family.items.filter { self.model.rows[$0] != nil }) { item in
@@ -75,6 +74,12 @@ struct RingChart: View {
                     .accessibilityAction { self.model.selection = item }
             }
         }
+    }
+
+    /// "Xcode, 143 MB", or "not measured" before the scan reaches it.
+    private func familyLabel(_ family: Family) -> String {
+        let size = self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) }
+        return "\(family.name), \(size ?? "not measured")"
     }
 
     private func select(_ id: String) {

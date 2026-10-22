@@ -21,7 +21,7 @@ final class FakeHome: @unchecked Sendable {
         self.root = (base.hasSuffix("/") ? base : base + "/") + "devclean-tests-\(UUID().uuidString)"
         self.home = "\(self.root)/home"
         self.projects = "\(self.home)/Workspace"
-        try! FileManager.default.createDirectory(atPath: self.projects, withIntermediateDirectories: true)
+        must { try FileManager.default.createDirectory(atPath: self.projects, withIntermediateDirectories: true) }
     }
 
     deinit {
@@ -44,7 +44,7 @@ final class FakeHome: @unchecked Sendable {
     }
 
     func mkdir(_ path: String) {
-        try! FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true)
+        must { try FileManager.default.createDirectory(atPath: path, withIntermediateDirectories: true) }
     }
 
     func touch(_ path: String) {
@@ -65,7 +65,7 @@ final class FakeHome: @unchecked Sendable {
 
     func symlink(_ target: String, at path: String) {
         self.mkdir(FileSystem.dirname(path))
-        try! FileManager.default.createSymbolicLink(atPath: path, withDestinationPath: target)
+        must { try FileManager.default.createSymbolicLink(atPath: path, withDestinationPath: target) }
     }
 
     /// Sets a folder's modification time, like `touch -t`.
@@ -124,7 +124,7 @@ final class FakeHome: @unchecked Sendable {
         process.environment = ProcessInfo.processInfo.environment.merging(environment) { $1 }
         process.standardOutput = FileHandle.nullDevice
         process.standardError = FileHandle.nullDevice
-        try! process.run()
+        must { try process.run() }
         process.waitUntilExit()
     }
 
@@ -137,5 +137,14 @@ final class FakeHome: @unchecked Sendable {
             "DEVCLEAN_APPLICATIONS_DIRS": self.path("Applications"),
             "PATH": ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin",
         ]
+    }
+}
+
+/// Test setup that must not fail: a failure stops the run with the error.
+func must<T>(_ body: () throws -> T, file: StaticString = #file, line: UInt = #line) -> T {
+    do {
+        return try body()
+    } catch {
+        preconditionFailure("setup failed: \(error)", file: file, line: line)
     }
 }

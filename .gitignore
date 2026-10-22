@@ -5,3 +5,4 @@ xcuserdata
 *.xcuserstate
 build/
 .swiftpm/
+dist/

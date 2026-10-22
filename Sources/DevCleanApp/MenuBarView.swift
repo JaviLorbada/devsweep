@@ -8,7 +8,8 @@ struct MenuBarLabel: View {
 
     var body: some View {
         Text(
-            "\(Image(systemName: "internaldrive")) \(self.model.diskSpace.map { SizeText.of(kilobytes: $0.availableKilobytes) } ?? "")")
+            "\(Image(systemName: "internaldrive")) "
+                + "\(self.model.diskSpace.map { SizeText.of(kilobytes: $0.availableKilobytes) } ?? "")")
             .accessibilityLabel(self.model.diskSpace
                 .map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "\(ProductInfo.name)")
     }
@@ -83,7 +84,8 @@ extension AppModel {
     var menuBarStatus: String {
         if isScanning { return "Scanning, \(measuredCount) of \(scanOrder.count) items measured." }
         if let lastScan {
-            return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while \(ProductInfo.name) runs."
+            return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while "
+                + "\(ProductInfo.name) runs."
         }
         if let previousScanDate { return "Last scanned \(Self.relative(previousScanDate, to: now))." }
         return "Not scanned yet."

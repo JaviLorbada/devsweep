@@ -141,10 +141,12 @@ struct ReportFormatTests {
             "Project folders: none found.\nUse --projects or DEVCLEAN_PROJECT_DIRS to say where your code lives.\n\n"),
         (
             ProjectFolders(missing: ["~/Nope"]),
-            "Project folders: none found (looked for ~/Nope).\nUse --projects or DEVCLEAN_PROJECT_DIRS to say where your code lives.\n\n"),
+            "Project folders: none found (looked for ~/Nope).\nUse --projects or DEVCLEAN_PROJECT_DIRS to say where "
+                + "your code lives.\n\n"),
         (
             ProjectFolders(outside: ["~/Code"]),
-            "Project folders: none found (outside your home folder, skipped: ~/Code).\nUse --projects or DEVCLEAN_PROJECT_DIRS to say where your code lives.\n\n"),
+            "Project folders: none found (outside your home folder, skipped: ~/Code).\nUse --projects or "
+                + "DEVCLEAN_PROJECT_DIRS to say where your code lives.\n\n"),
     ])
     func `project folder lines`(folders: ProjectFolders, expected: String) {
         #expect(Report.projectFolders(folders) == expected)
@@ -230,6 +232,7 @@ struct ReportFormatTests {
         let home = FakeHome()
         let text = try Report.extras(Extras(), staleDays: 90, policy: PathPolicy(home: home.home))
         #expect(text ==
-            "Also worth a look. devclean never deletes these:\n\nXcode versions\n  None found.\n\nSimulator runtimes\n  None found.\n\n")
+            "Also worth a look. devclean never deletes these:\n\nXcode versions\n  None found.\n\nSimulator "
+            + "runtimes\n  None found.\n\n")
     }
 }

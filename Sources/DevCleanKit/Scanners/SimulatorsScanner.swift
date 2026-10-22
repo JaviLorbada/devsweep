@@ -4,7 +4,8 @@ public struct SimulatorsScanner: Scanner {
     public let item = Item.simulators
 
     public func location(in context: ScanContext) async -> String {
-        "\(context.policy.tilde("\(context.home)/Library/Developer/CoreSimulator/Devices")), runtime no longer installed"
+        "\(context.policy.tilde("\(context.home)/Library/Developer/CoreSimulator/Devices")), runtime no longer "
+            + "installed"
     }
 
     public func collect(in context: ScanContext) async -> [String] {
