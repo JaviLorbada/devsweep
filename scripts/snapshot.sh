@@ -11,6 +11,10 @@
 #            any with -light (default: overview)
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
+#
+#        WIDTH=1100 scripts/snapshot.sh [output folder] [screen...]
+#   opens the real window that wide instead and captures it as the screen
+#   shows it, glass and all, for overview, runtimes and xcodes.
 
 set -euo pipefail
 
@@ -131,11 +135,18 @@ for screen in "${screens[@]}"; do
   make_home "$home"
   select=""
   [[ "$screen" == runtimes || "$screen" == remove-runtime ]] && select="4C1F2B8E-0D3A-4F6B-9C21-7E5A1B2C3DA2"
-  HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_TRASH_FOLDER="$work/trash-$name" \
-    DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
-    DEVCLEAN_SNAPSHOT="$out/$name.png" DEVCLEAN_SNAPSHOT_SCREEN="$screen" \
-    DEVCLEAN_SNAPSHOT_APPEARANCE="$appearance" DEVCLEAN_SNAPSHOT_SELECT="$select" \
-    "$app/Contents/MacOS/DevClean" >/dev/null 2>&1 &
+  if [[ -n "${WIDTH:-}" ]]; then
+    name="$name-$WIDTH"
+    HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
+      DEVCLEAN_CAPTURE="$out/$name.png" DEVCLEAN_SCREEN="$screen" DEVCLEAN_APPEARANCE="$appearance" \
+      "$app/Contents/MacOS/DevClean" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>&1 &
+  else
+    HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_TRASH_FOLDER="$work/trash-$name" \
+      DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
+      DEVCLEAN_SNAPSHOT="$out/$name.png" DEVCLEAN_SNAPSHOT_SCREEN="$screen" \
+      DEVCLEAN_SNAPSHOT_APPEARANCE="$appearance" DEVCLEAN_SNAPSHOT_SELECT="$select" \
+      "$app/Contents/MacOS/DevClean" >/dev/null 2>&1 &
+  fi
   pid=$!
   for _ in $(seq 1 120); do
     kill -0 "$pid" 2>/dev/null || break

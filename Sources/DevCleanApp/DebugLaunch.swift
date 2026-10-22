@@ -15,16 +15,25 @@ import SwiftUI
 /// - `DEVCLEAN_PROBE=/path/report.txt` then waits a few seconds, writes
 ///   whether the content fits the window (split views, columns, scroll views,
 ///   read from the view hierarchy, no screen recording needed), and quits.
+/// - `DEVCLEAN_CAPTURE=/path/window.png` then draws the window, as the screen
+///   shows it, into that file and quits. An app may capture its own windows
+///   without screen recording permission.
+/// - `DEVCLEAN_APPEARANCE=light|dark` picks the appearance.
 enum DebugLaunch {
     static var isRequested: Bool {
         let environment = ProcessInfo.processInfo.environment
-        return ["DEVCLEAN_WINDOW_WIDTH", "DEVCLEAN_SCREEN", "DEVCLEAN_PROBE"].contains { environment[$0] != nil }
+        return ["DEVCLEAN_WINDOW_WIDTH", "DEVCLEAN_SCREEN", "DEVCLEAN_PROBE", "DEVCLEAN_CAPTURE"].contains { environment[$0] != nil }
     }
 
     @MainActor
     static func run(_ model: AppModel) async {
         let environment = ProcessInfo.processInfo.environment
         guard isRequested else { return }
+        switch environment["DEVCLEAN_APPEARANCE"] {
+        case "light": NSApplication.shared.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        default: break
+        }
         // SwiftUI animates the window to its restored size at launch; resize
         // only once that has settled, then check the new width holds.
         await waitForSteadyWidth()
@@ -69,10 +78,28 @@ enum DebugLaunch {
             try? await Task.sleep(for: .seconds(1))
             trace("then \(Int(window.frame.width)) wide")
         }
+        if let output = environment["DEVCLEAN_CAPTURE"], let window = mainWindow {
+            trace(capture(window, to: output) ? "captured \(output)" : "capture failed")
+            if environment["DEVCLEAN_PROBE"] == nil { exit(0) }
+        }
         trace("probing")
         guard let output = environment["DEVCLEAN_PROBE"] else { return }
         try? probe(model).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
+    }
+
+    /// Draws the window as the window server composites it, glass included,
+    /// which drawing the views into a bitmap leaves out. The function is
+    /// obsolete in the SDK but still in CoreGraphics, so it is looked up.
+    @MainActor
+    private static func capture(_ window: NSWindow, to path: String) -> Bool {
+        typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage") else { return false }
+        let createImage = unsafeBitCast(symbol, to: CreateImage.self)
+        // Including just this window; ignoring its shadow, at full resolution.
+        guard let image = createImage(.null, 1 << 3, UInt32(window.windowNumber), 1 << 0 | 1 << 3)?.takeRetainedValue(),
+              let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return false }
+        return (try? png.write(to: URL(fileURLWithPath: path))) != nil
     }
 
     /// Waits until the window's width has not changed for half a second.
