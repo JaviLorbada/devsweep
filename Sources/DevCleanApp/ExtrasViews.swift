@@ -80,25 +80,48 @@ private struct XcodesCard: View {
     }
 }
 
-/// A card with a title line and rows.
+/// A card with a title line and rows. It tells its rows which columns fit,
+/// so a narrow window drops columns instead of making the card wider than
+/// its column.
 private struct ExtrasCard<Rows: View>: View {
     let title: String
     let note: String
     @ViewBuilder let rows: Rows
+    @State private var width: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text(title).fontWeight(.semibold)
-                Text(note).font(.callout).foregroundStyle(.secondary)
-                Spacer()
+                Text(title).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
+                Text(note).font(.callout).foregroundStyle(.secondary).lineLimit(1)
+                Spacer(minLength: 0)
             }
             .padding(.horizontal, 14)
             .frame(minHeight: 34)
             rows
         }
+        .environment(\.extrasColumns, ExtrasColumns(width: width))
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .card()
     }
+}
+
+/// Which columns an extras row shows. The bar goes first, then the date.
+enum ExtrasColumns {
+    case full
+    case withoutBar
+    case compact
+
+    init(width: CGFloat) {
+        self = width >= 700 ? .full : width >= 560 ? .withoutBar : .compact
+    }
+
+    var showsBar: Bool { self == .full }
+    var showsDate: Bool { self != .compact }
+}
+
+extension EnvironmentValues {
+    @Entry var extrasColumns = ExtrasColumns.compact
 }
 
 private struct EmptyExtrasRow: View {
@@ -174,6 +197,7 @@ private struct RuntimeRow: View {
 
 private struct XcodeRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.extrasColumns) private var columns
     let xcode: InstalledXcode
     let largest: Double
 
@@ -181,32 +205,47 @@ private struct XcodeRow: View {
         let selected = model.screen == .xcodeVersions && model.currentXcode?.path == xcode.path
         HStack(spacing: 12) {
             Dot(color: .secondary.opacity(0.6))
+            // Everything here can shrink: the path gives way first, then the
+            // title truncates. Nothing in a row may insist on its full width.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(xcode.title).fontWeight(.medium).lineLimit(1).fixedSize()
-                if xcode.isSelected { Badge(text: "selected", color: .accentColor).fixedSize() }
-                // The path is in the inspector too, so it gives way first.
-                ViewThatFits(in: .horizontal) {
+                Text(xcode.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
+                if xcode.isSelected { Badge(text: "selected", color: .accentColor).layoutPriority(2) }
+                if columns != .compact {
                     Text(model.tilde(xcode.path))
                         .font(.caption.monospaced())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                    Color.clear.frame(width: 0, height: 0)
+                        .truncationMode(.middle)
                 }
                 Spacer(minLength: 0)
             }
-            Text(xcode.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(width: 120, alignment: .leading)
-            ThinBar(fraction: Double(xcode.kilobytes) / max(largest, 1), color: .secondary.opacity(0.6))
-                .frame(width: 100)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if columns.showsDate {
+                Text(xcode.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .frame(width: 120, alignment: .leading)
+            }
+            if columns.showsBar {
+                ThinBar(fraction: Double(xcode.kilobytes) / max(largest, 1), color: .secondary.opacity(0.6))
+                    .frame(width: 100)
+            }
             Text(SizeText.of(kilobytes: xcode.kilobytes))
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
+                .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
-            Button("Reveal in Finder") { model.revealInFinder([xcode.path]) }
-                .controlSize(.small)
-                .frame(width: 118)
+            if columns == .compact {
+                Button("Reveal in Finder", systemImage: "folder") { model.revealInFinder([xcode.path]) }
+                    .labelStyle(.iconOnly)
+                    .controlSize(.small)
+                    .help("Reveal in Finder")
+            } else {
+                Button("Reveal in Finder") { model.revealInFinder([xcode.path]) }
+                    .controlSize(.small)
+                    .frame(width: 118)
+            }
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
@@ -292,51 +331,67 @@ struct XcodeInspector: View {
 
     var body: some View {
         if let xcode = model.currentXcode {
-            let count = model.extras?.xcodes.count ?? 0
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 7) {
-                    Dot(color: .secondary.opacity(0.6))
-                    Eyebrow(text: "Xcode")
-                }
-                Text(xcode.title).font(.title3.weight(.semibold))
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(SizeText.of(kilobytes: xcode.kilobytes))
-                        .font(.system(size: 30, weight: .bold))
-                        .monospacedDigit()
-                    Text(xcode.isSelected ? "selected" : "installed")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-                VStack(alignment: .leading, spacing: 5) {
-                    Eyebrow(text: "Where")
-                    Text(model.tilde(xcode.path))
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                    Text(xcode.lastOpened.map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                VStack(alignment: .leading, spacing: 5) {
-                    Eyebrow(text: "What happens")
-                    Text(XcodeWords.note(xcode, installedCount: count))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
+            // Scrolls, so the column never asks the window for the height of
+            // its text: at a small width that would be thousands of points.
+            ScrollView {
+                XcodeDetails(xcode: xcode, installedCount: model.extras?.xcodes.count ?? 0)
+            }
+            .safeAreaInset(edge: .bottom) {
                 Button("Reveal in Finder") { model.revealInFinder([xcode.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
+                    .padding(18)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             ContentUnavailableView("No Xcode", systemImage: "hammer",
                                    description: Text(model.isLoadingExtras ? "Listing Xcodes…" : "No Xcode found in the applications folders."))
         }
+    }
+}
+
+/// What the inspector says about one Xcode.
+struct XcodeDetails: View {
+    @Environment(AppModel.self) private var model
+    let xcode: InstalledXcode
+    let installedCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 7) {
+                Dot(color: .secondary.opacity(0.6))
+                Eyebrow(text: "Xcode")
+            }
+            Text(xcode.title).font(.title3.weight(.semibold))
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(SizeText.of(kilobytes: xcode.kilobytes))
+                    .font(.system(size: 30, weight: .bold))
+                    .monospacedDigit()
+                Text(xcode.isSelected ? "selected" : "installed")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 5) {
+                Eyebrow(text: "Where")
+                Text(model.tilde(xcode.path))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Text(xcode.lastOpened.map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 5) {
+                Eyebrow(text: "What happens")
+                Text(XcodeWords.note(xcode, installedCount: installedCount))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
 

@@ -86,13 +86,19 @@ final class AppModel {
     private(set) var isLoadingExtras = false
     private(set) var lastScan: Date?
     private(set) var diskSpace: DiskSpace?
-    private(set) var extras: Extras?
+    /// Installed Xcodes and runtimes. Set by scans; tests set it directly.
+    var extras: Extras?
     private(set) var projectFolders: ProjectFolders?
     private(set) var warnings: [String] = []
     private(set) var runningApps: Set<DeveloperApp> = []
     let volumeName: String
     let engine: Engine?
     let startupError: String?
+
+    /// How long the last scan took: the items, then the extras after them.
+    private(set) var scanTiming: (items: Double, extras: Double)?
+    private var scanStarted: ContinuousClock.Instant?
+    private var itemsDone: ContinuousClock.Instant?
 
     /// Sizes from the previous scan, so unmeasured segments keep their place.
     private var previousKilobytes: [Item: Int64] = [:]
@@ -118,7 +124,13 @@ final class AppModel {
         }
         #endif
         do {
-            engine = try Engine(config: ScanConfig.fromEnvironment(environment), tools: tools)
+            var config = ScanConfig.fromEnvironment(environment)
+            #if DEBUG
+            if let skip = environment["DEVCLEAN_SKIP"], let items = try? ScanConfig.parseSkip(skip) {
+                config.skipped = items
+            }
+            #endif
+            engine = try Engine(config: config, tools: tools)
             startupError = nil
         } catch {
             engine = nil
@@ -148,6 +160,9 @@ final class AppModel {
         marked = []
         isScanning = true
         isLoadingExtras = engine.config.includeExtras
+        scanStarted = .now
+        itemsDone = nil
+        scanTiming = nil
 
         scanTask = Task {
             await refreshRunningApps()
@@ -178,6 +193,7 @@ final class AppModel {
                 rows[result.item]?.state = .measured
             }
         case .done:
+            itemsDone = .now
             diskSpace = engine?.diskSpace()
             lastScan = Date()
             withAnimation { isScanning = false }
@@ -186,6 +202,10 @@ final class AppModel {
         case .extras(let extras):
             withAnimation { self.extras = extras }
             isLoadingExtras = false
+            if let scanStarted, let itemsDone {
+                let seconds = { (duration: Duration) in Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18 }
+                scanTiming = (seconds(itemsDone - scanStarted), seconds(ContinuousClock.now - itemsDone))
+            }
         }
     }
 

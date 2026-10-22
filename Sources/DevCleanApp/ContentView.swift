@@ -70,6 +70,7 @@ struct ContentView: View {
             model.scan()
             #if DEBUG
             await Snapshotter.runIfAsked(model)
+            await DebugLaunch.run(model)
             #endif
         }
     }
