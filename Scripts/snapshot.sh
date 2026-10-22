@@ -6,14 +6,14 @@
 # xcode-select first on PATH, and launches the app with that HOME. The app
 # scans, draws its window into a file and quits. Nothing is cleaned.
 #
-# Usage: scripts/snapshot.sh [output folder] [screen...]
+# Usage: Scripts/snapshot.sh [output folder] [screen...]
 #   screens: overview scanning blocks runtimes xcodes remove-runtime cleaned putback,
 #            any with -light (default: overview); with WIDTH also
 #            android-studios android-sdk gradle
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
 #
-#        WIDTH=1100 scripts/snapshot.sh [output folder] [screen...]
+#        WIDTH=1100 Scripts/snapshot.sh [output folder] [screen...]
 #   opens the real window that wide instead and captures it as the screen
 #   shows it, glass and all, for overview, runtimes and xcodes.
 
@@ -26,7 +26,7 @@ screens=("${@:-overview}")
 mkdir -p "$out"
 out="$(cd "$out" && pwd)"
 
-app="$(CONFIG=debug "$root/scripts/build-app.sh")"
+app="$("$root/Scripts/package_app.sh" debug)"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 

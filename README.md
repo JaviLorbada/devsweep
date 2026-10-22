@@ -36,7 +36,7 @@ tests do; never with `--yes` on a machine you care about until you trust it.
 ## The app
 
 ```bash
-scripts/build-app.sh              # builds build/DevClean.app (release, signed ad hoc)
+Scripts/package_app.sh              # builds build/DevClean.app (release, signed ad hoc)
 open build/DevClean.app
 swift run DevCleanApp             # or run it unbundled while developing
 ```
@@ -48,7 +48,7 @@ another `HOME` and `PATH` points it at a fake home and stub tools. An app
 opened from Finder gets a short `PATH` without Homebrew, so the app adds
 `/opt/homebrew/bin` and `/usr/local/bin` at the end of whatever `PATH` it has.
 
-`scripts/snapshot.sh [folder] [screen...]` builds a debug bundle, makes a
+`Scripts/snapshot.sh [folder] [screen...]` builds a debug bundle, makes a
 fake home with something in every item and stubs for the tools, and has the
 app draw its window into PNG files: `overview`, `scanning`, `blocks`,
 `runtimes`, `xcodes`, `remove-runtime`, `cleaned`, `putback`, each also as
@@ -212,10 +212,10 @@ Sources/DevCleanKit/          the engine, no UI imports
 Sources/devclean/             the CLI on swift-argument-parser
 Sources/DevCleanApp/          the SwiftUI app: model, views, palette, debug snapshots
 Tests/DevCleanKitTests/       swift-testing, a fake home per test, fake tools
-scripts/bats.sh               runs the original bats suite against the binary
-scripts/compare.sh            diffs the bash script and the binary on one fake home
-scripts/build-app.sh          wraps the app executable into build/DevClean.app
-scripts/snapshot.sh           draws the window for a fake home into PNG files
+Scripts/bats.sh               runs the original bats suite against the binary
+Scripts/compare.sh            diffs the bash script and the binary on one fake home
+Scripts/package_app.sh          wraps the app executable into build/DevClean.app
+Scripts/snapshot.sh           draws the window for a fake home into PNG files
 ```
 
 ## How the CLI matches the script
@@ -247,12 +247,12 @@ column `df -k` prints.
 
 ## The bats suite
 
-`scripts/bats.sh` runs `test/devclean.bats` from the dotfiles checkout
+`Scripts/bats.sh` runs `test/devclean.bats` from the dotfiles checkout
 (default `~/Documents/Workspace/dotfiles`, or pass a path, or set `DOTFILES`)
 against the Swift binary without changing a byte of it:
 
 ```bash
-scripts/bats.sh
+Scripts/bats.sh
 ```
 
 The suite runs `"${DOTFILES_DIR}/bin/devclean"`, and `test_helper.bash` sets
@@ -266,7 +266,7 @@ Result: 52 of 52 pass. (HANDOFF says 50; the file has 52.)
 
 ## Side by side with the script
 
-`scripts/compare.sh` builds one fake home with something for every item
+`Scripts/compare.sh` builds one fake home with something for every item
 (DerivedData with seven projects, one gone and one with a long name; an
 unavailable simulator; Device Support with arm64e copies and unparseable
 names; a 1.4 GB SwiftPM cache; build folders, including one in a repository
@@ -280,7 +280,7 @@ counts (seen here: 3,024,040 against 3,015,056 for the same 1.5 GB of
 zeros), so two copies of it never measure the same, whoever measures them.
 
 ```bash
-RUN=1 scripts/compare.sh
+RUN=1 Scripts/compare.sh
 ```
 
 Result: identical, except the "Free space now" line, which moves between two
@@ -322,7 +322,7 @@ folders are searched, and `warning`, for the script's warnings.
 ## What is left
 
 - M5, release: Developer ID signing, notarization, GitHub Releases, the
-  Homebrew cask, Sparkle. Not started; `scripts/build-app.sh` only signs ad
+  Homebrew cask, Sparkle. Not started; `Scripts/package_app.sh` only signs ad
   hoc for local use. The bundle id is `com.javilorbada.devclean`.
 - Still undecided in HANDOFF section 6: the final app name (DevClean for
   now), icon, a menu bar presence, preferences for project folders and the

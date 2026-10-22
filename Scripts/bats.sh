@@ -8,8 +8,8 @@
 # lays out a throwaway folder with bin/devclean pointing at it next to
 # byte-identical copies of the two test files, and runs bats there.
 #
-# Usage: scripts/bats.sh [path to dotfiles checkout] [extra bats arguments]
-#        DOTFILES=... scripts/bats.sh
+# Usage: Scripts/bats.sh [path to dotfiles checkout] [extra bats arguments]
+#        DOTFILES=... Scripts/bats.sh
 
 set -euo pipefail
 

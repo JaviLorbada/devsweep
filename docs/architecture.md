@@ -75,5 +75,5 @@ against.
   own temp folder and fakes; nothing is shared between tests.
 - The bats suite from the dotfiles repository, run against the binary: the
   acceptance test that the tool behaves as the bash script did.
-- `scripts/compare.sh` runs the bash script and the binary side by side on
+- `Scripts/compare.sh` runs the bash script and the binary side by side on
   the same fake home and diffs output, exit status, tool calls and what is left.

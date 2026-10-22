@@ -5,7 +5,7 @@
 # diffs what they print. Nothing outside the temp folder is read or written,
 # apart from git and the system tools the bash script itself runs.
 #
-# Usage: scripts/compare.sh [path to dotfiles checkout]
+# Usage: Scripts/compare.sh [path to dotfiles checkout]
 #   KEEP=1 keeps the temp folder and prints where it is.
 #   RUN=1 also compares --run --yes, each against its own copy of the fake home.
 

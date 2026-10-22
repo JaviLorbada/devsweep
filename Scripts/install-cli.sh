@@ -5,8 +5,8 @@
 # The link it replaces is remembered, and --uninstall puts it back. Only the
 # link in the bin folder changes; the bash script itself is never touched.
 #
-# Usage: scripts/install-cli.sh             build and link
-#        scripts/install-cli.sh --uninstall remove the link, restore the old one
+# Usage: Scripts/install-cli.sh             build and link
+#        Scripts/install-cli.sh --uninstall remove the link, restore the old one
 #
 # DEVCLEAN_BIN_DIR picks another folder than ~/.local/bin.
 
