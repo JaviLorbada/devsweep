@@ -21,6 +21,8 @@ struct ItemsCard: View {
         }
         .frame(height: Self.headerHeight + CGFloat(rows.count) * Self.rowHeight)
         .card()
+        // The last row's selection follows the card's corners.
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func table(rows: [AppModel.Row], showsBar: Bool) -> some View {
@@ -56,12 +58,16 @@ struct ItemsCard: View {
 
 struct ItemRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.appearsActive) private var appearsActive
     let row: AppModel.Row
     let largest: Double
     var showsBar = true
 
     var body: some View {
         let selected = model.selection == row.item
+        // On the selection color, marks turn white like a table's icons, or a
+        // dark blue item would vanish on it.
+        let emphasized = selected && appearsActive
         HStack(spacing: 12) {
             Toggle("Mark \(row.item.name) for cleaning", isOn: Binding(
                 get: { model.marked.contains(row.item) && row.isLive },
@@ -71,7 +77,7 @@ struct ItemRow: View {
             .labelsHidden()
             .disabled(!row.isLive)
 
-            Dot(color: Palette.color(row.item))
+            Dot(color: emphasized ? .white : Palette.color(row.item))
 
             Button {
                 model.selection = row.item
@@ -93,7 +99,7 @@ struct ItemRow: View {
             .buttonStyle(.plain)
 
             if showsBar {
-                ThinBar(fraction: Double(row.shownKilobytes) / largest, color: barColor)
+                ThinBar(fraction: Double(row.shownKilobytes) / largest, color: emphasized ? .white : barColor)
                     .frame(width: 120)
             }
 
@@ -111,7 +117,15 @@ struct ItemRow: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 32)
-        .background(selected ? Color.accentColor.opacity(0.14) : .clear)
+        // Selected the way a macOS table selects: the whole row, edge to edge,
+        // in the selection color while the window is active and gray when not,
+        // with text that turns light on the color.
+        .environment(\.backgroundProminence, emphasized ? .increased : .standard)
+        .background {
+            if selected {
+                Rectangle().fill(Color(nsColor: appearsActive ? .selectedContentBackgroundColor : .unemphasizedSelectedContentBackgroundColor))
+            }
+        }
         .contentShape(Rectangle())
         .onTapGesture { model.selection = row.item }
         .animation(.easeInOut(duration: 0.4), value: row.kilobytes)
