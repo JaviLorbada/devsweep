@@ -9,7 +9,10 @@ struct ItemInspector: View {
     var body: some View {
         if let item = model.selection, let row = model.rows[item] {
             ScrollView {
+                // A fresh one per item, so a list expanded for one item
+                // starts short for the next.
                 ItemDetails(row: row)
+                    .id(item)
             }
             .safeAreaInset(edge: .bottom) {
                 InspectorAction(row: row)
@@ -25,7 +28,12 @@ struct ItemInspector: View {
 /// Everything the inspector says about one item.
 struct ItemDetails: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let row: AppModel.Row
+    /// Whether the Where list shows every path rather than the first few.
+    @State private var showsAllPaths = false
+
+    static let pathsShown = 8
 
     var body: some View {
         let item = row.item
@@ -79,15 +87,21 @@ struct ItemDetails: View {
                 .fixedSize(horizontal: false, vertical: true)
             if paths.count > 1 {
                 VStack(alignment: .leading, spacing: 2) {
-                    ForEach(paths.prefix(8), id: \.self) { path in
+                    ForEach(showsAllPaths ? paths : Array(paths.prefix(Self.pathsShown)), id: \.self) { path in
                         Text(model.tilde(path))
                             .font(.caption2.monospaced())
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                             .truncationMode(.middle)
+                            .help(model.tilde(path))
                     }
-                    if paths.count > 8 {
-                        Text("and \(paths.count - 8) more").font(.caption2).foregroundStyle(.tertiary)
+                    if paths.count > Self.pathsShown {
+                        Button(showsAllPaths ? "Show fewer" : "and \(paths.count - Self.pathsShown) more") {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { showsAllPaths.toggle() }
+                        }
+                        .buttonStyle(.link)
+                        .font(.caption2)
+                        .accessibilityHint(showsAllPaths ? "Hides all but the first \(Self.pathsShown) paths" : "Shows every path")
                     }
                 }
             }
