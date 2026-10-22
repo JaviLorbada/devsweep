@@ -141,6 +141,7 @@ private struct EmptyExtrasRow: View {
 
 private struct RuntimeRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.extrasColumns) private var columns
     let runtime: SimulatorRuntime
     let largest: Double
 
@@ -150,8 +151,10 @@ private struct RuntimeRow: View {
         let tint: Color = reason == nil ? .secondary.opacity(0.6) : .orange
         HStack(spacing: 12) {
             Dot(color: tint)
+            // Everything here can shrink: the badge or count gives way first,
+            // then the title truncates.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(runtime.title).fontWeight(.medium).lineLimit(1).fixedSize()
+                Text(runtime.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
                 if let reason {
                     Badge(text: RuntimeWords.badge(runtime, staleDays: model.staleDays), color: .orange)
                         .help(reason)
@@ -160,32 +163,45 @@ private struct RuntimeRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .fixedSize()
                 }
                 Spacer(minLength: 0)
             }
-            Text(runtime.lastUsedDay.map { "used \($0)" } ?? "never used")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .frame(width: 120, alignment: .leading)
-            ThinBar(fraction: Double(runtime.kilobytes) / max(largest, 1), color: tint)
-                .frame(width: 100)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if columns.showsDate {
+                Text(runtime.lastUsedDay.map { "used \($0)" } ?? "never used")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .frame(width: 120, alignment: .leading)
+            }
+            if columns.showsBar {
+                ThinBar(fraction: Double(runtime.kilobytes) / max(largest, 1), color: tint)
+                    .frame(width: 100)
+            }
             Text(SizeText.of(kilobytes: runtime.kilobytes))
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
+                .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
             Group {
-                if reason != nil {
+                if reason == nil {
+                    Color.clear
+                } else if columns == .compact {
+                    Button("Remove Runtime", systemImage: "trash") {
+                        model.selectedRuntime = runtime.id
+                        model.runtimeToRemove = runtime
+                    }
+                    .labelStyle(.iconOnly)
+                    .help("Remove Runtime")
+                } else {
                     Button("Remove Runtime") {
                         model.selectedRuntime = runtime.id
                         model.runtimeToRemove = runtime
                     }
-                    .controlSize(.small)
-                } else {
-                    Color.clear
                 }
             }
-            .frame(width: 118)
+            .controlSize(.small)
+            .frame(width: columns == .compact ? 28 : 118)
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
@@ -264,45 +280,61 @@ struct RuntimeInspector: View {
 
     var body: some View {
         if let runtime = model.currentRuntime {
-            let reason = runtime.flagReason(staleDays: model.staleDays)
-            VStack(alignment: .leading, spacing: 14) {
-                HStack(spacing: 7) {
-                    Dot(color: reason == nil ? .secondary.opacity(0.6) : .orange)
-                    Eyebrow(text: "Simulator runtime")
-                }
-                Text(runtime.title).font(.title3.weight(.semibold))
-                HStack(alignment: .firstTextBaseline, spacing: 10) {
-                    Text(SizeText.of(kilobytes: runtime.kilobytes))
-                        .font(.system(size: 30, weight: .bold))
-                        .monospacedDigit()
-                    Text(reason == nil ? "in use" : "looks unused")
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(reason == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
-                }
-                Section(reason == nil ? "Usage" : "Why it is flagged") {
-                    Text(RuntimeWords.usage(runtime, staleDays: model.staleDays))
-                }
-                Section("What happens") {
-                    Text(RuntimeWords.whatHappens(runtime))
-                }
-                Section("Runs") {
-                    Text(runtime.removalCommand)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
-                }
-                Spacer(minLength: 0)
+            // Scrolls, so the column never asks the window for the height of
+            // its text: at a small width that would be thousands of points.
+            ScrollView {
+                RuntimeDetails(runtime: runtime)
+            }
+            .safeAreaInset(edge: .bottom) {
                 Button("Remove Runtime") { model.runtimeToRemove = runtime }
                     .buttonStyle(.glassProminent)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
+                    .padding(18)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 20)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
             ContentUnavailableView("No runtime", systemImage: "iphone",
                                    description: Text(model.isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found."))
         }
+    }
+}
+
+/// What the inspector says about one runtime.
+struct RuntimeDetails: View {
+    @Environment(AppModel.self) private var model
+    let runtime: SimulatorRuntime
+
+    var body: some View {
+        let reason = runtime.flagReason(staleDays: model.staleDays)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 7) {
+                Dot(color: reason == nil ? .secondary.opacity(0.6) : .orange)
+                Eyebrow(text: "Simulator runtime")
+            }
+            Text(runtime.title).font(.title3.weight(.semibold))
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(SizeText.of(kilobytes: runtime.kilobytes))
+                    .font(.system(size: 30, weight: .bold))
+                    .monospacedDigit()
+                Text(reason == nil ? "in use" : "looks unused")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(reason == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(.orange))
+            }
+            Section(reason == nil ? "Usage" : "Why it is flagged") {
+                Text(RuntimeWords.usage(runtime, staleDays: model.staleDays))
+            }
+            Section("What happens") {
+                Text(RuntimeWords.whatHappens(runtime))
+            }
+            Section("Runs") {
+                Text(runtime.removalCommand)
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private struct Section<Content: View>: View {

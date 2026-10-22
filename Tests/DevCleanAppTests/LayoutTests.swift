@@ -30,3 +30,24 @@ struct LayoutTests {
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
 }
+
+extension LayoutTests {
+    @Test("The Simulator runtimes screen fits the narrowest center column")
+    func runtimesScreenWidth() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home, extras: sampleExtras)
+        model.screen = .simulatorRuntimes
+        let size = minimumSize(of: RuntimesContent(), model: model)
+        #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
+    }
+
+    @Test("The runtime inspector never asks the window for more height")
+    func runtimeInspectorHeight() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home, extras: sampleExtras)
+        model.screen = .simulatorRuntimes
+        model.selectedRuntime = sampleExtras.runtimes[1].id
+        let size = minimumSize(of: RuntimeInspector(), model: model)
+        #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
+    }
+}
