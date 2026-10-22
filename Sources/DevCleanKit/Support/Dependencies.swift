@@ -83,17 +83,23 @@ extension Tools {
             git: UnavailableTool(),
             runningApps: UnavailableTool(),
             lastUsedDates: UnavailableTool(),
-            trash: UnavailableTool()
-        )
+            trash: UnavailableTool())
     }
 }
 
 private struct UnavailableTool: SimctlClient, BrewClient, XcodeDefaultsReading, XcodeSelectReading, GitClient,
-    RunningAppsChecking, LastUsedDateReading, TrashService {
+    RunningAppsChecking, LastUsedDateReading, TrashService
+{
     struct Refused: Error {}
 
-    var isAvailable: Bool { false }
-    var isInstalled: Bool { false }
+    var isAvailable: Bool {
+        false
+    }
+
+    var isInstalled: Bool {
+        false
+    }
+
     func unavailableDevicesListing() async -> String { "" }
     func runtimesJSON() async -> Data? { nil }
     func devicesJSON() async -> Data? { nil }

@@ -16,7 +16,11 @@ public struct DeviceSupportScanner: Scanner {
             for name in context.files.globNames(folder) {
                 let path = "\(folder)/\(name)"
                 guard context.files.isDirectory(path), !context.files.isSymlink(path) else { continue }
-                entries.append(Entry(system: system, name: name, modified: context.files.modificationTime(path), path: path))
+                entries.append(Entry(
+                    system: system,
+                    name: name,
+                    modified: context.files.modificationTime(path),
+                    path: path))
             }
         }
         return context.existing(Self.old(entries))
@@ -51,11 +55,11 @@ public struct DeviceSupportScanner: Scanner {
             let device: String
             let version: String
             let build: String
-            if isVersion(first) {
+            if self.isVersion(first) {
                 device = ""
                 version = first
                 build = tokens.count > 1 ? tokens[1] : ""
-            } else if tokens.count >= 2, isVersion(tokens[1]) {
+            } else if tokens.count >= 2, self.isVersion(tokens[1]) {
                 device = first
                 version = tokens[1]
                 build = tokens.count > 2 ? tokens[2] : ""
@@ -66,8 +70,10 @@ public struct DeviceSupportScanner: Scanner {
 
             let parts = version.split(separator: ".").map { Int($0) ?? Int.max }
             func part(_ index: Int) -> Int { index < parts.count ? parts[index] : 0 }
-            let rank = "v" + padded(part(0), 6) + padded(part(1), 6) + padded(part(2), 6) + padded(part(3), 6)
-                + padded(entry.modified, 12)
+            let rank = "v" + self.padded(part(0), 6) + self.padded(part(1), 6) + self.padded(part(2), 6) + self.padded(
+                part(3),
+                6)
+                + self.padded(entry.modified, 12)
             let group = entry.system + "\u{1C}" + device
             let id = "\(version) \(build)"
             parsed.append(Parsed(group: group, id: id, rank: rank, path: entry.path))

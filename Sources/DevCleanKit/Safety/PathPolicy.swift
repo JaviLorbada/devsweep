@@ -12,7 +12,7 @@ public enum PreflightError: Error, Sendable, Equatable, CustomStringConvertible 
             "Don't run \(ProductInfo.cliName) with sudo. Everything it cleans belongs to your user."
         case .badHome:
             "HOME must be your home folder."
-        case .unknownItem(let id):
+        case let .unknownItem(id):
             "Unknown item '\(id)'. Items: \(Item.idList)"
         }
     }
@@ -40,7 +40,10 @@ public struct PathPolicy: Sendable {
     }
 
     /// The checks the script runs before anything else: not root, and a usable home.
-    public static func preflight(home: String, effectiveUserID: uid_t = geteuid()) throws(PreflightError) -> PathPolicy {
+    public static func preflight(
+        home: String,
+        effectiveUserID: uid_t = geteuid()) throws(PreflightError) -> PathPolicy
+    {
         guard effectiveUserID != 0 else { throw .runningAsRoot }
         return try PathPolicy(home: home)
     }
@@ -58,23 +61,23 @@ public struct PathPolicy: Sendable {
     /// The same check as `safePath`, asked of a resolved path right before it
     /// is deleted: it must still resolve to exactly itself.
     public func stillSafe(_ resolved: String) -> Bool {
-        safePath(resolved)?.bytesEqual(resolved) ?? false
+        self.safePath(resolved)?.bytesEqual(resolved) ?? false
     }
 
     public func isStrictlyInsideHome(_ real: String) -> Bool {
-        real.hasBytePrefix(homeReal + "/") && real.utf8.count > homeReal.utf8.count + 1
+        real.hasBytePrefix(self.homeReal + "/") && real.utf8.count > self.homeReal.utf8.count + 1
     }
 
     /// The home folder itself or anything inside it.
     public func isInsideOrHome(_ real: String) -> Bool {
-        real.bytesEqual(homeReal) || real.hasBytePrefix(homeReal + "/")
+        real.bytesEqual(self.homeReal) || real.hasBytePrefix(self.homeReal + "/")
     }
 
     /// Shortens a path under `$HOME` to `~/...`, comparing against `$HOME` as given.
     public func tilde(_ path: String) -> String {
-        if path.bytesEqual(home) { return "~" }
-        if path.hasBytePrefix(home + "/") {
-            return "~" + String(decoding: path.utf8.dropFirst(home.utf8.count), as: UTF8.self)
+        if path.bytesEqual(self.home) { return "~" }
+        if path.hasBytePrefix(self.home + "/") {
+            return "~" + String(decoding: path.utf8.dropFirst(self.home.utf8.count), as: UTF8.self)
         }
         return path
     }
@@ -82,7 +85,7 @@ public struct PathPolicy: Sendable {
     /// Replaces a leading `~` with `$HOME`, like `${path/#\~/$HOME}`.
     public func expandTilde(_ path: String) -> String {
         guard path.utf8.first == UInt8(ascii: "~") else { return path }
-        return home + String(decoding: path.utf8.dropFirst(), as: UTF8.self)
+        return self.home + String(decoding: path.utf8.dropFirst(), as: UTF8.self)
     }
 
     public enum ProjectFolder: Sendable, Equatable {
@@ -94,7 +97,7 @@ public struct PathPolicy: Sendable {
     /// Where a project folder really is. The home folder itself counts as inside.
     public func resolveProjectFolder(_ entry: String) -> ProjectFolder {
         guard let real = FileSystem.physicalDirectory(expandTilde(entry)) else { return .missing }
-        return isInsideOrHome(real) ? .inside(real) : .outside
+        return self.isInsideOrHome(real) ? .inside(real) : .outside
     }
 
     /// Sorts project folder entries into found, missing and outside home.
@@ -105,7 +108,7 @@ public struct PathPolicy: Sendable {
             switch resolveProjectFolder(entry) {
             case .missing: folders.missing.append(shown)
             case .outside: folders.outside.append(shown)
-            case .inside(let real):
+            case let .inside(real):
                 folders.found.append(shown)
                 folders.roots.append(real)
             }

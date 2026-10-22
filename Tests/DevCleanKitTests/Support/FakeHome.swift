@@ -18,10 +18,10 @@ final class FakeHome: @unchecked Sendable {
 
     init() {
         let base = FileManager.default.temporaryDirectory.path(percentEncoded: false)
-        root = (base.hasSuffix("/") ? base : base + "/") + "devclean-tests-\(UUID().uuidString)"
-        home = "\(root)/home"
-        projects = "\(home)/Workspace"
-        try! FileManager.default.createDirectory(atPath: projects, withIntermediateDirectories: true)
+        self.root = (base.hasSuffix("/") ? base : base + "/") + "devclean-tests-\(UUID().uuidString)"
+        self.home = "\(self.root)/home"
+        self.projects = "\(self.home)/Workspace"
+        try! FileManager.default.createDirectory(atPath: self.projects, withIntermediateDirectories: true)
     }
 
     deinit {
@@ -30,15 +30,15 @@ final class FakeHome: @unchecked Sendable {
     }
 
     /// `home/<relative>`
-    func path(_ relative: String) -> String { "\(home)/\(relative)" }
+    func path(_ relative: String) -> String { "\(self.home)/\(relative)" }
 
     /// `<temp>/<relative>`, outside home.
-    func outside(_ relative: String) -> String { "\(root)/\(relative)" }
+    func outside(_ relative: String) -> String { "\(self.root)/\(relative)" }
 
     /// Creates a folder with a file in it, so it has a size.
     @discardableResult
     func fill(_ path: String) -> String {
-        mkdir(path)
+        self.mkdir(path)
         FileManager.default.createFile(atPath: "\(path)/file", contents: Data("data\n".utf8))
         return path
     }
@@ -48,23 +48,23 @@ final class FakeHome: @unchecked Sendable {
     }
 
     func touch(_ path: String) {
-        mkdir(FileSystem.dirname(path))
+        self.mkdir(FileSystem.dirname(path))
         FileManager.default.createFile(atPath: path, contents: Data())
     }
 
     func write(_ path: String, _ contents: String) {
-        mkdir(FileSystem.dirname(path))
+        self.mkdir(FileSystem.dirname(path))
         FileManager.default.createFile(atPath: path, contents: Data(contents.utf8))
     }
 
     /// Writes `kilobytes` of zeros, so the file has a known allocated size.
     func writeZeros(_ path: String, kilobytes: Int) {
-        mkdir(FileSystem.dirname(path))
+        self.mkdir(FileSystem.dirname(path))
         FileManager.default.createFile(atPath: path, contents: Data(count: kilobytes * 1024))
     }
 
     func symlink(_ target: String, at path: String) {
-        mkdir(FileSystem.dirname(path))
+        self.mkdir(FileSystem.dirname(path))
         try! FileManager.default.createSymbolicLink(atPath: path, withDestinationPath: target)
     }
 
@@ -80,27 +80,31 @@ final class FakeHome: @unchecked Sendable {
 
     /// Creates a build folder with the output xcodebuild leaves behind.
     func fillXcodeBuild(_ path: String) {
-        fill("\(path)/App.build")
-        mkdir("\(path)/XCBuildData")
+        self.fill("\(path)/App.build")
+        self.mkdir("\(path)/XCBuildData")
     }
 
     /// Creates a fake Xcode app.
     func makeXcode(_ path: String, version: String, build: String) {
-        write("\(path)/Contents/Info.plist", Self.plist("<key>CFBundleShortVersionString</key><string>\(version)</string>"))
-        write("\(path)/Contents/version.plist", Self.plist("<key>ProductBuildVersion</key><string>\(build)</string>"))
+        self.write(
+            "\(path)/Contents/Info.plist",
+            Self.plist("<key>CFBundleShortVersionString</key><string>\(version)</string>"))
+        self.write(
+            "\(path)/Contents/version.plist",
+            Self.plist("<key>ProductBuildVersion</key><string>\(build)</string>"))
     }
 
     /// Creates a Device Support folder modified at a `touch -t` time.
     func makeDeviceSupport(_ path: String, modified: String = "202601010000") {
-        fill(path)
-        setModified(path, modified)
+        self.fill(path)
+        self.setModified(path, modified)
     }
 
     /// Creates a DerivedData project folder.
     func makeDerivedData(_ folder: String, workspace: String, lastAccessed: String?) {
-        fill(folder)
+        self.fill(folder)
         let date = lastAccessed.map { "<key>LastAccessedDate</key><date>\($0)</date>" } ?? ""
-        write("\(folder)/info.plist", Self.plist("\(date)<key>WorkspacePath</key><string>\(workspace)</string>"))
+        self.write("\(folder)/info.plist", Self.plist("\(date)<key>WorkspacePath</key><string>\(workspace)</string>"))
     }
 
     static func plist(_ body: String) -> String {
@@ -128,9 +132,9 @@ final class FakeHome: @unchecked Sendable {
     /// only project folder, its Applications as the only place for Xcodes.
     var environment: [String: String] {
         [
-            "HOME": home,
-            "DEVCLEAN_PROJECT_DIRS": projects,
-            "DEVCLEAN_APPLICATIONS_DIRS": path("Applications"),
+            "HOME": self.home,
+            "DEVCLEAN_PROJECT_DIRS": self.projects,
+            "DEVCLEAN_APPLICATIONS_DIRS": self.path("Applications"),
             "PATH": ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin",
         ]
     }

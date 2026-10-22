@@ -7,8 +7,10 @@ struct MenuBarLabel: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        Text("\(Image(systemName: "internaldrive")) \(model.diskSpace.map { SizeText.of(kilobytes: $0.availableKilobytes) } ?? "")")
-            .accessibilityLabel(model.diskSpace.map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "\(ProductInfo.name)")
+        Text(
+            "\(Image(systemName: "internaldrive")) \(self.model.diskSpace.map { SizeText.of(kilobytes: $0.availableKilobytes) } ?? "")")
+            .accessibilityLabel(self.model.diskSpace
+                .map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "\(ProductInfo.name)")
     }
 }
 
@@ -23,7 +25,7 @@ struct MenuBarPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(model.volumeName).font(.headline)
+                Text(self.model.volumeName).font(.headline)
                 Spacer()
                 if let space = model.diskSpace {
                     Text("\(SizeText.of(kilobytes: space.availableKilobytes)) free")
@@ -38,7 +40,7 @@ struct MenuBarPanel: View {
                         Dot(color: Palette.color(family))
                         Text(family.name)
                         Spacer()
-                        Text(model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
+                        Text(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -49,21 +51,22 @@ struct MenuBarPanel: View {
                 HStack {
                     Text("Reclaimable").fontWeight(.semibold)
                     Spacer()
-                    Text(SizeText.of(kilobytes: model.reclaimableKilobytes)).fontWeight(.semibold).monospacedDigit()
+                    Text(SizeText.of(kilobytes: self.model.reclaimableKilobytes)).fontWeight(.semibold)
+                        .monospacedDigit()
                 }
                 .font(.callout)
                 .accessibilityElement(children: .combine)
             }
-            Text(model.menuBarStatus)
+            Text(self.model.menuBarStatus)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Button(model.isScanning ? "Scanning…" : "Scan Now") { model.scan() }
-                    .disabled(model.isScanning || model.isCleaning || model.engine == nil)
+                Button(self.model.isScanning ? "Scanning…" : "Scan Now") { self.model.scan() }
+                    .disabled(self.model.isScanning || self.model.isCleaning || self.model.engine == nil)
                 Spacer()
                 Button("Open \(ProductInfo.name)") {
-                    openWindow(id: "main")
+                    self.openWindow(id: "main")
                     NSApplication.shared.activate()
                 }
                 .buttonStyle(.glassProminent)
@@ -79,7 +82,9 @@ extension AppModel {
     /// "Last scanned 3 hours ago." under the totals, or what is happening.
     var menuBarStatus: String {
         if isScanning { return "Scanning, \(measuredCount) of \(scanOrder.count) items measured." }
-        if let lastScan { return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while \(ProductInfo.name) runs." }
+        if let lastScan {
+            return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while \(ProductInfo.name) runs."
+        }
         if let previousScanDate { return "Last scanned \(Self.relative(previousScanDate, to: now))." }
         return "Not scanned yet."
     }

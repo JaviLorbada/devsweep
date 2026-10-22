@@ -8,7 +8,13 @@ struct PreferencesTests {
     @Test
     func `start from today's defaults`() {
         let preferences = Preferences(storage: InMemoryPreferencesStore())
-        #expect(preferences.projectFolders == ["~/Developer", "~/Development", "~/dev", "~/Documents/Workspace", "~/Projects"])
+        #expect(preferences.projectFolders == [
+            "~/Developer",
+            "~/Development",
+            "~/dev",
+            "~/Documents/Workspace",
+            "~/Projects",
+        ])
         #expect(preferences.usesDefaultProjectFolders)
         #expect(preferences.skippedItems.isEmpty)
         #expect(preferences.staleDays == 90)
@@ -50,7 +56,10 @@ struct PreferencesTests {
         #expect(config.staleDays == 45)
         #expect(config.includeAndroid)
 
-        let overridden = preferences.scanConfig(environment: ["HOME": "/Users/someone", "DEVCLEAN_PROJECT_DIRS": "/tmp/a:/tmp/b"])
+        let overridden = preferences.scanConfig(environment: [
+            "HOME": "/Users/someone",
+            "DEVCLEAN_PROJECT_DIRS": "/tmp/a:/tmp/b",
+        ])
         #expect(overridden.projectDirectories == ["/tmp/a", "/tmp/b"])
     }
 
@@ -75,7 +84,7 @@ struct PreferencesTests {
     }
 
     @Test
-    func `apply from the next scan: skipped items leave the window`() async {
+    func `apply from the next scan: skipped items leave the window`() {
         let home = TemporaryHome()
         let model = scanningModel(home: home)
         #expect(model.scanOrder.contains(.homebrew))
@@ -93,8 +102,12 @@ struct PreferencesTests {
         let storage = InMemoryPreferencesStore()
         storage.set(false, forKey: Preferences.Key.moveToTrash)
         let home = TemporaryHome()
-        let model = AppModel(environment: ["HOME": home.path], store: InMemoryScanStore(), preferences: Preferences(storage: storage),
-                             notifier: SilentNotificationPoster(), dependencies: Dependencies(tools: .unavailable))
+        let model = AppModel(
+            environment: ["HOME": home.path],
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: storage),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable))
         #expect(!model.moveToTrash)
     }
 }

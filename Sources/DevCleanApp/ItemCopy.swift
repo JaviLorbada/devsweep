@@ -65,6 +65,6 @@ enum SizeText {
 
     /// A disk's capacity, in whole gigabytes once it is that big: "926 GB".
     static func wholeGigabytes(kilobytes: Int64) -> String {
-        kilobytes >= 1_048_576 ? "\(Int((Double(kilobytes) / 1_048_576).rounded())) GB" : of(kilobytes: kilobytes)
+        kilobytes >= 1_048_576 ? "\(Int((Double(kilobytes) / 1_048_576).rounded())) GB" : self.of(kilobytes: kilobytes)
     }
 }

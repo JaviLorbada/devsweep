@@ -20,14 +20,14 @@ struct CenterHeader: View {
         var pickerText: Bool
 
         init(width: CGFloat) {
-            capsuleText = width >= 680
-            pickerText = width >= 560
+            self.capsuleText = width >= 680
+            self.pickerText = width >= 560
         }
     }
 
     var body: some View {
         GeometryReader { proxy in
-            row(fit: Fit(width: proxy.size.width))
+            self.row(fit: Fit(width: proxy.size.width))
                 .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .frame(height: Self.height)
@@ -37,7 +37,7 @@ struct CenterHeader: View {
         @Bindable var model = model
         return HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(title)
+                Text(self.title)
                     .font(.title3.weight(.semibold))
                     .lineLimit(1)
                 Text(model.subtitle)
@@ -82,30 +82,30 @@ struct ScanCapsule: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            if showsText {
-                Text(capsuleText)
+            if self.showsText {
+                Text(self.capsuleText)
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(maxWidth: 150, alignment: .leading)
             }
-            ProgressView(value: model.scanProgress)
+            ProgressView(value: self.model.scanProgress)
                 .progressViewStyle(.linear)
                 .frame(width: 64)
-                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: model.scanProgress)
+                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: self.model.scanProgress)
         }
         .padding(.horizontal, 14)
         .frame(height: ChartStylePicker.height)
         .glassEffect(.regular, in: .capsule)
-        .help(capsuleText)
+        .help(self.capsuleText)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(capsuleText)
-        .accessibilityValue("\(Int(model.scanProgress * 100)) percent")
+        .accessibilityLabel(self.capsuleText)
+        .accessibilityValue("\(Int(self.model.scanProgress * 100)) percent")
     }
 
     /// "Measuring DerivedData", "Measuring DerivedData and 2 more".
     var capsuleText: String {
-        let measuring = model.measuringItems
+        let measuring = self.model.measuringItems
         guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
         return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and \(measuring.count - 1) more"
     }
@@ -125,7 +125,7 @@ struct ChartStylePicker: View {
     var body: some View {
         HStack(spacing: 0) {
             ForEach(AppModel.ChartStyle.allCases) { style in
-                segment(style, selected: style == selection)
+                self.segment(style, selected: style == self.selection)
             }
         }
         .padding(3)
@@ -138,10 +138,10 @@ struct ChartStylePicker: View {
 
     private func segment(_ style: AppModel.ChartStyle, selected: Bool) -> some View {
         Button {
-            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { selection = style }
+            withAnimation(self.reduceMotion ? nil : .snappy(duration: 0.25)) { self.selection = style }
         } label: {
             Group {
-                if showsText {
+                if self.showsText {
                     Text(style.rawValue)
                 } else {
                     Image(systemName: style.systemImage)
@@ -149,14 +149,14 @@ struct ChartStylePicker: View {
             }
             .font(.callout.weight(.medium))
             .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.muted))
-            .padding(.horizontal, showsText ? 14 : 10)
+            .padding(.horizontal, self.showsText ? 14 : 10)
             .frame(maxHeight: .infinity)
             .background {
                 if selected {
                     Capsule()
                         .fill(Palette.raisedSegment)
                         .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
-                        .matchedGeometryEffect(id: "knob", in: knob)
+                        .matchedGeometryEffect(id: "knob", in: self.knob)
                 }
             }
             .contentShape(Capsule())

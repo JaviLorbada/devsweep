@@ -3,7 +3,7 @@ import Foundation
 /// Installed Xcodes and simulator runtimes. Listed, never deleted by a scan.
 enum ExtrasScanner {
     static func scan(in context: ScanContext) async -> Extras {
-        Extras(xcodes: await xcodes(in: context), runtimes: await runtimes(in: context))
+        await Extras(xcodes: self.xcodes(in: context), runtimes: self.runtimes(in: context))
     }
 
     // MARK: Xcodes
@@ -19,15 +19,16 @@ enum ExtrasScanner {
             for name in context.files.globNames(folder) where FileSystem.matches(name, pattern: "Xcode*.app") {
                 let app = "\(folder)/\(name)"
                 guard context.files.isDirectory(app), !context.files.isSymlink(app) else { continue }
-                let isSelected = selectedReal.map { FileSystem.physicalDirectory(app)?.bytesEqual($0) ?? false } ?? false
+                let isSelected = selectedReal
+                    .map { FileSystem.physicalDirectory(app)?.bytesEqual($0) ?? false } ?? false
                 result.append(InstalledXcode(
                     path: app,
-                    version: PropertyList.string(at: "\(app)/Contents/Info.plist", key: "CFBundleShortVersionString") ?? "?",
+                    version: PropertyList
+                        .string(at: "\(app)/Contents/Info.plist", key: "CFBundleShortVersionString") ?? "?",
                     build: PropertyList.string(at: "\(app)/Contents/version.plist", key: "ProductBuildVersion") ?? "?",
                     kilobytes: context.measurer.measure(app).kilobytes,
                     lastOpened: context.tools.lastUsedDates.lastUsedDate(of: app),
-                    isSelected: isSelected
-                ))
+                    isSelected: isSelected))
             }
         }
         return result
@@ -36,20 +37,22 @@ enum ExtrasScanner {
     // MARK: Runtimes
 
     static func runtimes(in context: ScanContext) async -> [SimulatorRuntime] {
-        await runtimes(in: context, now: context.clock.now())
+        await self.runtimes(in: context, now: context.clock.now())
     }
 
     static func runtimes(in context: ScanContext, now: Date) async -> [SimulatorRuntime] {
         let simctl = context.tools.simctl
-        guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(), !runtimesData.isEmpty else { return [] }
+        guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(),
+              !runtimesData.isEmpty else { return [] }
         let devicesData = await simctl.devicesJSON() ?? Data()
-        return parseRuntimes(runtimesData, devices: devicesData, now: now)
+        return self.parseRuntimes(runtimesData, devices: devicesData, now: now)
     }
 
     /// Joins `simctl runtime list -j` with `simctl list devices -j`, sorted by
     /// platform, then newest version first.
     static func parseRuntimes(_ runtimesData: Data, devices devicesData: Data, now: Date) -> [SimulatorRuntime] {
-        guard let runtimes = (try? JSONSerialization.jsonObject(with: runtimesData)) as? [String: Any] else { return [] }
+        guard let runtimes = (try? JSONSerialization.jsonObject(with: runtimesData)) as? [String: Any]
+        else { return [] }
         let devicesObject = (try? JSONSerialization.jsonObject(with: devicesData)) as? [String: Any]
         let devices = devicesObject?["devices"] as? [String: Any] ?? [:]
 
@@ -64,16 +67,15 @@ enum ExtrasScanner {
             return SimulatorRuntime(
                 id: id,
                 identifier: identifier,
-                platform: platform(of: identifier),
-                version: text(runtime["version"]) ?? "?",
-                build: text(runtime["build"]) ?? "?",
+                platform: self.platform(of: identifier),
+                version: self.text(runtime["version"]) ?? "?",
+                build: self.text(runtime["build"]) ?? "?",
                 kilobytes: Int64((size / 1024 + 0.5).rounded(.down)),
                 lastUsedDay: lastUsedAt.flatMap { $0.isEmpty ? nil : String($0.prefix(10)) },
                 daysSinceUsed: lastUsedAt.flatMap { JavaScriptDate.parse($0) }.map {
                     Int(((now.timeIntervalSince1970 * 1000 - $0) / 86_400_000).rounded(.down))
                 },
-                simulatorCount: (devices[identifier] as? [Any])?.count ?? 0
-            )
+                simulatorCount: (devices[identifier] as? [Any])?.count ?? 0)
         }
         // A stable sort, like JavaScript's.
         return parsed.enumerated().sorted { a, b in
@@ -130,7 +132,10 @@ enum JSONKeyOrder {
                     index += 1
                 }
                 if expectingKey, depth == 1,
-                   let key = try? JSONSerialization.jsonObject(with: Data(bytes[start...min(index, bytes.count - 1)]), options: .fragmentsAllowed) as? String {
+                   let key = try? JSONSerialization.jsonObject(
+                       with: Data(bytes[start...min(index, bytes.count - 1)]),
+                       options: .fragmentsAllowed) as? String
+                {
                     keys.append(key)
                 }
                 expectingKey = false

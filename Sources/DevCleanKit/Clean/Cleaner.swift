@@ -30,7 +30,7 @@ public struct CleanOutcome: Sendable {
 
     /// Whether everything removed can be put back.
     public var canPutBack: Bool {
-        mode == .trash && !removed.isEmpty && removed.allSatisfy { $0.trashed != nil }
+        self.mode == .trash && !self.removed.isEmpty && self.removed.allSatisfy { $0.trashed != nil }
     }
 }
 
@@ -60,8 +60,7 @@ extension Engine {
                 guard policy.stillSafe(path) else {
                     outcome.skipped.append(path)
                     outcome.warnings.append(
-                        "Skipped \(policy.tilde(path)): it changed since the scan and may now lead outside your home folder."
-                    )
+                        "Skipped \(policy.tilde(path)): it changed since the scan and may now lead outside your home folder.")
                     continue
                 }
                 switch mode {
@@ -95,8 +94,11 @@ extension Engine {
         for removed in outcome.removed {
             guard let trashed = removed.trashed else { continue }
             let parent = FileSystem.dirname(removed.original)
-            let parentIntact = FileSystem.physicalDirectory(parent).map { $0.bytesEqual(parent) && policy.isInsideOrHome($0) } ?? false
-            guard parentIntact, !FileSystem.existsOrIsSymlink(removed.original), FileSystem.existsOrIsSymlink(trashed) else {
+            let parentIntact = FileSystem.physicalDirectory(parent)
+                .map { $0.bytesEqual(parent) && policy.isInsideOrHome($0) } ?? false
+            guard parentIntact, !FileSystem.existsOrIsSymlink(removed.original),
+                  FileSystem.existsOrIsSymlink(trashed)
+            else {
                 result.failed.append(removed.original)
                 continue
             }

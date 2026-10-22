@@ -64,16 +64,20 @@ struct MutedStyle: ShapeStyle {
 }
 
 extension ShapeStyle where Self == MutedStyle {
-    static var muted: MutedStyle { MutedStyle() }
+    static var muted: MutedStyle {
+        MutedStyle()
+    }
 }
 
 /// Animations that respect Reduce Motion: none when it is on.
 @MainActor
 enum Motion {
-    static var reduced: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
+    static var reduced: Bool {
+        NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+    }
 
     static func animation(_ animation: Animation = .default) -> Animation? {
-        reduced ? nil : animation
+        self.reduced ? nil : animation
     }
 }
 
@@ -93,7 +97,6 @@ extension NSColor {
             srgbRed: CGFloat((rgb >> 16) & 0xFF) / 255,
             green: CGFloat((rgb >> 8) & 0xFF) / 255,
             blue: CGFloat(rgb & 0xFF) / 255,
-            alpha: 1
-        )
+            alpha: 1)
     }
 }

@@ -23,8 +23,11 @@ struct RuntimesContent: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            ExtrasCard(title: "Runtimes", note: "flagged after \(model.staleDays) days unused or with no simulators",
-                       rowCount: model.extras?.runtimes.count ?? 0) {
+            ExtrasCard(
+                title: "Runtimes",
+                note: "flagged after \(self.model.staleDays) days unused or with no simulators",
+                rowCount: self.model.extras?.runtimes.count ?? 0)
+            {
                 if let runtimes = model.extras?.runtimes, !runtimes.isEmpty {
                     let largest = Double(runtimes.map(\.kilobytes).max() ?? 1)
                     ForEach(runtimes) { runtime in
@@ -32,7 +35,8 @@ struct RuntimesContent: View {
                         RuntimeRow(runtime: runtime, largest: largest)
                     }
                 } else {
-                    EmptyExtrasRow(text: model.isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found.")
+                    EmptyExtrasRow(text: self.model
+                        .isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found.")
                 }
             }
             XcodesCard()
@@ -66,11 +70,15 @@ private struct XcodesCard: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let xcodes = model.extras?.xcodes ?? []
-        ExtrasCard(title: "Xcode versions", note: xcodes.count > 1 ? "each keeps its own compilation cache in DerivedData" : "",
-                   rowCount: xcodes.count) {
+        let xcodes = self.model.extras?.xcodes ?? []
+        ExtrasCard(
+            title: "Xcode versions",
+            note: xcodes.count > 1 ? "each keeps its own compilation cache in DerivedData" : "",
+            rowCount: xcodes.count)
+        {
             if xcodes.isEmpty {
-                EmptyExtrasRow(text: model.isLoadingExtras ? "Listing Xcodes…" : "No Xcode found in the applications folders.")
+                EmptyExtrasRow(text: self.model
+                    .isLoadingExtras ? "Listing Xcodes…" : "No Xcode found in the applications folders.")
             } else {
                 let largest = Double(xcodes.map(\.kilobytes).max() ?? 1)
                 ForEach(xcodes) { xcode in
@@ -98,17 +106,17 @@ struct ExtrasCard<Rows: View>: View {
         GeometryReader { proxy in
             VStack(spacing: 0) {
                 HStack(spacing: 10) {
-                    Text(title).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
-                    Text(note).font(.callout).foregroundStyle(.muted).lineLimit(1)
+                    Text(self.title).fontWeight(.semibold).lineLimit(1).layoutPriority(1)
+                    Text(self.note).font(.callout).foregroundStyle(.muted).lineLimit(1)
                     Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 14)
                 .frame(height: 34)
-                rows
+                self.rows
             }
             .environment(\.extrasColumns, ExtrasColumns(width: proxy.size.width))
         }
-        .frame(height: 34 + CGFloat(max(rowCount, 1)) * 41)
+        .frame(height: 34 + CGFloat(max(self.rowCount, 1)) * 41)
         .card()
     }
 }
@@ -123,8 +131,13 @@ enum ExtrasColumns {
         self = width >= 700 ? .full : width >= 560 ? .withoutBar : .compact
     }
 
-    var showsBar: Bool { self == .full }
-    var showsDate: Bool { self != .compact }
+    var showsBar: Bool {
+        self == .full
+    }
+
+    var showsDate: Bool {
+        self != .compact
+    }
 }
 
 extension EnvironmentValues {
@@ -137,7 +150,7 @@ struct EmptyExtrasRow: View {
     var body: some View {
         VStack(spacing: 0) {
             Divider().opacity(0.6)
-            Text(text)
+            Text(self.text)
                 .foregroundStyle(.muted)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
@@ -153,20 +166,20 @@ private struct RuntimeRow: View {
     let largest: Double
 
     var body: some View {
-        let reason = runtime.flagReason(staleDays: model.staleDays)
-        let selected = model.screen == .simulatorRuntimes && model.currentRuntime?.id == runtime.id
+        let reason = self.runtime.flagReason(staleDays: self.model.staleDays)
+        let selected = self.model.screen == .simulatorRuntimes && self.model.currentRuntime?.id == self.runtime.id
         let tint: Color = reason == nil ? .secondary.opacity(0.6) : .orange
         HStack(spacing: 12) {
             Dot(color: tint)
             // Everything here can shrink: the badge or count gives way first,
             // then the title truncates.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(runtime.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
+                Text(self.runtime.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
                 if let reason {
-                    Badge(text: RuntimeWords.badge(runtime, staleDays: model.staleDays), color: .orange)
+                    Badge(text: RuntimeWords.badge(self.runtime, staleDays: self.model.staleDays), color: .orange)
                         .help(reason)
                 } else {
-                    Text(runtime.simulatorCount == 1 ? "1 simulator" : "\(runtime.simulatorCount) simulators")
+                    Text(self.runtime.simulatorCount == 1 ? "1 simulator" : "\(self.runtime.simulatorCount) simulators")
                         .font(.caption)
                         .foregroundStyle(.muted)
                         .lineLimit(1)
@@ -174,18 +187,18 @@ private struct RuntimeRow: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if columns.showsDate {
-                Text(runtime.lastUsedDay.map { "used \($0)" } ?? "never used")
+            if self.columns.showsDate {
+                Text(self.runtime.lastUsedDay.map { "used \($0)" } ?? "never used")
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(width: 120, alignment: .leading)
             }
-            if columns.showsBar {
-                ThinBar(fraction: Double(runtime.kilobytes) / max(largest, 1), color: tint)
+            if self.columns.showsBar {
+                ThinBar(fraction: Double(self.runtime.kilobytes) / max(self.largest, 1), color: tint)
                     .frame(width: 100)
             }
-            Text(SizeText.of(kilobytes: runtime.kilobytes))
+            Text(SizeText.of(kilobytes: self.runtime.kilobytes))
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
@@ -193,34 +206,35 @@ private struct RuntimeRow: View {
             Group {
                 if reason == nil {
                     Color.clear
-                } else if columns == .compact {
+                } else if self.columns == .compact {
                     Button("Remove Runtime", systemImage: "trash") {
-                        model.selectedRuntime = runtime.id
-                        model.runtimeToRemove = runtime
+                        self.model.selectedRuntime = self.runtime.id
+                        self.model.runtimeToRemove = self.runtime
                     }
                     .labelStyle(.iconOnly)
                     .help("Remove Runtime")
                 } else {
                     Button("Remove Runtime") {
-                        model.selectedRuntime = runtime.id
-                        model.runtimeToRemove = runtime
+                        self.model.selectedRuntime = self.runtime.id
+                        self.model.runtimeToRemove = self.runtime
                     }
                 }
             }
             .controlSize(.small)
-            .frame(width: columns == .compact ? 28 : 118)
+            .frame(width: self.columns == .compact ? 28 : 118)
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { model.selectedRuntime = runtime.id }
+        .onTapGesture { self.model.selectedRuntime = self.runtime.id }
         .focusable()
-        .onKeyPress(.space) { model.selectedRuntime = runtime.id; return .handled }
+        .onKeyPress(.space) { self.model.selectedRuntime = self.runtime.id; return .handled }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(runtime.title), \(SizeText.of(kilobytes: runtime.kilobytes))\(reason.map { ", \($0)" } ?? "")")
+        .accessibilityLabel(
+            "\(self.runtime.title), \(SizeText.of(kilobytes: self.runtime.kilobytes))\(reason.map { ", \($0)" } ?? "")")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { model.selectedRuntime = runtime.id }
+        .accessibilityAction(named: "Select") { self.model.selectedRuntime = self.runtime.id }
     }
 }
 
@@ -231,16 +245,16 @@ private struct XcodeRow: View {
     let largest: Double
 
     var body: some View {
-        let selected = model.screen == .xcodeVersions && model.currentXcode?.path == xcode.path
+        let selected = self.model.screen == .xcodeVersions && self.model.currentXcode?.path == self.xcode.path
         HStack(spacing: 12) {
             Dot(color: .secondary.opacity(0.6))
             // Everything here can shrink: the path gives way first, then the
             // title truncates. Nothing in a row may insist on its full width.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(xcode.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
-                if xcode.isSelected { Badge(text: "selected", color: .accentColor).layoutPriority(2) }
-                if columns != .compact {
-                    Text(model.tilde(xcode.path))
+                Text(self.xcode.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
+                if self.xcode.isSelected { Badge(text: "selected", color: .accentColor).layoutPriority(2) }
+                if self.columns != .compact {
+                    Text(self.model.tilde(self.xcode.path))
                         .font(.caption.monospaced())
                         .foregroundStyle(.muted)
                         .lineLimit(1)
@@ -249,29 +263,29 @@ private struct XcodeRow: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if columns.showsDate {
-                Text(xcode.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown")
+            if self.columns.showsDate {
+                Text(self.xcode.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown")
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(width: 120, alignment: .leading)
             }
-            if columns.showsBar {
-                ThinBar(fraction: Double(xcode.kilobytes) / max(largest, 1), color: .secondary.opacity(0.6))
+            if self.columns.showsBar {
+                ThinBar(fraction: Double(self.xcode.kilobytes) / max(self.largest, 1), color: .secondary.opacity(0.6))
                     .frame(width: 100)
             }
-            Text(SizeText.of(kilobytes: xcode.kilobytes))
+            Text(SizeText.of(kilobytes: self.xcode.kilobytes))
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
-            if columns == .compact {
-                Button("Reveal in Finder", systemImage: "folder") { model.revealInFinder([xcode.path]) }
+            if self.columns == .compact {
+                Button("Reveal in Finder", systemImage: "folder") { self.model.revealInFinder([self.xcode.path]) }
                     .labelStyle(.iconOnly)
                     .controlSize(.small)
                     .help("Reveal in Finder")
             } else {
-                Button("Reveal in Finder") { model.revealInFinder([xcode.path]) }
+                Button("Reveal in Finder") { self.model.revealInFinder([self.xcode.path]) }
                     .controlSize(.small)
                     .frame(width: 118)
             }
@@ -280,13 +294,13 @@ private struct XcodeRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { model.selectedXcode = xcode.path }
+        .onTapGesture { self.model.selectedXcode = self.xcode.path }
         .focusable()
-        .onKeyPress(.space) { model.selectedXcode = xcode.path; return .handled }
+        .onKeyPress(.space) { self.model.selectedXcode = self.xcode.path; return .handled }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(xcode.title), \(SizeText.of(kilobytes: xcode.kilobytes))")
+        .accessibilityLabel("\(self.xcode.title), \(SizeText.of(kilobytes: self.xcode.kilobytes))")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { model.selectedXcode = xcode.path }
+        .accessibilityAction(named: "Select") { self.model.selectedXcode = self.xcode.path }
     }
 }
 
@@ -303,15 +317,18 @@ struct RuntimeInspector: View {
                 RuntimeDetails(runtime: runtime)
             }
             .safeAreaInset(edge: .bottom) {
-                Button("Remove Runtime") { model.runtimeToRemove = runtime }
+                Button("Remove Runtime") { self.model.runtimeToRemove = runtime }
                     .buttonStyle(.glassProminent)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
                     .padding(18)
             }
         } else {
-            ContentUnavailableView("No runtime", systemImage: "iphone",
-                                   description: Text(model.isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found."))
+            ContentUnavailableView(
+                "No runtime",
+                systemImage: "iphone",
+                description: Text(self.model
+                    .isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found."))
         }
     }
 }
@@ -322,15 +339,15 @@ struct RuntimeDetails: View {
     let runtime: SimulatorRuntime
 
     var body: some View {
-        let reason = runtime.flagReason(staleDays: model.staleDays)
+        let reason = self.runtime.flagReason(staleDays: self.model.staleDays)
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
                 Dot(color: reason == nil ? .secondary.opacity(0.6) : .orange)
                 Eyebrow(text: "Simulator runtime")
             }
-            Text(runtime.title).font(.title3.weight(.semibold))
+            Text(self.runtime.title).font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(SizeText.of(kilobytes: runtime.kilobytes))
+                Text(SizeText.of(kilobytes: self.runtime.kilobytes))
                     .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                 Text(reason == nil ? "in use" : "looks unused")
@@ -338,13 +355,13 @@ struct RuntimeDetails: View {
                     .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
             Section(reason == nil ? "Usage" : "Why it is flagged") {
-                Text(RuntimeWords.usage(runtime, staleDays: model.staleDays))
+                Text(RuntimeWords.usage(self.runtime, staleDays: self.model.staleDays))
             }
             Section("What happens") {
-                Text(RuntimeWords.whatHappens(runtime))
+                Text(RuntimeWords.whatHappens(self.runtime))
             }
             Section("Runs") {
-                Text(runtime.removalCommand)
+                Text(self.runtime.removalCommand)
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
             }
@@ -365,8 +382,8 @@ struct RuntimeDetails: View {
 
         var body: some View {
             VStack(alignment: .leading, spacing: 5) {
-                Eyebrow(text: title)
-                content
+                Eyebrow(text: self.title)
+                self.content
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -383,18 +400,22 @@ struct XcodeInspector: View {
             // Scrolls, so the column never asks the window for the height of
             // its text: at a small width that would be thousands of points.
             ScrollView {
-                XcodeDetails(xcode: xcode, installedCount: model.extras?.xcodes.count ?? 0)
+                XcodeDetails(xcode: xcode, installedCount: self.model.extras?.xcodes.count ?? 0)
             }
             .safeAreaInset(edge: .bottom) {
-                Button("Reveal in Finder") { model.revealInFinder([xcode.path]) }
+                Button("Reveal in Finder") { self.model.revealInFinder([xcode.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
                     .padding(18)
             }
         } else {
-            ContentUnavailableView("No Xcode", systemImage: "hammer",
-                                   description: Text(model.isLoadingExtras ? "Listing Xcodes…" : "No Xcode found in the applications folders."))
+            ContentUnavailableView(
+                "No Xcode",
+                systemImage: "hammer",
+                description: Text(self.model
+                    .isLoadingExtras ? "Listing Xcodes…" :
+                    "No Xcode found in the applications folders."))
         }
     }
 }
@@ -411,28 +432,29 @@ struct XcodeDetails: View {
                 Dot(color: .secondary.opacity(0.6))
                 Eyebrow(text: "Xcode")
             }
-            Text(xcode.title).font(.title3.weight(.semibold))
+            Text(self.xcode.title).font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(SizeText.of(kilobytes: xcode.kilobytes))
+                Text(SizeText.of(kilobytes: self.xcode.kilobytes))
                     .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
-                Text(xcode.isSelected ? "selected" : "installed")
+                Text(self.xcode.isSelected ? "selected" : "installed")
                     .font(.callout.weight(.medium))
                     .foregroundStyle(.muted)
             }
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Where")
-                Text(model.tilde(xcode.path))
+                Text(self.model.tilde(self.xcode.path))
                     .font(.caption.monospaced())
                     .foregroundStyle(.muted)
                     .textSelection(.enabled)
-                Text(xcode.lastOpened.map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened.")
+                Text(self.xcode.lastOpened
+                    .map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened.")
                     .font(.callout)
                     .foregroundStyle(.muted)
             }
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "What happens")
-                Text(XcodeWords.note(xcode, installedCount: installedCount))
+                Text(XcodeWords.note(self.xcode, installedCount: self.installedCount))
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
@@ -454,14 +476,15 @@ struct RemoveRuntimeSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Remove \(runtime.title)?")
+            Text("Remove \(self.runtime.title)?")
                 .font(.title3.weight(.semibold))
-            Text("This frees \(SizeText.of(kilobytes: runtime.kilobytes)). \(RuntimeWords.whatHappens(runtime))")
+            Text(
+                "This frees \(SizeText.of(kilobytes: self.runtime.kilobytes)). \(RuntimeWords.whatHappens(self.runtime))")
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Runs")
-                Text(runtime.removalCommand)
+                Text(self.runtime.removalCommand)
                     .font(.callout.monospaced())
                     .textSelection(.enabled)
                     .padding(10)
@@ -474,26 +497,26 @@ struct RemoveRuntimeSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                if model.isRemovingRuntime {
+                if self.model.isRemovingRuntime {
                     ProgressView().controlSize(.small)
                     Text("Removing…").foregroundStyle(.muted)
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) {
-                    model.runtimeRemovalError = nil
-                    dismiss()
+                    self.model.runtimeRemovalError = nil
+                    self.dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
                 Button("Remove Runtime", role: .destructive) {
-                    Task { await model.removeRuntime(runtime) }
+                    Task { await self.model.removeRuntime(self.runtime) }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(model.isRemovingRuntime)
+                .disabled(self.model.isRemovingRuntime)
             }
         }
         .padding(20)
         .frame(width: 460)
-        .interactiveDismissDisabled(model.isRemovingRuntime)
+        .interactiveDismissDisabled(self.model.isRemovingRuntime)
     }
 }
 

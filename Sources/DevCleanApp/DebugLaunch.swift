@@ -30,13 +30,14 @@ import SwiftUI
 enum DebugLaunch {
     static var isRequested: Bool {
         let environment = ProcessInfo.processInfo.environment
-        return ["DEVCLEAN_WINDOW_WIDTH", "DEVCLEAN_SCREEN", "DEVCLEAN_PROBE", "DEVCLEAN_CAPTURE"].contains { environment[$0] != nil }
+        return ["DEVCLEAN_WINDOW_WIDTH", "DEVCLEAN_SCREEN", "DEVCLEAN_PROBE", "DEVCLEAN_CAPTURE"]
+            .contains { environment[$0] != nil }
     }
 
     @MainActor
     static func run(_ model: AppModel) async {
         let environment = ProcessInfo.processInfo.environment
-        guard isRequested else { return }
+        guard self.isRequested else { return }
         switch environment["DEVCLEAN_APPEARANCE"] {
         case "light": NSApplication.shared.appearance = NSAppearance(named: .aqua)
         case "dark": NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
@@ -44,31 +45,36 @@ enum DebugLaunch {
         }
         // SwiftUI animates the window to its restored size at launch; resize
         // only once that has settled, then check the new width holds.
-        await waitForSteadyWidth()
+        await self.waitForSteadyWidth()
         // Best launched with the frame as a defaults argument, `-"NSWindow
         // Frame main" "x y w h screen"`: SwiftUI keeps its own record of the
         // window's size and puts it back after a resize it didn't make.
         if let width = environment["DEVCLEAN_WINDOW_WIDTH"].flatMap(Double.init), let window = mainWindow,
-           abs(window.frame.width - width) > 0.5 {
+           abs(window.frame.width - width) > 0.5
+        {
             var frame = window.frame
             frame.size.width = width
             window.setFrame(frame, display: true)
-            await waitForSteadyWidth()
+            await self.waitForSteadyWidth()
         }
-        trace("window \(Int(mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
-        var lastWidth = mainWindow?.frame.width ?? 0
+        self.trace("window \(Int(self.mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
+        var lastWidth = self.mainWindow?.frame.width ?? 0
         let start = Date()
         while model.isScanning || model.isLoadingExtras || model.isScanTaskRunning {
-            if Task.isCancelled { trace("cancelled while waiting"); return }
+            if Task.isCancelled { self.trace("cancelled while waiting"); return }
             try? await Task.sleep(for: .milliseconds(100))
-            let width = mainWindow?.frame.width ?? 0
+            let width = self.mainWindow?.frame.width ?? 0
             if width != lastWidth {
-                trace(String(format: "at %.1fs width %.0f -> %.0f, measuring %@", Date().timeIntervalSince(start), lastWidth, width,
-                             model.measuringItems.map(\.rawValue).joined(separator: ",")))
+                self.trace(String(
+                    format: "at %.1fs width %.0f -> %.0f, measuring %@",
+                    Date().timeIntervalSince(start),
+                    lastWidth,
+                    width,
+                    model.measuringItems.map(\.rawValue).joined(separator: ",")))
                 lastWidth = width
             }
         }
-        trace("scan done; switching to \(environment["DEVCLEAN_SCREEN"] ?? "-")")
+        self.trace("scan done; switching to \(environment["DEVCLEAN_SCREEN"] ?? "-")")
         switch environment["DEVCLEAN_SCREEN"] {
         case "xcodes": model.screen = .xcodeVersions
         case "runtimes": model.screen = .simulatorRuntimes
@@ -82,7 +88,7 @@ enum DebugLaunch {
         if let id = environment["DEVCLEAN_SELECT"], !id.isEmpty { model.select(snapshotID: id) }
         if let label = environment["DEVCLEAN_PRESS"], !label.isEmpty, let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
-            trace(press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
+            self.trace(self.press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
         }
         try? await Task.sleep(for: .seconds(3))
         // Then any further widths, one after another, as a person dragging would.
@@ -91,14 +97,15 @@ enum DebugLaunch {
             var frame = window.frame
             frame.size.width = width
             window.setFrame(frame, display: true)
-            await waitForSteadyWidth()
+            await self.waitForSteadyWidth()
             try? await Task.sleep(for: .seconds(1))
-            trace("then \(Int(window.frame.width)) wide")
+            self.trace("then \(Int(window.frame.width)) wide")
         }
         if let tab = environment["DEVCLEAN_SETTINGS"], !tab.isEmpty, let main = mainWindow {
             // The app menu's Settings… item, as ⌘, would choose it.
             if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
-               let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," }) {
+               let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," })
+            {
                 menu.performActionForItem(at: index)
             }
             try? await Task.sleep(for: .seconds(1))
@@ -107,13 +114,13 @@ enum DebugLaunch {
                 if let item = settings.toolbar?.items.first(where: { $0.label == tab }), let action = item.action {
                     settings.toolbar?.selectedItemIdentifier = item.itemIdentifier
                     NSApplication.shared.sendAction(action, to: item.target, from: item)
-                    trace("showed \(tab)")
+                    self.trace("showed \(tab)")
                 } else {
-                    trace("no tab \(tab)")
+                    self.trace("no tab \(tab)")
                 }
                 try? await Task.sleep(for: .seconds(1))
                 if let output = environment["DEVCLEAN_CAPTURE"] {
-                    trace(capture(settings, to: output) ? "captured \(output)" : "capture failed")
+                    self.trace(self.capture(settings, to: output) ? "captured \(output)" : "capture failed")
                 }
             }
             exit(0)
@@ -122,14 +129,14 @@ enum DebugLaunch {
             let before = Set(NSApplication.shared.windows.map(ObjectIdentifier.init))
             let button = NSApplication.shared.windows
                 .filter { String(describing: type(of: $0)).contains("StatusBar") }
-                .compactMap { findStatusButton(in: $0.contentView) }
+                .compactMap { self.findStatusButton(in: $0.contentView) }
                 .first
             button?.performClick(nil)
             try? await Task.sleep(for: .seconds(1))
             let panel = NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
-            trace(button == nil ? "no status item" : panel == nil ? "no panel" : "opened the menu bar panel")
+            self.trace(button == nil ? "no status item" : panel == nil ? "no panel" : "opened the menu bar panel")
             if let panel, let output = environment["DEVCLEAN_CAPTURE"] {
-                trace(capture(panel, to: output) ? "captured \(output)" : "capture failed")
+                self.trace(self.capture(panel, to: output) ? "captured \(output)" : "capture failed")
             }
             exit(0)
         }
@@ -138,13 +145,13 @@ enum DebugLaunch {
             NSApplication.shared.activate()
             window.makeKeyAndOrderFront(nil)
             try? await Task.sleep(for: .milliseconds(500))
-            trace("capturing; key window \(window.isKeyWindow), scan button enabled \(model.engine != nil)")
-            trace(capture(window, to: output) ? "captured \(output)" : "capture failed")
+            self.trace("capturing; key window \(window.isKeyWindow), scan button enabled \(model.engine != nil)")
+            self.trace(self.capture(window, to: output) ? "captured \(output)" : "capture failed")
             if environment["DEVCLEAN_PROBE"] == nil { exit(0) }
         }
-        trace("probing")
+        self.trace("probing")
         guard let output = environment["DEVCLEAN_PROBE"] else { return }
-        try? probe(model).write(toFile: output, atomically: true, encoding: .utf8)
+        try? self.probe(model).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
     }
 
@@ -152,7 +159,7 @@ enum DebugLaunch {
     private static func findStatusButton(in view: NSView?) -> NSButton? {
         guard let view else { return nil }
         if let button = view as? NSButton { return button }
-        return view.subviews.lazy.compactMap { findStatusButton(in: $0) }.first
+        return view.subviews.lazy.compactMap { self.findStatusButton(in: $0) }.first
     }
 
     /// Presses the first element labeled `label`, searching the window's
@@ -161,7 +168,7 @@ enum DebugLaunch {
     private static func press(_ label: String, in window: NSWindow) -> Bool {
         var queue: [Any] = [window]
         var visited = 0
-        while !queue.isEmpty, visited < 20_000 {
+        while !queue.isEmpty, visited < 20000 {
             let element = queue.removeFirst()
             visited += 1
             guard let element = element as? NSAccessibilityElementProtocol & NSObjectProtocol else { continue }
@@ -179,19 +186,21 @@ enum DebugLaunch {
     @MainActor
     private static func capture(_ window: NSWindow, to path: String) -> Bool {
         typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
-        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage") else { return false }
+        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage")
+        else { return false }
         let createImage = unsafeBitCast(symbol, to: CreateImage.self)
         // Including just this window; ignoring its shadow, at full resolution.
         guard let image = createImage(.null, 1 << 3, UInt32(window.windowNumber), 1 << 0 | 1 << 3)?.takeRetainedValue(),
-              let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) else { return false }
+              let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+        else { return false }
         return (try? png.write(to: URL(fileURLWithPath: path))) != nil
     }
 
     /// Waits until the window's width has not changed for half a second.
     @MainActor
     private static func waitForSteadyWidth() async {
-        var last = mainWindow?.frame.width ?? 0
-        trace("width \(Int(last)) at launch")
+        var last = self.mainWindow?.frame.width ?? 0
+        self.trace("width \(Int(last)) at launch")
         var steady = 0
         for _ in 0..<60 where steady < 5 {
             try? await Task.sleep(for: .milliseconds(100))
@@ -218,40 +227,70 @@ enum DebugLaunch {
         guard let window = mainWindow, let content = window.contentView else { return "no window\n" }
         var lines: [String] = []
         let size = content.bounds.size
-        lines.append("window \(Int(window.frame.width))x\(Int(window.frame.height)) min \(Int(window.minSize.width))x\(Int(window.minSize.height))")
+        lines
+            .append(
+                "window \(Int(window.frame.width))x\(Int(window.frame.height)) min \(Int(window.minSize.width))x\(Int(window.minSize.height))")
         lines.append("screen \(model.screen), inspector \(model.debugInspectorShown ? "shown" : "hidden")")
         if let timing = model.scanTiming {
-            lines.append(String(format: "scan: items measured after %.1fs, everything after %.1fs", timing.items, timing.total))
+            lines.append(String(
+                format: "scan: items measured after %.1fs, everything after %.1fs",
+                timing.items,
+                timing.total))
         }
         var problems = 0
         var splits: [NSSplitView] = []
-        collect(content, into: &splits)
+        self.collect(content, into: &splits)
         for (index, split) in splits.enumerated() {
             let frame = split.convert(split.bounds, to: nil)
-            let fits = frame.minX >= -0.5 && frame.maxX <= size.width + 0.5 && frame.minY >= -0.5 && frame.maxY <= size.height + 0.5
+            let fits = frame.minX >= -0.5 && frame.maxX <= size.width + 0.5 && frame.minY >= -0.5 && frame.maxY <= size
+                .height + 0.5
             if !fits { problems += 1 }
-            let columns = split.arrangedSubviews.map { split.isSubviewCollapsed($0) || $0.isHidden || $0.frame.width < 1 ? "collapsed" : "\(Int($0.frame.width))" }
-            lines.append(String(format: "split %d at %.0f,%.0f %.0fx%.0f %@ columns %@", index, frame.minX, frame.minY, frame.width, frame.height,
-                                fits ? "fits" : "OVERFLOWS", columns.joined(separator: " | ")))
+            let columns = split.arrangedSubviews
+                .map {
+                    split.isSubviewCollapsed($0) || $0.isHidden || $0.frame
+                        .width < 1 ? "collapsed" : "\(Int($0.frame.width))"
+                }
+            lines.append(String(
+                format: "split %d at %.0f,%.0f %.0fx%.0f %@ columns %@",
+                index,
+                frame.minX,
+                frame.minY,
+                frame.width,
+                frame.height,
+                fits ? "fits" : "OVERFLOWS",
+                columns.joined(separator: " | ")))
         }
         var hosts: [NSView] = []
-        collectHosts(content, depth: 0, into: &hosts)
+        self.collectHosts(content, depth: 0, into: &hosts)
         for host in hosts {
             let frame = host.convert(host.bounds, to: nil)
             let name = String(describing: type(of: host)).prefix(90)
-            lines.append(String(format: "host at %.0f %.0fx%.0f fitting %.0fx%.0f %@", frame.minX, frame.width, frame.height,
-                                host.fittingSize.width, host.fittingSize.height, String(name)))
+            lines.append(String(
+                format: "host at %.0f %.0fx%.0f fitting %.0fx%.0f %@",
+                frame.minX,
+                frame.width,
+                frame.height,
+                host.fittingSize.width,
+                host.fittingSize.height,
+                String(name)))
         }
         var scrolls: [NSScrollView] = []
-        collect(content, into: &scrolls)
+        self.collect(content, into: &scrolls)
         for scroll in scrolls where !scroll.isHidden && scroll.frame.width > 1 {
             guard let document = scroll.documentView else { continue }
             let clipped = document.frame.width > scroll.contentView.bounds.width + 0.5
             if clipped { problems += 1 }
             let frame = scroll.convert(scroll.bounds, to: nil)
-            lines.append(String(format: "scroll %@ at %.0f,%.0f %.0fx%.0f content %.0fx%.0f%@", String(describing: type(of: scroll)),
-                                frame.minX, frame.minY, frame.width, frame.height, document.frame.width, document.frame.height,
-                                clipped ? " CLIPPED" : ""))
+            lines.append(String(
+                format: "scroll %@ at %.0f,%.0f %.0fx%.0f content %.0fx%.0f%@",
+                String(describing: type(of: scroll)),
+                frame.minX,
+                frame.minY,
+                frame.width,
+                frame.height,
+                document.frame.width,
+                document.frame.height,
+                clipped ? " CLIPPED" : ""))
         }
         lines.insert(problems == 0 ? "result: fits" : "result: \(problems) problem(s)", at: 2)
         return lines.joined(separator: "\n") + "\n"
@@ -263,13 +302,17 @@ enum DebugLaunch {
         guard depth < 14 else { return }
         let name = String(describing: type(of: view))
         if name.hasPrefix("NSHostingView") || name.hasPrefix("_NSCoreHostingView") { found.append(view) }
-        for child in view.subviews { collectHosts(child, depth: depth + 1, into: &found) }
+        for child in view.subviews {
+            self.collectHosts(child, depth: depth + 1, into: &found)
+        }
     }
 
     @MainActor
     private static func collect<T: NSView>(_ view: NSView, into found: inout [T]) {
         if let match = view as? T { found.append(match) }
-        for child in view.subviews { collect(child, into: &found) }
+        for child in view.subviews {
+            self.collect(child, into: &found)
+        }
     }
 }
 #endif

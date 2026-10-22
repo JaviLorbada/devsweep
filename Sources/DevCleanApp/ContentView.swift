@@ -13,8 +13,7 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView()
                 .navigationSplitViewColumnWidth(
-                    min: WindowLayout.sidebar.min, ideal: WindowLayout.sidebar.ideal, max: WindowLayout.sidebar.max
-                )
+                    min: WindowLayout.sidebar.min, ideal: WindowLayout.sidebar.ideal, max: WindowLayout.sidebar.max)
         } detail: {
             // The inspector is a column inside the detail area, not SwiftUI's
             // inspector: showing or hiding that one resizes the window, and with
@@ -22,7 +21,7 @@ struct ContentView: View {
             // AppKit gave up mid-layout.
             HStack(spacing: WindowLayout.gap) {
                 VStack(spacing: 0) {
-                    CenterHeader(title: title)
+                    CenterHeader(title: self.title)
                     switch model.screen {
                     case .overview: OverviewView()
                     case .xcodeVersions: XcodeVersionsView()
@@ -34,7 +33,7 @@ struct ContentView: View {
                 }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
                 .panel()
-                if wantsInspector && inspectorHasRoom {
+                if self.wantsInspector, self.inspectorHasRoom {
                     Group {
                         switch model.screen {
                         case .overview: ItemInspector()
@@ -52,23 +51,25 @@ struct ContentView: View {
             .padding([.horizontal, .bottom], WindowLayout.gap)
             .background(Palette.backdrop)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
-                updateInspectorRoom(forDetailWidth: width)
+                self.updateInspectorRoom(forDetailWidth: width)
             }
             #if DEBUG
-            .onChange(of: wantsInspector && inspectorHasRoom, initial: true) { _, shown in model.debugInspectorShown = shown }
+            .onChange(of: self.wantsInspector && self.inspectorHasRoom, initial: true) { _, shown in
+                model.debugInspectorShown = shown
+            }
             #endif
-            .navigationTitle(title)
+            .navigationTitle(self.title)
             .navigationSubtitle(model.subtitle)
-            .toolbar { toolbar }
+            .toolbar { self.toolbar }
             // The title and status are in the center panel's header.
             .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
         .alert(
-            pendingTitle,
+            self.pendingTitle,
             isPresented: Binding(get: { model.pendingClean != nil }, set: { if !$0 { model.pendingClean = nil } }),
-            presenting: model.pendingClean
-        ) { pending in
+            presenting: model.pendingClean)
+        { pending in
             switch pending.stage {
             case .quitApps:
                 Button("Quit and Clean") { Task { await model.quitAppsAndClean(pending) } }
@@ -92,8 +93,8 @@ struct ContentView: View {
         .alert(
             model.notice?.title ?? "",
             isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } }),
-            presenting: model.notice
-        ) { _ in
+            presenting: model.notice)
+        { _ in
             Button("OK") {}
         } message: { notice in
             Text(notice.message)
@@ -116,23 +117,23 @@ struct ContentView: View {
     /// whether the inspector shows, so this can't feed back on itself, and
     /// it is set right away: no AppKit column collapses.
     private func updateInspectorRoom(forDetailWidth width: CGFloat) {
-        let hasRoom = inspectorHasRoom
+        let hasRoom = self.inspectorHasRoom
             ? width >= WindowLayout.inspectorHideBelow
             : width >= WindowLayout.inspectorShowFrom
-        guard hasRoom != inspectorHasRoom else { return }
+        guard hasRoom != self.inspectorHasRoom else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true
-        withTransaction(transaction) { inspectorHasRoom = hasRoom }
+        withTransaction(transaction) { self.inspectorHasRoom = hasRoom }
     }
 
     private var pendingTitle: String {
         guard let pending = model.pendingClean else { return "" }
-        let size = SizeText.of(kilobytes: pending.items.compactMap { model.rows[$0]?.kilobytes }.reduce(0, +))
-        return CleanPrompt.title(for: pending, size: size, moveToTrash: model.moveToTrash)
+        let size = SizeText.of(kilobytes: pending.items.compactMap { self.model.rows[$0]?.kilobytes }.reduce(0, +))
+        return CleanPrompt.title(for: pending, size: size, moveToTrash: self.model.moveToTrash)
     }
 
     private var title: String {
-        switch model.screen {
+        switch self.model.screen {
         case .overview: "Overview"
         case .xcodeVersions: "Xcode versions"
         case .simulatorRuntimes: "Simulator runtimes"
@@ -149,11 +150,11 @@ struct ContentView: View {
         ToolbarSpacer(.flexible)
         ToolbarItem {
             Button("Inspector", systemImage: "sidebar.trailing") {
-                if wantsInspector && !inspectorHasRoom {
+                if self.wantsInspector, !self.inspectorHasRoom {
                     // Asked for while hidden for room: make room.
                     WindowSizing.widen(to: WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom + 10)
                 } else {
-                    wantsInspector.toggle()
+                    self.wantsInspector.toggle()
                 }
             }
             .buttonStyle(.glass)
@@ -202,10 +203,13 @@ struct TableRowSelection: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .environment(\.backgroundProminence, selected && appearsActive ? .increased : .standard)
+            .environment(\.backgroundProminence, self.selected && self.appearsActive ? .increased : .standard)
             .background {
-                if selected {
-                    Rectangle().fill(Color(nsColor: appearsActive ? .selectedContentBackgroundColor : .unemphasizedSelectedContentBackgroundColor))
+                if self.selected {
+                    Rectangle()
+                        .fill(Color(nsColor: self
+                                .appearsActive ? .selectedContentBackgroundColor :
+                                .unemphasizedSelectedContentBackgroundColor))
                 }
             }
     }
@@ -231,7 +235,7 @@ struct Eyebrow: View {
     let text: String
 
     var body: some View {
-        Text(text)
+        Text(self.text)
             .font(.caption.weight(.semibold))
             .textCase(.uppercase)
             .tracking(0.4)
@@ -251,11 +255,11 @@ struct ThinBar: View {
                 .fill(.primary.opacity(0.08))
                 .overlay(alignment: .leading) {
                     Capsule()
-                        .fill(color)
-                        .frame(width: max(0, min(1, fraction)) * proxy.size.width)
+                        .fill(self.color)
+                        .frame(width: max(0, min(1, self.fraction)) * proxy.size.width)
                 }
         }
-        .frame(height: height)
+        .frame(height: self.height)
     }
 }
 
@@ -265,7 +269,7 @@ struct Dot: View {
     var size: CGFloat = 8
 
     var body: some View {
-        Circle().fill(color).frame(width: size, height: size)
+        Circle().fill(self.color).frame(width: self.size, height: self.size)
     }
 }
 
@@ -275,12 +279,12 @@ struct Badge: View {
     let color: Color
 
     var body: some View {
-        Text(text)
+        Text(self.text)
             .font(.caption2.weight(.semibold))
             .lineLimit(1)
-            .foregroundStyle(color)
+            .foregroundStyle(self.color)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
-            .background(color.opacity(0.14), in: RoundedRectangle(cornerRadius: 4))
+            .background(self.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 4))
     }
 }

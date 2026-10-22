@@ -79,7 +79,7 @@ private struct SnapshotLayout: View {
             Divider()
             VStack(spacing: 0) {
                 SnapshotHeader()
-                switch model.screen {
+                switch self.model.screen {
                 case .overview:
                     OverviewContent()
                     Spacer(minLength: 0)
@@ -99,7 +99,7 @@ private struct SnapshotLayout: View {
             .frame(maxWidth: .infinity)
             Divider()
             Group {
-                switch model.screen {
+                switch self.model.screen {
                 case .overview:
                     if let item = model.selection, let row = model.rows[item] {
                         VStack(spacing: 0) {
@@ -138,19 +138,22 @@ private struct SnapshotHeader: View {
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(model.screen == .overview ? "Overview" : model.screen == .xcodeVersions ? "Xcode versions" : "Simulator runtimes")
+                Text(self.model.screen == .overview ? "Overview" : self.model
+                    .screen == .xcodeVersions ? "Xcode versions" : "Simulator runtimes")
                     .font(.title2.weight(.semibold))
-                Text(model.subtitle).font(.callout).foregroundStyle(.muted)
+                Text(self.model.subtitle).font(.callout).foregroundStyle(.muted)
             }
             Spacer()
-            if model.screen == .overview {
+            if self.model.screen == .overview {
                 HStack(spacing: 0) {
                     ForEach(AppModel.ChartStyle.allCases) { style in
                         Text(style.rawValue)
-                            .font(.callout.weight(style == model.chartStyle ? .semibold : .regular))
+                            .font(.callout.weight(style == self.model.chartStyle ? .semibold : .regular))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 4)
-                            .background(style == model.chartStyle ? Color.primary.opacity(0.14) : .clear, in: RoundedRectangle(cornerRadius: 6))
+                            .background(
+                                style == self.model.chartStyle ? Color.primary.opacity(0.14) : .clear,
+                                in: RoundedRectangle(cornerRadius: 6))
                     }
                 }
                 .padding(2)
@@ -172,29 +175,31 @@ private struct SnapshotSidebar: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            row(highlighted: model.screen == .overview) {
+            self.row(highlighted: self.model.screen == .overview) {
                 Label("Overview", systemImage: "chart.pie").fontWeight(.medium)
             }
-            heading("Caches")
+            self.heading("Caches")
             ForEach(Family.allCases) { family in
-                row {
+                self.row {
                     Dot(color: Palette.color(family))
                     Text(family.name)
                     Spacer()
-                    Text(model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
+                    Text(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
                         .foregroundStyle(.muted).monospacedDigit()
                 }
             }
-            heading("Also worth a look")
-            row(highlighted: model.screen == .xcodeVersions) {
+            self.heading("Also worth a look")
+            self.row(highlighted: self.model.screen == .xcodeVersions) {
                 Text("Xcode versions")
                 Spacer()
-                Text(model.xcodesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted).monospacedDigit()
+                Text(self.model.xcodesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted)
+                    .monospacedDigit()
             }
-            row(highlighted: model.screen == .simulatorRuntimes) {
+            self.row(highlighted: self.model.screen == .simulatorRuntimes) {
                 Text("Simulator runtimes")
                 Spacer()
-                Text(model.runtimesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted).monospacedDigit()
+                Text(self.model.runtimesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted)
+                    .monospacedDigit()
             }
             Spacer()
             DiskMeter().padding(.horizontal, 6)
@@ -205,10 +210,13 @@ private struct SnapshotSidebar: View {
     }
 
     private func heading(_ text: String) -> some View {
-        Text(text).font(.caption.weight(.semibold)).foregroundStyle(.muted).padding(.horizontal, 10).padding(.top, 16).padding(.bottom, 4)
+        Text(text).font(.caption.weight(.semibold)).foregroundStyle(.muted).padding(.horizontal, 10).padding(.top, 16)
+            .padding(
+                .bottom,
+                4)
     }
 
-    private func row<Content: View>(highlighted: Bool = false, @ViewBuilder _ content: () -> Content) -> some View {
+    private func row(highlighted: Bool = false, @ViewBuilder _ content: () -> some View) -> some View {
         HStack(spacing: 9) { content() }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)

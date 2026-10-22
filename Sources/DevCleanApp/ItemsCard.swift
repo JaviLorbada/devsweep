@@ -15,9 +15,9 @@ struct ItemsCard: View {
     /// Sized from the width it is given (its height is fixed by its rows), so
     /// its minimum never follows the width it last had.
     var body: some View {
-        let rows = model.orderedRows
+        let rows = self.model.orderedRows
         GeometryReader { proxy in
-            table(rows: rows, showsBar: Self.showsBar(forWidth: proxy.size.width))
+            self.table(rows: rows, showsBar: Self.showsBar(forWidth: proxy.size.width))
         }
         .frame(height: Self.headerHeight + CGFloat(rows.count) * Self.rowHeight)
         .card()
@@ -30,13 +30,13 @@ struct ItemsCard: View {
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Text("Items").fontWeight(.semibold).layoutPriority(1)
-                Text(note)
+                Text(self.note)
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                Button("Mark all") { model.markAll() }
-                Button("Mark none") { model.markNone() }
+                Button("Mark all") { self.model.markAll() }
+                Button("Mark none") { self.model.markNone() }
             }
             .buttonStyle(.link)
             .font(.callout)
@@ -51,8 +51,8 @@ struct ItemsCard: View {
     }
 
     private var note: String {
-        let count = model.scanOrder.count
-        return model.isScanning ? "\(model.measuredCount) of \(count) measured, largest first" : "\(count), largest first"
+        let count = self.model.scanOrder.count
+        return self.model.isScanning ? "\(self.model.measuredCount) of \(count) measured, largest first" : "\(count), largest first"
     }
 }
 
@@ -64,30 +64,29 @@ struct ItemRow: View {
     var showsBar = true
 
     var body: some View {
-        let selected = model.selection == row.item
+        let selected = self.model.selection == self.row.item
         // On the selection color, marks turn white like a table's icons, or a
         // dark blue item would vanish on it.
-        let emphasized = selected && appearsActive
+        let emphasized = selected && self.appearsActive
         HStack(spacing: 12) {
-            Toggle("Mark \(row.item.name) for cleaning", isOn: Binding(
-                get: { model.marked.contains(row.item) && row.isLive },
-                set: { model.setMarked(row.item, $0) }
-            ))
-            .toggleStyle(.checkbox)
-            .labelsHidden()
-            .disabled(!row.isLive)
+            Toggle("Mark \(self.row.item.name) for cleaning", isOn: Binding(
+                get: { self.model.marked.contains(self.row.item) && self.row.isLive },
+                set: { self.model.setMarked(self.row.item, $0) }))
+                .toggleStyle(.checkbox)
+                .labelsHidden()
+                .disabled(!self.row.isLive)
 
-            Dot(color: emphasized ? .white : Palette.color(row.item))
+            Dot(color: emphasized ? .white : Palette.color(self.row.item))
 
             Button {
-                model.selection = row.item
+                self.model.selection = self.row.item
             } label: {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(row.result?.label ?? row.item.name)
+                    Text(self.row.result?.label ?? self.row.item.name)
                         .fontWeight(.medium)
                         .lineLimit(1)
                         .layoutPriority(1)
-                    Text(row.item.family.name)
+                    Text(self.row.item.family.name)
                         .font(.caption)
                         .foregroundStyle(.muted)
                         .lineLimit(1)
@@ -98,53 +97,62 @@ struct ItemRow: View {
             }
             .buttonStyle(.plain)
 
-            if showsBar {
-                ThinBar(fraction: Double(row.shownKilobytes) / largest, color: emphasized ? .white : barColor)
+            if self.showsBar {
+                ThinBar(
+                    fraction: Double(self.row.shownKilobytes) / self.largest,
+                    color: emphasized ? .white : self.barColor)
                     .frame(width: 120)
             }
 
-            Text(sizeText)
+            Text(self.sizeText)
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(row.isLive ? AnyShapeStyle(.primary) : row.showsPrevious ? AnyShapeStyle(.muted) : AnyShapeStyle(.muted))
-                .help(row.showsPrevious ? "From the last scan" : "")
+                .foregroundStyle(self.row.isLive ? AnyShapeStyle(.primary) : self.row
+                    .showsPrevious ? AnyShapeStyle(.muted) : AnyShapeStyle(.muted))
+                .help(self.row.showsPrevious ? "From the last scan" : "")
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
                 .contentTransition(.numericText())
 
-            RowAction(row: row)
+            RowAction(row: self.row)
                 .frame(width: 84)
         }
         .padding(.horizontal, 14)
         .frame(height: 32)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { model.selection = row.item }
+        .onTapGesture { self.model.selection = self.row.item }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(row.result?.label ?? row.item.name), \(sizeText.isEmpty ? RowWords.state(row) : sizeText)")
+        .accessibilityLabel(
+            "\(self.row.result?.label ?? self.row.item.name), \(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: row.kilobytes)
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
     }
 
     private var barColor: Color {
-        switch row.state {
+        switch self.row.state {
         case .cleaned, .cleaning: Palette.cleaned
-        case .measuring: Palette.color(row.item).opacity(0.6)
-        case .waiting, .notMeasured: Palette.color(row.item).opacity(0.25)
-        case .measured: Palette.color(row.item)
+        case .measuring: Palette.color(self.row.item).opacity(0.6)
+        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(0.25)
+        case .measured: Palette.color(self.row.item)
         }
     }
 
     private var sizeText: String {
-        switch row.state {
-        case .waiting: row.showsPrevious && row.shownKilobytes > 0 ? SizeText.of(kilobytes: row.shownKilobytes) : ""
+        switch self.row.state {
+        case .waiting: self.row.showsPrevious && self.row.shownKilobytes > 0 ? SizeText
+            .of(kilobytes: self.row.shownKilobytes) : ""
         case .notMeasured: ""
-        case .measuring: row.progressBytes > 0 ? SizeText.of(bytes: row.progressBytes) : ""
-        case .cleaning, .cleaned: SizeText.of(kilobytes: row.kilobytes)
+        case .measuring: self.row.progressBytes > 0 ? SizeText.of(bytes: self.row.progressBytes) : ""
+        case .cleaning, .cleaned: SizeText.of(kilobytes: self.row.kilobytes)
         case .measured:
-            if !row.sizeKnown && row.kilobytes == 0 { "Unknown" }
-            else if row.result?.isEmpty ?? true { "none" }
-            else { SizeText.of(kilobytes: row.kilobytes) }
+            if !self.row.sizeKnown, self.row.kilobytes == 0 {
+                "Unknown"
+            } else if self.row.result?.isEmpty ?? true {
+                "none"
+            } else {
+                SizeText.of(kilobytes: self.row.kilobytes)
+            }
         }
     }
 }
@@ -167,7 +175,7 @@ struct RowAction: View {
     let row: AppModel.Row
 
     var body: some View {
-        switch row.state {
+        switch self.row.state {
         case .waiting:
             Text("Waiting").font(.caption).foregroundStyle(.muted)
         case .measuring:
@@ -177,17 +185,17 @@ struct RowAction: View {
         case .cleaning:
             ProgressView().controlSize(.small)
         case .cleaned:
-            Text(row.canPutBack ? "In Trash" : "Deleted")
+            Text(self.row.canPutBack ? "In Trash" : "Deleted")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.green)
         case .measured:
-            if row.isLive {
+            if self.row.isLive {
                 Button("Clean") {
-                    model.selection = row.item
-                    Task { await model.requestClean([row.item]) }
+                    self.model.selection = self.row.item
+                    Task { await self.model.requestClean([self.row.item]) }
                 }
                 .controlSize(.small)
-                .disabled(model.isScanning || model.isCleaning)
+                .disabled(self.model.isScanning || self.model.isCleaning)
             }
         }
     }
@@ -199,11 +207,11 @@ struct Pulsing<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        if reduceMotion {
-            content
+        if self.reduceMotion {
+            self.content
         } else {
             PhaseAnimator([0.35, 1.0]) { opacity in
-                content.opacity(opacity)
+                self.content.opacity(opacity)
             } animation: { _ in
                 .easeInOut(duration: 0.6)
             }

@@ -47,7 +47,7 @@ enum FileSystem {
         guard !path.isEmpty, let resolved = realpath(path, nil) else { return nil }
         defer { free(resolved) }
         let real = String(cString: resolved)
-        guard isDirectory(real), access(real, X_OK) == 0 else { return nil }
+        guard self.isDirectory(real), access(real, X_OK) == 0 else { return nil }
         return real
     }
 
@@ -63,7 +63,7 @@ enum FileSystem {
                     String(cString: $0)
                 }
             }
-            if name != "." && name != ".." {
+            if name != ".", name != ".." {
                 names.append(name)
             }
         }
@@ -73,13 +73,15 @@ enum FileSystem {
     /// The names a bash glob `dir/*` expands to: no hidden names, sorted the
     /// way `LC_ALL=C` sorts them.
     static func globNames(_ directory: String) -> [String] {
-        childNames(directory).filter { !$0.hasPrefix(".") }.sortedBytewise()
+        self.childNames(directory).filter { !$0.hasPrefix(".") }.sortedBytewise()
     }
 
     /// The `basename` utility.
     static func basename(_ path: String) -> String {
         var trimmed = Substring(path)
-        while trimmed.count > 1, trimmed.hasSuffix("/") { trimmed = trimmed.dropLast() }
+        while trimmed.count > 1, trimmed.hasSuffix("/") {
+            trimmed = trimmed.dropLast()
+        }
         if trimmed == "/" { return "/" }
         if let slash = trimmed.lastIndex(of: "/") {
             return String(trimmed[trimmed.index(after: slash)...])
@@ -90,11 +92,15 @@ enum FileSystem {
     /// The `dirname` utility.
     static func dirname(_ path: String) -> String {
         var trimmed = Substring(path)
-        while trimmed.count > 1, trimmed.hasSuffix("/") { trimmed = trimmed.dropLast() }
+        while trimmed.count > 1, trimmed.hasSuffix("/") {
+            trimmed = trimmed.dropLast()
+        }
         if trimmed == "/" { return "/" }
         guard let slash = trimmed.lastIndex(of: "/") else { return "." }
         var parent = trimmed[..<slash]
-        while parent.count > 1, parent.hasSuffix("/") { parent = parent.dropLast() }
+        while parent.count > 1, parent.hasSuffix("/") {
+            parent = parent.dropLast()
+        }
         return parent.isEmpty ? "/" : String(parent)
     }
 
@@ -126,7 +132,7 @@ extension String {
 
     /// Strips one leading occurrence of `prefix`, like `${value#prefix}`.
     func removingPrefix(_ prefix: String) -> String {
-        guard hasBytePrefix(prefix) else { return self }
+        guard self.hasBytePrefix(prefix) else { return self }
         return String(decoding: Array(utf8.dropFirst(prefix.utf8.count)), as: UTF8.self)
     }
 
@@ -153,7 +159,7 @@ extension Sequence<String> {
     /// Sorted by bytes with duplicates removed, as `sort -u` does under `LC_ALL=C`.
     func sortedUniqueBytewise() -> [String] {
         var result: [String] = []
-        for path in sortedBytewise() where result.last.map({ !$0.bytesEqual(path) }) ?? true {
+        for path in self.sortedBytewise() where result.last.map({ !$0.bytesEqual(path) }) ?? true {
             result.append(path)
         }
         return result

@@ -13,10 +13,10 @@ public struct HomebrewScanner: Scanner {
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
         var kilobytes: Int64 = 0
         if context.tools.brew.isAvailable {
-            kilobytes = Self.kilobytes(fromDryRun: await context.tools.brew.cleanupDryRun())
+            kilobytes = await Self.kilobytes(fromDryRun: context.tools.brew.cleanupDryRun())
         }
         progress(kilobytes * 1024)
-        return ItemResult(item: item, paths: [], kilobytes: kilobytes, location: await location(in: context))
+        return await ItemResult(item: self.item, paths: [], kilobytes: kilobytes, location: self.location(in: context))
     }
 
     /// Size in KB from the dry run's "would free approximately 1.5GB" line.
@@ -24,7 +24,9 @@ public struct HomebrewScanner: Scanner {
     /// are dropped.
     static func kilobytes(fromDryRun output: String) -> Int64 {
         var result: Double = 0
-        for line in output.split(separator: "\n", omittingEmptySubsequences: false) where line.contains("would free approximately") {
+        for line in output.split(separator: "\n", omittingEmptySubsequences: false)
+            where line.contains("would free approximately")
+        {
             let fields = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
             var value = ""
             for (index, field) in fields.enumerated() where field == "approximately" {

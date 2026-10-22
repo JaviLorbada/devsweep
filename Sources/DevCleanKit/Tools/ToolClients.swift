@@ -78,7 +78,9 @@ public struct LiveSimctlClient: SimctlClient {
         self.passthroughDeletes = passthroughDeletes
     }
 
-    public var isAvailable: Bool { runner.locate("xcrun") != nil }
+    public var isAvailable: Bool {
+        self.runner.locate("xcrun") != nil
+    }
 
     public func unavailableDevicesListing() async -> String {
         guard let output = await runner.run("xcrun", ["simctl", "list", "devices", "unavailable"]) else { return "" }
@@ -86,20 +88,23 @@ public struct LiveSimctlClient: SimctlClient {
     }
 
     public func runtimesJSON() async -> Data? {
-        guard let output = await runner.run("xcrun", ["simctl", "runtime", "list", "-j"]), output.succeeded else { return nil }
+        guard let output = await runner.run("xcrun", ["simctl", "runtime", "list", "-j"]),
+              output.succeeded else { return nil }
         return output.standardOutput
     }
 
     public func devicesJSON() async -> Data? {
-        await runner.run("xcrun", ["simctl", "list", "devices", "-j"])?.standardOutput
+        await self.runner.run("xcrun", ["simctl", "list", "devices", "-j"])?.standardOutput
     }
 
     public func deleteUnavailable() async -> Bool {
-        await runner.run("xcrun", ["simctl", "delete", "unavailable"], passthrough: passthroughDeletes)?.succeeded ?? false
+        await self.runner.run("xcrun", ["simctl", "delete", "unavailable"], passthrough: self.passthroughDeletes)?
+            .succeeded ?? false
     }
 
     public func deleteRuntime(_ id: String) async -> Bool {
-        await runner.run("xcrun", ["simctl", "runtime", "delete", id], passthrough: passthroughDeletes)?.succeeded ?? false
+        await self.runner.run("xcrun", ["simctl", "runtime", "delete", id], passthrough: self.passthroughDeletes)?
+            .succeeded ?? false
     }
 }
 
@@ -110,7 +115,9 @@ public struct LiveBrewClient: BrewClient {
         self.runner = runner
     }
 
-    public var isAvailable: Bool { runner.locate("brew") != nil }
+    public var isAvailable: Bool {
+        self.runner.locate("brew") != nil
+    }
 
     public func cleanupDryRun() async -> String {
         guard let output = await runner.run("brew", ["cleanup", "--prune=all", "--dry-run"]) else { return "" }
@@ -118,7 +125,7 @@ public struct LiveBrewClient: BrewClient {
     }
 
     public func cleanup() async -> Bool {
-        await runner.run("brew", ["cleanup", "--prune=all"])?.succeeded ?? false
+        await self.runner.run("brew", ["cleanup", "--prune=all"])?.succeeded ?? false
     }
 }
 
@@ -130,7 +137,7 @@ public struct LiveXcodeDefaults: XcodeDefaultsReading {
     }
 
     public func customDerivedDataLocation() async -> String {
-        await runner.run("defaults", ["read", "com.apple.dt.Xcode", "IDECustomDerivedDataLocation"])?.text ?? ""
+        await self.runner.run("defaults", ["read", "com.apple.dt.Xcode", "IDECustomDerivedDataLocation"])?.text ?? ""
     }
 }
 
@@ -142,7 +149,7 @@ public struct LiveXcodeSelect: XcodeSelectReading {
     }
 
     public func selectedDeveloperDirectory() async -> String {
-        await runner.run("xcode-select", ["-p"])?.text ?? ""
+        await self.runner.run("xcode-select", ["-p"])?.text ?? ""
     }
 }
 
@@ -170,7 +177,7 @@ public struct PgrepRunningApps: RunningAppsChecking {
     }
 
     public func isRunning(_ app: DeveloperApp) async -> Bool {
-        await runner.run("pgrep", ["-xq", app.rawValue])?.succeeded ?? false
+        await self.runner.run("pgrep", ["-xq", app.rawValue])?.succeeded ?? false
     }
 }
 

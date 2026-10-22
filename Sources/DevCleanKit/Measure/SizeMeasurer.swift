@@ -25,13 +25,13 @@ public struct SizeMeasurer: Sendable {
     /// How many entries pass between progress reports.
     public var progressInterval: Int
 
-    public init(progressInterval: Int = 2_000) {
+    public init(progressInterval: Int = 2000) {
         self.progressInterval = progressInterval
     }
 
     /// Measures one path. `progress` receives the running total in bytes.
     public func measure(_ path: String, progress: ((Int64) -> Void)? = nil) -> Measurement {
-        measure(path, shouldStop: { Task.isCancelled }, progress: progress)
+        self.measure(path, shouldStop: { Task.isCancelled }, progress: progress)
     }
 
     /// Measures one path on a GCD thread, so a long walk doesn't hold one of
@@ -42,7 +42,10 @@ public struct SizeMeasurer: Sendable {
         return await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .userInitiated).async {
-                    continuation.resume(returning: measure(path, shouldStop: { stop.withLock { $0 } }, progress: progress))
+                    continuation.resume(returning: self.measure(
+                        path,
+                        shouldStop: { stop.withLock { $0 } },
+                        progress: progress))
                 }
             }
         } onCancel: {
@@ -58,7 +61,7 @@ public struct SizeMeasurer: Sendable {
 
         FileTree.walk(path) { entry in
             visited += 1
-            if visited.isMultiple(of: progressInterval) {
+            if visited.isMultiple(of: self.progressInterval) {
                 if shouldStop() { return .stop }
                 progress?((blocks + 1) / 2 * 1024)
             }

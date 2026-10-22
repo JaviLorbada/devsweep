@@ -1,5 +1,6 @@
 import Darwin
 import Foundation
+import Synchronization
 import Testing
 @testable import DevCleanKit
 
@@ -95,12 +96,16 @@ struct PathPolicyTests {
 
 @Suite("Git tracking")
 struct GitTrackingTests {
-    func check(_ folder: String, home: FakeHome, environment: [String: String] = [:], git: any GitClient) async throws -> (Bool, [String]) {
+    func check(
+        _ folder: String,
+        home: FakeHome,
+        environment: [String: String] = [:],
+        git: any GitClient) async throws -> (Bool, [String])
+    {
         let policy = try PathPolicy(home: home.home)
         var warnings: [String] = []
         let untracked = await GitTracking.isUntracked(
-            folder, environment: environment, git: git, policy: policy, warn: { warnings.append($0) }
-        )
+            folder, environment: environment, git: git, policy: policy, warn: { warnings.append($0) })
         return (untracked, warnings)
     }
 
@@ -108,8 +113,10 @@ struct GitTrackingTests {
     func `without any .git up the tree, git is never asked`() async throws {
         let home = FakeHome(), log = CallLog()
         home.fill(home.path("Workspace/App/.build"))
-        let (untracked, warnings) = try await check(home.path("Workspace/App/.build"), home: home,
-                                                    git: FakeGit(log: log) { _, _ in "tracked" })
+        let (untracked, warnings) = try await check(
+            home.path("Workspace/App/.build"),
+            home: home,
+            git: FakeGit(log: log) { _, _ in "tracked" })
         #expect(untracked)
         #expect(warnings.isEmpty)
         #expect(log.calls.isEmpty)
@@ -122,8 +129,8 @@ struct GitTrackingTests {
         home.mkdir(home.path("Workspace/.git"))
         let folder = home.path("Workspace/App/.build")
 
-        #expect(try await check(folder, home: home, git: FakeGit(log: log) { _, _ in "" }).0)
-        #expect(try await !check(folder, home: home, git: FakeGit(log: log) { _, _ in ".build/file" }).0)
+        #expect(try await self.check(folder, home: home, git: FakeGit(log: log) { _, _ in "" }).0)
+        #expect(try await !self.check(folder, home: home, git: FakeGit(log: log) { _, _ in ".build/file" }).0)
         let (untracked, warnings) = try await check(folder, home: home, git: FakeGit(log: log) { _, _ in nil })
         #expect(!untracked)
         #expect(warnings == ["Skipped ~/Workspace/App/.build: couldn't check whether git tracks it."])
@@ -135,9 +142,21 @@ struct GitTrackingTests {
         let home = FakeHome(), log = CallLog()
         home.fill(home.path("Workspace/App/.build"))
         let git = FakeGit(log: log) { _, _ in nil }
-        #expect(try await !check(home.path("Workspace/App/.build"), home: home, environment: ["GIT_DIR": "/x"], git: git).0)
-        #expect(try await !check(home.path("Workspace/App/.build"), home: home, environment: ["GIT_WORK_TREE": "/x"], git: git).0)
-        #expect(try await check(home.path("Workspace/App/.build"), home: home, environment: ["GIT_DIR": ""], git: git).0)
+        #expect(try await !self.check(
+            home.path("Workspace/App/.build"),
+            home: home,
+            environment: ["GIT_DIR": "/x"],
+            git: git).0)
+        #expect(try await !self.check(
+            home.path("Workspace/App/.build"),
+            home: home,
+            environment: ["GIT_WORK_TREE": "/x"],
+            git: git).0)
+        #expect(try await self.check(
+            home.path("Workspace/App/.build"),
+            home: home,
+            environment: ["GIT_DIR": ""],
+            git: git).0)
     }
 
     @Test
@@ -202,16 +221,18 @@ struct MeasuringTests {
         home.symlink("missing", at: "\(tree)/broken")
 
         let measured = SizeMeasurer(progressInterval: 2).measure(tree)
-        #expect(measured.kilobytes == du(tree))
+        #expect(measured.kilobytes == self.du(tree))
         #expect(measured.readable)
-        #expect(SizeMeasurer().measure("\(tree)/a/link").kilobytes == du("\(tree)/a/link"))
+        #expect(SizeMeasurer().measure("\(tree)/a/link").kilobytes == self.du("\(tree)/a/link"))
         #expect(SizeMeasurer().measure(home.path("missing")).kilobytes == 0)
     }
 
     @Test
     func `progress reports a running total that ends at the size`() {
         let home = FakeHome()
-        for n in 0..<20 { home.writeZeros(home.path("tree/f\(n)"), kilobytes: 8) }
+        for n in 0..<20 {
+            home.writeZeros(home.path("tree/f\(n)"), kilobytes: 8)
+        }
         let totals = Mutex<[Int64]>([])
         let measured = SizeMeasurer(progressInterval: 5).measure(home.path("tree")) { bytes in
             totals.withLock { $0.append(bytes) }
@@ -242,5 +263,3 @@ struct MeasuringTests {
         #expect(DiskSpace.of(home.path("missing")) == nil)
     }
 }
-
-import Synchronization

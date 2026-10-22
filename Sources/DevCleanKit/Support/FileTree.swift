@@ -3,7 +3,7 @@ import Darwin
 /// A physical walk over a folder with fts(3), the way `find` and `du` walk:
 /// symlinks are never followed, not even the root, and the process working
 /// directory is never changed, so walks can run on several threads at once.
-struct FileTree {
+enum FileTree {
     enum Kind {
         /// A directory, before its children.
         case directory
@@ -42,18 +42,17 @@ struct FileTree {
 
         while let node = fts_read(stream) {
             let info = Int32(node.pointee.fts_info)
-            let kind: Kind
-            switch info {
-            case FTS_D: kind = .directory
-            case FTS_DP: kind = .directoryPost
-            case FTS_DNR: kind = .unreadable
-            case FTS_ERR, FTS_NS, FTS_DC: kind = .error
-            default: kind = .other
+            let kind: Kind = switch info {
+            case FTS_D: .directory
+            case FTS_DP: .directoryPost
+            case FTS_DNR: .unreadable
+            case FTS_ERR, FTS_NS, FTS_DC: .error
+            default: .other
             }
             let path = String(cString: node.pointee.fts_path)
             let level = Int(node.pointee.fts_level)
             // fts names the root by the whole argument; find matches its basename.
-            let name = level == 0 ? FileSystem.basename(path) : entryName(node)
+            let name = level == 0 ? FileSystem.basename(path) : self.entryName(node)
             let status: stat? = (kind == .error || node.pointee.fts_statp == nil) ? nil : node.pointee.fts_statp.pointee
             switch visit(Entry(path: path, name: name, level: level, kind: kind, status: status)) {
             case .proceed:

@@ -37,13 +37,13 @@ public struct FolderTrash: TrashService {
     }
 
     public func trash(_ path: String) throws -> String {
-        try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(atPath: self.folder, withIntermediateDirectories: true)
         let name = FileSystem.basename(path)
         var destination = "\(folder)/\(name)"
         var counter = 1
         while FileSystem.existsOrIsSymlink(destination) {
             counter += 1
-            destination = "\(folder)/\(name) \(counter)"
+            destination = "\(self.folder)/\(name) \(counter)"
         }
         try FileManager.default.moveItem(atPath: path, toPath: destination)
         return destination

@@ -17,8 +17,8 @@ public struct Tools: Sendable {
         git: any GitClient,
         runningApps: any RunningAppsChecking,
         lastUsedDates: any LastUsedDateReading,
-        trash: any TrashService
-    ) {
+        trash: any TrashService)
+    {
         self.simctl = simctl
         self.brew = brew
         self.xcodeDefaults = xcodeDefaults
@@ -41,7 +41,6 @@ public struct Tools: Sendable {
             git: LiveGitClient(runner: runner),
             runningApps: PgrepRunningApps(runner: runner),
             lastUsedDates: SpotlightLastUsedDates(),
-            trash: SystemTrash()
-        )
+            trash: SystemTrash())
     }
 }

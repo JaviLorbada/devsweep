@@ -28,15 +28,14 @@ struct DevCleanApp: App {
     var body: some Scene {
         Window(ProductInfo.name, id: "main") {
             ContentView()
-                .environment(model)
+                .environment(self.model)
                 .containerBackground(Palette.backdrop, for: .window)
                 // A fixed ideal size: SwiftUI animates the window to the
                 // content's ideal size whenever an animated change alters it,
                 // and with flexible content that size followed every scan event.
                 .frame(
                     minWidth: WindowLayout.minimumWidth, idealWidth: 1280, maxWidth: .infinity,
-                    minHeight: WindowLayout.minimumHeight, idealHeight: 860, maxHeight: .infinity
-                )
+                    minHeight: WindowLayout.minimumHeight, idealHeight: 860, maxHeight: .infinity)
         }
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
@@ -44,25 +43,25 @@ struct DevCleanApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandMenu("Scan") {
-                Button(model.isScanning ? "Stop Scan" : "Scan Again") {
-                    model.isScanning ? model.stopScan() : model.scan()
+                Button(self.model.isScanning ? "Stop Scan" : "Scan Again") {
+                    self.model.isScanning ? self.model.stopScan() : self.model.scan()
                 }
                 .keyboardShortcut("r")
-                .disabled(model.engine == nil)
+                .disabled(self.model.engine == nil)
             }
         }
 
         Settings {
             SettingsView()
-                .environment(model)
+                .environment(self.model)
         }
 
         MenuBarExtra {
             MenuBarPanel()
-                .environment(model)
+                .environment(self.model)
         } label: {
             MenuBarLabel()
-                .environment(model)
+                .environment(self.model)
         }
         .menuBarExtraStyle(.window)
     }
@@ -87,5 +86,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
-
 }

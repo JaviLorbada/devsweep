@@ -10,12 +10,16 @@ public struct ProcessOutput: Sendable {
         self.standardOutput = standardOutput
     }
 
-    public var succeeded: Bool { status == 0 }
+    public var succeeded: Bool {
+        self.status == 0
+    }
 
     /// Standard output as text, with trailing newlines removed like `$(...)` does.
     public var text: String {
         var text = String(decoding: standardOutput, as: UTF8.self)
-        while text.hasSuffix("\n") { text.removeLast() }
+        while text.hasSuffix("\n") {
+            text.removeLast()
+        }
         return text
     }
 }
@@ -32,7 +36,7 @@ public protocol ProcessRunning: Sendable {
 
 extension ProcessRunning {
     public func run(_ name: String, _ arguments: [String]) async -> ProcessOutput? {
-        await run(name, arguments, passthrough: false)
+        await self.run(name, arguments, passthrough: false)
     }
 }
 
@@ -52,7 +56,7 @@ public struct LiveProcessRunner: ProcessRunning {
         if name.contains("/") {
             return Self.isExecutableFile(name) ? name : nil
         }
-        let searchPath = environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
+        let searchPath = self.environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
         for directory in searchPath.split(separator: ":", omittingEmptySubsequences: false) {
             let candidate = (directory.isEmpty ? "." : String(directory)) + "/" + name
             if Self.isExecutableFile(candidate) {

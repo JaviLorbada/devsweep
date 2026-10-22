@@ -21,8 +21,13 @@ public struct InstalledXcode: Sendable, Identifiable, Equatable, Codable {
     /// The one `xcode-select -p` points at.
     public var isSelected: Bool
 
-    public var id: String { path }
-    public var title: String { "Xcode \(version) (\(build))" }
+    public var id: String {
+        self.path
+    }
+
+    public var title: String {
+        "Xcode \(self.version) (\(self.build))"
+    }
 
     public init(path: String, version: String, build: String, kilobytes: Int64, lastOpened: Date?, isSelected: Bool) {
         self.path = path
@@ -35,8 +40,8 @@ public struct InstalledXcode: Sendable, Identifiable, Equatable, Codable {
 
     /// "opened 2026-10-20, selected", as the report prints it.
     public var note: String {
-        var note = lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown"
-        if isSelected { note += ", selected" }
+        var note = self.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown"
+        if self.isSelected { note += ", selected" }
         return note
     }
 }
@@ -64,8 +69,8 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
         kilobytes: Int64,
         lastUsedDay: String?,
         daysSinceUsed: Int?,
-        simulatorCount: Int
-    ) {
+        simulatorCount: Int)
+    {
         self.id = id
         self.identifier = identifier
         self.platform = platform
@@ -77,15 +82,19 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
         self.simulatorCount = simulatorCount
     }
 
-    public var title: String { "\(platform) \(version) (\(build))" }
+    public var title: String {
+        "\(self.platform) \(self.version) (\(self.build))"
+    }
 
     /// The command that removes it. devclean shows it; it never runs it unasked.
-    public var removalCommand: String { "xcrun simctl runtime delete \(id)" }
+    public var removalCommand: String {
+        "xcrun simctl runtime delete \(self.id)"
+    }
 
     /// "used 2026-10-20, 2 simulators"
     public var note: String {
-        let used = lastUsedDay.map { "used \($0)" } ?? "never used"
-        return simulatorCount == 1 ? "\(used), 1 simulator" : "\(used), \(simulatorCount) simulators"
+        let used = self.lastUsedDay.map { "used \($0)" } ?? "never used"
+        return self.simulatorCount == 1 ? "\(used), 1 simulator" : "\(used), \(self.simulatorCount) simulators"
     }
 
     /// Why it looks unused, or nil when it doesn't.
@@ -94,7 +103,7 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
         if let days = daysSinceUsed, days >= staleDays {
             reason = "Not used in \(days) days"
         }
-        if simulatorCount == 0 {
+        if self.simulatorCount == 0 {
             reason = reason.map { "\($0), no simulators" } ?? "No simulators"
         }
         return reason

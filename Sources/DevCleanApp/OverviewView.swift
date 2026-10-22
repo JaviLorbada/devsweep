@@ -14,7 +14,7 @@ struct OverviewView: View {
                 .padding(.vertical, 12)
                 .background(.bar)
         }
-        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: model.chartStyle)
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.model.chartStyle)
     }
 }
 
@@ -25,7 +25,7 @@ struct OverviewContent: View {
     var body: some View {
         VStack(spacing: 14) {
             Group {
-                switch model.chartStyle {
+                switch self.model.chartStyle {
                 case .ring: RingChart()
                 case .blocks: BlocksChart()
                 }
@@ -37,8 +37,8 @@ struct OverviewContent: View {
 
             ItemsCard()
 
-            if !model.warnings.isEmpty {
-                WarningsNote(warnings: model.warnings)
+            if !self.model.warnings.isEmpty {
+                WarningsNote(warnings: self.model.warnings)
             }
         }
         .padding(.horizontal, 22)
@@ -52,17 +52,18 @@ struct WarningsNote: View {
     @State private var expanded = false
 
     var body: some View {
-        DisclosureGroup(isExpanded: $expanded) {
+        DisclosureGroup(isExpanded: self.$expanded) {
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(warnings.enumerated()), id: \.offset) { _, warning in
+                ForEach(Array(self.warnings.enumerated()), id: \.offset) { _, warning in
                     Text(warning).font(.caption).textSelection(.enabled)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 4)
         } label: {
-            Label(warnings.count == 1 ? "1 note from the scan" : "\(warnings.count) notes from the scan",
-                  systemImage: "exclamationmark.triangle")
+            Label(
+                self.warnings.count == 1 ? "1 note from the scan" : "\(self.warnings.count) notes from the scan",
+                systemImage: "exclamationmark.triangle")
                 .font(.callout)
                 .foregroundStyle(.muted)
         }
@@ -78,7 +79,7 @@ struct OverviewFooter: View {
 
     var body: some View {
         GeometryReader { proxy in
-            bar(wide: proxy.size.width >= 640)
+            self.bar(wide: proxy.size.width >= 640)
                 .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .frame(height: 32)
@@ -94,13 +95,17 @@ struct OverviewFooter: View {
                 .lineLimit(1)
                 .help("Off deletes for good, after asking")
             Spacer(minLength: 0)
-            Text(model.markedRows.isEmpty ? "Nothing marked" : "\(model.markedRows.count) marked, \(SizeText.of(kilobytes: model.markedKilobytes))")
+            Text(model.markedRows
+                .isEmpty ? "Nothing marked" :
+                "\(model.markedRows.count) marked, \(SizeText.of(kilobytes: model.markedKilobytes))")
                 .font(.callout)
                 .monospacedDigit()
                 .foregroundStyle(.muted)
                 .lineLimit(1)
                 .contentTransition(.numericText())
-            Button(model.markedRows.isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))") {
+            Button(model.markedRows
+                .isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))")
+            {
                 Task { await model.requestClean(model.markedRows.map(\.item)) }
             }
             .buttonStyle(.glassProminent)

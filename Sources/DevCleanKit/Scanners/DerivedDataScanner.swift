@@ -15,11 +15,11 @@ public struct DerivedDataScanner: Scanner {
     }
 
     public func location(in context: ScanContext) async -> String {
-        context.policy.tilde(await directory(in: context))
+        await context.policy.tilde(self.directory(in: context))
     }
 
     public func collect(in context: ScanContext) async -> [String] {
-        context.existing([await directory(in: context)])
+        await context.existing([self.directory(in: context)])
     }
 
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
@@ -27,18 +27,17 @@ public struct DerivedDataScanner: Scanner {
         let paths = context.existing([directory])
         let location = context.policy.tilde(directory)
         guard let folder = paths.first else {
-            return ItemResult(item: item, paths: [], kilobytes: 0, location: location)
+            return ItemResult(item: self.item, paths: [], kilobytes: 0, location: location)
         }
         // Measured entry by entry, once, for both the total and the breakdown.
         let (breakdown, known) = await Self.breakdown(of: folder, context: context, progress: progress)
         return ItemResult(
-            item: item,
+            item: self.item,
             paths: paths,
             kilobytes: breakdown.totalKilobytes,
             location: location,
             derivedData: breakdown,
-            sizeKnown: known
-        )
+            sizeKnown: known)
     }
 
     /// One part per entry in the folder: the shared compilation and module
@@ -47,8 +46,8 @@ public struct DerivedDataScanner: Scanner {
     static func breakdown(
         of folder: String,
         context: ScanContext,
-        progress: @escaping @Sendable (Int64) -> Void
-    ) async -> (DerivedDataBreakdown, Bool) {
+        progress: @escaping @Sendable (Int64) -> Void) async -> (DerivedDataBreakdown, Bool)
+    {
         // The glob `* .[!.]*`: every entry except names starting with "..".
         let names = context.files.childNames(folder).filter { !$0.hasPrefix("..") }
         let measured = await context.measure(names.map { "\(folder)/\($0)" }, progress: progress)
@@ -79,7 +78,11 @@ public struct DerivedDataScanner: Scanner {
         return (result, measured.allSatisfy(\.readable))
     }
 
-    static func project(at entry: String, kilobytes: Int64, files: any FileSystemAccess = LiveFileSystem()) -> DerivedDataProject? {
+    static func project(
+        at entry: String,
+        kilobytes: Int64,
+        files: any FileSystemAccess = LiveFileSystem()) -> DerivedDataProject?
+    {
         let plist = PropertyList.dictionary(at: "\(entry)/info.plist")
         guard let workspace = plist?["WorkspacePath"] as? String, !workspace.isEmpty else { return nil }
 
@@ -91,12 +94,11 @@ public struct DerivedDataScanner: Scanner {
             status = .gone
         }
         return DerivedDataProject(
-            name: projectName(workspace),
+            name: self.projectName(workspace),
             status: status,
             kilobytes: kilobytes,
             folder: entry,
-            workspacePath: workspace
-        )
+            workspacePath: workspace)
     }
 
     /// `Folder/Project` from a workspace path such as `.../Folder/Project.xcodeproj`.

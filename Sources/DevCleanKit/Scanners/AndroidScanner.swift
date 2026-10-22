@@ -10,17 +10,17 @@ import Foundation
 /// the command line never asks for.
 struct AndroidScanner: ListingScanner {
     func scan(in context: ScanContext) async -> AndroidReport {
-        await scan(in: context, now: context.clock.now())
+        await self.scan(in: context, now: context.clock.now())
     }
 
     func scan(in context: ScanContext, now: Date) async -> AndroidReport {
-        var found: [AndroidEntry] = studios(in: context)
+        var found: [AndroidEntry] = self.studios(in: context)
         let sdk = context.existing(["\(context.home)/Library/Android/sdk"]).first
         if let sdk {
-            found += sdkParts(in: sdk, context: context)
+            found += self.sdkParts(in: sdk, context: context)
         }
         found += emulators(in: context)
-        found += gradleCaches(in: context)
+        found += self.gradleCaches(in: context)
 
         // One measuring pass over everything, so the context can measure
         // several folders at once.
@@ -33,14 +33,15 @@ struct AndroidScanner: ListingScanner {
         var images = found.filter { $0.kind == .systemImage }
         // An image counts as used when an emulator on it was.
         for index in images.indices {
-            let users = emulators.filter { emulatorUses($0, image: images[index], sdk: sdk) }
+            let users = emulators.filter { self.emulatorUses($0, image: images[index], sdk: sdk) }
             images[index].emulatorCount = users.count
-            images[index].lastUsed = ([images[index].lastUsed] + users.map(\.lastUsed)).compactMap { $0 }.max()
+            images[index].lastUsed = ([images[index].lastUsed] + users.map(\.lastUsed)).compactMap(\.self).max()
         }
 
         func largestFirst(_ kind: AndroidEntry.Kind, _ entries: [AndroidEntry]? = nil) -> [AndroidEntry] {
             (entries ?? found.filter { $0.kind == kind }).sorted {
-                $0.kilobytes != $1.kilobytes ? $0.kilobytes > $1.kilobytes : $0.path.utf8.lexicographicallyPrecedes($1.path.utf8)
+                $0.kilobytes != $1.kilobytes ? $0.kilobytes > $1.kilobytes : $0.path.utf8
+                    .lexicographicallyPrecedes($1.path.utf8)
             }
         }
         return AndroidReport(
@@ -51,8 +52,7 @@ struct AndroidScanner: ListingScanner {
             buildTools: largestFirst(.buildTools),
             otherSDKParts: largestFirst(.sdkPart),
             emulators: largestFirst(.emulator),
-            gradleCaches: largestFirst(.gradleCache)
-        )
+            gradleCaches: largestFirst(.gradleCache))
     }
 
     // MARK: Android Studio
@@ -69,11 +69,10 @@ struct AndroidScanner: ListingScanner {
                 result.append(AndroidEntry(
                     kind: .studio,
                     path: app,
-                    title: [name.removingSuffix(".app"), version].compactMap { $0 }.joined(separator: " "),
+                    title: [name.removingSuffix(".app"), version].compactMap(\.self).joined(separator: " "),
                     detail: PropertyList.string(at: info, key: "CFBundleVersion") ?? "",
                     kilobytes: 0,
-                    lastUsed: context.tools.lastUsedDates.lastUsedDate(of: app)
-                ))
+                    lastUsed: context.tools.lastUsedDates.lastUsedDate(of: app)))
             }
         }
         return result
@@ -87,25 +86,41 @@ struct AndroidScanner: ListingScanner {
             let path = "\(sdk)/\(name)"
             switch name {
             case "system-images":
-                result += systemImages(in: path, context: context)
+                result += self.systemImages(in: path, context: context)
             case "platforms":
-                for platform in safeChildren(of: path, context: context) {
+                for platform in self.safeChildren(of: path, context: context) {
                     let properties = Properties.read("\(platform)/source.properties")
                     let folder = FileSystem.basename(platform)
-                    let title: String = if let version = properties["Platform.Version"], let level = properties["AndroidVersion.ApiLevel"] {
+                    let title: String = if let version = properties["Platform.Version"],
+                                           let level = properties["AndroidVersion.ApiLevel"]
+                    {
                         "Android \(version) (API \(level))"
                     } else {
                         folder
                     }
-                    result.append(AndroidEntry(kind: .platform, path: platform, title: title, detail: folder, kilobytes: 0))
+                    result.append(AndroidEntry(
+                        kind: .platform,
+                        path: platform,
+                        title: title,
+                        detail: folder,
+                        kilobytes: 0))
                 }
             case "build-tools":
-                for tools in safeChildren(of: path, context: context) {
-                    result.append(AndroidEntry(kind: .buildTools, path: tools, title: "Build tools \(FileSystem.basename(tools))", kilobytes: 0))
+                for tools in self.safeChildren(of: path, context: context) {
+                    result.append(AndroidEntry(
+                        kind: .buildTools,
+                        path: tools,
+                        title: "Build tools \(FileSystem.basename(tools))",
+                        kilobytes: 0))
                 }
             default:
                 guard let part = context.policy.safePath(path) else { continue }
-                result.append(AndroidEntry(kind: .sdkPart, path: part, title: Self.sdkPartName(name), detail: name, kilobytes: 0))
+                result.append(AndroidEntry(
+                    kind: .sdkPart,
+                    path: part,
+                    title: Self.sdkPartName(name),
+                    detail: name,
+                    kilobytes: 0))
             }
         }
         return result
@@ -114,11 +129,12 @@ struct AndroidScanner: ListingScanner {
     /// `system-images/<api>/<tag>/<abi>`, one entry per ABI folder.
     func systemImages(in folder: String, context: ScanContext) -> [AndroidEntry] {
         var result: [AndroidEntry] = []
-        for api in safeChildren(of: folder, context: context) {
-            for tag in safeChildren(of: api, context: context) {
-                for abi in safeChildren(of: tag, context: context) {
+        for api in self.safeChildren(of: folder, context: context) {
+            for tag in self.safeChildren(of: api, context: context) {
+                for abi in self.safeChildren(of: tag, context: context) {
                     let properties = Properties.read("\(abi)/source.properties")
-                    let level = properties["AndroidVersion.ApiLevel"] ?? FileSystem.basename(api).removingPrefix("android-")
+                    let level = properties["AndroidVersion.ApiLevel"] ?? FileSystem.basename(api)
+                        .removingPrefix("android-")
                     // Several tags come as one list: "Google APIs PlayStore,Page Size 16KB".
                     let tagName = (properties["SystemImage.TagDisplay"] ?? FileSystem.basename(tag))
                         .split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: ", ")
@@ -128,8 +144,7 @@ struct AndroidScanner: ListingScanner {
                         title: "API \(level), \(tagName)",
                         detail: properties["SystemImage.Abi"] ?? FileSystem.basename(abi),
                         kilobytes: 0,
-                        lastUsed: Self.date(context.files.modificationTime(abi))
-                    ))
+                        lastUsed: Self.date(context.files.modificationTime(abi))))
                 }
             }
         }
@@ -158,7 +173,7 @@ struct AndroidScanner: ListingScanner {
 
     func emulators(in context: ScanContext) -> [AndroidEntry] {
         let folder = "\(context.home)/.android/avd"
-        return safeChildren(of: folder, context: context).filter { $0.hasSuffix(".avd") }.map { avd in
+        return self.safeChildren(of: folder, context: context).filter { $0.hasSuffix(".avd") }.map { avd in
             let config = Properties.read("\(avd)/config.ini")
             let name = FileSystem.basename(avd).removingSuffix(".avd")
             let target = config["target"].map { $0.removingPrefix("android-") }.map { "API \($0)" }
@@ -166,17 +181,17 @@ struct AndroidScanner: ListingScanner {
                 kind: .emulator,
                 path: avd,
                 title: config["avd.ini.displayname"] ?? name.replacingOccurrences(of: "_", with: " "),
-                detail: [target, config["tag.display"]].compactMap { $0 }.joined(separator: ", "),
+                detail: [target, config["tag.display"]].compactMap(\.self).joined(separator: ", "),
                 kilobytes: 0,
-                lastUsed: Self.date(Self.newestChange(in: avd, files: context.files))
-            )
+                lastUsed: Self.date(Self.newestChange(in: avd, files: context.files)))
         }
     }
 
     /// An emulator's `image.sysdir.1` names its system image relative to the SDK.
     func emulatorUses(_ emulator: AndroidEntry, image: AndroidEntry, sdk: String?) -> Bool {
-        guard let sdk, let sysdir = Properties.read("\(emulator.path)/config.ini")["image.sysdir.1"] else { return false }
-        return "\(sdk)/\(sysdir.removingSuffix("/"))" == image.path
+        guard let sdk,
+              let sysdir = Properties.read("\(emulator.path)/config.ini")["image.sysdir.1"] else { return false }
+        return image.path == "\(sdk)/\(sysdir.removingSuffix("/"))"
     }
 
     /// The newest modification time of a folder and what sits directly in it.
@@ -189,7 +204,7 @@ struct AndroidScanner: ListingScanner {
     // MARK: Gradle
 
     func gradleCaches(in context: ScanContext) -> [AndroidEntry] {
-        safeChildren(of: "\(context.home)/.gradle", context: context).map { folder in
+        self.safeChildren(of: "\(context.home)/.gradle", context: context).map { folder in
             let name = FileSystem.basename(folder)
             var detail = name
             if name == "wrapper" {
@@ -198,7 +213,12 @@ struct AndroidScanner: ListingScanner {
                 }
                 if !versions.isEmpty { detail = versions.joined(separator: ", ") }
             }
-            return AndroidEntry(kind: .gradleCache, path: folder, title: Self.gradleFolderName(name), detail: detail, kilobytes: 0)
+            return AndroidEntry(
+                kind: .gradleCache,
+                path: folder,
+                title: Self.gradleFolderName(name),
+                detail: detail,
+                kilobytes: 0)
         }
     }
 
@@ -236,7 +256,8 @@ struct AndroidScanner: ListingScanner {
 /// `key=value` files: the SDK's `source.properties` and an emulator's `config.ini`.
 enum Properties {
     static func read(_ path: String) -> [String: String] {
-        guard let data = FileManager.default.contents(atPath: path), let text = String(data: data, encoding: .utf8) else { return [:] }
+        guard let data = FileManager.default.contents(atPath: path),
+              let text = String(data: data, encoding: .utf8) else { return [:] }
         var values: [String: String] = [:]
         for line in text.split(whereSeparator: \.isNewline) {
             guard !line.hasPrefix("#"), let equals = line.firstIndex(of: "=") else { continue }

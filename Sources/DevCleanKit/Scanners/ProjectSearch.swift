@@ -18,10 +18,10 @@ actor ProjectSearch {
     }
 
     func folders(named name: String) async -> [String] {
-        let search = searches[name] ?? {
+        let search = self.searches[name] ?? {
             let roots = roots, library = library
             let search = Task { Self.walk(roots: roots, library: library, name: name) }
-            searches[name] = search
+            self.searches[name] = search
             return search
         }()
         return await withTaskCancellationHandler { await search.value } onCancel: { search.cancel() }
@@ -32,7 +32,7 @@ actor ProjectSearch {
         for root in roots {
             FileTree.walk(root) { entry in
                 if Task.isCancelled { return .stop }
-                if entry.path.bytesEqual(library) || prunedNames.contains(entry.name) {
+                if entry.path.bytesEqual(library) || self.prunedNames.contains(entry.name) {
                     return .skipChildren
                 }
                 if entry.kind == .directory || entry.kind == .unreadable, entry.name == name {

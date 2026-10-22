@@ -36,19 +36,31 @@ public enum Treemap {
                 var y = Double(free.minY)
                 for cell in row {
                     let height = cell.area / max(width, 0.001)
-                    cells.append(Cell(id: cell.id, frame: CGRect(x: Double(free.minX), y: y, width: width, height: height)))
+                    cells.append(Cell(
+                        id: cell.id,
+                        frame: CGRect(x: Double(free.minX), y: y, width: width, height: height)))
                     y += height
                 }
-                free = CGRect(x: free.minX + width, y: free.minY, width: max(free.width - width, 0), height: free.height)
+                free = CGRect(
+                    x: free.minX + width,
+                    y: free.minY,
+                    width: max(free.width - width, 0),
+                    height: free.height)
             } else {
                 let height = sum / max(Double(free.width), 1)
                 var x = Double(free.minX)
                 for cell in row {
                     let width = cell.area / max(height, 0.001)
-                    cells.append(Cell(id: cell.id, frame: CGRect(x: x, y: Double(free.minY), width: width, height: height)))
+                    cells.append(Cell(
+                        id: cell.id,
+                        frame: CGRect(x: x, y: Double(free.minY), width: width, height: height)))
                     x += width
                 }
-                free = CGRect(x: free.minX, y: free.minY + height, width: free.width, height: max(free.height - height, 0))
+                free = CGRect(
+                    x: free.minX,
+                    y: free.minY + height,
+                    width: free.width,
+                    height: max(free.height - height, 0))
             }
         }
 

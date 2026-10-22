@@ -80,10 +80,12 @@ extension LayoutTests {
     @Test
     func `the inspector hides before the center would go below its minimum, and nothing is ever clipped`() {
         let gap = WindowLayout.gap
-        #expect(WindowLayout.detailWidthWithInspector >= gap + WindowLayout.centerMinimumWidth + gap + WindowLayout.inspectorWidth + gap)
+        #expect(WindowLayout.detailWidthWithInspector >= gap + WindowLayout.centerMinimumWidth + gap + WindowLayout
+            .inspectorWidth + gap)
         #expect(WindowLayout.inspectorHideBelow > WindowLayout.detailWidthWithInspector)
         #expect(WindowLayout.inspectorShowFrom > WindowLayout.inspectorHideBelow)
-        #expect(WindowLayout.minimumWidth == WindowLayout.sidebar.min + WindowLayout.dividers + gap + WindowLayout.centerMinimumWidth + gap)
+        #expect(WindowLayout.minimumWidth == WindowLayout.sidebar.min + WindowLayout.dividers + gap + WindowLayout
+            .centerMinimumWidth + gap)
         #expect(WindowLayout.minimumWidth < 900, "900 points must still show the sidebar and the center")
         #expect(WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom < 1100, "1100 points shows all three")
     }

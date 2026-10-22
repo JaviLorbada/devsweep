@@ -6,7 +6,8 @@ import Testing
 struct ProductInfoTests {
     /// `version.env` at the package root, as `KEY=value` lines.
     func versionFile() throws -> [String: String] {
-        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: "version.env"), encoding: .utf8)
         var values: [String: String] = [:]
         for line in text.split(separator: "\n") where !line.hasPrefix("#") {

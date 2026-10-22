@@ -8,7 +8,7 @@ enum ScanSchedule {
 
     static func isDue(lastScan: Date?, now: Date) -> Bool {
         guard let lastScan else { return false }
-        return now.timeIntervalSince(lastScan) >= interval
+        return now.timeIntervalSince(lastScan) >= self.interval
     }
 }
 
@@ -28,8 +28,7 @@ enum GrowthCheck {
         return Alert(
             title: "DerivedData grew by \(SizeText.of(kilobytes: growth))",
             body: "It holds \(SizeText.of(kilobytes: current)) now, up from \(SizeText.of(kilobytes: previous)) at the last scan. "
-                + "Open \(ProductInfo.name) to clean it."
-        )
+                + "Open \(ProductInfo.name) to clean it.")
     }
 }
 
@@ -45,7 +44,7 @@ struct UserNotificationPoster: NotificationPoster {
     func post(title: String, body: String) async {
         guard Bundle.main.bundleIdentifier != nil else { return }
         let center = UNUserNotificationCenter.current()
-        guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else { return }
+        guard await (try? center.requestAuthorization(options: [.alert, .sound])) == true else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body

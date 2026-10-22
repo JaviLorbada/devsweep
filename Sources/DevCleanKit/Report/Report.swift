@@ -28,7 +28,7 @@ public enum Report {
     }
 
     public static func human(bytes: Int64) -> String {
-        human(kilobytes: bytes / 1024)
+        self.human(kilobytes: bytes / 1024)
     }
 
     public static let scanning = "Scanning developer caches. Big ones can take a minute...\n"
@@ -39,11 +39,10 @@ public enum Report {
         let missing = folders.missing.joined(separator: ", ")
         let outside = folders.outside.joined(separator: ", ")
 
-        var details: String
-        if found.isEmpty {
-            details = missing.isEmpty ? "" : "looked for \(missing)"
+        var details: String = if found.isEmpty {
+            missing.isEmpty ? "" : "looked for \(missing)"
         } else {
-            details = missing.isEmpty ? "" : "not found: \(missing)"
+            missing.isEmpty ? "" : "not found: \(missing)"
         }
         if !outside.isEmpty {
             details = (details.isEmpty ? "" : "\(details); ") + "outside your home folder, skipped: \(outside)"
@@ -59,11 +58,11 @@ public enum Report {
 
     /// An item's row, the dim line saying where it looks, and for DerivedData the breakdown.
     public static func row(_ result: ItemResult, style: ReportStyle = .plain) -> String {
-        let size = result.isEmpty ? "none" : human(kilobytes: result.kilobytes)
-        var text = "  \(left(result.item.rawValue, 16)) \(left(result.label, 38)) \(right(size, 10))\n"
-        text += "  \(left("", 16)) \(style.dim)\(result.location)\(style.reset)\n"
+        let size = result.isEmpty ? "none" : self.human(kilobytes: result.kilobytes)
+        var text = "  \(left(result.item.rawValue, 16)) \(self.left(result.label, 38)) \(self.right(size, 10))\n"
+        text += "  \(self.left("", 16)) \(style.dim)\(result.location)\(style.reset)\n"
         if let breakdown = result.derivedData, !result.isEmpty {
-            text += derivedData(breakdown, style: style)
+            text += self.derivedData(breakdown, style: style)
         }
         return text
     }
@@ -73,7 +72,7 @@ public enum Report {
     public static func derivedData(_ breakdown: DerivedDataBreakdown, style: ReportStyle = .plain) -> String {
         let indent = String(repeating: " ", count: 21)
         func part(_ name: String, _ kilobytes: Int64) -> String {
-            "\(indent)\(left(name, 38)) \(right(human(kilobytes: kilobytes), 8))\n"
+            "\(indent)\(self.left(name, 38)) \(self.right(self.human(kilobytes: kilobytes), 8))\n"
         }
 
         var text = ""
@@ -84,8 +83,8 @@ public enum Report {
             text += part("Module cache, all projects", breakdown.moduleCacheKilobytes)
         }
         for project in breakdown.projects.prefix(5) {
-            text += "\(indent)\(left(project.name.prefixBytes(21), 21)) \(left(project.statusText, 16)) "
-                + "\(right(human(kilobytes: project.kilobytes), 8))\n"
+            text += "\(indent)\(self.left(project.name.prefixBytes(21), 21)) \(self.left(project.statusText, 16)) "
+                + "\(self.right(self.human(kilobytes: project.kilobytes), 8))\n"
         }
         let rest = breakdown.projects.dropFirst(5)
         let restKilobytes = rest.reduce(0) { $0 + $1.kilobytes }
@@ -97,26 +96,31 @@ public enum Report {
         if breakdown.otherKilobytes > 0 {
             text += part("Other", breakdown.otherKilobytes)
         }
-        text += "  \(left("", 16)) \(style.dim)Each part comes back as you build; projects you no longer build stay gone.\(style.reset)\n"
+        text += "  \(self.left("", 16)) \(style.dim)Each part comes back as you build; projects you no longer build stay gone.\(style.reset)\n"
         return text
     }
 
     /// The separator, Total, Free space now, and a blank line.
     /// - Parameter totalKilobytes: nil when nothing was found.
     public static func summary(totalKilobytes: Int64?, freeKilobytes: Int64) -> String {
-        "  \(separator)\n"
-            + "  \(left("Total", 55)) \(right(totalKilobytes.map { human(kilobytes: $0) } ?? "none", 10))\n"
-            + "  \(left("Free space now", 55)) \(right(human(kilobytes: freeKilobytes), 10))\n"
+        "  \(self.separator)\n"
+            + "  \(self.left("Total", 55)) \(self.right(totalKilobytes.map { self.human(kilobytes: $0) } ?? "none", 10))\n"
+            + "  \(self.left("Free space now", 55)) \(self.right(self.human(kilobytes: freeKilobytes), 10))\n"
             + "\n"
     }
 
     /// Installed Xcodes and simulator runtimes, which devclean never deletes.
-    public static func extras(_ extras: Extras, staleDays: Int, policy: PathPolicy, style: ReportStyle = .plain) -> String {
+    public static func extras(
+        _ extras: Extras,
+        staleDays: Int,
+        policy: PathPolicy,
+        style: ReportStyle = .plain) -> String
+    {
         var text = "Also worth a look. \(ProductInfo.cliName) never deletes these:\n\n"
 
         text += "Xcode versions\n"
         for xcode in extras.xcodes {
-            text += "  \(left(xcode.title, 24)) \(right(human(kilobytes: xcode.kilobytes), 10))   \(xcode.note)\n"
+            text += "  \(self.left(xcode.title, 24)) \(self.right(self.human(kilobytes: xcode.kilobytes), 10))   \(xcode.note)\n"
             text += "    \(style.dim)\(policy.tilde(xcode.path))\(style.reset)\n"
         }
         if extras.xcodes.isEmpty {
@@ -130,7 +134,7 @@ public enum Report {
         text += "Simulator runtimes\n"
         var flagged = 0
         for runtime in extras.runtimes {
-            text += "  \(left(runtime.title, 24)) \(right(human(kilobytes: runtime.kilobytes), 10))   \(runtime.note)\n"
+            text += "  \(self.left(runtime.title, 24)) \(self.right(self.human(kilobytes: runtime.kilobytes), 10))   \(runtime.note)\n"
             if let reason = runtime.flagReason(staleDays: staleDays) {
                 flagged += 1
                 text += "    \(style.dim)\(reason). Remove with: \(runtime.removalCommand)\(style.reset)\n"
@@ -153,7 +157,7 @@ public enum Report {
     }
 
     public static func confirmation(totalKilobytes: Int64) -> String {
-        "Delete \(human(kilobytes: totalKilobytes))? [y/N] "
+        "Delete \(self.human(kilobytes: totalKilobytes))? [y/N] "
     }
 
     public static func deleting(_ result: ItemResult) -> String {
@@ -161,7 +165,7 @@ public enum Report {
     }
 
     public static func done(freeBefore: Int64, freeAfter: Int64) -> String {
-        "\nDone. Free space: \(human(kilobytes: freeBefore)) -> \(human(kilobytes: freeAfter))\n"
+        "\nDone. Free space: \(self.human(kilobytes: freeBefore)) -> \(self.human(kilobytes: freeAfter))\n"
     }
 
     // MARK: Padding

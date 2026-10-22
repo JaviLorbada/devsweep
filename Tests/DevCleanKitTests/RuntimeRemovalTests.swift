@@ -5,8 +5,16 @@ import Testing
 @Suite("Simulator runtimes")
 struct RuntimeRemovalTests {
     func runtime(_ id: String) -> SimulatorRuntime {
-        SimulatorRuntime(id: id, identifier: "", platform: "iOS", version: "1", build: "a", kilobytes: 1,
-                         lastUsedDay: nil, daysSinceUsed: nil, simulatorCount: 0)
+        SimulatorRuntime(
+            id: id,
+            identifier: "",
+            platform: "iOS",
+            version: "1",
+            build: "a",
+            kilobytes: 1,
+            lastUsedDay: nil,
+            daysSinceUsed: nil,
+            simulatorCount: 0)
     }
 
     @Test
@@ -24,13 +32,13 @@ struct RuntimeRemovalTests {
     func `A failing simctl is reported`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.simctlDeleteSucceeds = false
-        #expect(try await !engine(home, tools).removeRuntime(runtime("ABC")))
+        #expect(try await !engine(home, tools).removeRuntime(self.runtime("ABC")))
     }
 
     @Test(arguments: ["", "-h", "--all"])
     func `ids simctl could read as options are refused before anything runs`(id: String) async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
-        #expect(try await !engine(home, tools).removeRuntime(runtime(id)))
+        #expect(try await !engine(home, tools).removeRuntime(self.runtime(id)))
         #expect(!tools.log.calls.contains { $0.contains("runtime delete") })
     }
 

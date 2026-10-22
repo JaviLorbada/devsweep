@@ -10,14 +10,14 @@ enum GitTracking {
         environment: [String: String],
         git: any GitClient,
         policy: PathPolicy,
-        warn: (String) -> Void
-    ) async -> Bool {
+        warn: (String) -> Void) async -> Bool
+    {
         let parent = FileSystem.dirname(folder)
 
         // Shortcut: no repository can contain the folder when git isn't pointed
         // at one through the environment and no parent has a .git entry,
         // counting .git symlinks whose target is missing.
-        if (environment["GIT_DIR"] ?? "").isEmpty && (environment["GIT_WORK_TREE"] ?? "").isEmpty {
+        if (environment["GIT_DIR"] ?? "").isEmpty, (environment["GIT_WORK_TREE"] ?? "").isEmpty {
             var probe = parent
             while !FileSystem.existsOrIsSymlink("\(probe)/.git") {
                 if probe == "/" { return true }

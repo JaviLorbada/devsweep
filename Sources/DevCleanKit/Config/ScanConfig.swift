@@ -27,8 +27,8 @@ public struct ScanConfig: Sendable {
         staleDays: Int = 90,
         includeExtras: Bool = true,
         includeAndroid: Bool = false,
-        environment: [String: String] = [:]
-    ) {
+        environment: [String: String] = [:])
+    {
         self.home = home
         self.projectDirectories = projectDirectories
         self.applicationsDirectories = applicationsDirectories
@@ -46,22 +46,21 @@ public struct ScanConfig: Sendable {
         _ environment: [String: String],
         projects: String? = nil,
         skipped: Set<Item> = [],
-        includeExtras: Bool = true
-    ) -> ScanConfig {
+        includeExtras: Bool = true) -> ScanConfig
+    {
         let home = environment["HOME"] ?? ""
         let projectList = projects
             ?? environment["DEVCLEAN_PROJECT_DIRS"].flatMap { $0.isEmpty ? nil : $0 }
-            ?? defaultProjectDirectories(home: home)
+            ?? self.defaultProjectDirectories(home: home)
         let applicationsList = environment["DEVCLEAN_APPLICATIONS_DIRS"].flatMap { $0.isEmpty ? nil : $0 }
             ?? "/Applications:\(home)/Applications"
         return ScanConfig(
             home: home,
-            projectDirectories: splitList(projectList),
-            applicationsDirectories: splitList(applicationsList),
+            projectDirectories: self.splitList(projectList),
+            applicationsDirectories: self.splitList(applicationsList),
             skipped: skipped,
             includeExtras: includeExtras,
-            environment: environment
-        )
+            environment: environment)
     }
 
     public static func defaultProjectDirectories(home: String) -> String {
@@ -92,6 +91,6 @@ public struct ScanConfig: Sendable {
 
     /// True when the four items Xcode or Simulator may be using are all skipped.
     public var skipsEverythingXcodeUses: Bool {
-        Item.allCases.filter(\.needsXcodeClosed).allSatisfy(skipped.contains)
+        Item.allCases.filter(\.needsXcodeClosed).allSatisfy(self.skipped.contains)
     }
 }

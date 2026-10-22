@@ -8,20 +8,20 @@ public struct ProjectBuildScanner: Scanner {
     let qualifies: @Sendable (String) -> Bool
 
     public func location(in context: ScanContext) async -> String {
-        describe
+        self.describe
     }
 
     public func collect(in context: ScanContext) async -> [String] {
         var result: [String] = []
-        for folder in await context.projects.folders(named: folderName) {
+        for folder in await context.projects.folders(named: self.folderName) {
             guard let real = context.policy.safePath(folder), qualifies(real) else { continue }
             if await GitTracking.isUntracked(
                 real,
                 environment: context.config.environment,
                 git: context.tools.git,
                 policy: context.policy,
-                warn: context.warn
-            ) {
+                warn: context.warn)
+            {
                 result.append(real)
             }
         }
@@ -32,22 +32,19 @@ public struct ProjectBuildScanner: Scanner {
         item: .swiftpmBuilds,
         folderName: ".build",
         describe: ".build next to a Package.swift, in project folders",
-        qualifies: isSwiftPMBuild
-    )
+        qualifies: isSwiftPMBuild)
 
     public static let xcode = ProjectBuildScanner(
         item: .xcodeBuilds,
         folderName: "build",
         describe: "build with Xcode output next to a project or Package.swift, in project folders",
-        qualifies: isXcodeBuild
-    )
+        qualifies: isXcodeBuild)
 
     public static let gradle = ProjectBuildScanner(
         item: .gradleBuilds,
         folderName: "build",
         describe: "build next to a Gradle build file, in project folders",
-        qualifies: isGradleBuild
-    )
+        qualifies: isGradleBuild)
 
     static func isSwiftPMBuild(_ folder: String) -> Bool {
         FileSystem.isRegularFile("\(FileSystem.dirname(folder))/Package.swift")
@@ -63,12 +60,14 @@ public struct ProjectBuildScanner: Scanner {
     /// sits next to a project, workspace or package, and holds Xcode's build
     /// output. A Gradle build folder never counts, so none is counted twice.
     static func isXcodeBuild(_ folder: String) -> Bool {
-        if isGradleBuild(folder) { return false }
+        if self.isGradleBuild(folder) { return false }
         let parent = FileSystem.dirname(folder)
         let besideProject = FileSystem.isRegularFile("\(parent)/Package.swift")
-            || hasChild(parent, matching: ["*.xcodeproj", "*.xcworkspace"])
+            || self.hasChild(parent, matching: ["*.xcodeproj", "*.xcworkspace"])
         return besideProject
-            && hasChild(folder, matching: ["XCBuildData", "*.build", "EagerLinkingTBDs", "*-iphoneos", "*-iphonesimulator"])
+            && self.hasChild(
+                folder,
+                matching: ["XCBuildData", "*.build", "EagerLinkingTBDs", "*-iphoneos", "*-iphonesimulator"])
     }
 
     /// Whether any entry directly inside `folder`, of any kind, matches one of the patterns.

@@ -19,7 +19,9 @@ final class AppModel {
     enum ChartStyle: String, CaseIterable, Identifiable {
         case ring = "Ring"
         case blocks = "Blocks"
-        var id: Self { self }
+        var id: Self {
+            self
+        }
     }
 
     enum RowState: Equatable {
@@ -43,34 +45,57 @@ final class AppModel {
         /// What the last scan found, shown dimmed until this scan reaches the item.
         var previous: ItemResult?
 
-        var id: Item { item }
-        var kilobytes: Int64 { result?.kilobytes ?? progressBytes / 1024 }
+        var id: Item {
+            self.item
+        }
+
+        var kilobytes: Int64 {
+            self.result?.kilobytes ?? self.progressBytes / 1024
+        }
 
         /// The size to show now: the new size once measured, the running count
         /// while measuring, the last scan's size before that.
         var shownKilobytes: Int64 {
-            switch state {
-            case .measured, .cleaning, .cleaned: result?.kilobytes ?? 0
-            case .measuring: progressBytes / 1024
-            case .waiting: previous.map { $0.isEmpty ? 0 : $0.kilobytes } ?? 0
+            switch self.state {
+            case .measured, .cleaning, .cleaned: self.result?.kilobytes ?? 0
+            case .measuring: self.progressBytes / 1024
+            case .waiting: self.previous.map { $0.isEmpty ? 0 : $0.kilobytes } ?? 0
             case .notMeasured: 0
             }
         }
 
         /// Showing the last scan's size, not this scan's.
-        var showsPrevious: Bool { state == .waiting && previous != nil }
+        var showsPrevious: Bool {
+            self.state == .waiting && self.previous != nil
+        }
 
         /// Being measured and already counting.
-        var isCounting: Bool { state == .measuring && progressBytes > 0 }
+        var isCounting: Bool {
+            self.state == .measuring && self.progressBytes > 0
+        }
 
         /// The result the inspector describes: this scan's, or the last one's.
-        var shownResult: ItemResult? { result ?? previous }
+        var shownResult: ItemResult? {
+            self.result ?? self.previous
+        }
+
         /// Measured, with something to reclaim.
-        var isLive: Bool { state == .measured && !(result?.isEmpty ?? true) }
-        var sizeKnown: Bool { result?.sizeKnown ?? true }
+        var isLive: Bool {
+            self.state == .measured && !(self.result?.isEmpty ?? true)
+        }
+
+        var sizeKnown: Bool {
+            self.result?.sizeKnown ?? true
+        }
+
         /// Measured at some point, whatever happened since.
-        var wasMeasured: Bool { [.measured, .cleaning, .cleaned].contains(state) }
-        var canPutBack: Bool { state == .cleaned && (outcome?.canPutBack ?? false) }
+        var wasMeasured: Bool {
+            [.measured, .cleaning, .cleaned].contains(self.state)
+        }
+
+        var canPutBack: Bool {
+            self.state == .cleaned && (self.outcome?.canPutBack ?? false)
+        }
     }
 
     /// A clean waiting on an answer: quit Xcode first, or confirm.
@@ -158,8 +183,8 @@ final class AppModel {
         store: (any ScanMemoryStore)? = nil,
         preferences: Preferences? = nil,
         notifier: NotificationPoster = UserNotificationPoster(),
-        dependencies: Dependencies? = nil
-    ) {
+        dependencies: Dependencies? = nil)
+    {
         self.notifier = notifier
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
@@ -185,15 +210,18 @@ final class AppModel {
         let dependencies = dependencies ?? live
         self.environment = environment
         self.dependencies = dependencies
-        moveToTrash = preferences.moveToTrash
-        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, dependencies: dependencies)
-        volumeName = (try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeLocalizedNameKey]))?
+        self.moveToTrash = preferences.moveToTrash
+        (self.engine, self.startupError) = Self.makeEngine(
+            preferences: preferences,
+            environment: environment,
+            dependencies: dependencies)
+        self.volumeName = (try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeLocalizedNameKey]))?
             .volumeLocalizedName ?? "Macintosh HD"
-        rows = Dictionary(uniqueKeysWithValues: (engine?.items ?? []).map { ($0, Row(item: $0)) })
-        scanOrder = engine?.items ?? []
-        diskSpace = engine?.diskSpace()
-        self.store = store ?? engine.map { ScanStore.standard(home: $0.config.home) }
-        restorePreviousScan()
+        self.rows = Dictionary(uniqueKeysWithValues: (self.engine?.items ?? []).map { ($0, Row(item: $0)) })
+        self.scanOrder = self.engine?.items ?? []
+        self.diskSpace = self.engine?.diskSpace()
+        self.store = store ?? self.engine.map { ScanStore.standard(home: $0.config.home) }
+        self.restorePreviousScan()
         workspaceApps.onChange = { [weak self] in
             Task { await self?.refreshRunningApps() }
         }
@@ -210,17 +238,17 @@ final class AppModel {
     /// the menu bar, and a scan once the last one is a day old.
     func tick(now: Date) {
         self.now = now
-        diskSpace = engine?.diskSpace() ?? diskSpace
-        if ScanSchedule.isDue(lastScan: lastScan, now: now), !isScanning, !isCleaning {
-            scan()
+        self.diskSpace = self.engine?.diskSpace() ?? self.diskSpace
+        if ScanSchedule.isDue(lastScan: self.lastScan, now: now), !self.isScanning, !self.isCleaning {
+            self.scan()
         }
     }
 
     private static func makeEngine(
         preferences: Preferences,
         environment: [String: String],
-        dependencies: Dependencies
-    ) -> (Engine?, String?) {
+        dependencies: Dependencies) -> (Engine?, String?)
+    {
         var config = preferences.scanConfig(environment: environment)
         #if DEBUG
         if let skip = environment["DEVCLEAN_SKIP"], let items = try? ScanConfig.parseSkip(skip) {
@@ -228,7 +256,7 @@ final class AppModel {
         }
         #endif
         do {
-            return (try Engine(config: config, dependencies: dependencies), nil)
+            return try (Engine(config: config, dependencies: dependencies), nil)
         } catch {
             return (nil, error.description)
         }
@@ -238,18 +266,18 @@ final class AppModel {
     private func restorePreviousScan() {
         guard let engine, let saved = store?.load(home: engine.policy.homeReal) else { return }
         for result in saved.results {
-            rows[result.item]?.previous = result
+            self.rows[result.item]?.previous = result
         }
-        extras = saved.extras
-        android = saved.android
-        previousScanDate = saved.date
+        self.extras = saved.extras
+        self.android = saved.android
+        self.previousScanDate = saved.date
     }
 
     /// Keeps this scan's results for the next launch. Cleaned items are kept
     /// as found nothing, since they are gone.
     private func saveScan() {
         guard let engine, let store else { return }
-        let results: [ItemResult] = scanOrder.compactMap { item in
+        let results: [ItemResult] = self.scanOrder.compactMap { item in
             guard let row = rows[item], var result = row.result, row.wasMeasured else { return nil }
             if row.state == .cleaned {
                 result.paths = []
@@ -258,113 +286,123 @@ final class AppModel {
             }
             return result
         }
-        guard results.count == scanOrder.count else { return }
-        let scan = SavedScan(date: lastScan ?? Date(), home: engine.policy.homeReal, results: results, extras: extras, android: android)
+        guard results.count == self.scanOrder.count else { return }
+        let scan = SavedScan(
+            date: lastScan ?? Date(),
+            home: engine.policy.homeReal,
+            results: results,
+            extras: self.extras,
+            android: self.android)
         try? store.save(scan)
     }
 
     // MARK: Scanning
 
     func scan() {
-        guard !isScanning, !isCleaning else { return }
+        guard !self.isScanning, !self.isCleaning else { return }
         // Preferences changed since the last scan apply from this one.
-        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, dependencies: dependencies)
+        (engine, self.startupError) = Self.makeEngine(
+            preferences: self.preferences,
+            environment: self.environment,
+            dependencies: self.dependencies)
         guard let engine else { return }
         // What was on screen becomes the dimmed "last scan" until replaced.
-        rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in
+        self.rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in
             var row = Row(item: item)
-            row.previous = rows[item]?.result ?? rows[item]?.previous
+            row.previous = self.rows[item]?.result ?? self.rows[item]?.previous
             return (item, row)
         })
-        if lastScan != nil { previousScanDate = lastScan }
-        scanOrder = engine.items
-        warnings = []
-        marksTouched = false
-        marked = []
-        isScanning = true
-        isLoadingExtras = engine.config.includeExtras
-        isLoadingAndroid = engine.config.includeAndroid
-        scanStarted = .now
-        itemsDone = nil
-        extrasDone = nil
-        androidDone = nil
-        scanTiming = nil
+        if self.lastScan != nil { self.previousScanDate = self.lastScan }
+        self.scanOrder = engine.items
+        self.warnings = []
+        self.marksTouched = false
+        self.marked = []
+        self.isScanning = true
+        self.isLoadingExtras = engine.config.includeExtras
+        self.isLoadingAndroid = engine.config.includeAndroid
+        self.scanStarted = .now
+        self.itemsDone = nil
+        self.extrasDone = nil
+        self.androidDone = nil
+        self.scanTiming = nil
 
-        scanTask = Task {
-            await refreshRunningApps()
+        self.scanTask = Task {
+            await self.refreshRunningApps()
             for await event in engine.scan(.interactive) {
-                apply(event)
+                self.apply(event)
             }
-            flushProgress()
-            finishScan()
-            scanTask = nil
+            self.flushProgress()
+            self.finishScan()
+            self.scanTask = nil
         }
     }
 
     /// Whether a scan's task is still winding down, even after `isScanning` turned false.
-    var isScanTaskRunning: Bool { scanTask != nil }
+    var isScanTaskRunning: Bool {
+        self.scanTask != nil
+    }
 
     func stopScan() {
-        scanTask?.cancel()
+        self.scanTask?.cancel()
     }
 
     private func apply(_ event: ScanEvent) {
         switch event {
-        case .projectFolders(let folders):
-            projectFolders = folders
-        case .started(let item):
-            withAnimation(Motion.animation(.easeInOut(duration: 0.25))) { rows[item]?.state = .measuring }
-        case .progress(let item, let bytes):
+        case let .projectFolders(folders):
+            self.projectFolders = folders
+        case let .started(item):
+            withAnimation(Motion.animation(.easeInOut(duration: 0.25))) { self.rows[item]?.state = .measuring }
+        case let .progress(item, bytes):
             // Several walks report thousands of times a second; the screen
             // shows the latest count about ten times a second.
-            pendingProgress[item] = bytes
-            if progressFlush == nil {
-                progressFlush = Task {
+            self.pendingProgress[item] = bytes
+            if self.progressFlush == nil {
+                self.progressFlush = Task {
                     try? await Task.sleep(for: .milliseconds(100))
-                    flushProgress()
+                    self.flushProgress()
                 }
             }
-        case .warning(let message):
-            warnings.append(message)
-        case .finished(let result):
-            pendingProgress[result.item] = nil
+        case let .warning(message):
+            self.warnings.append(message)
+        case let .finished(result):
+            self.pendingProgress[result.item] = nil
             withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
-                rows[result.item]?.result = result
-                rows[result.item]?.state = .measured
+                self.rows[result.item]?.result = result
+                self.rows[result.item]?.state = .measured
             }
         case .done:
-            itemsDone = secondsSinceScanStarted
-            diskSpace = engine?.diskSpace()
-            lastScan = Date()
-            now = Date()
-            previousScanDate = nil
-            withAnimation(Motion.animation()) { isScanning = false }
-            applyDefaultMarks()
-            if selection == nil { selection = orderedRows.first?.item }
-            finishTiming()
-        case .extras(let extras):
+            self.itemsDone = self.secondsSinceScanStarted
+            self.diskSpace = self.engine?.diskSpace()
+            self.lastScan = Date()
+            self.now = Date()
+            self.previousScanDate = nil
+            withAnimation(Motion.animation()) { self.isScanning = false }
+            self.applyDefaultMarks()
+            if self.selection == nil { self.selection = self.orderedRows.first?.item }
+            self.finishTiming()
+        case let .extras(extras):
             withAnimation(Motion.animation()) { self.extras = extras }
-            isLoadingExtras = false
-            extrasDone = secondsSinceScanStarted
-            finishTiming()
-        case .android(let report):
-            withAnimation(Motion.animation()) { android = report }
-            isLoadingAndroid = false
-            androidDone = secondsSinceScanStarted
-            finishTiming()
+            self.isLoadingExtras = false
+            self.extrasDone = self.secondsSinceScanStarted
+            self.finishTiming()
+        case let .android(report):
+            withAnimation(Motion.animation()) { self.android = report }
+            self.isLoadingAndroid = false
+            self.androidDone = self.secondsSinceScanStarted
+            self.finishTiming()
         }
     }
 
     private func flushProgress() {
-        progressFlush = nil
-        for (item, bytes) in pendingProgress where rows[item]?.state == .measuring {
+        self.progressFlush = nil
+        for (item, bytes) in self.pendingProgress where self.rows[item]?.state == .measuring {
             rows[item]?.progressBytes = bytes
         }
-        pendingProgress = [:]
+        self.pendingProgress = [:]
     }
 
     private var secondsSinceScanStarted: Double? {
-        scanStarted.map { start in
+        self.scanStarted.map { start in
             let elapsed = ContinuousClock.now - start
             return Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
         }
@@ -376,72 +414,74 @@ final class AppModel {
         guard let itemsDone,
               extrasDone != nil || !(engine?.config.includeExtras ?? false),
               androidDone != nil || !(engine?.config.includeAndroid ?? false) else { return }
-        scanTiming = (itemsDone, max(itemsDone, extrasDone ?? 0, androidDone ?? 0))
-        saveScan()
+        self.scanTiming = (itemsDone, max(itemsDone, self.extrasDone ?? 0, self.androidDone ?? 0))
+        self.saveScan()
         if let alert = GrowthCheck.derivedData(
             previousKilobytes: rows[.derivedData]?.previous?.kilobytes,
             currentKilobytes: rows[.derivedData]?.result?.kilobytes,
-            thresholdGigabytes: preferences.derivedDataGrowthGigabytes
-        ) {
-            lastAlert = alert
+            thresholdGigabytes: preferences.derivedDataGrowthGigabytes)
+        {
+            self.lastAlert = alert
             let notifier = notifier
             Task { await notifier.post(title: alert.title, body: alert.body) }
         }
     }
 
     private func finishScan() {
-        isLoadingExtras = false
-        isLoadingAndroid = false
-        guard isScanning else { return }
+        self.isLoadingExtras = false
+        self.isLoadingAndroid = false
+        guard self.isScanning else { return }
         // Stopped before the end: what wasn't reached stays unmeasured.
         withAnimation(Motion.animation()) {
-            for item in scanOrder where !(rows[item]?.wasMeasured ?? false) {
+            for item in self.scanOrder where !(self.rows[item]?.wasMeasured ?? false) {
                 rows[item]?.state = .notMeasured
                 rows[item]?.progressBytes = 0
             }
-            isScanning = false
+            self.isScanning = false
         }
-        lastScan = Date()
-        diskSpace = engine?.diskSpace()
-        applyDefaultMarks()
+        self.lastScan = Date()
+        self.diskSpace = self.engine?.diskSpace()
+        self.applyDefaultMarks()
     }
 
     /// The three biggest items start marked, unless marks were changed during the scan.
     private func applyDefaultMarks() {
-        guard !marksTouched else { return }
-        marked = Set(liveRows.prefix(3).map(\.item))
+        guard !self.marksTouched else { return }
+        self.marked = Set(self.liveRows.prefix(3).map(\.item))
     }
 
     func refreshRunningApps() async {
         var running = Set<DeveloperApp>()
-        for app in DeveloperApp.allCases where await workspaceApps.isRunning(app) {
+        for app in DeveloperApp.allCases where await self.workspaceApps.isRunning(app) {
             running.insert(app)
         }
-        runningApps = running
+        self.runningApps = running
     }
 
     // MARK: Marks and selection
 
     func setMarked(_ item: Item, _ isMarked: Bool) {
-        marksTouched = true
-        if isMarked { marked.insert(item) } else { marked.remove(item) }
+        self.marksTouched = true
+        if isMarked { self.marked.insert(item) } else { self.marked.remove(item) }
     }
 
     func markAll() {
-        marksTouched = true
-        marked = Set(liveRows.map(\.item))
+        self.marksTouched = true
+        self.marked = Set(self.liveRows.map(\.item))
     }
 
     func markNone() {
-        marksTouched = true
-        marked = []
+        self.marksTouched = true
+        self.marked = []
     }
 
     /// Selects the biggest item of a family on the overview.
     func pick(_ family: Family) {
-        screen = .overview
-        if let biggest = liveRows.first(where: { $0.item.family == family }) ?? orderedRows.first(where: { $0.item.family == family }) {
-            selection = biggest.item
+        self.screen = .overview
+        if let biggest = liveRows.first(where: { $0.item.family == family }) ?? orderedRows
+            .first(where: { $0.item.family == family })
+        {
+            self.selection = biggest.item
         }
     }
 
@@ -450,31 +490,39 @@ final class AppModel {
     /// Measured items largest first, then the ones being measured, then the
     /// rest; those two by what the last scan found, so rows keep their places.
     var orderedRows: [Row] {
-        let all = scanOrder.compactMap { rows[$0] }
+        let all = self.scanOrder.compactMap { self.rows[$0] }
         let byPrevious = { (a: Row, b: Row) in (a.previous?.kilobytes ?? 0) > (b.previous?.kilobytes ?? 0) }
         let measured = all.filter(\.wasMeasured).sorted { $0.kilobytes > $1.kilobytes }
         return measured + all.filter { $0.state == .measuring }.sorted(by: byPrevious)
             + all.filter { $0.state == .waiting || $0.state == .notMeasured }.sorted(by: byPrevious)
     }
 
-    var liveRows: [Row] { orderedRows.filter(\.isLive) }
+    var liveRows: [Row] {
+        self.orderedRows.filter(\.isLive)
+    }
 
-    var markedRows: [Row] { liveRows.filter { marked.contains($0.item) } }
+    var markedRows: [Row] {
+        self.liveRows.filter { self.marked.contains($0.item) }
+    }
 
     /// Rows whose size counts toward the totals on screen: measured with
     /// something to reclaim, counting up, or still showing the last scan.
     private var countedRows: [Row] {
-        orderedRows.filter { $0.isLive || $0.isCounting || $0.showsPrevious }
+        self.orderedRows.filter { $0.isLive || $0.isCounting || $0.showsPrevious }
     }
 
     /// The total on screen: this scan's sizes where it has them, the running
     /// counts, and the last scan's sizes for what it hasn't reached yet.
-    var reclaimableKilobytes: Int64 { countedRows.reduce(0) { $0 + $1.shownKilobytes } }
+    var reclaimableKilobytes: Int64 {
+        self.countedRows.reduce(0) { $0 + $1.shownKilobytes }
+    }
 
-    var markedKilobytes: Int64 { markedRows.reduce(0) { $0 + $1.kilobytes } }
+    var markedKilobytes: Int64 {
+        self.markedRows.reduce(0) { $0 + $1.kilobytes }
+    }
 
     func kilobytes(of family: Family) -> Int64 {
-        countedRows.filter { $0.item.family == family }.reduce(0) { $0 + $1.shownKilobytes }
+        self.countedRows.filter { $0.item.family == family }.reduce(0) { $0 + $1.shownKilobytes }
     }
 
     /// The family's size once anything is known about it, nil before.
@@ -483,7 +531,7 @@ final class AppModel {
             guard let row = rows[item] else { return false }
             return row.wasMeasured || row.isCounting || row.showsPrevious
         }
-        return known ? kilobytes(of: family) : nil
+        return known ? self.kilobytes(of: family) : nil
     }
 
     /// Whether everything shown for the family comes from the last scan.
@@ -493,16 +541,24 @@ final class AppModel {
     }
 
     /// Whether the totals still lean on the last scan.
-    var showsPrevious: Bool { scanOrder.contains { rows[$0]?.showsPrevious ?? false } }
+    var showsPrevious: Bool {
+        self.scanOrder.contains { self.rows[$0]?.showsPrevious ?? false }
+    }
 
-    var measuredCount: Int { scanOrder.filter { rows[$0]?.wasMeasured ?? false }.count }
+    var measuredCount: Int {
+        self.scanOrder.filter { self.rows[$0]?.wasMeasured ?? false }.count
+    }
 
-    var measuringItems: [Item] { scanOrder.filter { rows[$0]?.state == .measuring } }
+    var measuringItems: [Item] {
+        self.scanOrder.filter { self.rows[$0]?.state == .measuring }
+    }
 
-    var currentItem: Item? { measuringItems.first }
+    var currentItem: Item? {
+        self.measuringItems.first
+    }
 
     var scanProgress: Double {
-        scanOrder.isEmpty ? 0 : Double(measuredCount) / Double(scanOrder.count)
+        self.scanOrder.isEmpty ? 0 : Double(self.measuredCount) / Double(self.scanOrder.count)
     }
 
     /// The weight a ring segment gets: its size once measured, otherwise what
@@ -517,7 +573,7 @@ final class AppModel {
             return Double(row.progressBytes / 1024)
         case .waiting, .measuring:
             if let previous = row.previous { return Double(max(previous.kilobytes, 1)) }
-            let measured = scanOrder.compactMap { rows[$0] }.filter(\.wasMeasured)
+            let measured = self.scanOrder.compactMap { self.rows[$0] }.filter(\.wasMeasured)
             let total = measured.reduce(0) { $0 + Double($1.kilobytes) }
             return measured.isEmpty || total == 0 ? 1 : total / Double(measured.count)
         }
@@ -525,26 +581,26 @@ final class AppModel {
 
     var statusLine: String {
         if let startupError { return startupError }
-        if isScanning {
+        if self.isScanning {
             let progress = "Scanning, \(measuredCount) of \(scanOrder.count) items measured"
             if let previousScanDate, showsPrevious {
-                return "Last scanned \(Self.relative(previousScanDate, to: now)). \(progress)."
+                return "Last scanned \(Self.relative(previousScanDate, to: self.now)). \(progress)."
             }
             return progress
         }
         guard let lastScan else {
-            return previousScanDate.map { "Last scanned \(Self.relative($0, to: now))." } ?? "Not scanned yet"
+            return self.previousScanDate.map { "Last scanned \(Self.relative($0, to: self.now))." } ?? "Not scanned yet"
         }
-        let unmeasured = scanOrder.filter { rows[$0]?.state == .notMeasured }.count
+        let unmeasured = self.scanOrder.filter { self.rows[$0]?.state == .notMeasured }.count
         let scanned = unmeasured > 0
             ? "Stopped after \(measuredCount) of \(scanOrder.count) items."
-            : "Scanned \(Self.relative(lastScan, to: now)), \(scanOrder.count) items."
+            : "Scanned \(Self.relative(lastScan, to: self.now)), \(self.scanOrder.count) items."
         var line = "\(scanned) \(runningAppsSentence)"
-        if trashedThisSession > 0 {
-            line += " \(SizeText.of(kilobytes: trashedThisSession)) moved to Trash this session."
+        if self.trashedThisSession > 0 {
+            line += " \(SizeText.of(kilobytes: self.trashedThisSession)) moved to Trash this session."
         }
-        if deletedThisSession > 0 {
-            line += " \(SizeText.of(kilobytes: deletedThisSession)) deleted this session."
+        if self.deletedThisSession > 0 {
+            line += " \(SizeText.of(kilobytes: self.deletedThisSession)) deleted this session."
         }
         return line
     }
@@ -559,7 +615,7 @@ final class AppModel {
     }
 
     var runningAppsSentence: String {
-        switch (runningApps.contains(.xcode), runningApps.contains(.simulator)) {
+        switch (self.runningApps.contains(.xcode), self.runningApps.contains(.simulator)) {
         case (false, false): "Xcode and Simulator are closed."
         case (true, false): "Xcode is open."
         case (false, true): "Simulator is open."
@@ -567,29 +623,43 @@ final class AppModel {
         }
     }
 
-    var xcodesKilobytes: Int64? { extras.map { $0.xcodes.reduce(0) { $0 + $1.kilobytes } } }
-    var androidStudiosKilobytes: Int64? { android.map { total($0.studios) } }
-    var androidSDKKilobytes: Int64? { android.map { total($0.sdkEntries + $0.emulators) } }
-    var gradleCachesKilobytes: Int64? { android.map { total($0.gradleCaches) } }
+    var xcodesKilobytes: Int64? {
+        self.extras.map { $0.xcodes.reduce(0) { $0 + $1.kilobytes } }
+    }
+
+    var androidStudiosKilobytes: Int64? {
+        self.android.map { self.total($0.studios) }
+    }
+
+    var androidSDKKilobytes: Int64? {
+        self.android.map { self.total($0.sdkEntries + $0.emulators) }
+    }
+
+    var gradleCachesKilobytes: Int64? {
+        self.android.map { self.total($0.gradleCaches) }
+    }
 
     private func total(_ entries: [AndroidEntry]) -> Int64 {
         entries.reduce(0) { $0 + $1.kilobytes }
     }
-    var runtimesKilobytes: Int64? { extras.map { $0.runtimes.reduce(0) { $0 + $1.kilobytes } } }
+
+    var runtimesKilobytes: Int64? {
+        self.extras.map { $0.runtimes.reduce(0) { $0 + $1.kilobytes } }
+    }
 
     func tilde(_ path: String) -> String {
-        engine?.policy.tilde(path) ?? path
+        self.engine?.policy.tilde(path) ?? path
     }
 
     /// Shows results as if a scan had just measured them, without scanning.
     /// For tests.
     func showResults(_ results: [ItemResult]) {
         for result in results {
-            rows[result.item]?.result = result
-            rows[result.item]?.state = .measured
+            self.rows[result.item]?.result = result
+            self.rows[result.item]?.state = .measured
         }
-        lastScan = Date()
-        selection = orderedRows.first?.item
+        self.lastScan = Date()
+        self.selection = self.orderedRows.first?.item
     }
 
     #if DEBUG
@@ -598,7 +668,7 @@ final class AppModel {
 
     /// Puts the model back to the moment `measured` items were done, for snapshots.
     func rewindScan(toMeasured measured: Int) {
-        for (index, item) in scanOrder.enumerated() where index >= measured {
+        for (index, item) in self.scanOrder.enumerated() where index >= measured {
             guard var row = rows[item] else { continue }
             row.previous = row.result
             row.progressBytes = index == measured ? row.kilobytes * 1024 / 3 : 0
@@ -606,8 +676,8 @@ final class AppModel {
             row.result = nil
             rows[item] = row
         }
-        isScanning = true
-        marked = []
+        self.isScanning = true
+        self.marked = []
     }
     #endif
 
@@ -616,105 +686,104 @@ final class AppModel {
     /// Starts cleaning `items`: asks to quit Xcode and Simulator when an Xcode
     /// item needs them closed, and asks to confirm anything that can't be put back.
     func requestClean(_ items: [Item]) async {
-        guard !isScanning, !isCleaning else { return }
-        let items = items.filter { rows[$0]?.isLive ?? false }
+        guard !self.isScanning, !self.isCleaning else { return }
+        let items = items.filter { self.rows[$0]?.isLive ?? false }
         guard !items.isEmpty else { return }
-        await refreshRunningApps()
-        let blocking = DeveloperApp.allCases.filter(runningApps.contains)
+        await self.refreshRunningApps()
+        let blocking = DeveloperApp.allCases.filter(self.runningApps.contains)
         if items.contains(where: \.needsXcodeClosed), !blocking.isEmpty {
-            pendingClean = PendingClean(items: items, stage: .quitApps(blocking))
+            self.pendingClean = PendingClean(items: items, stage: .quitApps(blocking))
         } else {
-            confirmOrClean(items)
+            self.confirmOrClean(items)
         }
     }
 
     /// Quits Xcode and Simulator, then goes on with the clean.
     func quitAppsAndClean(_ pending: PendingClean) async {
-        pendingClean = nil
-        guard case .quitApps(let apps) = pending.stage else { return }
-        if await quit(apps) {
-            confirmOrClean(pending.items, afterAlert: true)
+        self.pendingClean = nil
+        guard case let .quitApps(apps) = pending.stage else { return }
+        if await self.quit(apps) {
+            self.confirmOrClean(pending.items, afterAlert: true)
         } else {
-            notice = Notice(
+            self.notice = Notice(
                 title: "\(apps.map(\.rawValue).joined(separator: " and ")) didn't quit",
-                message: "Nothing was cleaned. Quit them yourself, for example after saving your work, and clean again."
-            )
+                message: "Nothing was cleaned. Quit them yourself, for example after saving your work, and clean again.")
         }
     }
 
     /// Goes on with the items that don't need Xcode closed.
     func cleanSkippingXcodeItems(_ pending: PendingClean) {
-        pendingClean = nil
+        self.pendingClean = nil
         let rest = pending.items.filter { !$0.needsXcodeClosed }
-        if !rest.isEmpty { confirmOrClean(rest, afterAlert: true) }
+        if !rest.isEmpty { self.confirmOrClean(rest, afterAlert: true) }
     }
 
     func confirmClean(_ pending: PendingClean) async {
-        pendingClean = nil
-        await performClean(pending.items)
+        self.pendingClean = nil
+        await self.performClean(pending.items)
     }
 
     /// Whether these items need a yes first: everything does when deleting
     /// for good, and Simulators and Homebrew always, since their tools delete them.
     func needsConfirmation(_ items: [Item]) -> Bool {
-        !moveToTrash || items.contains(where: \.cleanedByItsTool)
+        !self.moveToTrash || items.contains(where: \.cleanedByItsTool)
     }
 
     /// - Parameter afterAlert: an alert is closing, so give it a moment
     ///   before showing the next one.
     private func confirmOrClean(_ items: [Item], afterAlert: Bool = false) {
-        if needsConfirmation(items) {
+        if self.needsConfirmation(items) {
             Task {
                 if afterAlert { try? await Task.sleep(for: .milliseconds(300)) }
-                pendingClean = PendingClean(items: items, stage: .confirm)
+                self.pendingClean = PendingClean(items: items, stage: .confirm)
             }
         } else {
-            Task { await performClean(items) }
+            Task { await self.performClean(items) }
         }
     }
 
     private func performClean(_ items: [Item]) async {
         guard let engine, !isCleaning else { return }
-        isCleaning = true
-        let mode: CleanMode = moveToTrash ? .trash : .delete
+        self.isCleaning = true
+        let mode: CleanMode = self.moveToTrash ? .trash : .delete
         var problems: [String] = []
 
         for item in items {
             guard let row = rows[item], row.isLive, let result = row.result else { continue }
             // Xcode may have been opened since the question was asked.
             if item.needsXcodeClosed {
-                await refreshRunningApps()
-                if !runningApps.isEmpty {
-                    problems.append("Skipped \(item.name): \(runningAppsSentence)")
+                await self.refreshRunningApps()
+                if !self.runningApps.isEmpty {
+                    problems.append("Skipped \(item.name): \(self.runningAppsSentence)")
                     continue
                 }
             }
-            withAnimation(Motion.animation()) { rows[item]?.state = .cleaning }
+            withAnimation(Motion.animation()) { self.rows[item]?.state = .cleaning }
             let outcome = await engine.clean(result, mode: mode)
             problems += outcome.warnings
             let removedSomething = !outcome.removed.isEmpty || outcome.toolSucceeded == true
             withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
                 if removedSomething {
-                    rows[item]?.state = .cleaned
-                    rows[item]?.outcome = outcome
-                    marked.remove(item)
+                    self.rows[item]?.state = .cleaned
+                    self.rows[item]?.outcome = outcome
+                    self.marked.remove(item)
                     if outcome.canPutBack {
-                        trashedThisSession += result.kilobytes
+                        self.trashedThisSession += result.kilobytes
                     } else {
-                        deletedThisSession += result.kilobytes
+                        self.deletedThisSession += result.kilobytes
                     }
                 } else {
-                    rows[item]?.state = .measured
+                    self.rows[item]?.state = .measured
                 }
             }
         }
 
-        isCleaning = false
-        diskSpace = engine.diskSpace()
-        saveScan()
-        warnings += problems
+        self.isCleaning = false
+        self.diskSpace = engine.diskSpace()
+        self.saveScan()
+        self.warnings += problems
         if !problems.isEmpty {
-            notice = Notice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
+            self.notice = Notice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
         }
     }
 
@@ -724,19 +793,18 @@ final class AppModel {
         let result = await engine.putBack(outcome)
         withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
             if !result.restored.isEmpty {
-                rows[item]?.state = .measured
-                rows[item]?.outcome = nil
-                trashedThisSession = max(0, trashedThisSession - row.kilobytes)
+                self.rows[item]?.state = .measured
+                self.rows[item]?.outcome = nil
+                self.trashedThisSession = max(0, self.trashedThisSession - row.kilobytes)
             }
         }
-        diskSpace = engine.diskSpace()
-        saveScan()
+        self.diskSpace = engine.diskSpace()
+        self.saveScan()
         if !result.failed.isEmpty {
-            notice = Notice(
+            self.notice = Notice(
                 title: "Some folders couldn't be put back",
                 message: "Something now stands where they were, or the folder that held them changed. They are still in the Trash:\n"
-                    + result.failed.map(tilde).joined(separator: "\n")
-            )
+                    + result.failed.map(self.tilde).joined(separator: "\n"))
         }
     }
 
@@ -747,22 +815,25 @@ final class AppModel {
     private(set) var isRemovingRuntime = false
     var runtimeRemovalError: String?
 
-    var staleDays: Int { preferences.staleDays }
+    var staleDays: Int {
+        self.preferences.staleDays
+    }
 
     /// The selected runtime, or the first flagged one, or the first.
     var currentRuntime: SimulatorRuntime? {
-        let runtimes = extras?.runtimes ?? []
-        return runtimes.first { $0.id == selectedRuntime }
-            ?? runtimes.first { $0.flagReason(staleDays: staleDays) != nil }
+        let runtimes = self.extras?.runtimes ?? []
+        return runtimes.first { $0.id == self.selectedRuntime }
+            ?? runtimes.first { $0.flagReason(staleDays: self.staleDays) != nil }
             ?? runtimes.first
     }
 
     /// What the current Android screen lists, in the order it shows them.
     var androidEntries: [AndroidEntry] {
         guard let android else { return [] }
-        switch screen {
+        switch self.screen {
         case .androidStudios: return android.studios
-        case .androidSDK: return android.emulators + android.systemImages + android.platforms + android.buildTools + android.otherSDKParts
+        case .androidSDK: return android.emulators + android.systemImages + android.platforms + android
+            .buildTools + android.otherSDKParts
         case .gradleCaches: return android.gradleCaches
         default: return []
         }
@@ -770,78 +841,79 @@ final class AppModel {
 
     /// The selected Android entry on this screen, or the first flagged one, or the first.
     var currentAndroidEntry: AndroidEntry? {
-        let entries = androidEntries
-        return entries.first { $0.path == selectedAndroidEntry }
-            ?? entries.first { $0.flagReason(staleDays: staleDays) != nil }
+        let entries = self.androidEntries
+        return entries.first { $0.path == self.selectedAndroidEntry }
+            ?? entries.first { $0.flagReason(staleDays: self.staleDays) != nil }
             ?? entries.first
     }
 
     var currentXcode: InstalledXcode? {
-        let xcodes = extras?.xcodes ?? []
-        return xcodes.first { $0.path == selectedXcode } ?? xcodes.first { $0.isSelected } ?? xcodes.first
+        let xcodes = self.extras?.xcodes ?? []
+        return xcodes.first { $0.path == self.selectedXcode } ?? xcodes.first { $0.isSelected } ?? xcodes.first
     }
 
     /// The subtitle under each screen's title.
     var subtitle: String {
-        switch screen {
+        switch self.screen {
         case .overview:
-            return statusLine
+            return self.statusLine
         case .simulatorRuntimes:
-            guard let runtimes = extras?.runtimes else { return isLoadingExtras ? "Listing runtimes" : "" }
+            guard let runtimes = extras?.runtimes else { return self.isLoadingExtras ? "Listing runtimes" : "" }
             let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"
-            return "\(SizeText.of(kilobytes: runtimesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these on its own."
+            return "\(SizeText.of(kilobytes: self.runtimesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these on its own."
         case .xcodeVersions:
-            guard let xcodes = extras?.xcodes else { return isLoadingExtras ? "Listing Xcodes" : "" }
+            guard let xcodes = extras?.xcodes else { return self.isLoadingExtras ? "Listing Xcodes" : "" }
             let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
-            return "\(SizeText.of(kilobytes: xcodesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
+            return "\(SizeText.of(kilobytes: self.xcodesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
         case .androidStudios:
-            guard let studios = android?.studios else { return isLoadingAndroid ? "Listing Android Studio" : "" }
+            guard let studios = android?.studios else { return self.isLoadingAndroid ? "Listing Android Studio" : "" }
             let count = studios.count == 1 ? "1 install" : "\(studios.count) installs"
-            return "\(SizeText.of(kilobytes: androidStudiosKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
+            return "\(SizeText.of(kilobytes: self.androidStudiosKilobytes ?? 0)) in \(count). \(ProductInfo.name) never removes these."
         case .androidSDK:
-            guard android != nil else { return isLoadingAndroid ? "Listing the SDK and emulators" : "" }
-            return "\(SizeText.of(kilobytes: androidSDKKilobytes ?? 0)) in the SDK and emulators. \(ProductInfo.name) never removes these."
+            guard self.android != nil else { return self.isLoadingAndroid ? "Listing the SDK and emulators" : "" }
+            return "\(SizeText.of(kilobytes: self.androidSDKKilobytes ?? 0)) in the SDK and emulators. \(ProductInfo.name) never removes these."
         case .gradleCaches:
-            guard android != nil else { return isLoadingAndroid ? "Listing Gradle's caches" : "" }
-            return "\(SizeText.of(kilobytes: gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) never removes these."
+            guard self.android != nil else { return self.isLoadingAndroid ? "Listing Gradle's caches" : "" }
+            return "\(SizeText.of(kilobytes: self.gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) never removes these."
         }
     }
 
     /// Removes the runtime on the sheet through simctl, then lists runtimes again.
     func removeRuntime(_ runtime: SimulatorRuntime) async {
         guard let engine, !isRemovingRuntime else { return }
-        isRemovingRuntime = true
-        runtimeRemovalError = nil
+        self.isRemovingRuntime = true
+        self.runtimeRemovalError = nil
         let removed = await engine.removeRuntime(runtime)
-        isRemovingRuntime = false
+        self.isRemovingRuntime = false
         if removed {
-            runtimeToRemove = nil
-            selectedRuntime = nil
-            await refreshExtras()
-            diskSpace = engine.diskSpace()
+            self.runtimeToRemove = nil
+            self.selectedRuntime = nil
+            await self.refreshExtras()
+            self.diskSpace = engine.diskSpace()
         } else {
-            runtimeRemovalError = "simctl couldn't remove it. Run the command in Terminal to see why; "
+            self.runtimeRemovalError = "simctl couldn't remove it. Run the command in Terminal to see why; "
                 + "a simulator using it may still be running."
         }
     }
 
     func refreshExtras() async {
         guard let engine else { return }
-        isLoadingExtras = true
+        self.isLoadingExtras = true
         let fresh = await engine.extras()
-        withAnimation(Motion.animation()) { extras = fresh }
-        isLoadingExtras = false
+        withAnimation(Motion.animation()) { self.extras = fresh }
+        self.isLoadingExtras = false
     }
 
     /// Asks the apps to quit, as choosing Quit would, and waits up to 15 seconds.
     private func quit(_ apps: [DeveloperApp]) async -> Bool {
-        let running = apps.flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0.bundleIdentifier) }
+        let running = apps
+            .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0.bundleIdentifier) }
         running.forEach { $0.terminate() }
         for _ in 0..<60 {
             if running.allSatisfy(\.isTerminated) { break }
             try? await Task.sleep(for: .milliseconds(250))
         }
-        await refreshRunningApps()
+        await self.refreshRunningApps()
         return running.allSatisfy(\.isTerminated)
     }
 
@@ -864,9 +936,10 @@ final class WorkspaceRunningApps: RunningAppsChecking, @unchecked Sendable {
     init() {
         let center = NSWorkspace.shared.notificationCenter
         for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
-            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
+            self.observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
                 let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                guard let id = app?.bundleIdentifier, DeveloperApp.allCases.contains(where: { $0.bundleIdentifier == id }) else { return }
+                guard let id = app?.bundleIdentifier,
+                      DeveloperApp.allCases.contains(where: { $0.bundleIdentifier == id }) else { return }
                 MainActor.assumeIsolated { self?.onChange?() }
             })
         }

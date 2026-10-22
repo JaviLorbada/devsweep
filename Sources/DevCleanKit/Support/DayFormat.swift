@@ -9,7 +9,7 @@ public enum DayFormat {
         var seconds = time_t(date.timeIntervalSince1970.rounded(.down))
         var parts = tm()
         gmtime_r(&seconds, &parts)
-        return format(&parts)
+        return self.format(&parts)
     }
 
     /// The day in the local time zone, as `stat -f %Sm -t %Y-%m-%d` prints it.
@@ -17,7 +17,7 @@ public enum DayFormat {
         var seconds = time_t(secondsSince1970)
         var parts = tm()
         localtime_r(&seconds, &parts)
-        return format(&parts)
+        return self.format(&parts)
     }
 
     private static func format(_ parts: inout tm) -> String {

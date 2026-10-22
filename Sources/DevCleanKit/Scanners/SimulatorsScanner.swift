@@ -17,7 +17,8 @@ public struct SimulatorsScanner: Scanner {
 
     /// The last `(UDID)` on each line of `simctl list devices unavailable`.
     static func deviceIDs(in listing: String) -> [String] {
-        listing.split(separator: "\n", omittingEmptySubsequences: true).compactMap { lastDeviceID(in: Array($0.utf8)) }
+        listing.split(separator: "\n", omittingEmptySubsequences: true)
+            .compactMap { self.lastDeviceID(in: Array($0.utf8)) }
     }
 
     private static func lastDeviceID(in line: [UInt8]) -> String? {
@@ -35,7 +36,7 @@ public struct SimulatorsScanner: Scanner {
                         if line[index] != UInt8(ascii: "-") { valid = false; break }
                         index += 1
                     }
-                    for offset in 0..<size where !isUpperHex(line[index + offset]) {
+                    for offset in 0..<size where !self.isUpperHex(line[index + offset]) {
                         valid = false
                         break
                     }

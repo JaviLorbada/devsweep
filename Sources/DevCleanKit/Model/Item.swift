@@ -12,7 +12,9 @@ public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codabl
     case homebrew
     case toolCaches = "tool-caches"
 
-    public var id: String { rawValue }
+    public var id: String {
+        rawValue
+    }
 
     /// The name the report prints.
     public var name: String {
@@ -41,7 +43,7 @@ public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codabl
 
     /// Item name, with how many folders it found when that's useful.
     public func label(count: Int) -> String {
-        showsCount && count > 0 ? "\(name) (\(count))" : name
+        self.showsCount && count > 0 ? "\(self.name) (\(count))" : self.name
     }
 
     /// Items that Xcode or Simulator may be using while they run.
@@ -76,7 +78,9 @@ public enum Family: String, CaseIterable, Sendable, Identifiable, Hashable, Coda
     case npm
     case otherTools
 
-    public var id: String { rawValue }
+    public var id: String {
+        rawValue
+    }
 
     public var name: String {
         switch self {

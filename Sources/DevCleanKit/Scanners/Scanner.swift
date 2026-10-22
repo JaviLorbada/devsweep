@@ -5,9 +5,18 @@ public struct ScanContext: Sendable {
     public let config: ScanConfig
     public let policy: PathPolicy
     public let dependencies: Dependencies
-    public var tools: Tools { dependencies.tools }
-    var files: any FileSystemAccess { dependencies.files }
-    var clock: any WallClock { dependencies.clock }
+    public var tools: Tools {
+        self.dependencies.tools
+    }
+
+    var files: any FileSystemAccess {
+        self.dependencies.files
+    }
+
+    var clock: any WallClock {
+        self.dependencies.clock
+    }
+
     let projects: ProjectSearch
     let measurer: SizeMeasurer
     /// Folders of one item measured at the same time; 1 measures them in
@@ -22,8 +31,8 @@ public struct ScanContext: Sendable {
         projects: ProjectSearch,
         measurer: SizeMeasurer,
         concurrentFolders: Int = 1,
-        warn: @escaping @Sendable (String) -> Void
-    ) {
+        warn: @escaping @Sendable (String) -> Void)
+    {
         self.config = config
         self.policy = policy
         self.dependencies = dependencies
@@ -36,13 +45,13 @@ public struct ScanContext: Sendable {
     /// Measures each path, reporting the running total of all of them in
     /// bytes. The results come back in the order of `paths`.
     func measure(_ paths: [String], progress: @escaping @Sendable (Int64) -> Void) async -> [Measurement] {
-        if concurrentFolders <= 1 || paths.count <= 1 {
+        if self.concurrentFolders <= 1 || paths.count <= 1 {
             var results: [Measurement] = []
             var done: Int64 = 0
             for path in paths {
                 if Task.isCancelled { break }
                 let base = done * 1024
-                let measured = measurer.measure(path) { progress(base + $0) }
+                let measured = self.measurer.measure(path) { progress(base + $0) }
                 done += measured.kilobytes
                 results.append(measured)
             }
@@ -61,21 +70,25 @@ public struct ScanContext: Sendable {
                     return (index, measured)
                 }
             }
-            while next < min(concurrentFolders, paths.count) { add() }
+            while next < min(self.concurrentFolders, paths.count) {
+                add()
+            }
             var results = [Measurement?](repeating: nil, count: paths.count)
             while let (index, measured) = await group.next() {
                 results[index] = measured
                 if next < paths.count, !Task.isCancelled { add() }
             }
-            return results.compactMap { $0 }
+            return results.compactMap(\.self)
         }
     }
 
-    var home: String { config.home }
+    var home: String {
+        self.config.home
+    }
 
     /// The resolved form of each path that passes the policy.
     func existing(_ paths: [String]) -> [String] {
-        paths.compactMap(policy.safePath)
+        paths.compactMap(self.policy.safePath)
     }
 }
 
@@ -97,13 +110,12 @@ extension Scanner {
         let measured = await context.measure(paths, progress: progress)
         let kilobytes = measured.reduce(0) { $0 + $1.kilobytes }
         let known = measured.allSatisfy(\.readable)
-        return ItemResult(
+        return await ItemResult(
             item: item,
             paths: paths,
             kilobytes: kilobytes,
-            location: await location(in: context),
-            sizeKnown: known
-        )
+            location: location(in: context),
+            sizeKnown: known)
     }
 }
 
@@ -135,6 +147,6 @@ public enum Scanners {
     ]
 
     public static func scanner(for item: Item) -> any Scanner {
-        all.first { $0.item == item }!
+        self.all.first { $0.item == item }!
     }
 }

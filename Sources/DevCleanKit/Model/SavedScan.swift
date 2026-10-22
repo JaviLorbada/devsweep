@@ -1,5 +1,5 @@
-import Synchronization
 import Foundation
+import Synchronization
 
 /// The results of a finished scan, kept so the window can show them on the
 /// next launch while a new scan runs.
@@ -39,7 +39,7 @@ public final class InMemoryScanStore: ScanMemoryStore {
     public init() {}
 
     public func load(home: String) -> SavedScan? {
-        scan.withLock { $0 }.flatMap { $0.home.bytesEqual(home) ? $0 : nil }
+        self.scan.withLock { $0 }.flatMap { $0.home.bytesEqual(home) ? $0 : nil }
     }
 
     public func save(_ scan: SavedScan) throws {
@@ -59,7 +59,11 @@ public struct ScanStore: ScanMemoryStore {
     /// home folder the scan describes, so a fake home keeps its own.
     public static func standard(home: String) -> ScanStore {
         ScanStore(url: URL(fileURLWithPath: home)
-            .appending(components: "Library", "Application Support", ProductInfo.applicationSupportFolder, "last-scan.json"))
+            .appending(
+                components: "Library",
+                "Application Support",
+                ProductInfo.applicationSupportFolder,
+                "last-scan.json"))
     }
 
     /// The saved scan of `home`, or nil when there is none, it can't be read,
@@ -76,8 +80,10 @@ public struct ScanStore: ScanMemoryStore {
     }
 
     public func save(_ scan: SavedScan) throws {
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Self.encoder.encode(scan).write(to: url, options: .atomic)
+        try FileManager.default.createDirectory(
+            at: self.url.deletingLastPathComponent(),
+            withIntermediateDirectories: true)
+        try Self.encoder.encode(scan).write(to: self.url, options: .atomic)
     }
 
     private static let encoder: JSONEncoder = {

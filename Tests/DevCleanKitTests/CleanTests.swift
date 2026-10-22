@@ -22,7 +22,7 @@ struct CleanTests {
         #expect(outcome.warnings.isEmpty)
         #expect(!home.exists(home.path("Library/Caches/CocoaPods")))
         for removed in outcome.removed {
-            #expect(home.exists(try #require(removed.trashed)))
+            #expect(try home.exists(#require(removed.trashed)))
         }
 
         let putBack = await engine.putBack(outcome)
@@ -37,7 +37,7 @@ struct CleanTests {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(".npm/_cacache"))
         let engine = try engine(home, tools)
-        let outcome = await engine.clean(try await scanned(.npmCache, engine), mode: .trash)
+        let outcome = try await engine.clean(self.scanned(.npmCache, engine), mode: .trash)
         home.write(home.path(".npm/_cacache/new"), "new\n")
 
         let putBack = await engine.putBack(outcome)
@@ -52,7 +52,7 @@ struct CleanTests {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/CocoaPods"))
         let engine = try engine(home, tools)
-        let outcome = await engine.clean(try await scanned(.toolCaches, engine), mode: .trash)
+        let outcome = try await engine.clean(self.scanned(.toolCaches, engine), mode: .trash)
         try FileManager.default.moveItem(atPath: home.path("Library/Caches"), toPath: home.outside("moved"))
         home.symlink(home.outside("moved"), at: home.path("Library/Caches"))
 
@@ -101,7 +101,11 @@ struct CleanTests {
     func `paths already gone are skipped quietly`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let engine = try engine(home, tools)
-        let result = ItemResult(item: .npmCache, paths: [engine.policy.homeReal + "/.npm/_cacache"], kilobytes: 4, location: "")
+        let result = ItemResult(
+            item: .npmCache,
+            paths: [engine.policy.homeReal + "/.npm/_cacache"],
+            kilobytes: 4,
+            location: "")
         let outcome = await engine.clean(result, mode: .delete)
         #expect(outcome.removed.isEmpty && outcome.skipped.isEmpty && outcome.warnings.isEmpty)
     }
@@ -111,7 +115,14 @@ struct CleanTests {
 struct SessionTests {
     @Test
     func `the prompt deletes only on y, Y, yes or YES`() async {
-        for (answer, deletes) in [("y", true), ("YES", true), ("  yes  ", true), ("Yes", false), ("n", false), ("", false)] {
+        for (answer, deletes) in [
+            ("y", true),
+            ("YES", true),
+            ("  yes  ", true),
+            ("Yes", false),
+            ("n", false),
+            ("", false),
+        ] {
             let home = FakeHome(), tools = FakeTools(home: home)
             home.fill(home.path("Library/Caches/org.swift.swiftpm"))
             let run = await devclean("--run", home: home, tools: tools, input: [answer])
@@ -150,8 +161,13 @@ struct SessionTests {
         #expect(blocked.status == 1)
         #expect(blocked.standardError == "devclean: Quit Simulator first, then run devclean --run again.\n")
 
-        let allowed = await devclean("--run", "--yes", "--skip", "derived-data,simulators,device-installs,device-support",
-                                     home: home, tools: tools)
+        let allowed = await devclean(
+            "--run",
+            "--yes",
+            "--skip",
+            "derived-data,simulators,device-installs,device-support",
+            home: home,
+            tools: tools)
         #expect(allowed.status == 0)
         #expect(!home.exists(home.path("Library/Caches/org.swift.swiftpm")))
     }
@@ -170,7 +186,8 @@ struct SessionTests {
         let home = FakeHome(), tools = FakeTools(home: home)
         let root = await devclean(home: home, tools: tools, effectiveUserID: 0)
         #expect(root.status == 1)
-        #expect(root.standardError == "devclean: Don't run devclean with sudo. Everything it cleans belongs to your user.\n")
+        #expect(root
+            .standardError == "devclean: Don't run devclean with sudo. Everything it cleans belongs to your user.\n")
         let noHome = await devclean(home: home, tools: tools, environment: ["HOME": home.path("missing")])
         #expect(noHome.status == 1)
         #expect(noHome.standardError == "devclean: HOME must be your home folder.\n")
@@ -181,13 +198,21 @@ struct SessionTests {
     func `dim text only on a terminal, and never with NO_COLOR`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let terminal = BufferTerminal(outputIsInteractive: true)
-        _ = await CommandLineSession.run(CommandLineOptions(), environment: home.environment, tools: tools.tools, terminal: terminal)
+        _ = await CommandLineSession.run(
+            CommandLineOptions(),
+            environment: home.environment,
+            tools: tools.tools,
+            terminal: terminal)
         #expect(terminal.standardOutput.contains("\u{1B}[2m~/Library/Developer/Xcode/DerivedData\u{1B}[0m"))
 
         let plain = BufferTerminal(outputIsInteractive: true)
         var environment = home.environment
         environment["NO_COLOR"] = "1"
-        _ = await CommandLineSession.run(CommandLineOptions(), environment: environment, tools: tools.tools, terminal: plain)
+        _ = await CommandLineSession.run(
+            CommandLineOptions(),
+            environment: environment,
+            tools: tools.tools,
+            terminal: plain)
         #expect(!plain.standardOutput.contains("\u{1B}"))
     }
 
@@ -198,8 +223,7 @@ struct SessionTests {
         home.fill(home.path("Library/Caches/CocoaPods"))
         let run = await devclean("--run", "--yes", home: home, tools: tools)
         #expect(run.standardOutput.containsInOrder(
-            "  Deleting SwiftPM package cache...\n", "  Deleting Tool caches (1)...\n", "\nDone. Free space: ", " -> "
-        ))
+            "  Deleting SwiftPM package cache...\n", "  Deleting Tool caches (1)...\n", "\nDone. Free space: ", " -> "))
         #expect(!run.output.contains("Deleting Homebrew"))
     }
 }

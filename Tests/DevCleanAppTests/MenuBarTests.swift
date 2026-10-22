@@ -7,7 +7,7 @@ import Testing
 /// Keeps what would have been posted.
 final class RecordingPoster: NotificationPoster {
     let posted = Mutex<[String]>([])
-    func post(title: String, body: String) async { posted.withLock { $0.append(title) } }
+    func post(title: String, body: String) async { self.posted.withLock { $0.append(title) } }
 }
 
 @MainActor
@@ -24,12 +24,24 @@ struct MenuBarTests {
     @Test
     func `DerivedData growth past the threshold since the last scan is worth a notification`() {
         let gigabyte: Int64 = 1024 * 1024
-        #expect(GrowthCheck.derivedData(previousKilobytes: nil, currentKilobytes: 90 * gigabyte, thresholdGigabytes: 20) == nil)
-        #expect(GrowthCheck.derivedData(previousKilobytes: 40 * gigabyte, currentKilobytes: 60 * gigabyte, thresholdGigabytes: 20) == nil)
-        let alert = GrowthCheck.derivedData(previousKilobytes: 40 * gigabyte, currentKilobytes: 61 * gigabyte, thresholdGigabytes: 20)
+        #expect(GrowthCheck.derivedData(
+            previousKilobytes: nil,
+            currentKilobytes: 90 * gigabyte,
+            thresholdGigabytes: 20) == nil)
+        #expect(GrowthCheck.derivedData(
+            previousKilobytes: 40 * gigabyte,
+            currentKilobytes: 60 * gigabyte,
+            thresholdGigabytes: 20) == nil)
+        let alert = GrowthCheck.derivedData(
+            previousKilobytes: 40 * gigabyte,
+            currentKilobytes: 61 * gigabyte,
+            thresholdGigabytes: 20)
         #expect(alert?.title == "DerivedData grew by \(SizeText.of(kilobytes: 21 * gigabyte))")
         #expect(alert?.body.contains(SizeText.of(kilobytes: 40 * gigabyte)) == true)
-        #expect(GrowthCheck.derivedData(previousKilobytes: 60 * gigabyte, currentKilobytes: 10 * gigabyte, thresholdGigabytes: 1) == nil)
+        #expect(GrowthCheck.derivedData(
+            previousKilobytes: 60 * gigabyte,
+            currentKilobytes: 10 * gigabyte,
+            thresholdGigabytes: 1) == nil)
     }
 
     @Test

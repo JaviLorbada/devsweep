@@ -8,18 +8,18 @@ final class RecordingFileSystem: FileSystemAccess {
     let removed = Mutex<[String]>([])
     private let disk = LiveFileSystem()
 
-    func childNames(_ directory: String) -> [String] { disk.childNames(directory) }
-    func isDirectory(_ path: String) -> Bool { disk.isDirectory(path) }
-    func isSymlink(_ path: String) -> Bool { disk.isSymlink(path) }
-    func exists(_ path: String) -> Bool { disk.exists(path) }
-    func modificationTime(_ path: String) -> Int { disk.modificationTime(path) }
-    func contents(of path: String) -> Data? { disk.contents(of: path) }
-    func remove(_ path: String) throws { removed.withLock { $0.append(path) } }
+    func childNames(_ directory: String) -> [String] { self.disk.childNames(directory) }
+    func isDirectory(_ path: String) -> Bool { self.disk.isDirectory(path) }
+    func isSymlink(_ path: String) -> Bool { self.disk.isSymlink(path) }
+    func exists(_ path: String) -> Bool { self.disk.exists(path) }
+    func modificationTime(_ path: String) -> Int { self.disk.modificationTime(path) }
+    func contents(of path: String) -> Data? { self.disk.contents(of: path) }
+    func remove(_ path: String) throws { self.removed.withLock { $0.append(path) } }
 }
 
 struct FixedClock: WallClock {
     let date: Date
-    func now() -> Date { date }
+    func now() -> Date { self.date }
 }
 
 @Suite("Dependencies")
@@ -36,16 +36,20 @@ struct DependenciesTests {
         let outcome = await engine.clean(result, mode: .delete)
         #expect(outcome.removed.map(\.original) == result.paths)
         #expect(files.removed.withLock { $0 } == result.paths)
-        #expect(FileManager.default.fileExists(atPath: home.path("Library/Caches/org.swift.swiftpm")), "the fake removed nothing")
+        #expect(
+            FileManager.default.fileExists(atPath: home.path("Library/Caches/org.swift.swiftpm")),
+            "the fake removed nothing")
     }
 
     @Test
     func `how long a runtime has gone unused is counted from the dependencies' clock`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.stubRuntimes()
-        let later = Date().addingTimeInterval(400 * 86_400)
+        let later = Date().addingTimeInterval(400 * 86400)
         let config = ScanConfig.fromEnvironment(home.environment)
-        let engine = try Engine(config: config, dependencies: Dependencies(tools: tools.tools, clock: FixedClock(date: later)))
+        let engine = try Engine(
+            config: config,
+            dependencies: Dependencies(tools: tools.tools, clock: FixedClock(date: later)))
         let runtimes = await engine.extras().runtimes
         let current = try #require(runtimes.first { $0.version == "27.0" })
         #expect(current.daysSinceUsed ?? 0 >= 399)

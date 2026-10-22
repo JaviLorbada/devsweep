@@ -63,8 +63,18 @@ struct ReportingTests {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean(home: home, tools: tools)
         #expect(run.status == 0)
-        for id in ["derived-data", "simulators", "device-installs", "swiftpm-cache", "swiftpm-builds",
-                   "xcode-builds", "gradle-builds", "npm-cache", "homebrew", "tool-caches"] {
+        for id in [
+            "derived-data",
+            "simulators",
+            "device-installs",
+            "swiftpm-cache",
+            "swiftpm-builds",
+            "xcode-builds",
+            "gradle-builds",
+            "npm-cache",
+            "homebrew",
+            "tool-caches",
+        ] {
             #expect(run.output.contains(id))
         }
         #expect(run.output.contains("~/Library/Developer/Xcode/DerivedData"))
@@ -77,8 +87,7 @@ struct ReportingTests {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean(
             home: home, tools: tools,
-            environment: ["DEVCLEAN_PROJECT_DIRS": "\(home.home)/Workspace:\(home.home)/Missing"]
-        )
+            environment: ["DEVCLEAN_PROJECT_DIRS": "\(home.home)/Workspace:\(home.home)/Missing"])
         #expect(run.status == 0)
         #expect(run.output.contains("Project folders: ~/Workspace (not found: ~/Missing)"))
     }
@@ -327,10 +336,10 @@ struct XcodeAndToolsTests {
     func `devclean deletes unavailable simulators through simctl`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.unavailableListing = """
-            -- Unavailable: com.apple.CoreSimulator.SimRuntime.iOS-26-2 --
-                iPad Pro (M5) (F3062B90-F7DB-4DBF-A21D-9AF6BC6EC06D) (Shutdown) (unavailable, runtime profile not found)
+        -- Unavailable: com.apple.CoreSimulator.SimRuntime.iOS-26-2 --
+            iPad Pro (M5) (F3062B90-F7DB-4DBF-A21D-9AF6BC6EC06D) (Shutdown) (unavailable, runtime profile not found)
 
-            """
+        """
         home.fill(home.path("Library/Developer/CoreSimulator/Devices/F3062B90-F7DB-4DBF-A21D-9AF6BC6EC06D"))
 
         let run = await devclean("--run", "--yes", home: home, tools: tools)
@@ -400,10 +409,10 @@ struct ExtrasListingTests {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.stubRuntimes()
         tools.runtimesJSON = Data("""
-            { "RECENT-RUNTIME": { "build": "24A434", "version": "27.0", "sizeBytes": 1024,
-              "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
-              "lastUsedAt": "\(ISO8601DateFormatter().string(from: Date()))" } }
-            """.utf8)
+        { "RECENT-RUNTIME": { "build": "24A434", "version": "27.0", "sizeBytes": 1024,
+          "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+          "lastUsedAt": "\(ISO8601DateFormatter().string(from: Date()))" } }
+        """.utf8)
 
         let run = await devclean(home: home, tools: tools)
         #expect(run.status == 0)
@@ -540,8 +549,7 @@ struct SafetyRegressionTests {
 
         let run = await devclean(
             "--run", "--yes", home: home, tools: tools,
-            environment: ["GIT_DIR": gitDir, "GIT_WORK_TREE": workTree]
-        )
+            environment: ["GIT_DIR": gitDir, "GIT_WORK_TREE": workTree])
         #expect(run.status == 0)
         // Kept because git answered "tracked", not because the query failed
         #expect(!run.output.contains("couldn't check whether git tracks it"))
@@ -659,10 +667,14 @@ struct DerivedDataBreakdownTests {
         home.fill("\(dd)/ModuleCache.noindex")
         home.fill("\(dd)/SymbolCache.noindex")
         home.mkdir("\(home.projects)/App/App.xcodeproj")
-        home.makeDerivedData("\(dd)/App-abcdefghijklmnopqrstuvwxyz",
-                             workspace: "\(home.projects)/App/App.xcodeproj", lastAccessed: "2026-09-30T10:00:00Z")
-        home.makeDerivedData("\(dd)/Old-bcdefghijklmnopqrstuvwxyza",
-                             workspace: "\(home.projects)/Old/Old.xcodeproj", lastAccessed: "2026-03-02T10:00:00Z")
+        home.makeDerivedData(
+            "\(dd)/App-abcdefghijklmnopqrstuvwxyz",
+            workspace: "\(home.projects)/App/App.xcodeproj",
+            lastAccessed: "2026-09-30T10:00:00Z")
+        home.makeDerivedData(
+            "\(dd)/Old-bcdefghijklmnopqrstuvwxyza",
+            workspace: "\(home.projects)/Old/Old.xcodeproj",
+            lastAccessed: "2026-03-02T10:00:00Z")
 
         let run = await devclean(home: home, tools: tools)
         #expect(run.status == 0)
@@ -680,8 +692,10 @@ struct DerivedDataBreakdownTests {
         let home = FakeHome(), tools = FakeTools(home: home), dd = home.path(FakeHome.derivedData)
         for n in 1...7 {
             home.mkdir("\(home.projects)/P\(n)/P\(n).xcodeproj")
-            home.makeDerivedData("\(dd)/P\(n)-abcdefghijklmnopqrstuvwxyz",
-                                 workspace: "\(home.projects)/P\(n)/P\(n).xcodeproj", lastAccessed: "2026-09-30T10:00:00Z")
+            home.makeDerivedData(
+                "\(dd)/P\(n)-abcdefghijklmnopqrstuvwxyz",
+                workspace: "\(home.projects)/P\(n)/P\(n).xcodeproj",
+                lastAccessed: "2026-09-30T10:00:00Z")
         }
         home.writeZeros("\(dd)/P7-abcdefghijklmnopqrstuvwxyz/big", kilobytes: 2048)
 
@@ -720,8 +734,7 @@ struct DefaultProjectFolderTests {
         let run = await devclean(home: home, tools: tools, environment: ["DEVCLEAN_PROJECT_DIRS": nil])
         #expect(run.status == 0)
         #expect(run.output.contains(
-            "Project folders: ~/Development, ~/dev (not found: ~/Developer, ~/Documents/Workspace, ~/Projects)"
-        ))
+            "Project folders: ~/Development, ~/dev (not found: ~/Developer, ~/Documents/Workspace, ~/Projects)"))
         #expect(run.output.contains("SwiftPM .build folders (1)"))
     }
 }

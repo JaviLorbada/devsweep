@@ -19,8 +19,10 @@ struct ItemInspector: View {
                     .padding(18)
             }
         } else {
-            ContentUnavailableView("Nothing selected", systemImage: "sidebar.trailing",
-                                   description: Text("Select an item to see what it holds."))
+            ContentUnavailableView(
+                "Nothing selected",
+                systemImage: "sidebar.trailing",
+                description: Text("Select an item to see what it holds."))
         }
     }
 }
@@ -36,10 +38,10 @@ struct ItemDetails: View {
     static let pathsShown = 8
 
     var body: some View {
-        let item = row.item
+        let item = self.row.item
         VStack(alignment: .leading, spacing: 14) {
-            header(row)
-            location(row)
+            self.header(self.row)
+            self.location(self.row)
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "What happens")
                 Text(item.whatHappens)
@@ -47,7 +49,9 @@ struct ItemDetails: View {
                     .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if let breakdown = row.shownResult?.derivedData, row.wasMeasured || row.showsPrevious, !(row.shownResult?.isEmpty ?? true) {
+            if let breakdown = row.shownResult?.derivedData, row.wasMeasured || row.showsPrevious,
+               !(row.shownResult?.isEmpty ?? true)
+            {
                 DerivedDataParts(breakdown: breakdown, color: Palette.color(item))
             }
         }
@@ -65,11 +69,11 @@ struct ItemDetails: View {
             Text(row.shownResult?.label ?? row.item.name)
                 .font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(heroSize(row))
+                Text(self.heroSize(row))
                     .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                     .contentTransition(.numericText())
-                Text(stateWord(row))
+                Text(self.stateWord(row))
                     .font(.callout.weight(.medium))
                     .foregroundStyle(row.state == .cleaned ? AnyShapeStyle(.green) : AnyShapeStyle(.muted))
             }
@@ -87,26 +91,29 @@ struct ItemDetails: View {
                 .fixedSize(horizontal: false, vertical: true)
             if paths.count > 1 {
                 VStack(alignment: .leading, spacing: 2) {
-                    ForEach(showsAllPaths ? paths : Array(paths.prefix(Self.pathsShown)), id: \.self) { path in
-                        Text(model.tilde(path))
+                    ForEach(self.showsAllPaths ? paths : Array(paths.prefix(Self.pathsShown)), id: \.self) { path in
+                        Text(self.model.tilde(path))
                             .font(.caption2.monospaced())
                             .foregroundStyle(.muted)
                             .lineLimit(1)
                             .truncationMode(.middle)
-                            .help(model.tilde(path))
+                            .help(self.model.tilde(path))
                     }
                     if paths.count > Self.pathsShown {
-                        Button(showsAllPaths ? "Show fewer" : "and \(paths.count - Self.pathsShown) more") {
-                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { showsAllPaths.toggle() }
+                        Button(self.showsAllPaths ? "Show fewer" : "and \(paths.count - Self.pathsShown) more") {
+                            withAnimation(self.reduceMotion ? nil : .easeInOut(duration: 0.2)) {
+                                self.showsAllPaths.toggle()
+                            }
                         }
                         .buttonStyle(.link)
                         .font(.caption2)
-                        .accessibilityHint(showsAllPaths ? "Hides all but the first \(Self.pathsShown) paths" : "Shows every path")
+                        .accessibilityHint(self
+                            .showsAllPaths ? "Hides all but the first \(Self.pathsShown) paths" : "Shows every path")
                     }
                 }
             }
             if !paths.isEmpty {
-                Button("Reveal in Finder") { model.revealInFinder(paths) }
+                Button("Reveal in Finder") { self.model.revealInFinder(paths) }
                     .buttonStyle(.link)
                     .font(.callout)
             }
@@ -131,9 +138,13 @@ struct ItemDetails: View {
         case .cleaning: "cleaning"
         case .cleaned: row.canPutBack ? "in Trash" : "deleted"
         case .measured:
-            if !row.sizeKnown { "size unknown" }
-            else if row.result?.isEmpty ?? true { "nothing to clean" }
-            else { "reclaimable" }
+            if !row.sizeKnown {
+                "size unknown"
+            } else if row.result?.isEmpty ?? true {
+                "nothing to clean"
+            } else {
+                "reclaimable"
+            }
         }
     }
 }
@@ -156,27 +167,51 @@ struct DerivedDataParts: View {
 
     var parts: [Part] {
         var parts: [Part] = []
-        if breakdown.compilationCacheKilobytes > 0 {
-            parts.append(Part(id: "compilation", name: "Compilation cache, all projects", status: "", gone: false, kilobytes: breakdown.compilationCacheKilobytes))
+        if self.breakdown.compilationCacheKilobytes > 0 {
+            parts.append(Part(
+                id: "compilation",
+                name: "Compilation cache, all projects",
+                status: "",
+                gone: false,
+                kilobytes: self.breakdown.compilationCacheKilobytes))
         }
-        if breakdown.moduleCacheKilobytes > 0 {
-            parts.append(Part(id: "module", name: "Module cache, all projects", status: "", gone: false, kilobytes: breakdown.moduleCacheKilobytes))
+        if self.breakdown.moduleCacheKilobytes > 0 {
+            parts.append(Part(
+                id: "module",
+                name: "Module cache, all projects",
+                status: "",
+                gone: false,
+                kilobytes: self.breakdown.moduleCacheKilobytes))
         }
-        for project in breakdown.projects.prefix(5) {
-            let status: String = switch project.status {
-            case .built(let day): "built \(day)"
+        for project in self.breakdown.projects.prefix(5) {
+            let status = switch project.status {
+            case let .built(day): "built \(day)"
             case .gone: ""
             }
-            parts.append(Part(id: project.folder, name: Self.displayName(project), status: status,
-                              gone: project.status == .gone, kilobytes: project.kilobytes, path: project.workspacePath))
+            parts.append(Part(
+                id: project.folder,
+                name: Self.displayName(project),
+                status: status,
+                gone: project.status == .gone,
+                kilobytes: project.kilobytes,
+                path: project.workspacePath))
         }
-        let rest = breakdown.projects.dropFirst(5)
+        let rest = self.breakdown.projects.dropFirst(5)
         if !rest.isEmpty {
-            parts.append(Part(id: "rest", name: rest.count == 1 ? "1 more project" : "\(rest.count) more projects", status: "", gone: false,
-                              kilobytes: rest.reduce(0) { $0 + $1.kilobytes }))
+            parts.append(Part(
+                id: "rest",
+                name: rest.count == 1 ? "1 more project" : "\(rest.count) more projects",
+                status: "",
+                gone: false,
+                kilobytes: rest.reduce(0) { $0 + $1.kilobytes }))
         }
-        if breakdown.otherKilobytes > 0 {
-            parts.append(Part(id: "other", name: "Other", status: "", gone: false, kilobytes: breakdown.otherKilobytes))
+        if self.breakdown.otherKilobytes > 0 {
+            parts.append(Part(
+                id: "other",
+                name: "Other",
+                status: "",
+                gone: false,
+                kilobytes: self.breakdown.otherKilobytes))
         }
         return parts.sorted { $0.kilobytes > $1.kilobytes }
     }
@@ -201,7 +236,7 @@ struct DerivedDataParts: View {
                         Text(part.name)
                             .lineLimit(1)
                             .truncationMode(.tail)
-                            .help(part.path.map(model.tilde) ?? "")
+                            .help(part.path.map(self.model.tilde) ?? "")
                         if part.gone { Badge(text: "project gone", color: .orange) }
                         Spacer(minLength: 4)
                         Text(part.status).font(.caption).foregroundStyle(.muted).lineLimit(1)
@@ -211,7 +246,7 @@ struct DerivedDataParts: View {
                             .frame(width: 60, alignment: .trailing)
                     }
                     .font(.callout)
-                    ThinBar(fraction: Double(part.kilobytes) / largest, color: color, height: 3)
+                    ThinBar(fraction: Double(part.kilobytes) / largest, color: self.color, height: 3)
                 }
                 .padding(.vertical, 4)
             }
@@ -228,20 +263,20 @@ struct InspectorAction: View {
     let row: AppModel.Row
 
     var body: some View {
-        switch row.state {
+        switch self.row.state {
         case .waiting, .measuring:
-            wide(Button("Measuring") {}.buttonStyle(.glassProminent).disabled(true))
-        case .measured where row.isLive:
-            wide(Button("Clean \(row.item.shortName)") {
-                Task { await model.requestClean([row.item]) }
+            self.wide(Button("Measuring") {}.buttonStyle(.glassProminent).disabled(true))
+        case .measured where self.row.isLive:
+            self.wide(Button("Clean \(self.row.item.shortName)") {
+                Task { await self.model.requestClean([self.row.item]) }
             }
             .buttonStyle(.glassProminent)
-            .disabled(model.isScanning || model.isCleaning))
+            .disabled(self.model.isScanning || self.model.isCleaning))
         case .cleaning:
-            wide(Button("Cleaning") {}.buttonStyle(.glass).disabled(true))
-        case .cleaned where row.canPutBack:
-            wide(Button("Put Back") {
-                Task { await model.putBack(row.item) }
+            self.wide(Button("Cleaning") {}.buttonStyle(.glass).disabled(true))
+        case .cleaned where self.row.canPutBack:
+            self.wide(Button("Put Back") {
+                Task { await self.model.putBack(self.row.item) }
             }
             .buttonStyle(.glass)
             .help("Move it from the Trash back where it was"))

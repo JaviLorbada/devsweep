@@ -42,16 +42,16 @@ struct SidebarView: View {
 
             // Listed, never cleaned: each tool's group under its own heading.
             Section("Also worth a look") {
-                DisclosureGroup(isExpanded: $showsXcode) {
-                    row("Versions", kilobytes: model.xcodesKilobytes, screen: .xcodeVersions)
-                    row("Simulator runtimes", kilobytes: model.runtimesKilobytes, screen: .simulatorRuntimes)
+                DisclosureGroup(isExpanded: self.$showsXcode) {
+                    self.row("Versions", kilobytes: model.xcodesKilobytes, screen: .xcodeVersions)
+                    self.row("Simulator runtimes", kilobytes: model.runtimesKilobytes, screen: .simulatorRuntimes)
                 } label: {
                     Label("Xcode", systemImage: "hammer")
                 }
-                DisclosureGroup(isExpanded: $showsAndroid) {
-                    row("Versions", kilobytes: model.androidStudiosKilobytes, screen: .androidStudios)
-                    row("SDK and emulators", kilobytes: model.androidSDKKilobytes, screen: .androidSDK)
-                    row("Gradle caches", kilobytes: model.gradleCachesKilobytes, screen: .gradleCaches)
+                DisclosureGroup(isExpanded: self.$showsAndroid) {
+                    self.row("Versions", kilobytes: model.androidStudiosKilobytes, screen: .androidStudios)
+                    self.row("SDK and emulators", kilobytes: model.androidSDKKilobytes, screen: .androidSDK)
+                    self.row("Gradle caches", kilobytes: model.gradleCachesKilobytes, screen: .gradleCaches)
                 } label: {
                     Label("Android Studio", systemImage: "iphone.gen3")
                 }
@@ -70,7 +70,7 @@ private struct SidebarSize: View {
     let kilobytes: Int64?
 
     var body: some View {
-        Text(kilobytes.map { SizeText.of(kilobytes: $0) } ?? "–")
+        Text(self.kilobytes.map { SizeText.of(kilobytes: $0) } ?? "–")
             .font(.callout)
             .monospacedDigit()
             .foregroundStyle(.muted)
@@ -83,7 +83,7 @@ struct DiskMeter: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let space = model.diskSpace
+        let space = self.model.diskSpace
         let total = Double(max(space?.totalKilobytes ?? 1, 1))
         let free = Double(space?.availableKilobytes ?? 0)
         let reclaimable = min(Double(model.reclaimableKilobytes), max(total - free, 0))
@@ -91,10 +91,11 @@ struct DiskMeter: View {
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(model.volumeName).font(.callout.weight(.semibold))
+                Text(self.model.volumeName).font(.callout.weight(.semibold))
                 Spacer()
                 if let space {
-                    Text("\(SizeText.of(kilobytes: space.availableKilobytes)) free of \(SizeText.wholeGigabytes(kilobytes: space.totalKilobytes))")
+                    Text(
+                        "\(SizeText.of(kilobytes: space.availableKilobytes)) free of \(SizeText.wholeGigabytes(kilobytes: space.totalKilobytes))")
                         .font(.caption)
                         .monospacedDigit()
                         .foregroundStyle(.muted)
@@ -116,7 +117,7 @@ struct DiskMeter: View {
             .animation(Motion.animation(.easeInOut(duration: 0.4)), value: reclaimable)
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 2).fill(Palette.reclaimable).frame(width: 8, height: 8)
-                Text("\(SizeText.of(kilobytes: model.reclaimableKilobytes)) reclaimable")
+                Text("\(SizeText.of(kilobytes: self.model.reclaimableKilobytes)) reclaimable")
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundStyle(.muted)

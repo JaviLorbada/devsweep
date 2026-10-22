@@ -27,8 +27,11 @@ struct AndroidStudiosContent: View {
 
     var body: some View {
         AndroidScreen {
-            AndroidCard(title: "Android Studio", note: "", entries: model.android?.studios ?? [],
-                        empty: "No Android Studio found in the applications folders.")
+            AndroidCard(
+                title: "Android Studio",
+                note: "",
+                entries: self.model.android?.studios ?? [],
+                empty: "No Android Studio found in the applications folders.")
         }
     }
 }
@@ -37,16 +40,33 @@ struct AndroidSDKContent: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let android = model.android
+        let android = self.model.android
         AndroidScreen {
-            AndroidCard(title: "Emulators", note: "flagged after \(model.staleDays) days unchanged", entries: android?.emulators ?? [],
-                        empty: "No emulators in ~/.android/avd.")
-            AndroidCard(title: "System images", note: "flagged after \(model.staleDays) days without an emulator run",
-                        entries: android?.systemImages ?? [], empty: "No system images in the SDK.")
-            AndroidCard(title: "Platforms", note: "", entries: android?.platforms ?? [], empty: "No platforms in the SDK.")
-            AndroidCard(title: "Build tools", note: "", entries: android?.buildTools ?? [], empty: "No build tools in the SDK.")
-            AndroidCard(title: "Everything else in the SDK", note: "", entries: android?.otherSDKParts ?? [],
-                        empty: android?.sdk == nil ? "No SDK in ~/Library/Android/sdk." : "Nothing else.")
+            AndroidCard(
+                title: "Emulators",
+                note: "flagged after \(self.model.staleDays) days unchanged",
+                entries: android?.emulators ?? [],
+                empty: "No emulators in ~/.android/avd.")
+            AndroidCard(
+                title: "System images",
+                note: "flagged after \(self.model.staleDays) days without an emulator run",
+                entries: android?.systemImages ?? [],
+                empty: "No system images in the SDK.")
+            AndroidCard(
+                title: "Platforms",
+                note: "",
+                entries: android?.platforms ?? [],
+                empty: "No platforms in the SDK.")
+            AndroidCard(
+                title: "Build tools",
+                note: "",
+                entries: android?.buildTools ?? [],
+                empty: "No build tools in the SDK.")
+            AndroidCard(
+                title: "Everything else in the SDK",
+                note: "",
+                entries: android?.otherSDKParts ?? [],
+                empty: android?.sdk == nil ? "No SDK in ~/Library/Android/sdk." : "Nothing else.")
         }
     }
 }
@@ -56,8 +76,11 @@ struct GradleCachesContent: View {
 
     var body: some View {
         AndroidScreen {
-            AndroidCard(title: "~/.gradle", note: "shared by every Gradle project", entries: model.android?.gradleCaches ?? [],
-                        empty: "No Gradle caches in ~/.gradle.")
+            AndroidCard(
+                title: "~/.gradle",
+                note: "shared by every Gradle project",
+                entries: self.model.android?.gradleCaches ?? [],
+                empty: "No Gradle caches in ~/.gradle.")
         }
     }
 }
@@ -68,7 +91,7 @@ private struct AndroidScreen<Cards: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            cards
+            self.cards
             Text("\(ProductInfo.name) only lists these. Remove them from Android Studio, or in Finder.")
                 .font(.callout)
                 .foregroundStyle(.muted)
@@ -86,12 +109,12 @@ private struct AndroidCard: View {
     let empty: String
 
     var body: some View {
-        ExtrasCard(title: title, note: note, rowCount: entries.count) {
-            if entries.isEmpty {
-                EmptyExtrasRow(text: model.isLoadingAndroid && model.android == nil ? "Listing…" : empty)
+        ExtrasCard(title: self.title, note: self.note, rowCount: self.entries.count) {
+            if self.entries.isEmpty {
+                EmptyExtrasRow(text: self.model.isLoadingAndroid && self.model.android == nil ? "Listing…" : self.empty)
             } else {
                 let largest = Double(entries.map(\.kilobytes).max() ?? 1)
-                ForEach(entries) { entry in
+                ForEach(self.entries) { entry in
                     Divider().opacity(0.6)
                     AndroidRow(entry: entry, largest: largest)
                 }
@@ -107,18 +130,18 @@ private struct AndroidRow: View {
     let largest: Double
 
     var body: some View {
-        let flagged = entry.flagReason(staleDays: model.staleDays) != nil
-        let selected = model.currentAndroidEntry?.path == entry.path
+        let flagged = self.entry.flagReason(staleDays: self.model.staleDays) != nil
+        let selected = self.model.currentAndroidEntry?.path == self.entry.path
         let tint: Color = flagged ? .orange : .secondary.opacity(0.6)
         HStack(spacing: 12) {
             Dot(color: tint)
             // The detail or badge gives way first, then the title truncates.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(entry.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
+                Text(self.entry.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
                 if flagged, let days = entry.daysUnused() {
                     Badge(text: "\(days) days unused", color: .orange)
-                } else if !entry.detail.isEmpty {
-                    Text(entry.detail)
+                } else if !self.entry.detail.isEmpty {
+                    Text(self.entry.detail)
                         .font(.caption)
                         .foregroundStyle(.muted)
                         .lineLimit(1)
@@ -126,29 +149,29 @@ private struct AndroidRow: View {
                 Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if columns.showsDate {
-                Text(AndroidWords.lastUse(entry) ?? "")
+            if self.columns.showsDate {
+                Text(AndroidWords.lastUse(self.entry) ?? "")
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .lineLimit(1)
                     .frame(width: 120, alignment: .leading)
             }
-            if columns.showsBar {
-                ThinBar(fraction: Double(entry.kilobytes) / max(largest, 1), color: tint)
+            if self.columns.showsBar {
+                ThinBar(fraction: Double(self.entry.kilobytes) / max(self.largest, 1), color: tint)
                     .frame(width: 100)
             }
-            Text(SizeText.of(kilobytes: entry.kilobytes))
+            Text(SizeText.of(kilobytes: self.entry.kilobytes))
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
-            if columns == .compact {
-                Button("Reveal in Finder", systemImage: "folder") { model.revealInFinder([entry.path]) }
+            if self.columns == .compact {
+                Button("Reveal in Finder", systemImage: "folder") { self.model.revealInFinder([self.entry.path]) }
                     .labelStyle(.iconOnly)
                     .controlSize(.small)
                     .help("Reveal in Finder")
             } else {
-                Button("Reveal in Finder") { model.revealInFinder([entry.path]) }
+                Button("Reveal in Finder") { self.model.revealInFinder([self.entry.path]) }
                     .controlSize(.small)
                     .frame(width: 118)
             }
@@ -157,13 +180,14 @@ private struct AndroidRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { model.selectedAndroidEntry = entry.path }
+        .onTapGesture { self.model.selectedAndroidEntry = self.entry.path }
         .focusable()
-        .onKeyPress(.space) { model.selectedAndroidEntry = entry.path; return .handled }
+        .onKeyPress(.space) { self.model.selectedAndroidEntry = self.entry.path; return .handled }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(entry.title), \(SizeText.of(kilobytes: entry.kilobytes))\(flagged ? ", looks unused" : "")")
+        .accessibilityLabel(
+            "\(self.entry.title), \(SizeText.of(kilobytes: self.entry.kilobytes))\(flagged ? ", looks unused" : "")")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { model.selectedAndroidEntry = entry.path }
+        .accessibilityAction(named: "Select") { self.model.selectedAndroidEntry = self.entry.path }
     }
 }
 
@@ -179,15 +203,18 @@ struct AndroidInspector: View {
                 AndroidDetails(entry: entry)
             }
             .safeAreaInset(edge: .bottom) {
-                Button("Reveal in Finder") { model.revealInFinder([entry.path]) }
+                Button("Reveal in Finder") { self.model.revealInFinder([entry.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
                     .padding(18)
             }
         } else {
-            ContentUnavailableView("Nothing here", systemImage: "shippingbox",
-                                   description: Text(model.isLoadingAndroid ? "Listing…" : "Android Studio keeps nothing here."))
+            ContentUnavailableView(
+                "Nothing here",
+                systemImage: "shippingbox",
+                description: Text(self.model
+                    .isLoadingAndroid ? "Listing…" : "Android Studio keeps nothing here."))
         }
     }
 }
@@ -198,40 +225,40 @@ struct AndroidDetails: View {
     let entry: AndroidEntry
 
     var body: some View {
-        let reason = entry.flagReason(staleDays: model.staleDays)
+        let reason = self.entry.flagReason(staleDays: self.model.staleDays)
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
                 Dot(color: reason == nil ? .secondary.opacity(0.6) : .orange)
-                Eyebrow(text: AndroidWords.kind(entry.kind))
+                Eyebrow(text: AndroidWords.kind(self.entry.kind))
             }
-            Text(entry.title).font(.title3.weight(.semibold))
+            Text(self.entry.title).font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(SizeText.of(kilobytes: entry.kilobytes))
+                Text(SizeText.of(kilobytes: self.entry.kilobytes))
                     .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
-                Text(reason == nil ? AndroidWords.state(entry) : "looks unused")
+                Text(reason == nil ? AndroidWords.state(self.entry) : "looks unused")
                     .font(.callout.weight(.medium))
                     .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
-            section("Where") {
-                Text(model.tilde(entry.path))
+            self.section("Where") {
+                Text(self.model.tilde(self.entry.path))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
-                if !entry.detail.isEmpty, entry.kind != .gradleCache {
-                    Text(entry.detail)
+                if !self.entry.detail.isEmpty, self.entry.kind != .gradleCache {
+                    Text(self.entry.detail)
                 }
             }
             if let usage = AndroidWords.usage(entry, staleDays: model.staleDays) {
-                section(reason == nil ? "Usage" : "Why it is flagged") { Text(usage) }
+                self.section(reason == nil ? "Usage" : "Why it is flagged") { Text(usage) }
             }
-            section("To remove it") { Text(AndroidWords.removal(entry.kind)) }
+            self.section("To remove it") { Text(AndroidWords.removal(self.entry.kind)) }
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 20)
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             Eyebrow(text: title)
             content()

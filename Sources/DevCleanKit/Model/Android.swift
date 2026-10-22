@@ -25,8 +25,8 @@ public struct AndroidReport: Sendable, Codable, Equatable {
         buildTools: [AndroidEntry] = [],
         otherSDKParts: [AndroidEntry] = [],
         emulators: [AndroidEntry] = [],
-        gradleCaches: [AndroidEntry] = []
-    ) {
+        gradleCaches: [AndroidEntry] = [])
+    {
         self.studios = studios
         self.sdk = sdk
         self.systemImages = systemImages
@@ -38,8 +38,13 @@ public struct AndroidReport: Sendable, Codable, Equatable {
     }
 
     /// Everything in the SDK folder.
-    public var sdkEntries: [AndroidEntry] { systemImages + platforms + buildTools + otherSDKParts }
-    public var all: [AndroidEntry] { studios + sdkEntries + emulators + gradleCaches }
+    public var sdkEntries: [AndroidEntry] {
+        self.systemImages + self.platforms + self.buildTools + self.otherSDKParts
+    }
+
+    public var all: [AndroidEntry] {
+        self.studios + self.sdkEntries + self.emulators + self.gradleCaches
+    }
 }
 
 /// One thing Android Studio keeps: an install, a part of the SDK, an
@@ -68,7 +73,9 @@ public struct AndroidEntry: Sendable, Codable, Equatable, Identifiable {
     /// For a system image, how many emulators run on it.
     public var emulatorCount: Int?
 
-    public var id: String { path }
+    public var id: String {
+        self.path
+    }
 
     public init(
         kind: Kind,
@@ -77,8 +84,8 @@ public struct AndroidEntry: Sendable, Codable, Equatable, Identifiable {
         detail: String = "",
         kilobytes: Int64,
         lastUsed: Date? = nil,
-        emulatorCount: Int? = nil
-    ) {
+        emulatorCount: Int? = nil)
+    {
         self.kind = kind
         self.path = path
         self.title = title
@@ -90,13 +97,14 @@ public struct AndroidEntry: Sendable, Codable, Equatable, Identifiable {
 
     /// Whole days since it was last used.
     public func daysUnused(now: Date = Date()) -> Int? {
-        lastUsed.map { max(0, Int((now.timeIntervalSince($0) / 86_400).rounded(.down))) }
+        self.lastUsed.map { max(0, Int((now.timeIntervalSince($0) / 86400).rounded(.down))) }
     }
 
     /// Why it looks unused, or nil when it doesn't. Only system images and
     /// emulators are flagged, after `staleDays` without a change on disk.
     public func flagReason(staleDays: Int, now: Date = Date()) -> String? {
-        guard kind == .systemImage || kind == .emulator, let days = daysUnused(now: now), days >= staleDays else { return nil }
+        guard self.kind == .systemImage || self.kind == .emulator, let days = daysUnused(now: now),
+              days >= staleDays else { return nil }
         return "Not used in \(days) days"
     }
 }

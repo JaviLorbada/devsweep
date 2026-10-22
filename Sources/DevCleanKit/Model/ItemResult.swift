@@ -14,11 +14,22 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
     /// False when a folder could not be read, so the size is a lower bound.
     public var sizeKnown: Bool
 
-    public var id: Item { item }
-    public var bytes: Int64 { kilobytes * 1024 }
-    public var label: String { item.label(count: paths.count) }
+    public var id: Item {
+        self.item
+    }
+
+    public var bytes: Int64 {
+        self.kilobytes * 1024
+    }
+
+    public var label: String {
+        self.item.label(count: self.paths.count)
+    }
+
     /// Items with nothing to reclaim are listed as "none" and never cleaned.
-    public var isEmpty: Bool { kilobytes <= 0 }
+    public var isEmpty: Bool {
+        self.kilobytes <= 0
+    }
 
     public init(
         item: Item,
@@ -26,8 +37,8 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
         kilobytes: Int64,
         location: String,
         derivedData: DerivedDataBreakdown? = nil,
-        sizeKnown: Bool = true
-    ) {
+        sizeKnown: Bool = true)
+    {
         self.item = item
         self.paths = paths
         self.kilobytes = kilobytes
@@ -49,8 +60,8 @@ public struct DerivedDataBreakdown: Sendable, Equatable, Codable {
         compilationCacheKilobytes: Int64 = 0,
         moduleCacheKilobytes: Int64 = 0,
         otherKilobytes: Int64 = 0,
-        projects: [DerivedDataProject] = []
-    ) {
+        projects: [DerivedDataProject] = [])
+    {
         self.compilationCacheKilobytes = compilationCacheKilobytes
         self.moduleCacheKilobytes = moduleCacheKilobytes
         self.otherKilobytes = otherKilobytes
@@ -58,8 +69,8 @@ public struct DerivedDataBreakdown: Sendable, Equatable, Codable {
     }
 
     public var totalKilobytes: Int64 {
-        compilationCacheKilobytes + moduleCacheKilobytes + otherKilobytes
-            + projects.reduce(0) { $0 + $1.kilobytes }
+        self.compilationCacheKilobytes + self.moduleCacheKilobytes + self.otherKilobytes
+            + self.projects.reduce(0) { $0 + $1.kilobytes }
     }
 }
 
@@ -79,7 +90,9 @@ public struct DerivedDataProject: Sendable, Equatable, Identifiable, Codable {
     public var folder: String
     public var workspacePath: String
 
-    public var id: String { folder }
+    public var id: String {
+        self.folder
+    }
 
     public init(name: String, status: Status, kilobytes: Int64, folder: String, workspacePath: String) {
         self.name = name
@@ -90,8 +103,8 @@ public struct DerivedDataProject: Sendable, Equatable, Identifiable, Codable {
     }
 
     public var statusText: String {
-        switch status {
-        case .built(let day): "built \(day)"
+        switch self.status {
+        case let .built(day): "built \(day)"
         case .gone: "project gone"
         }
     }

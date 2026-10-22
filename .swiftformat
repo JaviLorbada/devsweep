@@ -1,0 +1,40 @@
+# SwiftFormat configuration. Run with Scripts/lint.sh format; CI checks it
+# with Scripts/lint.sh lint.
+
+# Swift 6 strict concurrency: explicit self stays, it is intentional.
+--swiftversion 6.2
+--self insert
+--importgrouping testable-bottom
+--extensionacl on-declarations
+
+# Indentation
+--indent 4
+--indentcase false
+--ifdef no-indent
+
+# Line breaks and whitespace
+--linebreaks lf
+--maxwidth 120
+--trimwhitespace always
+--emptybraces no-space
+--ranges no-space
+--nospaceoperators ...,..<
+--someAny true
+
+# Wrapping
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen same-line
+
+# Rules left off
+--disable redundantSendable # Keep explicit concurrency contracts visible
+--disable wrapIfStatementBodies,wrapFunctionBodies # Retain compact guards and simple test fixtures
+--disable swiftTestingTestCaseNames,redundantSwiftTestingSuite # Test names are backticked sentences
+
+# Other
+--stripunusedargs closure-only
+--header ignore
+--allman false
+
+--exclude .build,.swiftpm,DerivedData,build,xcuserdata

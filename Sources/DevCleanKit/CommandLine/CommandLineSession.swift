@@ -20,10 +20,14 @@ public enum CommandLineSession {
         environment: [String: String],
         tools: Tools,
         terminal: any Terminal,
-        effectiveUserID: uid_t = geteuid()
-    ) async -> Int32 {
-        await run(options, environment: environment, dependencies: Dependencies(tools: tools), terminal: terminal,
-                  effectiveUserID: effectiveUserID)
+        effectiveUserID: uid_t = geteuid()) async -> Int32
+    {
+        await self.run(
+            options,
+            environment: environment,
+            dependencies: Dependencies(tools: tools),
+            terminal: terminal,
+            effectiveUserID: effectiveUserID)
     }
 
     public static func run(
@@ -31,8 +35,8 @@ public enum CommandLineSession {
         environment: [String: String],
         dependencies: Dependencies,
         terminal: any Terminal,
-        effectiveUserID: uid_t = geteuid()
-    ) async -> Int32 {
+        effectiveUserID: uid_t = geteuid()) async -> Int32
+    {
         let engine: Engine
         do {
             // The script's preflight order: root and HOME first, then --skip.
@@ -42,8 +46,7 @@ public enum CommandLineSession {
                 environment,
                 projects: options.projects,
                 skipped: skipped,
-                includeExtras: !options.run
-            )
+                includeExtras: !options.run)
             engine = try Engine(config: config, dependencies: dependencies, effectiveUserID: effectiveUserID)
         } catch {
             terminal.warn(error.description)
@@ -64,20 +67,23 @@ public enum CommandLineSession {
         var found: [ItemResult] = []
         for await event in engine.scan() {
             switch event {
-            case .projectFolders(let folders):
+            case let .projectFolders(folders):
                 terminal.write(Report.projectFolders(folders))
-            case .warning(let message):
+            case let .warning(message):
                 terminal.warn(message)
-            case .finished(let result):
+            case let .finished(result):
                 if !result.isEmpty { found.append(result) }
                 terminal.write(Report.row(result, style: style))
-            case .done(let totalBytes, let freeBytes):
+            case let .done(totalBytes, freeBytes):
                 terminal.write(Report.summary(
                     totalKilobytes: found.isEmpty ? nil : totalBytes / 1024,
-                    freeKilobytes: freeBytes / 1024
-                ))
-            case .extras(let extras):
-                terminal.write(Report.extras(extras, staleDays: engine.config.staleDays, policy: engine.policy, style: style))
+                    freeKilobytes: freeBytes / 1024))
+            case let .extras(extras):
+                terminal.write(Report.extras(
+                    extras,
+                    staleDays: engine.config.staleDays,
+                    policy: engine.policy,
+                    style: style))
             case .started, .progress, .android:
                 break
             }
@@ -141,8 +147,13 @@ public struct StandardTerminal: Terminal {
         Swift.readLine(strippingNewline: true)
     }
 
-    public var inputIsInteractive: Bool { isatty(STDIN_FILENO) != 0 }
-    public var outputIsInteractive: Bool { isatty(STDOUT_FILENO) != 0 }
+    public var inputIsInteractive: Bool {
+        isatty(STDIN_FILENO) != 0
+    }
+
+    public var outputIsInteractive: Bool {
+        isatty(STDOUT_FILENO) != 0
+    }
 
     private static func write(_ descriptor: Int32, _ text: String) {
         let bytes = Array(text.utf8)

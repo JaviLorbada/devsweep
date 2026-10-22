@@ -7,9 +7,11 @@ import Testing
 /// temp folder runs; its last scan is kept in the temp home's own file.
 @MainActor
 func scanningModel(home: TemporaryHome, notifier: NotificationPoster = SilentNotificationPoster()) -> AppModel {
-    AppModel(environment: ["HOME": home.path, "DEVCLEAN_PROJECT_DIRS": ""],
-             preferences: Preferences(storage: InMemoryPreferencesStore()), notifier: notifier,
-             dependencies: Dependencies(tools: .unavailable))
+    AppModel(
+        environment: ["HOME": home.path, "DEVCLEAN_PROJECT_DIRS": ""],
+        preferences: Preferences(storage: InMemoryPreferencesStore()),
+        notifier: notifier,
+        dependencies: Dependencies(tools: .unavailable))
 }
 
 @MainActor
@@ -29,7 +31,7 @@ func write(_ kilobytes: Int, to folder: String) {
 @Suite("Remembering the last scan")
 struct ScanMemoryTests {
     @Test
-    func `A finished scan is shown, dimmed, on the next launch until a new one replaces it`() async throws {
+    func `A finished scan is shown, dimmed, on the next launch until a new one replaces it`() async {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Caches/org.swift.swiftpm")
         write(32, to: "\(home.path)/.npm/_cacache")
@@ -38,7 +40,8 @@ struct ScanMemoryTests {
         await finishScan(first)
         let total = first.reclaimableKilobytes
         #expect(total >= 96)
-        #expect(FileManager.default.fileExists(atPath: "\(home.path)/Library/Application Support/DevClean/last-scan.json"))
+        #expect(FileManager.default
+            .fileExists(atPath: "\(home.path)/Library/Application Support/DevClean/last-scan.json"))
 
         let next = scanningModel(home: home)
         #expect(next.statusLine.hasPrefix("Last scanned"))
@@ -62,7 +65,9 @@ struct ScanMemoryTests {
         await finishScan(otherModel)
         let saved = "\(other.path)/Library/Application Support/DevClean/last-scan.json"
         let copy = "\(home.path)/Library/Application Support/DevClean/last-scan.json"
-        try FileManager.default.createDirectory(atPath: (copy as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            atPath: (copy as NSString).deletingLastPathComponent,
+            withIntermediateDirectories: true)
         try FileManager.default.copyItem(atPath: saved, toPath: copy)
 
         let model = scanningModel(home: home)

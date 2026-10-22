@@ -8,8 +8,7 @@ struct DevCleanCommand: AsyncParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: ProductInfo.cliName,
         abstract: "Shows how much space developer caches take up. With --run, deletes them.",
-        helpNames: []
-    )
+        helpNames: [])
 
     @Flag(name: .customLong("run"), help: "Delete the items in the report (asks first)")
     var run = false
@@ -20,7 +19,10 @@ struct DevCleanCommand: AsyncParsableCommand {
     @Option(name: .customLong("skip"), parsing: .unconditional, help: "Comma-separated items to leave alone")
     var skip: String?
 
-    @Option(name: .customLong("projects"), parsing: .unconditional, help: "Colon-separated folders to search for build folders")
+    @Option(
+        name: .customLong("projects"),
+        parsing: .unconditional,
+        help: "Colon-separated folders to search for build folders")
     var projects: String?
 
     /// The bash script's argument rules run first, so its exact errors, help
@@ -36,10 +38,10 @@ struct DevCleanCommand: AsyncParsableCommand {
         case .help:
             terminal.write(CommandLineOptions.usage)
             Darwin.exit(0)
-        case .failure(let message):
+        case let .failure(message):
             terminal.warn(message)
             Darwin.exit(1)
-        case .options(let options):
+        case let .options(options):
             do {
                 var command = try parse(options.arguments)
                 try await command.run()
@@ -53,11 +55,10 @@ struct DevCleanCommand: AsyncParsableCommand {
     mutating func run() async throws {
         let environment = ProcessInfo.processInfo.environment
         let status = await CommandLineSession.run(
-            CommandLineOptions(run: run, yes: yes, skip: skip, projects: projects),
+            CommandLineOptions(run: self.run, yes: self.yes, skip: self.skip, projects: self.projects),
             environment: environment,
             dependencies: .live(environment: environment, passthroughOutput: true),
-            terminal: StandardTerminal()
-        )
+            terminal: StandardTerminal())
         Darwin.exit(status)
     }
 }

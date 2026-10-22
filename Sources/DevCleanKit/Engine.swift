@@ -8,15 +8,17 @@ public struct Engine: Sendable {
     public let policy: PathPolicy
     public var measurer: SizeMeasurer
 
-    public var tools: Tools { dependencies.tools }
+    public var tools: Tools {
+        self.dependencies.tools
+    }
 
     /// Runs preflight: not root, and `config.home` must be a usable home folder.
     public init(
         config: ScanConfig,
         dependencies: Dependencies,
         measurer: SizeMeasurer = SizeMeasurer(),
-        effectiveUserID: uid_t = geteuid()
-    ) throws(PreflightError) {
+        effectiveUserID: uid_t = geteuid()) throws(PreflightError)
+    {
         self.config = config
         self.dependencies = dependencies
         self.policy = try PathPolicy.preflight(home: config.home, effectiveUserID: effectiveUserID)
@@ -28,22 +30,26 @@ public struct Engine: Sendable {
         config: ScanConfig,
         tools: Tools,
         measurer: SizeMeasurer = SizeMeasurer(),
-        effectiveUserID: uid_t = geteuid()
-    ) throws(PreflightError) {
-        try self.init(config: config, dependencies: Dependencies(tools: tools), measurer: measurer, effectiveUserID: effectiveUserID)
+        effectiveUserID: uid_t = geteuid()) throws(PreflightError)
+    {
+        try self.init(
+            config: config,
+            dependencies: Dependencies(tools: tools),
+            measurer: measurer,
+            effectiveUserID: effectiveUserID)
     }
 
     /// The items a scan covers, in report order.
     public var items: [Item] {
-        Item.allCases.filter { !config.skipped.contains($0) }
+        Item.allCases.filter { !self.config.skipped.contains($0) }
     }
 
     /// The developer apps that are running and would have to quit before the
     /// Xcode items can be cleaned. Empty when those items are all skipped.
     public func runningAppsBlockingClean() async -> [DeveloperApp] {
-        guard !config.skipsEverythingXcodeUses else { return [] }
+        guard !self.config.skipsEverythingXcodeUses else { return [] }
         var running: [DeveloperApp] = []
-        for app in DeveloperApp.allCases where await tools.runningApps.isRunning(app) {
+        for app in DeveloperApp.allCases where await self.tools.runningApps.isRunning(app) {
             running.append(app)
         }
         return running
@@ -60,9 +66,9 @@ public struct Engine: Sendable {
         AsyncStream { continuation in
             let task = Task {
                 if options.concurrentItems > 1 {
-                    await runConcurrently(continuation, options: options)
+                    await self.runConcurrently(continuation, options: options)
                 } else {
-                    await run(continuation, options: options)
+                    await self.run(continuation, options: options)
                 }
                 continuation.finish()
             }
@@ -71,31 +77,30 @@ public struct Engine: Sendable {
     }
 
     private func makeContext(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) -> ScanContext {
-        let folders = policy.projectFolders(config.projectDirectories)
+        let folders = self.policy.projectFolders(self.config.projectDirectories)
         continuation.yield(.projectFolders(folders))
         return ScanContext(
-            config: config,
-            policy: policy,
-            dependencies: dependencies,
-            projects: ProjectSearch(roots: folders.roots, homeReal: policy.homeReal),
-            measurer: measurer,
+            config: self.config,
+            policy: self.policy,
+            dependencies: self.dependencies,
+            projects: ProjectSearch(roots: folders.roots, homeReal: self.policy.homeReal),
+            measurer: self.measurer,
             concurrentFolders: options.concurrentFolders,
-            warn: { continuation.yield(.warning($0)) }
-        )
+            warn: { continuation.yield(.warning($0)) })
     }
 
     /// The order items run in: the options' order, without skipped items,
     /// with anything the order leaves out at the end.
     private func ordered(_ options: ScanOptions) -> [Item] {
-        let chosen = options.order.filter(items.contains)
-        return chosen + items.filter { !chosen.contains($0) }
+        let chosen = options.order.filter(self.items.contains)
+        return chosen + self.items.filter { !chosen.contains($0) }
     }
 
     private func run(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) async {
-        let context = makeContext(continuation, options: options)
+        let context = self.makeContext(continuation, options: options)
 
         var totalKilobytes: Int64 = 0
-        for item in ordered(options) {
+        for item in self.ordered(options) {
             if Task.isCancelled { return }
             continuation.yield(.started(item))
             let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
@@ -106,14 +111,14 @@ public struct Engine: Sendable {
             continuation.yield(.finished(result))
         }
 
-        let free = DiskSpace.of(config.home)?.availableKilobytes ?? 0
+        let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
         continuation.yield(.done(totalBytes: totalKilobytes * 1024, freeBytes: free * 1024))
 
-        if config.includeExtras, !Task.isCancelled {
-            continuation.yield(.extras(await ExtrasScanner.scan(in: context)))
+        if self.config.includeExtras, !Task.isCancelled {
+            await continuation.yield(.extras(ExtrasScanner.scan(in: context)))
         }
-        if config.includeAndroid, !Task.isCancelled {
-            continuation.yield(.android(await AndroidScanner().scan(in: context)))
+        if self.config.includeAndroid, !Task.isCancelled {
+            await continuation.yield(.android(AndroidScanner().scan(in: context)))
         }
     }
 
@@ -126,9 +131,11 @@ public struct Engine: Sendable {
     /// Up to `concurrentItems` jobs at a time, in the options' order, with
     /// the extras as one more job. `done` goes out when the last item finishes.
     private func runConcurrently(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) async {
-        let context = makeContext(continuation, options: options)
-        let order = ordered(options)
-        let jobs = order.map(Job.item) + (config.includeExtras ? [.extras] : []) + (config.includeAndroid ? [.android] : [])
+        let context = self.makeContext(continuation, options: options)
+        let order = self.ordered(options)
+        let jobs = order
+            .map(Job.item) + (self.config.includeExtras ? [.extras] : []) +
+            (self.config.includeAndroid ? [.android] : [])
         let progress = Mutex((finished: 0, kilobytes: Int64(0)))
 
         await withTaskGroup(of: Void.self) { group in
@@ -141,7 +148,7 @@ public struct Engine: Sendable {
                 case .android:
                     let report = await AndroidScanner().scan(in: context)
                     if !Task.isCancelled { continuation.yield(.android(report)) }
-                case .item(let item):
+                case let .item(item):
                     continuation.yield(.started(item))
                     let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
                         continuation.yield(.progress(item, bytes: bytes))
@@ -154,7 +161,7 @@ public struct Engine: Sendable {
                         return (state.finished, state.kilobytes)
                     }
                     if finished == order.count {
-                        let free = DiskSpace.of(config.home)?.availableKilobytes ?? 0
+                        let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
                         continuation.yield(.done(totalBytes: total * 1024, freeBytes: free * 1024))
                     }
                 }
@@ -171,36 +178,35 @@ public struct Engine: Sendable {
             }
         }
         if order.isEmpty {
-            let free = DiskSpace.of(config.home)?.availableKilobytes ?? 0
+            let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
             continuation.yield(.done(totalBytes: 0, freeBytes: free * 1024))
         }
     }
 
     /// Free space on the home folder's volume.
     public func diskSpace() -> DiskSpace? {
-        DiskSpace.of(config.home)
+        DiskSpace.of(self.config.home)
     }
 
     /// Lists installed Xcodes and simulator runtimes again, without scanning the items.
     public func extras() async -> Extras {
-        await ExtrasScanner.scan(in: listingContext())
+        await ExtrasScanner.scan(in: self.listingContext())
     }
 
     /// Lists what Android Studio keeps, without scanning the items.
     public func android() async -> AndroidReport {
-        await AndroidScanner().scan(in: listingContext())
+        await AndroidScanner().scan(in: self.listingContext())
     }
 
     private func listingContext() -> ScanContext {
         ScanContext(
-            config: config,
-            policy: policy,
-            dependencies: dependencies,
-            projects: ProjectSearch(roots: [], homeReal: policy.homeReal),
-            measurer: measurer,
+            config: self.config,
+            policy: self.policy,
+            dependencies: self.dependencies,
+            projects: ProjectSearch(roots: [], homeReal: self.policy.homeReal),
+            measurer: self.measurer,
             concurrentFolders: 1,
-            warn: { _ in }
-        )
+            warn: { _ in })
     }
 
     /// Removes a simulator runtime with `xcrun simctl runtime delete <id>`,
@@ -208,6 +214,6 @@ public struct Engine: Sendable {
     /// request does. Ids that simctl could read as an option are refused.
     public func removeRuntime(_ runtime: SimulatorRuntime) async -> Bool {
         guard !runtime.id.isEmpty, !runtime.id.hasPrefix("-") else { return false }
-        return await tools.simctl.deleteRuntime(runtime.id)
+        return await self.tools.simctl.deleteRuntime(runtime.id)
     }
 }

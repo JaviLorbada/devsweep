@@ -7,12 +7,14 @@ final class CallLog: Sendable {
     private let entries = Mutex<[String]>([])
 
     func record(_ call: String) {
-        entries.withLock { $0.append(call) }
+        self.entries.withLock { $0.append(call) }
     }
 
-    var calls: [String] { entries.withLock { $0 } }
+    var calls: [String] {
+        self.entries.withLock { $0 }
+    }
 
-    func contains(_ call: String) -> Bool { calls.contains(call) }
+    func contains(_ call: String) -> Bool { self.calls.contains(call) }
 }
 
 /// Fake tools for one test. Nothing here runs simctl, brew, pgrep, defaults
@@ -40,34 +42,40 @@ final class FakeTools: @unchecked Sendable {
     let trashFolder: String
 
     init(home: FakeHome) {
-        gitEnvironment = home.environment
-        trashFolder = home.path(".Trash")
+        self.gitEnvironment = home.environment
+        self.trashFolder = home.path(".Trash")
     }
 
     var tools: Tools {
-        let gitClient: any GitClient = gitAnswer.map { FakeGit(log: log, answer: $0) }
-            ?? LoggingGit(log: log, live: LiveGitClient(runner: LiveProcessRunner(environment: gitEnvironment)))
+        let gitClient: any GitClient = self.gitAnswer.map { FakeGit(log: self.log, answer: $0) }
+            ?? LoggingGit(
+                log: self.log,
+                live: LiveGitClient(runner: LiveProcessRunner(environment: self.gitEnvironment)))
         return Tools(
             simctl: FakeSimctl(
-                log: log, installed: simctlInstalled, listing: unavailableListing, runtimes: runtimesJSON,
-                devices: devicesJSON, deleteSucceeds: simctlDeleteSucceeds, onDelete: onDeleteUnavailable
-            ),
-            brew: FakeBrew(log: log, installed: brewInstalled, dryRun: brewDryRun, cleanupSucceeds: brewCleanupSucceeds),
-            xcodeDefaults: FakeDefaults(log: log, value: customDerivedData),
-            xcodeSelect: FakeXcodeSelect(log: log, value: selectedDeveloperDirectory),
+                log: self.log, installed: self.simctlInstalled, listing: self.unavailableListing,
+                runtimes: self.runtimesJSON,
+                devices: self.devicesJSON, deleteSucceeds: self.simctlDeleteSucceeds,
+                onDelete: self.onDeleteUnavailable),
+            brew: FakeBrew(
+                log: self.log,
+                installed: self.brewInstalled,
+                dryRun: self.brewDryRun,
+                cleanupSucceeds: self.brewCleanupSucceeds),
+            xcodeDefaults: FakeDefaults(log: self.log, value: self.customDerivedData),
+            xcodeSelect: FakeXcodeSelect(log: self.log, value: self.selectedDeveloperDirectory),
             git: gitClient,
-            runningApps: FakeRunningApps(log: log, running: running),
-            lastUsedDates: FakeLastUsed(dates: lastUsed),
-            trash: LoggingTrash(trash: FolderTrash(folder: trashFolder), log: log)
-        )
+            runningApps: FakeRunningApps(log: self.log, running: self.running),
+            lastUsedDates: FakeLastUsed(dates: self.lastUsed),
+            trash: LoggingTrash(trash: FolderTrash(folder: self.trashFolder), log: self.log))
     }
 
     /// Makes simctl report two runtimes: iOS 27.0 used today with two
     /// simulators, and iOS 17.5 last used in 2020 with none.
     func stubRuntimes(now: Date = Date()) {
         let today = ISO8601DateFormatter().string(from: now)
-        runtimesJSON = Data(fixture("simctl-runtimes.json").replacingOccurrences(of: "$TODAY", with: today).utf8)
-        devicesJSON = Data(fixture("simctl-devices.json").utf8)
+        self.runtimesJSON = Data(fixture("simctl-runtimes.json").replacingOccurrences(of: "$TODAY", with: today).utf8)
+        self.devicesJSON = Data(fixture("simctl-devices.json").utf8)
     }
 }
 
@@ -80,32 +88,34 @@ struct FakeSimctl: SimctlClient {
     let deleteSucceeds: Bool
     let onDelete: @Sendable () -> Void
 
-    var isAvailable: Bool { installed }
+    var isAvailable: Bool {
+        self.installed
+    }
 
     func unavailableDevicesListing() async -> String {
-        log.record("xcrun simctl list devices unavailable")
-        return listing
+        self.log.record("xcrun simctl list devices unavailable")
+        return self.listing
     }
 
     func runtimesJSON() async -> Data? {
-        log.record("xcrun simctl runtime list -j")
-        return runtimes
+        self.log.record("xcrun simctl runtime list -j")
+        return self.runtimes
     }
 
     func devicesJSON() async -> Data? {
-        log.record("xcrun simctl list devices -j")
-        return devices
+        self.log.record("xcrun simctl list devices -j")
+        return self.devices
     }
 
     func deleteUnavailable() async -> Bool {
-        log.record("xcrun simctl delete unavailable")
-        onDelete()
-        return deleteSucceeds
+        self.log.record("xcrun simctl delete unavailable")
+        self.onDelete()
+        return self.deleteSucceeds
     }
 
     func deleteRuntime(_ id: String) async -> Bool {
-        log.record("xcrun simctl runtime delete \(id)")
-        return deleteSucceeds
+        self.log.record("xcrun simctl runtime delete \(id)")
+        return self.deleteSucceeds
     }
 }
 
@@ -115,16 +125,18 @@ struct FakeBrew: BrewClient {
     let dryRun: String
     let cleanupSucceeds: Bool
 
-    var isAvailable: Bool { installed }
+    var isAvailable: Bool {
+        self.installed
+    }
 
     func cleanupDryRun() async -> String {
-        log.record("brew cleanup --prune=all --dry-run")
-        return dryRun
+        self.log.record("brew cleanup --prune=all --dry-run")
+        return self.dryRun
     }
 
     func cleanup() async -> Bool {
-        log.record("brew cleanup --prune=all")
-        return cleanupSucceeds
+        self.log.record("brew cleanup --prune=all")
+        return self.cleanupSucceeds
     }
 }
 
@@ -133,8 +145,8 @@ struct FakeDefaults: XcodeDefaultsReading {
     let value: String
 
     func customDerivedDataLocation() async -> String {
-        log.record("defaults read com.apple.dt.Xcode IDECustomDerivedDataLocation")
-        return value
+        self.log.record("defaults read com.apple.dt.Xcode IDECustomDerivedDataLocation")
+        return self.value
     }
 }
 
@@ -143,8 +155,8 @@ struct FakeXcodeSelect: XcodeSelectReading {
     let value: String
 
     func selectedDeveloperDirectory() async -> String {
-        log.record("xcode-select -p")
-        return value
+        self.log.record("xcode-select -p")
+        return self.value
     }
 }
 
@@ -153,15 +165,15 @@ struct FakeRunningApps: RunningAppsChecking {
     let running: Set<DeveloperApp>
 
     func isRunning(_ app: DeveloperApp) async -> Bool {
-        log.record("pgrep -xq \(app.rawValue)")
-        return running.contains(app)
+        self.log.record("pgrep -xq \(app.rawValue)")
+        return self.running.contains(app)
     }
 }
 
 struct FakeLastUsed: LastUsedDateReading {
     let dates: [String: Date]
 
-    func lastUsedDate(of path: String) -> Date? { dates[path] }
+    func lastUsedDate(of path: String) -> Date? { self.dates[path] }
 }
 
 struct LoggingGit: GitClient {
@@ -169,8 +181,8 @@ struct LoggingGit: GitClient {
     let live: LiveGitClient
 
     func trackedFiles(in directory: String, named name: String) async -> String? {
-        log.record("git -C \(directory) ls-files -- \(name)")
-        return await live.trackedFiles(in: directory, named: name)
+        self.log.record("git -C \(directory) ls-files -- \(name)")
+        return await self.live.trackedFiles(in: directory, named: name)
     }
 }
 
@@ -179,8 +191,8 @@ struct FakeGit: GitClient {
     let answer: @Sendable (String, String) -> String?
 
     func trackedFiles(in directory: String, named name: String) async -> String? {
-        log.record("git -C \(directory) ls-files -- \(name)")
-        return answer(directory, name)
+        self.log.record("git -C \(directory) ls-files -- \(name)")
+        return self.answer(directory, name)
     }
 }
 
@@ -191,13 +203,13 @@ struct LoggingTrash: TrashService {
 
     func trash(_ path: String) throws -> String {
         let destination = try trash.trash(path)
-        log.record("trash \(path)")
+        self.log.record("trash \(path)")
         return destination
     }
 
     func putBack(_ trashed: String, to original: String) throws {
-        try trash.putBack(trashed, to: original)
-        log.record("put back \(original)")
+        try self.trash.putBack(trashed, to: original)
+        self.log.record("put back \(original)")
     }
 }
 
@@ -209,27 +221,35 @@ final class BufferTerminal: Terminal, @unchecked Sendable {
     let outputIsInteractive: Bool
 
     init(input: [String]? = nil, outputIsInteractive: Bool = false) {
-        inputIsInteractive = input != nil
+        self.inputIsInteractive = input != nil
         self.outputIsInteractive = outputIsInteractive
-        state.withLock { $0.input = input ?? [] }
+        self.state.withLock { $0.input = input ?? [] }
     }
 
     func write(_ text: String) {
-        state.withLock { $0.out += text; $0.merged += text }
+        self.state.withLock { $0.out += text; $0.merged += text }
     }
 
     func warn(_ message: String) {
-        state.withLock { $0.err += "devclean: \(message)\n"; $0.merged += "devclean: \(message)\n" }
+        self.state.withLock { $0.err += "devclean: \(message)\n"; $0.merged += "devclean: \(message)\n" }
     }
 
     func readLine() -> String? {
-        state.withLock { $0.input.isEmpty ? nil : $0.input.removeFirst() }
+        self.state.withLock { $0.input.isEmpty ? nil : $0.input.removeFirst() }
     }
 
-    var standardOutput: String { state.withLock { $0.out } }
-    var standardError: String { state.withLock { $0.err } }
+    var standardOutput: String {
+        self.state.withLock { $0.out }
+    }
+
+    var standardError: String {
+        self.state.withLock { $0.err }
+    }
+
     /// Both streams in the order written, as bats `run` captures them.
-    var output: String { state.withLock { $0.merged } }
+    var output: String {
+        self.state.withLock { $0.merged }
+    }
 }
 
 /// What one command line session did.
@@ -237,10 +257,21 @@ struct SessionResult {
     let status: Int32
     let terminal: BufferTerminal
 
-    var output: String { terminal.output }
-    var standardOutput: String { terminal.standardOutput }
-    var standardError: String { terminal.standardError }
-    var lines: [String] { output.components(separatedBy: "\n") }
+    var output: String {
+        self.terminal.output
+    }
+
+    var standardOutput: String {
+        self.terminal.standardOutput
+    }
+
+    var standardError: String {
+        self.terminal.standardError
+    }
+
+    var lines: [String] {
+        self.output.components(separatedBy: "\n")
+    }
 }
 
 /// Runs devclean's command line session against the fake home: the Swift
@@ -251,8 +282,8 @@ func devclean(
     tools: FakeTools,
     environment overrides: [String: String?] = [:],
     input: [String]? = nil,
-    effectiveUserID: uid_t = geteuid()
-) async -> SessionResult {
+    effectiveUserID: uid_t = geteuid()) async -> SessionResult
+{
     var environment = home.environment
     for (key, value) in overrides {
         environment[key] = value
@@ -262,17 +293,16 @@ func devclean(
     case .help:
         terminal.write(CommandLineOptions.usage)
         return SessionResult(status: 0, terminal: terminal)
-    case .failure(let message):
+    case let .failure(message):
         terminal.warn(message)
         return SessionResult(status: 1, terminal: terminal)
-    case .options(let options):
+    case let .options(options):
         let status = await CommandLineSession.run(
             options,
             environment: environment,
             tools: tools.tools,
             terminal: terminal,
-            effectiveUserID: effectiveUserID
-        )
+            effectiveUserID: effectiveUserID)
         return SessionResult(status: status, terminal: terminal)
     }
 }
