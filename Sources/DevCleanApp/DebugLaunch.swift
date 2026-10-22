@@ -24,6 +24,8 @@ import SwiftUI
 ///   without screen recording permission.
 /// - `DEVCLEAN_SETTINGS=Folders` instead opens Settings on that tab, captures
 ///   it there and quits.
+/// - `DEVCLEAN_MENU=1` instead opens the menu bar item's panel, captures it
+///   there and quits.
 /// - `DEVCLEAN_APPEARANCE=light|dark` picks the appearance.
 enum DebugLaunch {
     static var isRequested: Bool {
@@ -116,6 +118,21 @@ enum DebugLaunch {
             }
             exit(0)
         }
+        if !(environment["DEVCLEAN_MENU"] ?? "").isEmpty {
+            let before = Set(NSApplication.shared.windows.map(ObjectIdentifier.init))
+            let button = NSApplication.shared.windows
+                .filter { String(describing: type(of: $0)).contains("StatusBar") }
+                .compactMap { findStatusButton(in: $0.contentView) }
+                .first
+            button?.performClick(nil)
+            try? await Task.sleep(for: .seconds(1))
+            let panel = NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
+            trace(button == nil ? "no status item" : panel == nil ? "no panel" : "opened the menu bar panel")
+            if let panel, let output = environment["DEVCLEAN_CAPTURE"] {
+                trace(capture(panel, to: output) ? "captured \(output)" : "capture failed")
+            }
+            exit(0)
+        }
         if let output = environment["DEVCLEAN_CAPTURE"], let window = mainWindow {
             // Drawn as the key window, so controls don't show their inactive look.
             NSApplication.shared.activate()
@@ -129,6 +146,13 @@ enum DebugLaunch {
         guard let output = environment["DEVCLEAN_PROBE"] else { return }
         try? probe(model).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
+    }
+
+    @MainActor
+    private static func findStatusButton(in view: NSView?) -> NSButton? {
+        guard let view else { return nil }
+        if let button = view as? NSButton { return button }
+        return view.subviews.lazy.compactMap { findStatusButton(in: $0) }.first
     }
 
     /// Presses the first element labeled `label`, searching the window's

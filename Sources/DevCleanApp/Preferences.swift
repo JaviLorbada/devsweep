@@ -29,12 +29,15 @@ final class Preferences {
         static let staleDays = "staleDays"
         static let moveToTrash = "moveToTrash"
         static let scanOnLaunch = "scanOnLaunch"
+        static let derivedDataGrowthGigabytes = "derivedDataGrowthGigabytes"
     }
 
     /// Today's defaults, the folders the script searches.
     static let defaultProjectFolders = ["~/Developer", "~/Development", "~/dev", "~/Documents/Workspace", "~/Projects"]
     static let defaultStaleDays = 90
     static let staleDaysRange = 7...730
+    static let defaultGrowthGigabytes = 20
+    static let growthRange = 1...500
 
     @ObservationIgnored private let storage: PreferenceStorage
 
@@ -57,6 +60,10 @@ final class Preferences {
     var scanOnLaunch: Bool {
         didSet { storage.set(scanOnLaunch, forKey: Key.scanOnLaunch) }
     }
+    /// A notification when DerivedData grew by more than this since the last scan.
+    var derivedDataGrowthGigabytes: Int {
+        didSet { storage.set(derivedDataGrowthGigabytes, forKey: Key.derivedDataGrowthGigabytes) }
+    }
 
     init(storage: PreferenceStorage = UserDefaults.standard) {
         self.storage = storage
@@ -66,6 +73,8 @@ final class Preferences {
         staleDays = min(max(days, Self.staleDaysRange.lowerBound), Self.staleDaysRange.upperBound)
         moveToTrash = storage.object(forKey: Key.moveToTrash) as? Bool ?? true
         scanOnLaunch = storage.object(forKey: Key.scanOnLaunch) as? Bool ?? true
+        let growth = storage.object(forKey: Key.derivedDataGrowthGigabytes) as? Int ?? Self.defaultGrowthGigabytes
+        derivedDataGrowthGigabytes = min(max(growth, Self.growthRange.lowerBound), Self.growthRange.upperBound)
     }
 
     var usesDefaultProjectFolders: Bool { projectFolders == Self.defaultProjectFolders }

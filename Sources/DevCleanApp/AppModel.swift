@@ -127,6 +127,9 @@ final class AppModel {
     private(set) var engine: Engine?
     private(set) var startupError: String?
     let preferences: Preferences
+    let notifier: NotificationPoster
+    /// The last growth alert posted, for the menu bar panel.
+    private(set) var lastAlert: GrowthCheck.Alert?
     private let environment: [String: String]
     private let tools: Tools
 
@@ -153,8 +156,10 @@ final class AppModel {
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         store: ScanStore? = nil,
-        preferences: Preferences? = nil
+        preferences: Preferences? = nil,
+        notifier: NotificationPoster = UserNotificationPoster()
     ) {
+        self.notifier = notifier
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
         let workspaceApps = WorkspaceRunningApps()
@@ -194,8 +199,18 @@ final class AppModel {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
                 guard let self else { return }
-                self.now = Date()
+                self.tick(now: Date())
             }
+        }
+    }
+
+    /// Every half minute: the clock for "3 minutes ago", the free space for
+    /// the menu bar, and a scan once the last one is a day old.
+    func tick(now: Date) {
+        self.now = now
+        diskSpace = engine?.diskSpace() ?? diskSpace
+        if ScanSchedule.isDue(lastScan: lastScan, now: now), !isScanning, !isCleaning {
+            scan()
         }
     }
 
@@ -357,6 +372,15 @@ final class AppModel {
               androidDone != nil || !(engine?.config.includeAndroid ?? false) else { return }
         scanTiming = (itemsDone, max(itemsDone, extrasDone ?? 0, androidDone ?? 0))
         saveScan()
+        if let alert = GrowthCheck.derivedData(
+            previousKilobytes: rows[.derivedData]?.previous?.kilobytes,
+            currentKilobytes: rows[.derivedData]?.result?.kilobytes,
+            thresholdGigabytes: preferences.derivedDataGrowthGigabytes
+        ) {
+            lastAlert = alert
+            let notifier = notifier
+            Task { await notifier.post(title: alert.title, body: alert.body) }
+        }
     }
 
     private func finishScan() {

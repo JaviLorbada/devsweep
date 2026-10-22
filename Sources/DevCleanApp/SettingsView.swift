@@ -40,6 +40,14 @@ private struct GeneralSettings: View {
                 Text("Simulator runtimes, system images and emulators untouched this long are flagged. They are only ever listed.")
                     .settingsFooter()
             }
+            Section {
+                Stepper(value: $preferences.derivedDataGrowthGigabytes, in: Preferences.growthRange, step: 1) {
+                    LabeledContent("Notify when DerivedData grows by", value: "\(preferences.derivedDataGrowthGigabytes) GB")
+                }
+            } footer: {
+                Text("While DevClean runs it scans again once a day, and says so when DerivedData grew by more than this since the scan before.")
+                    .settingsFooter()
+            }
         }
         .formStyle(.grouped)
         .onChange(of: preferences.moveToTrash) { _, moveToTrash in model.moveToTrash = moveToTrash }

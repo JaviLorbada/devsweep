@@ -4,7 +4,18 @@ import SwiftUI
 @main
 struct DevCleanApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
-    @State private var model = AppModel()
+    @State private var model = AppModel(notifier: Self.notifier)
+
+    /// Development runs, with or without a fake home, never ask to notify.
+    private static var notifier: NotificationPoster {
+        #if DEBUG
+        let environment = ProcessInfo.processInfo.environment
+        if DebugLaunch.isRequested || environment["DEVCLEAN_SNAPSHOT"] != nil || environment["DEVCLEAN_SKIP"] != nil {
+            return SilentNotificationPoster()
+        }
+        #endif
+        return UserNotificationPoster()
+    }
 
     init() {
         // A one-window utility has no session worth restoring, and restored
@@ -44,6 +55,15 @@ struct DevCleanApp: App {
             SettingsView()
                 .environment(model)
         }
+
+        MenuBarExtra {
+            MenuBarPanel()
+                .environment(model)
+        } label: {
+            MenuBarLabel()
+                .environment(model)
+        }
+        .menuBarExtraStyle(.window)
     }
 }
 
@@ -61,8 +81,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.activate()
     }
 
+    /// The menu bar item keeps the app, and its daily scan, running when the
+    /// window closes; the item's Open DevClean brings the window back.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        true
+        false
     }
 
 }
