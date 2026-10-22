@@ -3,15 +3,15 @@ import Foundation
 import Observation
 
 /// Where preferences are kept: UserDefaults in the app, memory in tests.
-protocol PreferenceStorage: AnyObject {
+protocol PreferencesStore: AnyObject {
     func object(forKey key: String) -> Any?
     func set(_ value: Any?, forKey key: String)
 }
 
-extension UserDefaults: PreferenceStorage {}
+extension UserDefaults: PreferencesStore {}
 
 /// A dictionary, so tests never write the real defaults.
-final class MemoryPreferenceStorage: PreferenceStorage {
+final class InMemoryPreferencesStore: PreferencesStore {
     private var values: [String: Any] = [:]
 
     func object(forKey key: String) -> Any? { values[key] }
@@ -39,7 +39,7 @@ final class Preferences {
     static let defaultGrowthGigabytes = 20
     static let growthRange = 1...500
 
-    @ObservationIgnored private let storage: PreferenceStorage
+    @ObservationIgnored private let storage: PreferencesStore
 
     /// Folders to search for build folders, `~` for home.
     var projectFolders: [String] {
@@ -65,7 +65,7 @@ final class Preferences {
         didSet { storage.set(derivedDataGrowthGigabytes, forKey: Key.derivedDataGrowthGigabytes) }
     }
 
-    init(storage: PreferenceStorage = UserDefaults.standard) {
+    init(storage: PreferencesStore = UserDefaults.standard) {
         self.storage = storage
         projectFolders = storage.object(forKey: Key.projectFolders) as? [String] ?? Self.defaultProjectFolders
         skippedItems = Set((storage.object(forKey: Key.skippedItems) as? [String] ?? []).compactMap(Item.init(rawValue:)))

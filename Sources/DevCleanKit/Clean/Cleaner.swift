@@ -67,7 +67,7 @@ extension Engine {
                 switch mode {
                 case .delete:
                     do {
-                        try FileManager.default.removeItem(atPath: path)
+                        try dependencies.files.remove(path)
                         outcome.removed.append(.init(original: path, trashed: nil))
                     } catch {
                         outcome.failed.append(path)

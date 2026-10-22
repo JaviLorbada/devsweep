@@ -14,10 +14,22 @@ public protocol Terminal: Sendable {
 
 /// The bash script's `main`, from preflight to "Done.", returning its exit status.
 public enum CommandLineSession {
-    public static func run(
+    /// With the real disk and clock and these tools; what most tests use.
+    static func run(
         _ options: CommandLineOptions,
         environment: [String: String],
         tools: Tools,
+        terminal: any Terminal,
+        effectiveUserID: uid_t = geteuid()
+    ) async -> Int32 {
+        await run(options, environment: environment, dependencies: Dependencies(tools: tools), terminal: terminal,
+                  effectiveUserID: effectiveUserID)
+    }
+
+    public static func run(
+        _ options: CommandLineOptions,
+        environment: [String: String],
+        dependencies: Dependencies,
         terminal: any Terminal,
         effectiveUserID: uid_t = geteuid()
     ) async -> Int32 {
@@ -32,14 +44,14 @@ public enum CommandLineSession {
                 skipped: skipped,
                 includeExtras: !options.run
             )
-            engine = try Engine(config: config, tools: tools, effectiveUserID: effectiveUserID)
+            engine = try Engine(config: config, dependencies: dependencies, effectiveUserID: effectiveUserID)
         } catch {
             terminal.warn(error.description)
             return 1
         }
 
         if options.run, !engine.config.skipsEverythingXcodeUses {
-            for app in DeveloperApp.allCases where await tools.runningApps.isRunning(app) {
+            for app in DeveloperApp.allCases where await dependencies.tools.runningApps.isRunning(app) {
                 terminal.warn("Quit \(app.rawValue) first, then run \(ProductInfo.cliName) --run again.")
                 return 1
             }

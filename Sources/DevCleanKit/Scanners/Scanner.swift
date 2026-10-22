@@ -4,7 +4,10 @@ import Synchronization
 public struct ScanContext: Sendable {
     public let config: ScanConfig
     public let policy: PathPolicy
-    public let tools: Tools
+    public let dependencies: Dependencies
+    public var tools: Tools { dependencies.tools }
+    var files: any FileSystemAccess { dependencies.files }
+    var clock: any WallClock { dependencies.clock }
     let projects: ProjectSearch
     let measurer: SizeMeasurer
     /// Folders of one item measured at the same time; 1 measures them in
@@ -15,7 +18,7 @@ public struct ScanContext: Sendable {
     init(
         config: ScanConfig,
         policy: PathPolicy,
-        tools: Tools,
+        dependencies: Dependencies,
         projects: ProjectSearch,
         measurer: SizeMeasurer,
         concurrentFolders: Int = 1,
@@ -23,7 +26,7 @@ public struct ScanContext: Sendable {
     ) {
         self.config = config
         self.policy = policy
-        self.tools = tools
+        self.dependencies = dependencies
         self.projects = projects
         self.measurer = measurer
         self.concurrentFolders = concurrentFolders

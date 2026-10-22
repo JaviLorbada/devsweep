@@ -16,9 +16,9 @@ enum ExtrasScanner {
         var result: [InstalledXcode] = []
         for directory in context.config.applicationsDirectories where !directory.isEmpty {
             let folder = context.policy.expandTilde(directory)
-            for name in FileSystem.globNames(folder) where FileSystem.matches(name, pattern: "Xcode*.app") {
+            for name in context.files.globNames(folder) where FileSystem.matches(name, pattern: "Xcode*.app") {
                 let app = "\(folder)/\(name)"
-                guard FileSystem.isDirectory(app), !FileSystem.isSymlink(app) else { continue }
+                guard context.files.isDirectory(app), !context.files.isSymlink(app) else { continue }
                 let isSelected = selectedReal.map { FileSystem.physicalDirectory(app)?.bytesEqual($0) ?? false } ?? false
                 result.append(InstalledXcode(
                     path: app,
@@ -35,7 +35,11 @@ enum ExtrasScanner {
 
     // MARK: Runtimes
 
-    static func runtimes(in context: ScanContext, now: Date = Date()) async -> [SimulatorRuntime] {
+    static func runtimes(in context: ScanContext) async -> [SimulatorRuntime] {
+        await runtimes(in: context, now: context.clock.now())
+    }
+
+    static func runtimes(in context: ScanContext, now: Date) async -> [SimulatorRuntime] {
         let simctl = context.tools.simctl
         guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(), !runtimesData.isEmpty else { return [] }
         let devicesData = await simctl.devicesJSON() ?? Data()

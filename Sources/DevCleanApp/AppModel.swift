@@ -131,7 +131,7 @@ final class AppModel {
     /// The last growth alert posted, for the menu bar panel.
     private(set) var lastAlert: GrowthCheck.Alert?
     private let environment: [String: String]
-    private let tools: Tools
+    private let dependencies: Dependencies
 
     /// How long the last scan took, in seconds since it started: until every
     /// item was measured, and until the extras were listed too.
@@ -145,7 +145,7 @@ final class AppModel {
     private(set) var previousScanDate: Date?
     /// Ticks every half minute so "3 minutes ago" stays true.
     private(set) var now = Date()
-    private var store: ScanStore?
+    private var store: (any ScanMemoryStore)?
     /// Progress that arrived since the screen last showed it.
     private var pendingProgress: [Item: Int64] = [:]
     private var progressFlush: Task<Void, Never>?
@@ -155,9 +155,10 @@ final class AppModel {
 
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        store: ScanStore? = nil,
+        store: (any ScanMemoryStore)? = nil,
         preferences: Preferences? = nil,
-        notifier: NotificationPoster = UserNotificationPoster()
+        notifier: NotificationPoster = UserNotificationPoster(),
+        dependencies: Dependencies? = nil
     ) {
         self.notifier = notifier
         let preferences = preferences ?? Preferences()
@@ -173,18 +174,19 @@ final class AppModel {
         if path == launchdPath {
             environment["PATH"] = ([path] + ["/opt/homebrew/bin", "/usr/local/bin"]).joined(separator: ":")
         }
-        var tools = Tools.live(environment: environment)
-        tools.runningApps = workspaceApps
+        var live = Dependencies.live(environment: environment)
+        live.tools.runningApps = workspaceApps
         #if DEBUG
         // Trying the app against a fake home shouldn't fill the real Trash.
         if let folder = environment["DEVCLEAN_TRASH_FOLDER"] {
-            tools.trash = FolderTrash(folder: folder)
+            live.tools.trash = FolderTrash(folder: folder)
         }
         #endif
+        let dependencies = dependencies ?? live
         self.environment = environment
-        self.tools = tools
+        self.dependencies = dependencies
         moveToTrash = preferences.moveToTrash
-        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, tools: tools)
+        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, dependencies: dependencies)
         volumeName = (try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeLocalizedNameKey]))?
             .volumeLocalizedName ?? "Macintosh HD"
         rows = Dictionary(uniqueKeysWithValues: (engine?.items ?? []).map { ($0, Row(item: $0)) })
@@ -214,7 +216,11 @@ final class AppModel {
         }
     }
 
-    private static func makeEngine(preferences: Preferences, environment: [String: String], tools: Tools) -> (Engine?, String?) {
+    private static func makeEngine(
+        preferences: Preferences,
+        environment: [String: String],
+        dependencies: Dependencies
+    ) -> (Engine?, String?) {
         var config = preferences.scanConfig(environment: environment)
         #if DEBUG
         if let skip = environment["DEVCLEAN_SKIP"], let items = try? ScanConfig.parseSkip(skip) {
@@ -222,7 +228,7 @@ final class AppModel {
         }
         #endif
         do {
-            return (try Engine(config: config, tools: tools), nil)
+            return (try Engine(config: config, dependencies: dependencies), nil)
         } catch {
             return (nil, error.description)
         }
@@ -262,7 +268,7 @@ final class AppModel {
     func scan() {
         guard !isScanning, !isCleaning else { return }
         // Preferences changed since the last scan apply from this one.
-        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, tools: tools)
+        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, dependencies: dependencies)
         guard let engine else { return }
         // What was on screen becomes the dimmed "last scan" until replaced.
         rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in

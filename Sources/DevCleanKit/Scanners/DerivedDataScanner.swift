@@ -50,7 +50,7 @@ public struct DerivedDataScanner: Scanner {
         progress: @escaping @Sendable (Int64) -> Void
     ) async -> (DerivedDataBreakdown, Bool) {
         // The glob `* .[!.]*`: every entry except names starting with "..".
-        let names = FileSystem.childNames(folder).filter { !$0.hasPrefix("..") }
+        let names = context.files.childNames(folder).filter { !$0.hasPrefix("..") }
         let measured = await context.measure(names.map { "\(folder)/\($0)" }, progress: progress)
 
         var result = DerivedDataBreakdown()
@@ -63,7 +63,7 @@ public struct DerivedDataScanner: Scanner {
             case "ModuleCache.noindex":
                 result.moduleCacheKilobytes += kilobytes
             default:
-                if let project = project(at: "\(folder)/\(name)", kilobytes: kilobytes) {
+                if let project = project(at: "\(folder)/\(name)", kilobytes: kilobytes, files: context.files) {
                     projects.append(project)
                 } else {
                     result.otherKilobytes += kilobytes
@@ -79,14 +79,14 @@ public struct DerivedDataScanner: Scanner {
         return (result, measured.allSatisfy(\.readable))
     }
 
-    static func project(at entry: String, kilobytes: Int64) -> DerivedDataProject? {
+    static func project(at entry: String, kilobytes: Int64, files: any FileSystemAccess = LiveFileSystem()) -> DerivedDataProject? {
         let plist = PropertyList.dictionary(at: "\(entry)/info.plist")
         guard let workspace = plist?["WorkspacePath"] as? String, !workspace.isEmpty else { return nil }
 
         let status: DerivedDataProject.Status
-        if FileSystem.exists(workspace) {
+        if files.exists(workspace) {
             let day = PropertyList.dayPrefix(plist?["LastAccessedDate"])
-            status = .built(day ?? DayFormat.local(secondsSince1970: FileSystem.modificationTime(entry)))
+            status = .built(day ?? DayFormat.local(secondsSince1970: files.modificationTime(entry)))
         } else {
             status = .gone
         }

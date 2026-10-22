@@ -25,8 +25,9 @@ final class TemporaryHome: @unchecked Sendable {
 /// A model on an empty fake home, never scanned, holding the given extras.
 @MainActor
 func makeModel(home: TemporaryHome, extras: Extras? = nil) -> AppModel {
-    let model = AppModel(environment: ["HOME": home.path, "PATH": "/usr/bin:/bin", "DEVCLEAN_PROJECT_DIRS": ""],
-                         preferences: Preferences(storage: MemoryPreferenceStorage()))
+    let model = AppModel(environment: ["HOME": home.path, "DEVCLEAN_PROJECT_DIRS": ""], store: InMemoryScanStore(),
+                         preferences: Preferences(storage: InMemoryPreferencesStore()), notifier: SilentNotificationPoster(),
+                         dependencies: Dependencies(tools: .unavailable))
     model.extras = extras
     return model
 }

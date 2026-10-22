@@ -55,7 +55,7 @@ struct DevCleanCommand: AsyncParsableCommand {
         let status = await CommandLineSession.run(
             CommandLineOptions(run: run, yes: yes, skip: skip, projects: projects),
             environment: environment,
-            tools: .live(environment: environment, passthroughOutput: true),
+            dependencies: .live(environment: environment, passthroughOutput: true),
             terminal: StandardTerminal()
         )
         Darwin.exit(status)

@@ -1,3 +1,4 @@
+import Synchronization
 import Foundation
 
 /// The results of a finished scan, kept so the window can show them on the
@@ -24,8 +25,30 @@ public struct SavedScan: Codable, Sendable, Equatable {
     }
 }
 
+/// Where the last scan is kept between launches.
+public protocol ScanMemoryStore: Sendable {
+    /// The saved scan of `home`, or nil when there is none or it can't be used.
+    func load(home: String) -> SavedScan?
+    func save(_ scan: SavedScan) throws
+}
+
+/// Kept in memory only, for tests.
+public final class InMemoryScanStore: ScanMemoryStore {
+    private let scan = Mutex<SavedScan?>(nil)
+
+    public init() {}
+
+    public func load(home: String) -> SavedScan? {
+        scan.withLock { $0 }.flatMap { $0.home.bytesEqual(home) ? $0 : nil }
+    }
+
+    public func save(_ scan: SavedScan) throws {
+        self.scan.withLock { $0 = scan }
+    }
+}
+
 /// Where the last scan is kept: one JSON file.
-public struct ScanStore: Sendable {
+public struct ScanStore: ScanMemoryStore {
     public let url: URL
 
     public init(url: URL) {

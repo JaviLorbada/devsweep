@@ -3,14 +3,13 @@ import Foundation
 import Testing
 @testable import DevCleanApp
 
-/// A model on a temp home with an empty PATH: no simctl, brew or git is
-/// found, so nothing outside the temp folder runs.
+/// A model on a temp home with none of the tools, so nothing outside the
+/// temp folder runs; its last scan is kept in the temp home's own file.
 @MainActor
-func scanningModel(home: TemporaryHome) -> AppModel {
-    let tools = "\(home.root)/no-tools"
-    try? FileManager.default.createDirectory(atPath: tools, withIntermediateDirectories: true)
-    return AppModel(environment: ["HOME": home.path, "PATH": tools, "DEVCLEAN_PROJECT_DIRS": ""],
-                    preferences: Preferences(storage: MemoryPreferenceStorage()))
+func scanningModel(home: TemporaryHome, notifier: NotificationPoster = SilentNotificationPoster()) -> AppModel {
+    AppModel(environment: ["HOME": home.path, "DEVCLEAN_PROJECT_DIRS": ""],
+             preferences: Preferences(storage: InMemoryPreferencesStore()), notifier: notifier,
+             dependencies: Dependencies(tools: .unavailable))
 }
 
 @MainActor

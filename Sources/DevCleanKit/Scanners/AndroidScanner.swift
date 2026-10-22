@@ -10,7 +10,7 @@ import Foundation
 /// the command line never asks for.
 struct AndroidScanner: ListingScanner {
     func scan(in context: ScanContext) async -> AndroidReport {
-        await scan(in: context, now: Date())
+        await scan(in: context, now: context.clock.now())
     }
 
     func scan(in context: ScanContext, now: Date) async -> AndroidReport {
@@ -61,9 +61,9 @@ struct AndroidScanner: ListingScanner {
         var result: [AndroidEntry] = []
         for directory in context.config.applicationsDirectories where !directory.isEmpty {
             let folder = context.policy.expandTilde(directory)
-            for name in FileSystem.globNames(folder) where FileSystem.matches(name, pattern: "Android Studio*.app") {
+            for name in context.files.globNames(folder) where FileSystem.matches(name, pattern: "Android Studio*.app") {
                 let app = "\(folder)/\(name)"
-                guard FileSystem.isDirectory(app), !FileSystem.isSymlink(app) else { continue }
+                guard context.files.isDirectory(app), !context.files.isSymlink(app) else { continue }
                 let info = "\(app)/Contents/Info.plist"
                 let version = PropertyList.string(at: info, key: "CFBundleShortVersionString")
                 result.append(AndroidEntry(
@@ -83,7 +83,7 @@ struct AndroidScanner: ListingScanner {
 
     func sdkParts(in sdk: String, context: ScanContext) -> [AndroidEntry] {
         var result: [AndroidEntry] = []
-        for name in FileSystem.globNames(sdk) {
+        for name in context.files.globNames(sdk) {
             let path = "\(sdk)/\(name)"
             switch name {
             case "system-images":
@@ -128,7 +128,7 @@ struct AndroidScanner: ListingScanner {
                         title: "API \(level), \(tagName)",
                         detail: properties["SystemImage.Abi"] ?? FileSystem.basename(abi),
                         kilobytes: 0,
-                        lastUsed: Self.date(FileSystem.modificationTime(abi))
+                        lastUsed: Self.date(context.files.modificationTime(abi))
                     ))
                 }
             }
@@ -168,7 +168,7 @@ struct AndroidScanner: ListingScanner {
                 title: config["avd.ini.displayname"] ?? name.replacingOccurrences(of: "_", with: " "),
                 detail: [target, config["tag.display"]].compactMap { $0 }.joined(separator: ", "),
                 kilobytes: 0,
-                lastUsed: Self.date(Self.newestChange(in: avd))
+                lastUsed: Self.date(Self.newestChange(in: avd, files: context.files))
             )
         }
     }
@@ -181,9 +181,9 @@ struct AndroidScanner: ListingScanner {
 
     /// The newest modification time of a folder and what sits directly in it.
     /// Running an emulator rewrites its disk images, so this is when it last ran.
-    static func newestChange(in folder: String) -> Int {
-        FileSystem.childNames(folder).map { FileSystem.modificationTime("\(folder)/\($0)") }
-            .reduce(FileSystem.modificationTime(folder), max)
+    static func newestChange(in folder: String, files: any FileSystemAccess) -> Int {
+        files.childNames(folder).map { files.modificationTime("\(folder)/\($0)") }
+            .reduce(files.modificationTime(folder), max)
     }
 
     // MARK: Gradle
@@ -193,7 +193,7 @@ struct AndroidScanner: ListingScanner {
             let name = FileSystem.basename(folder)
             var detail = name
             if name == "wrapper" {
-                let versions = FileSystem.globNames("\(folder)/dists").map {
+                let versions = context.files.globNames("\(folder)/dists").map {
                     $0.removingPrefix("gradle-").removingSuffix("-bin").removingSuffix("-all")
                 }
                 if !versions.isEmpty { detail = versions.joined(separator: ", ") }
@@ -221,9 +221,9 @@ struct AndroidScanner: ListingScanner {
 
     /// The folders in `folder` that pass the path policy, sorted.
     private func safeChildren(of folder: String, context: ScanContext) -> [String] {
-        FileSystem.globNames(folder).compactMap { name in
+        context.files.globNames(folder).compactMap { name in
             let path = "\(folder)/\(name)"
-            guard FileSystem.isDirectory(path) else { return nil }
+            guard context.files.isDirectory(path) else { return nil }
             return context.policy.safePath(path)
         }
     }

@@ -13,10 +13,10 @@ public struct DeviceSupportScanner: Scanner {
         var entries: [Entry] = []
         for system in Self.systems {
             let folder = "\(context.home)/Library/Developer/Xcode/\(system) DeviceSupport"
-            for name in FileSystem.globNames(folder) {
+            for name in context.files.globNames(folder) {
                 let path = "\(folder)/\(name)"
-                guard FileSystem.isDirectory(path), !FileSystem.isSymlink(path) else { continue }
-                entries.append(Entry(system: system, name: name, modified: FileSystem.modificationTime(path), path: path))
+                guard context.files.isDirectory(path), !context.files.isSymlink(path) else { continue }
+                entries.append(Entry(system: system, name: name, modified: context.files.modificationTime(path), path: path))
             }
         }
         return context.existing(Self.old(entries))

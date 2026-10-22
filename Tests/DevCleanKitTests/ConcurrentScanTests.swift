@@ -76,10 +76,10 @@ struct ConcurrentScanTests {
         let (home, tools) = richHome()
         let engine = try engine(home, tools)
         let folders = (1...6).map { "\(engine.policy.homeReal)/Workspace/P\($0)/.build" }
-        let base = ScanContext(config: engine.config, policy: engine.policy, tools: tools.tools,
+        let base = ScanContext(config: engine.config, policy: engine.policy, dependencies: Dependencies(tools: tools.tools),
                                projects: ProjectSearch(roots: [], homeReal: engine.policy.homeReal),
                                measurer: SizeMeasurer(progressInterval: 1), warn: { _ in })
-        let parallel = ScanContext(config: engine.config, policy: engine.policy, tools: tools.tools,
+        let parallel = ScanContext(config: engine.config, policy: engine.policy, dependencies: Dependencies(tools: tools.tools),
                                    projects: ProjectSearch(roots: [], homeReal: engine.policy.homeReal),
                                    measurer: SizeMeasurer(progressInterval: 1), concurrentFolders: 4, warn: { _ in })
         let one = await base.measure(folders) { _ in }

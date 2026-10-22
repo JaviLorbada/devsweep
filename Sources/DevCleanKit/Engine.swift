@@ -4,21 +4,33 @@ import Synchronization
 /// Scans and cleans one home folder with one set of tools.
 public struct Engine: Sendable {
     public let config: ScanConfig
-    public let tools: Tools
+    public let dependencies: Dependencies
     public let policy: PathPolicy
     public var measurer: SizeMeasurer
 
+    public var tools: Tools { dependencies.tools }
+
     /// Runs preflight: not root, and `config.home` must be a usable home folder.
     public init(
+        config: ScanConfig,
+        dependencies: Dependencies,
+        measurer: SizeMeasurer = SizeMeasurer(),
+        effectiveUserID: uid_t = geteuid()
+    ) throws(PreflightError) {
+        self.config = config
+        self.dependencies = dependencies
+        self.policy = try PathPolicy.preflight(home: config.home, effectiveUserID: effectiveUserID)
+        self.measurer = measurer
+    }
+
+    /// With the real disk and clock and these tools; what most tests use.
+    init(
         config: ScanConfig,
         tools: Tools,
         measurer: SizeMeasurer = SizeMeasurer(),
         effectiveUserID: uid_t = geteuid()
     ) throws(PreflightError) {
-        self.config = config
-        self.tools = tools
-        self.policy = try PathPolicy.preflight(home: config.home, effectiveUserID: effectiveUserID)
-        self.measurer = measurer
+        try self.init(config: config, dependencies: Dependencies(tools: tools), measurer: measurer, effectiveUserID: effectiveUserID)
     }
 
     /// The items a scan covers, in report order.
@@ -64,7 +76,7 @@ public struct Engine: Sendable {
         return ScanContext(
             config: config,
             policy: policy,
-            tools: tools,
+            dependencies: dependencies,
             projects: ProjectSearch(roots: folders.roots, homeReal: policy.homeReal),
             measurer: measurer,
             concurrentFolders: options.concurrentFolders,
@@ -183,7 +195,7 @@ public struct Engine: Sendable {
         ScanContext(
             config: config,
             policy: policy,
-            tools: tools,
+            dependencies: dependencies,
             projects: ProjectSearch(roots: [], homeReal: policy.homeReal),
             measurer: measurer,
             concurrentFolders: 1,

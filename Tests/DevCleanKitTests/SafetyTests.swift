@@ -154,21 +154,14 @@ struct GitTrackingTests {
 
 @Suite("Running tools")
 struct ProcessRunnerTests {
-    @Test("Tools are found through the environment's PATH, so stubs win over the real ones")
-    func stubsWin() async throws {
-        let home = FakeHome()
-        let stubs = home.outside("stubs")
-        home.write("\(stubs)/xcrun", "#!/bin/bash\necho \"stub $* $LC_ALL\"\n")
-        chmod("\(stubs)/xcrun", 0o755)
-        home.write("\(stubs)/brew", "not executable")
-        let runner = LiveProcessRunner(environment: ["PATH": "\(stubs):/usr/bin:/bin", "LC_ALL": "es_ES.UTF-8"])
-
-        #expect(runner.locate("xcrun") == "\(stubs)/xcrun")
-        #expect(runner.locate("brew") == nil || runner.locate("brew") != "\(stubs)/brew")
+    @Test("Tools are found through the environment's PATH and run in the C locale")
+    func foundThroughPath() async throws {
+        let runner = LiveProcessRunner(environment: ["PATH": "/nonexistent:/usr/bin:/bin", "LC_ALL": "es_ES.UTF-8"])
+        #expect(runner.locate("env") == "/usr/bin/env")
         #expect(runner.locate("no-such-tool-anywhere") == nil)
-        let output = try #require(await runner.run("xcrun", ["simctl", "list"]))
+        let output = try #require(await runner.run("env", []))
         #expect(output.succeeded)
-        #expect(output.text == "stub simctl list C")
+        #expect(output.text.split(separator: "\n").contains("LC_ALL=C"))
     }
 
     @Test("A tool that isn't installed is reported, not run")

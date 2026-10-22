@@ -7,7 +7,7 @@ import Testing
 struct PreferencesTests {
     @Test("Start from today's defaults")
     func defaults() {
-        let preferences = Preferences(storage: MemoryPreferenceStorage())
+        let preferences = Preferences(storage: InMemoryPreferencesStore())
         #expect(preferences.projectFolders == ["~/Developer", "~/Development", "~/dev", "~/Documents/Workspace", "~/Projects"])
         #expect(preferences.usesDefaultProjectFolders)
         #expect(preferences.skippedItems.isEmpty)
@@ -22,7 +22,7 @@ struct PreferencesTests {
 
     @Test("Are kept, and read back by the next launch")
     func persisted() {
-        let storage = MemoryPreferenceStorage()
+        let storage = InMemoryPreferencesStore()
         let preferences = Preferences(storage: storage)
         preferences.projectFolders = ["~/Code"]
         preferences.skippedItems = [.homebrew, .npmCache]
@@ -40,7 +40,7 @@ struct PreferencesTests {
 
     @Test("Shape the window's scan, while DEVCLEAN_PROJECT_DIRS still wins")
     func scanConfig() {
-        let preferences = Preferences(storage: MemoryPreferenceStorage())
+        let preferences = Preferences(storage: InMemoryPreferencesStore())
         preferences.projectFolders = ["~/Code", "/Volumes/Work"]
         preferences.skippedItems = [.homebrew]
         preferences.staleDays = 45
@@ -56,7 +56,7 @@ struct PreferencesTests {
 
     @Test("Adds folders inside home with ~, once")
     func addFolder() {
-        let preferences = Preferences(storage: MemoryPreferenceStorage())
+        let preferences = Preferences(storage: InMemoryPreferencesStore())
         preferences.projectFolders = []
         preferences.addProjectFolder("/Users/someone/Code", home: "/Users/someone")
         preferences.addProjectFolder("/Users/someone/Code", home: "/Users/someone")
@@ -69,7 +69,7 @@ struct PreferencesTests {
 
     @Test("Keep the threshold within its range")
     func clampsStaleDays() {
-        let storage = MemoryPreferenceStorage()
+        let storage = InMemoryPreferencesStore()
         storage.set(0, forKey: Preferences.Key.staleDays)
         #expect(Preferences(storage: storage).staleDays == Preferences.staleDaysRange.lowerBound)
     }
@@ -90,10 +90,11 @@ struct PreferencesTests {
 
     @Test("Cleaning starts out the way the preferences say")
     func cleaningMode() {
-        let storage = MemoryPreferenceStorage()
+        let storage = InMemoryPreferencesStore()
         storage.set(false, forKey: Preferences.Key.moveToTrash)
         let home = TemporaryHome()
-        let model = AppModel(environment: ["HOME": home.path, "PATH": "\(home.root)/no-tools"], preferences: Preferences(storage: storage))
+        let model = AppModel(environment: ["HOME": home.path], store: InMemoryScanStore(), preferences: Preferences(storage: storage),
+                             notifier: SilentNotificationPoster(), dependencies: Dependencies(tools: .unavailable))
         #expect(!model.moveToTrash)
     }
 }

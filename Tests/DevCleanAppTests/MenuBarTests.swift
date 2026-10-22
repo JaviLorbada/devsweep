@@ -34,7 +34,7 @@ struct MenuBarTests {
 
     @Test("The threshold is a preference, 20 GB unless changed")
     func threshold() {
-        let storage = MemoryPreferenceStorage()
+        let storage = InMemoryPreferencesStore()
         #expect(Preferences(storage: storage).derivedDataGrowthGigabytes == 20)
         Preferences(storage: storage).derivedDataGrowthGigabytes = 35
         #expect(Preferences(storage: storage).derivedDataGrowthGigabytes == 35)
@@ -45,10 +45,7 @@ struct MenuBarTests {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/App-abc")
         let poster = RecordingPoster()
-        let tools = "\(home.root)/no-tools"
-        try? FileManager.default.createDirectory(atPath: tools, withIntermediateDirectories: true)
-        let model = AppModel(environment: ["HOME": home.path, "PATH": tools, "DEVCLEAN_PROJECT_DIRS": ""],
-                             preferences: Preferences(storage: MemoryPreferenceStorage()), notifier: poster)
+        let model = scanningModel(home: home, notifier: poster)
         await finishScan(model)
         #expect(!model.isScanning)
 
