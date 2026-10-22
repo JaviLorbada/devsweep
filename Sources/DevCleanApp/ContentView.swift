@@ -21,7 +21,8 @@ struct ContentView: View {
             // the window also resizing on its own the two fed each other until
             // AppKit gave up mid-layout.
             HStack(spacing: WindowLayout.gap) {
-                Group {
+                VStack(spacing: 0) {
+                    CenterHeader(title: title)
                     switch model.screen {
                     case .overview: OverviewView()
                     case .xcodeVersions: XcodeVersionsView()
@@ -55,6 +56,8 @@ struct ContentView: View {
             .navigationTitle(title)
             .navigationSubtitle(model.subtitle)
             .toolbar { toolbar }
+            // The title and status are in the center panel's header.
+            .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
         .alert(
@@ -132,29 +135,11 @@ struct ContentView: View {
         }
     }
 
+    /// Only the inspector toggle: what acts on the scan is in the center
+    /// panel's header.
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        @Bindable var model = model
-        if model.isScanning {
-            ToolbarItem {
-                ScanCapsule()
-            }
-        }
-        if model.screen == .overview {
-            ToolbarItem {
-                Picker("Chart", selection: $model.chartStyle) {
-                    ForEach(AppModel.ChartStyle.allCases) { Text($0.rawValue).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .help("Show sizes as a ring or as blocks")
-            }
-        }
-        ToolbarItem {
-            Button(model.isScanning ? "Stop" : "Scan Again") {
-                model.isScanning ? model.stopScan() : model.scan()
-            }
-            .disabled(model.engine == nil)
-        }
+        ToolbarSpacer(.flexible)
         ToolbarItem {
             Button("Inspector", systemImage: "sidebar.trailing") {
                 if wantsInspector && !inspectorHasRoom {
@@ -166,25 +151,6 @@ struct ContentView: View {
             }
             .help("Show or hide the inspector")
         }
-    }
-}
-
-/// "Measuring DerivedData" with a thin bar for how many items are done.
-struct ScanCapsule: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Text(capsuleText)
-                .font(.callout)
-                .lineLimit(1)
-                .frame(maxWidth: 180, alignment: .leading)
-            ProgressView(value: model.scanProgress)
-                .progressViewStyle(.linear)
-                .frame(width: 64)
-                .animation(.easeInOut(duration: 0.3), value: model.scanProgress)
-        }
-        .padding(.horizontal, 6)
     }
 }
 
@@ -203,15 +169,6 @@ enum WindowSizing {
             if frame.maxX > visible.maxX { frame.origin.x = max(visible.minX, visible.maxX - frame.width) }
         }
         window.setFrame(frame, display: true, animate: true)
-    }
-}
-
-extension ScanCapsule {
-    /// "Measuring DerivedData", "Measuring DerivedData and 2 more".
-    var capsuleText: String {
-        let measuring = model.measuringItems
-        guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
-        return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and \(measuring.count - 1) more"
     }
 }
 
