@@ -4,8 +4,8 @@ import Testing
 
 @Suite("Command line options")
 struct CommandLineOptionTests {
-    @Test("Arguments are read left to right, like the script's parse_args")
-    func order() {
+    @Test
+    func `arguments are read left to right, like the script's parse_args`() {
         #expect(CommandLineOptions.check(["--help", "--nope"]) == .help)
         #expect(CommandLineOptions.check(["--nope", "--help"]) == .failure("Unknown option: --nope (see devclean --help)"))
         #expect(CommandLineOptions.check(["-h"]) == .help)
@@ -17,8 +17,8 @@ struct CommandLineOptionTests {
         #expect(CommandLineOptions.check(["--"]) == .failure("Unknown option: -- (see devclean --help)"))
     }
 
-    @Test("--skip and --projects take the next argument whatever it is")
-    func values() {
+    @Test
+    func `--skip and --projects take the next argument whatever it is`() {
         #expect(CommandLineOptions.check(["--skip", "--run"]) == .options(CommandLineOptions(skip: "--run")))
         #expect(CommandLineOptions.check(["--projects", "-x", "--skip", "a", "--skip", "b", "-y", "--run", "--run"])
             == .options(CommandLineOptions(run: true, yes: true, skip: "b", projects: "-x")))
@@ -26,8 +26,8 @@ struct CommandLineOptionTests {
             == ["--run", "--yes", "--skip", "b", "--projects", "-x"])
     }
 
-    @Test("--skip ignores whitespace and rejects the first unknown item")
-    func skip() throws {
+    @Test
+    func `--skip ignores whitespace and rejects the first unknown item`() throws {
         #expect(try ScanConfig.parseSkip(" derived-data,\tswiftpm-cache ,\n") == [.derivedData, .swiftpmCache])
         #expect(try ScanConfig.parseSkip("") == [])
         #expect(throws: PreflightError.unknownItem("nope")) { try ScanConfig.parseSkip("homebrew,nope,other") }
@@ -35,14 +35,14 @@ struct CommandLineOptionTests {
             == "Unknown item 'x'. Items: derived-data simulators device-installs device-support swiftpm-cache swiftpm-builds xcode-builds gradle-builds npm-cache homebrew tool-caches")
     }
 
-    @Test("Lists split on colons and newlines and drop empty entries")
-    func lists() {
+    @Test
+    func `lists split on colons and newlines and drop empty entries`() {
         #expect(ScanConfig.splitList("a::b:\nc:") == ["a", "b", "c"])
         #expect(ScanConfig.splitList("") == [])
     }
 
-    @Test("Defaults come from HOME, and empty variables count as unset")
-    func defaults() {
+    @Test
+    func `defaults come from HOME, and empty variables count as unset`() {
         let config = ScanConfig.fromEnvironment(["HOME": "/h", "DEVCLEAN_PROJECT_DIRS": "", "DEVCLEAN_APPLICATIONS_DIRS": ""])
         #expect(config.projectDirectories == ["/h/Developer", "/h/Development", "/h/dev", "/h/Documents/Workspace", "/h/Projects"])
         #expect(config.applicationsDirectories == ["/Applications", "/h/Applications"])
@@ -50,8 +50,8 @@ struct CommandLineOptionTests {
         #expect(ScanConfig.fromEnvironment(["HOME": "/h"], projects: "").projectDirectories == [])
     }
 
-    @Test("The four Xcode items are the ones that need Xcode closed")
-    func xcodeItems() {
+    @Test
+    func `the four Xcode items are the ones that need Xcode closed`() {
         var config = ScanConfig(home: "/h", projectDirectories: [], applicationsDirectories: [])
         config.skipped = [.derivedData, .simulators, .deviceInstalls]
         #expect(!config.skipsEverythingXcodeUses)
@@ -62,7 +62,7 @@ struct CommandLineOptionTests {
 
 @Suite("Tool output parsing")
 struct ToolOutputParsingTests {
-    @Test("Homebrew's dry run gives the size it would free", arguments: [
+    @Test(arguments: [
         ("==> This operation would free approximately 1.5GB of disk space.", Int64(1_572_864)),
         ("==> This operation would free approximately 2048B of disk space.", 2),
         ("==> This operation would free approximately 1023B of disk space.", 0),
@@ -75,12 +75,12 @@ struct ToolOutputParsingTests {
         ("Nothing to clean", 0),
         ("would free approximately 1GB\nwould free approximately 2MB", 2048),
     ])
-    func homebrew(output: String, kilobytes: Int64) {
+    func `homebrew's dry run gives the size it would free`(output: String, kilobytes: Int64) {
         #expect(HomebrewScanner.kilobytes(fromDryRun: output) == kilobytes)
     }
 
-    @Test("Unavailable simulators are the last UDID in parentheses on each line")
-    func simulatorIDs() {
+    @Test
+    func `unavailable simulators are the last UDID in parentheses on each line`() {
         let listing = """
             == Devices ==
             -- Unavailable: com.apple.CoreSimulator.SimRuntime.iOS-26-2 --
@@ -95,19 +95,19 @@ struct ToolOutputParsingTests {
         ])
     }
 
-    @Test("Project names come from the workspace path", arguments: [
+    @Test(arguments: [
         ("/Users/me/Workspace/App/App.xcodeproj", "App/App"),
         ("/Users/me/Workspace/App/App.xcworkspace", "App/App"),
         ("/Users/me/Workspace/App/App.xcodeproj/", "App/App"),
         ("/Users/me/Workspace/Pkg", "Workspace/Pkg"),
         ("/App.xcodeproj", "//App"),
     ])
-    func projectNames(workspace: String, name: String) {
+    func `project names come from the workspace path`(workspace: String, name: String) {
         #expect(DerivedDataScanner.projectName(workspace) == name)
     }
 
-    @Test("Runtimes join devices, keep JSON order on ties, and sort by platform then newest version")
-    func runtimes() {
+    @Test
+    func `runtimes join devices, keep JSON order on ties, and sort by platform then newest version`() {
         let runtimes = Data("""
             {
               "B": { "version": "27.0", "build": "b", "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0", "sizeBytes": 1536, "lastUsedAt": "2026-10-20T00:00:00Z" },
@@ -134,26 +134,26 @@ struct ToolOutputParsingTests {
         #expect(parsed[5].flagReason(staleDays: 90) == "No simulators")
     }
 
-    @Test("Broken runtime JSON lists nothing")
-    func brokenRuntimes() {
+    @Test
+    func `broken runtime JSON lists nothing`() {
         #expect(ExtrasScanner.parseRuntimes(Data("nope".utf8), devices: Data(), now: Date()).isEmpty)
         #expect(ExtrasScanner.parseRuntimes(Data("[]".utf8), devices: Data(), now: Date()).isEmpty)
         #expect(ExtrasScanner.parseRuntimes(Data(#"{"A": {"version": "1"}}"#.utf8), devices: Data("x".utf8), now: Date()).count == 1)
     }
 
-    @Test("Platforms come from the runtime identifier", arguments: [
+    @Test(arguments: [
         ("com.apple.CoreSimulator.SimRuntime.iOS-27-0", "iOS"),
         ("com.apple.CoreSimulator.SimRuntime.xrOS-2-0", "xrOS"),
         ("SimRuntime.a.SimRuntime.tvOS-1", "tvOS"),
         ("", ""),
         ("plain", "plain"),
     ])
-    func platforms(identifier: String, platform: String) {
+    func `platforms come from the runtime identifier`(identifier: String, platform: String) {
         #expect(ExtrasScanner.platform(of: identifier) == platform)
     }
 
-    @Test("Dates parse like JavaScript's Date.parse")
-    func javaScriptDates() {
+    @Test
+    func `dates parse like JavaScript's Date.parse`() {
         #expect(JavaScriptDate.parse("1970-01-01T00:00:00Z") == 0)
         #expect(JavaScriptDate.parse("1970-01-02") == 86_400_000)
         #expect(JavaScriptDate.parse("1970-01-01T00:00:01.250Z") == 1250)
@@ -162,8 +162,8 @@ struct ToolOutputParsingTests {
         #expect(JavaScriptDate.parse("") == nil)
     }
 
-    @Test("JSON key order survives nesting, escapes and arrays")
-    func keyOrder() {
+    @Test
+    func `JSON key order survives nesting, escapes and arrays`() {
         let json = Data(#"{ "z": { "a": 1, "b": [ "x", { "c": 2 } ] }, "y\"q": "v,w", "x": [] }"#.utf8)
         #expect(JSONKeyOrder.topLevelKeys(json) == ["z", "y\"q", "x"])
     }
@@ -175,8 +175,8 @@ struct DeviceSupportSelectionTests {
         .init(system: system, name: name, modified: modified, path: "/\(system)/\(name)")
     }
 
-    @Test("The newest version per OS and model stays; ties go to the newest build")
-    func selection() {
+    @Test
+    func `the newest version per OS and model stays; ties go to the newest build`() {
         let old = DeviceSupportScanner.old([
             entry("iPhone15,2 27.0 (24A435)", modified: 200),
             entry("iPhone15,2 27.0 (24A5264n)", modified: 100),
@@ -199,15 +199,15 @@ struct DeviceSupportSelectionTests {
         ])
     }
 
-    @Test("Versions compare as numbers, missing parts as zero")
-    func numeric() {
+    @Test
+    func `versions compare as numbers, missing parts as zero`() {
         #expect(DeviceSupportScanner.old([entry("9.3 (a)"), entry("10.0 (b)")]) == ["/iOS/9.3 (a)"])
         #expect(DeviceSupportScanner.old([entry("17 (a)"), entry("17.0.1 (b)")]) == ["/iOS/17 (a)"])
         #expect(DeviceSupportScanner.old([entry("17.0 (a)", modified: 5), entry("17 (b)", modified: 5)]) == ["/iOS/17 (b)"])
     }
 
-    @Test("Version shapes", arguments: [("1", true), ("1.2.3", true), ("1.", false), (".1", false), ("1..2", false), ("a1", false), ("", false)])
-    func versions(text: String, isVersion: Bool) {
+    @Test(arguments: [("1", true), ("1.2.3", true), ("1.", false), (".1", false), ("1..2", false), ("a1", false), ("", false)])
+    func `version shapes`(text: String, isVersion: Bool) {
         #expect(DeviceSupportScanner.isVersion(text) == isVersion)
     }
 }

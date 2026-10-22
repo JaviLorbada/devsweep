@@ -24,8 +24,8 @@ struct FixedClock: WallClock {
 
 @Suite("Dependencies")
 struct DependenciesTests {
-    @Test("Deleting goes through the dependencies' file system")
-    func removing() async throws {
+    @Test
+    func `deleting goes through the dependencies' file system`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
         let files = RecordingFileSystem()
@@ -39,8 +39,8 @@ struct DependenciesTests {
         #expect(FileManager.default.fileExists(atPath: home.path("Library/Caches/org.swift.swiftpm")), "the fake removed nothing")
     }
 
-    @Test("How long a runtime has gone unused is counted from the dependencies' clock")
-    func clock() async throws {
+    @Test
+    func `how long a runtime has gone unused is counted from the dependencies' clock`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.stubRuntimes()
         let later = Date().addingTimeInterval(400 * 86_400)

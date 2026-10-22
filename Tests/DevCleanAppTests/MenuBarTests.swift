@@ -13,16 +13,16 @@ final class RecordingPoster: NotificationPoster {
 @MainActor
 @Suite("Menu bar and daily scan")
 struct MenuBarTests {
-    @Test("A scan is due a day after the last one, and never before a first")
-    func schedule() {
+    @Test
+    func `A scan is due a day after the last one, and never before a first`() {
         let last = Date(timeIntervalSince1970: 1_800_000_000)
         #expect(!ScanSchedule.isDue(lastScan: nil, now: last))
         #expect(!ScanSchedule.isDue(lastScan: last, now: last.addingTimeInterval(23 * 3600)))
         #expect(ScanSchedule.isDue(lastScan: last, now: last.addingTimeInterval(24 * 3600)))
     }
 
-    @Test("DerivedData growth past the threshold since the last scan is worth a notification")
-    func growth() {
+    @Test
+    func `DerivedData growth past the threshold since the last scan is worth a notification`() {
         let gigabyte: Int64 = 1024 * 1024
         #expect(GrowthCheck.derivedData(previousKilobytes: nil, currentKilobytes: 90 * gigabyte, thresholdGigabytes: 20) == nil)
         #expect(GrowthCheck.derivedData(previousKilobytes: 40 * gigabyte, currentKilobytes: 60 * gigabyte, thresholdGigabytes: 20) == nil)
@@ -32,16 +32,16 @@ struct MenuBarTests {
         #expect(GrowthCheck.derivedData(previousKilobytes: 60 * gigabyte, currentKilobytes: 10 * gigabyte, thresholdGigabytes: 1) == nil)
     }
 
-    @Test("The threshold is a preference, 20 GB unless changed")
-    func threshold() {
+    @Test
+    func `the threshold is a preference, 20 GB unless changed`() {
         let storage = InMemoryPreferencesStore()
         #expect(Preferences(storage: storage).derivedDataGrowthGigabytes == 20)
         Preferences(storage: storage).derivedDataGrowthGigabytes = 35
         #expect(Preferences(storage: storage).derivedDataGrowthGigabytes == 35)
     }
 
-    @Test("A tick a day after the last scan starts the next one, and a small change posts nothing")
-    func dailyScan() async {
+    @Test
+    func `A tick a day after the last scan starts the next one, and a small change posts nothing`() async {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/App-abc")
         let poster = RecordingPoster()

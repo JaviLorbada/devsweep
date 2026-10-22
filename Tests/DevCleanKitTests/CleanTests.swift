@@ -8,8 +8,8 @@ struct CleanTests {
         try #require(await collect(engine).result(item))
     }
 
-    @Test("Trash mode moves each folder to the Trash and Put back restores it")
-    func trashAndPutBack() async throws {
+    @Test
+    func `trash mode moves each folder to the Trash and Put back restores it`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/CocoaPods"))
         home.fill(home.path("Library/Caches/Sourcery"))
@@ -32,8 +32,8 @@ struct CleanTests {
         #expect(home.isFile(home.path("Library/Caches/Sourcery/file")))
     }
 
-    @Test("Put back never replaces something that took the folder's place")
-    func putBackKeepsReplacement() async throws {
+    @Test
+    func `put back never replaces something that took the folder's place`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(".npm/_cacache"))
         let engine = try engine(home, tools)
@@ -47,8 +47,8 @@ struct CleanTests {
         #expect(!home.exists(home.path(".npm/_cacache/file")))
     }
 
-    @Test("Put back refuses when the parent now leads outside home")
-    func putBackRechecksParent() async throws {
+    @Test
+    func `put back refuses when the parent now leads outside home`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/CocoaPods"))
         let engine = try engine(home, tools)
@@ -61,8 +61,8 @@ struct CleanTests {
         #expect(!home.exists(home.outside("moved/CocoaPods")))
     }
 
-    @Test("Trash mode rechecks each path like delete mode")
-    func trashRechecks() async throws {
+    @Test
+    func `trash mode rechecks each path like delete mode`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
         let engine = try engine(home, tools)
@@ -78,8 +78,8 @@ struct CleanTests {
         #expect(!tools.log.calls.contains { $0.hasPrefix("trash") })
     }
 
-    @Test("Simulators and Homebrew go through their tools in either mode, and failures warn")
-    func toolItems() async throws {
+    @Test
+    func `simulators and Homebrew go through their tools in either mode, and failures warn`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.simctlDeleteSucceeds = false
         tools.brewCleanupSucceeds = false
@@ -97,8 +97,8 @@ struct CleanTests {
         #expect(tools.log.contains("brew cleanup --prune=all"))
     }
 
-    @Test("Paths already gone are skipped quietly")
-    func alreadyGone() async throws {
+    @Test
+    func `paths already gone are skipped quietly`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let engine = try engine(home, tools)
         let result = ItemResult(item: .npmCache, paths: [engine.policy.homeReal + "/.npm/_cacache"], kilobytes: 4, location: "")
@@ -109,8 +109,8 @@ struct CleanTests {
 
 @Suite("Command line session")
 struct SessionTests {
-    @Test("The prompt deletes only on y, Y, yes or YES")
-    func prompt() async {
+    @Test
+    func `the prompt deletes only on y, Y, yes or YES`() async {
         for (answer, deletes) in [("y", true), ("YES", true), ("  yes  ", true), ("Yes", false), ("n", false), ("", false)] {
             let home = FakeHome(), tools = FakeTools(home: home)
             home.fill(home.path("Library/Caches/org.swift.swiftpm"))
@@ -122,8 +122,8 @@ struct SessionTests {
         }
     }
 
-    @Test("Closing input at the prompt deletes nothing")
-    func promptEOF() async {
+    @Test
+    func `closing input at the prompt deletes nothing`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
         let run = await devclean("--run", home: home, tools: tools, input: [])
@@ -132,8 +132,8 @@ struct SessionTests {
         #expect(home.exists(home.path("Library/Caches/org.swift.swiftpm")))
     }
 
-    @Test("--run with nothing found says so without asking")
-    func runNothing() async {
+    @Test
+    func `--run with nothing found says so without asking`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean("--run", home: home, tools: tools, input: nil)
         #expect(run.status == 0)
@@ -141,8 +141,8 @@ struct SessionTests {
         #expect(!run.output.contains("Also worth a look"))
     }
 
-    @Test("Simulator running blocks --run too, unless the Xcode items are skipped")
-    func simulatorRunning() async {
+    @Test
+    func `simulator running blocks --run too, unless the Xcode items are skipped`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.running = [.simulator]
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
@@ -156,8 +156,8 @@ struct SessionTests {
         #expect(!home.exists(home.path("Library/Caches/org.swift.swiftpm")))
     }
 
-    @Test("Report mode never asks about running apps")
-    func reportIgnoresRunningApps() async {
+    @Test
+    func `report mode never asks about running apps`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.running = [.xcode]
         let run = await devclean(home: home, tools: tools)
@@ -165,8 +165,8 @@ struct SessionTests {
         #expect(!tools.log.calls.contains { $0.hasPrefix("pgrep") })
     }
 
-    @Test("Refuses to run as root or without a usable HOME")
-    func preflight() async {
+    @Test
+    func `refuses to run as root or without a usable HOME`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let root = await devclean(home: home, tools: tools, effectiveUserID: 0)
         #expect(root.status == 1)
@@ -177,8 +177,8 @@ struct SessionTests {
         #expect(noHome.standardOutput.isEmpty)
     }
 
-    @Test("Dim text only on a terminal, and never with NO_COLOR")
-    func color() async {
+    @Test
+    func `dim text only on a terminal, and never with NO_COLOR`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let terminal = BufferTerminal(outputIsInteractive: true)
         _ = await CommandLineSession.run(CommandLineOptions(), environment: home.environment, tools: tools.tools, terminal: terminal)
@@ -191,8 +191,8 @@ struct SessionTests {
         #expect(!plain.standardOutput.contains("\u{1B}"))
     }
 
-    @Test("Deleting prints each item, then the free space before and after")
-    func deletingOutput() async {
+    @Test
+    func `deleting prints each item, then the free space before and after`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
         home.fill(home.path("Library/Caches/CocoaPods"))

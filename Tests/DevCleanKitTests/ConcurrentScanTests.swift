@@ -36,8 +36,8 @@ struct ConcurrentScanTests {
         return (home, tools)
     }
 
-    @Test("Finds exactly what the report finds")
-    func sameResults() async throws {
+    @Test
+    func `finds exactly what the report finds`() async throws {
         let (home, tools) = richHome()
         let engine = try engine(home, tools)
         let report = await collect(engine)
@@ -59,8 +59,8 @@ struct ConcurrentScanTests {
         #expect(concurrent.contains { if case .extras(let extras) = $0 { extras.runtimes.count == 2 } else { false } })
     }
 
-    @Test("Starts the quick items first and DerivedData last")
-    func order() async throws {
+    @Test
+    func `starts the quick items first and DerivedData last`() async throws {
         let (home, tools) = richHome()
         var started: [Item] = []
         for await event in try engine(home, tools).scan(.interactive) {
@@ -71,8 +71,8 @@ struct ConcurrentScanTests {
         #expect(started.last == .derivedData)
     }
 
-    @Test("Measuring several folders at once gives the same sizes")
-    func concurrentFolders() async throws {
+    @Test
+    func `measuring several folders at once gives the same sizes`() async throws {
         let (home, tools) = richHome()
         let engine = try engine(home, tools)
         let folders = (1...6).map { "\(engine.policy.homeReal)/Workspace/P\($0)/.build" }
@@ -88,8 +88,8 @@ struct ConcurrentScanTests {
         #expect(one.map(\.kilobytes) == (1...6).map { Int64(4 * $0) })
     }
 
-    @Test("Cancelling stops an interactive scan")
-    func cancel() async throws {
+    @Test
+    func `cancelling stops an interactive scan`() async throws {
         let (home, tools) = richHome()
         let engine = try engine(home, tools)
         let task = Task {

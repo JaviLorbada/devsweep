@@ -8,24 +8,24 @@ import Testing
 
 @Suite("Options")
 struct OptionsTests {
-    @Test("devclean --help explains usage")
-    func help() async {
+    @Test
+    func `devclean --help explains usage`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean("--help", home: home, tools: tools)
         #expect(run.status == 0)
         #expect(run.output.contains("Usage: devclean"))
     }
 
-    @Test("devclean rejects unknown options")
-    func unknownOption() async {
+    @Test
+    func `devclean rejects unknown options`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean("--nope", home: home, tools: tools)
         #expect(run.status != 0)
         #expect(run.output.contains("Unknown option: --nope"))
     }
 
-    @Test("devclean rejects unknown --skip items")
-    func unknownSkip() async {
+    @Test
+    func `devclean rejects unknown --skip items`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean("--skip", "derived-data,nope", home: home, tools: tools)
         #expect(run.status != 0)
@@ -35,8 +35,8 @@ struct OptionsTests {
 
 @Suite("Reporting")
 struct ReportingTests {
-    @Test("devclean reports without deleting by default")
-    func reportsOnly() async {
+    @Test
+    func `devclean reports without deleting by default`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("\(FakeHome.derivedData)/CompilationCache.noindex"))
         home.fill(home.path("Library/Caches/org.swift.swiftpm/repositories"))
@@ -50,16 +50,16 @@ struct ReportingTests {
         #expect(home.isDirectory(home.path("Library/Caches/org.swift.swiftpm")))
     }
 
-    @Test("devclean says so when there is nothing to clean")
-    func nothingToClean() async {
+    @Test
+    func `devclean says so when there is nothing to clean`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean(home: home, tools: tools)
         #expect(run.status == 0)
         #expect(run.output.contains("Nothing to clean"))
     }
 
-    @Test("devclean lists every item and where it looks, even when empty")
-    func listsEveryItem() async {
+    @Test
+    func `devclean lists every item and where it looks, even when empty`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean(home: home, tools: tools)
         #expect(run.status == 0)
@@ -72,8 +72,8 @@ struct ReportingTests {
         #expect(run.lines.filter { $0.hasSuffix(" none") }.count >= 10)
     }
 
-    @Test("devclean shows which project folders it searches")
-    func showsProjectFolders() async {
+    @Test
+    func `devclean shows which project folders it searches`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean(
             home: home, tools: tools,
@@ -83,8 +83,8 @@ struct ReportingTests {
         #expect(run.output.contains("Project folders: ~/Workspace (not found: ~/Missing)"))
     }
 
-    @Test("devclean says when no project folder exists")
-    func noProjectFolder() async {
+    @Test
+    func `devclean says when no project folder exists`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean("--projects", home.path("Nope"), home: home, tools: tools)
         #expect(run.status == 0)
@@ -92,16 +92,16 @@ struct ReportingTests {
         #expect(run.output.contains("--projects"))
     }
 
-    @Test("devclean skips items with --skip in the report too")
-    func skipInReport() async {
+    @Test
+    func `devclean skips items with --skip in the report too`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let run = await devclean("--skip", "homebrew", home: home, tools: tools)
         #expect(run.status == 0)
         #expect(!run.output.contains("homebrew"))
     }
 
-    @Test("devclean expands ~ in DEVCLEAN_PROJECT_DIRS")
-    func expandsTilde() async {
+    @Test
+    func `devclean expands ~ in DEVCLEAN_PROJECT_DIRS`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.touch("\(home.projects)/Package.swift")
         home.fill("\(home.projects)/.build")
@@ -112,8 +112,8 @@ struct ReportingTests {
         #expect(run.output.contains("SwiftPM .build folders (1)"))
     }
 
-    @Test("devclean --projects overrides the project folders")
-    func projectsOverride() async {
+    @Test
+    func `devclean --projects overrides the project folders`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.touch(home.path("Code/Package.swift"))
         home.fill(home.path("Code/.build"))
@@ -126,8 +126,8 @@ struct ReportingTests {
 
 @Suite("Deleting")
 struct DeletingTests {
-    @Test("devclean --run --yes deletes caches")
-    func deletesCaches() async {
+    @Test
+    func `devclean --run --yes deletes caches`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("\(FakeHome.derivedData)/CompilationCache.noindex"))
         home.fill(home.path(FakeHome.deviceInstalls))
@@ -146,8 +146,8 @@ struct DeletingTests {
         #expect(home.isDirectory(home.path(".npm")))
     }
 
-    @Test("devclean --run refuses to delete without a terminal or --yes")
-    func refusesWithoutTerminal() async {
+    @Test
+    func `devclean --run refuses to delete without a terminal or --yes`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(FakeHome.derivedData))
 
@@ -157,8 +157,8 @@ struct DeletingTests {
         #expect(home.isDirectory(home.path(FakeHome.derivedData)))
     }
 
-    @Test("devclean --run refuses while Xcode is running")
-    func refusesWhileXcodeRuns() async {
+    @Test
+    func `devclean --run refuses while Xcode is running`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.running = [.xcode]
         home.fill(home.path(FakeHome.derivedData))
@@ -169,8 +169,8 @@ struct DeletingTests {
         #expect(home.isDirectory(home.path(FakeHome.derivedData)))
     }
 
-    @Test("devclean --skip leaves items alone")
-    func skipLeavesItems() async {
+    @Test
+    func `devclean --skip leaves items alone`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(FakeHome.derivedData))
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
@@ -184,8 +184,8 @@ struct DeletingTests {
 
 @Suite("Build folders")
 struct BuildFolderTests {
-    @Test("devclean only deletes .build folders next to a Package.swift")
-    func swiftpmBuilds() async {
+    @Test
+    func `devclean only deletes .build folders next to a Package.swift`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/App/Packages/Core/Package.swift")
         home.fill("\(p)/App/Packages/Core/.build")
@@ -197,8 +197,8 @@ struct BuildFolderTests {
         #expect(home.isDirectory("\(p)/Other/.build"))
     }
 
-    @Test("devclean only deletes build folders next to a Gradle file")
-    func gradleBuilds() async {
+    @Test
+    func `devclean only deletes build folders next to a Gradle file`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/android/app/build.gradle.kts")
         home.fill("\(p)/android/app/build")
@@ -210,8 +210,8 @@ struct BuildFolderTests {
         #expect(home.isDirectory("\(p)/website/build"))
     }
 
-    @Test("devclean deletes Xcode build folders next to a project or package")
-    func xcodeBuilds() async {
+    @Test
+    func `devclean deletes Xcode build folders next to a project or package`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.mkdir("\(p)/App/App.xcodeproj")
         home.mkdir("\(p)/App/Packages/Domain")
@@ -227,8 +227,8 @@ struct BuildFolderTests {
         #expect(home.isDirectory("\(p)/App/App.xcodeproj"))
     }
 
-    @Test("devclean keeps build folders next to a package that hold no Xcode output")
-    func keepsNonXcodeBuild() async {
+    @Test
+    func `devclean keeps build folders next to a package that hold no Xcode output`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/Worksheets/Package.swift")
         home.write("\(p)/Worksheets/build/worksheet.pdf", "pdf\n")
@@ -238,8 +238,8 @@ struct BuildFolderTests {
         #expect(home.isFile("\(p)/Worksheets/build/worksheet.pdf"))
     }
 
-    @Test("devclean keeps Xcode output that isn't next to a project or package")
-    func keepsLooseXcodeOutput() async {
+    @Test
+    func `devclean keeps Xcode output that isn't next to a project or package`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.fillXcodeBuild("\(p)/Loose/build")
 
@@ -248,8 +248,8 @@ struct BuildFolderTests {
         #expect(home.isDirectory("\(p)/Loose/build/XCBuildData"))
     }
 
-    @Test("devclean counts a build folder next to both Gradle and Xcode files once")
-    func countsOnce() async {
+    @Test
+    func `devclean counts a build folder next to both Gradle and Xcode files once`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/Multiplatform/build.gradle.kts")
         home.touch("\(p)/Multiplatform/Package.swift")
@@ -261,8 +261,8 @@ struct BuildFolderTests {
         #expect(!run.output.contains("Xcode build folders (1)"))
     }
 
-    @Test("devclean keeps build folders tracked in git")
-    func keepsTracked() async {
+    @Test
+    func `devclean keeps build folders tracked in git`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/Tracked/Package.swift")
         home.fill("\(p)/Tracked/.build")
@@ -274,8 +274,8 @@ struct BuildFolderTests {
         #expect(home.isFile("\(p)/Tracked/.build/file"))
     }
 
-    @Test("devclean handles folder names with spaces")
-    func spaces() async {
+    @Test
+    func `devclean handles folder names with spaces`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/My App/Package.swift")
         home.fill("\(p)/My App/.build")
@@ -286,8 +286,8 @@ struct BuildFolderTests {
         #expect(home.isFile("\(p)/My App/Package.swift"))
     }
 
-    @Test("devclean does not follow symlinked build folders")
-    func symlinkedBuild() async {
+    @Test
+    func `devclean does not follow symlinked build folders`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.fill(home.outside("outside"))
         home.touch("\(p)/Linked/Package.swift")
@@ -301,8 +301,8 @@ struct BuildFolderTests {
 
 @Suite("Xcode and tools")
 struct XcodeAndToolsTests {
-    @Test("devclean uses a custom DerivedData folder inside the home folder")
-    func customDerivedDataInside() async {
+    @Test
+    func `devclean uses a custom DerivedData folder inside the home folder`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Custom/DerivedData"))
         tools.customDerivedData = home.path("Custom/DerivedData")
@@ -312,8 +312,8 @@ struct XcodeAndToolsTests {
         #expect(!home.exists(home.path("Custom/DerivedData")))
     }
 
-    @Test("devclean ignores a custom DerivedData folder outside the home folder")
-    func customDerivedDataOutside() async {
+    @Test
+    func `devclean ignores a custom DerivedData folder outside the home folder`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.outside("elsewhere/DerivedData"))
         tools.customDerivedData = home.outside("elsewhere/DerivedData")
@@ -323,8 +323,8 @@ struct XcodeAndToolsTests {
         #expect(home.isFile(home.outside("elsewhere/DerivedData/file")))
     }
 
-    @Test("devclean deletes unavailable simulators through simctl")
-    func simulators() async {
+    @Test
+    func `devclean deletes unavailable simulators through simctl`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.unavailableListing = """
             -- Unavailable: com.apple.CoreSimulator.SimRuntime.iOS-26-2 --
@@ -339,8 +339,8 @@ struct XcodeAndToolsTests {
         #expect(tools.log.contains("xcrun simctl delete unavailable"))
     }
 
-    @Test("devclean reports and runs Homebrew cleanup")
-    func homebrew() async {
+    @Test
+    func `devclean reports and runs Homebrew cleanup`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.brewDryRun = "==> This operation would free approximately 1.5GB of disk space.\n"
 
@@ -353,8 +353,8 @@ struct XcodeAndToolsTests {
 
 @Suite("Xcodes and simulator runtimes (listed, never deleted)")
 struct ExtrasListingTests {
-    @Test("devclean lists installed Xcodes and marks the selected one")
-    func listsXcodes() async {
+    @Test
+    func `devclean lists installed Xcodes and marks the selected one`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.makeXcode(home.path("Applications/Xcode.app"), version: "27.0", build: "27A266a")
         home.makeXcode(home.path("Applications/Xcode-27.1.app"), version: "27.1", build: "27A9269")
@@ -369,8 +369,8 @@ struct ExtrasListingTests {
         #expect(run.output.contains("Each Xcode keeps its own compilation cache"))
     }
 
-    @Test("devclean only mentions the compilation cache with more than one Xcode")
-    func oneXcode() async {
+    @Test
+    func `devclean only mentions the compilation cache with more than one Xcode`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.makeXcode(home.path("Applications/Xcode.app"), version: "27.0", build: "27A266a")
 
@@ -380,8 +380,8 @@ struct ExtrasListingTests {
         #expect(!run.output.contains("Each Xcode keeps its own compilation cache"))
     }
 
-    @Test("devclean lists simulator runtimes and flags unused ones")
-    func listsRuntimes() async {
+    @Test
+    func `devclean lists simulator runtimes and flags unused ones`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let now = Date()
         tools.stubRuntimes(now: now)
@@ -395,8 +395,8 @@ struct ExtrasListingTests {
         #expect(!run.output.contains("delete RECENT-RUNTIME"))
     }
 
-    @Test("devclean says when no runtime looks unused")
-    func noneUnused() async {
+    @Test
+    func `devclean says when no runtime looks unused`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.stubRuntimes()
         tools.runtimesJSON = Data("""
@@ -410,8 +410,8 @@ struct ExtrasListingTests {
         #expect(run.output.contains("None look unused"))
     }
 
-    @Test("devclean never deletes Xcodes or runtimes")
-    func neverDeletesExtras() async {
+    @Test
+    func `devclean never deletes Xcodes or runtimes`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.makeXcode(home.path("Applications/Xcode.app"), version: "27.0", build: "27A266a")
         home.makeXcode(home.path("Applications/Xcode-27.1.app"), version: "27.1", build: "27A9269")
@@ -429,8 +429,8 @@ struct ExtrasListingTests {
 
 @Suite("Safety regressions")
 struct SafetyRegressionTests {
-    @Test("devclean never deletes through a symlinked parent folder that leads outside home")
-    func symlinkedParent() async {
+    @Test
+    func `devclean never deletes through a symlinked parent folder that leads outside home`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.outside("outside-caches/org.swift.swiftpm"))
         home.mkdir(home.path("Library"))
@@ -441,8 +441,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile(home.outside("outside-caches/org.swift.swiftpm/file")))
     }
 
-    @Test("devclean ignores a custom DerivedData path that climbs out of home with ..")
-    func climbsOut() async {
+    @Test
+    func `devclean ignores a custom DerivedData path that climbs out of home with ..`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.outside("victim/DerivedData"))
         tools.customDerivedData = "\(home.home)/../victim/DerivedData"
@@ -452,8 +452,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile(home.outside("victim/DerivedData/file")))
     }
 
-    @Test("devclean leaves a DerivedData folder that is itself a symlink alone")
-    func symlinkedDerivedData() async {
+    @Test
+    func `devclean leaves a DerivedData folder that is itself a symlink alone`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.outside("external/DerivedData"))
         home.mkdir(home.path("Library/Developer/Xcode"))
@@ -465,8 +465,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile(home.outside("external/DerivedData/file")))
     }
 
-    @Test("devclean skips project folders that lead outside home")
-    func projectsOutside() async {
+    @Test
+    func `devclean skips project folders that lead outside home`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.touch(home.outside("external-code/App/Package.swift"))
         home.fill(home.outside("external-code/App/.build"))
@@ -478,8 +478,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile(home.outside("external-code/App/.build/file")))
     }
 
-    @Test("devclean checks each path again right before deleting it")
-    func rechecks() async {
+    @Test
+    func `devclean checks each path again right before deleting it`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Developer/CoreSimulator/Devices/F3062B90-F7DB-4DBF-A21D-9AF6BC6EC06D"))
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
@@ -499,8 +499,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile(home.outside("moved-caches/org.swift.swiftpm/file")))
     }
 
-    @Test("devclean keeps build folders when git can't tell whether they're tracked")
-    func corruptIndex() async {
+    @Test
+    func `devclean keeps build folders when git can't tell whether they're tracked`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/Broken/Package.swift")
         home.fill("\(p)/Broken/.build")
@@ -514,8 +514,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile("\(p)/Broken/.build/file"))
     }
 
-    @Test("devclean still deletes untracked build folders inside a healthy git repo")
-    func healthyRepo() async {
+    @Test
+    func `devclean still deletes untracked build folders inside a healthy git repo`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/Healthy/Package.swift")
         home.fill("\(p)/Healthy/.build")
@@ -526,8 +526,8 @@ struct SafetyRegressionTests {
         #expect(!home.exists("\(p)/Healthy/.build"))
     }
 
-    @Test("devclean asks git about build folders when GIT_DIR and GIT_WORK_TREE are set")
-    func gitDirFromEnvironment() async {
+    @Test
+    func `devclean asks git about build folders when GIT_DIR and GIT_WORK_TREE are set`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         let workTree = "\(home.projects)/Detached", gitDir = home.outside("metadata.git")
         home.touch("\(workTree)/Package.swift")
@@ -548,8 +548,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile("\(workTree)/.build/file"))
     }
 
-    @Test("devclean keeps build folders when .git is a symlink to a missing disk")
-    func gitSymlinkToMissingDisk() async {
+    @Test
+    func `devclean keeps build folders when .git is a symlink to a missing disk`() async {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         home.touch("\(p)/External/Package.swift")
         home.fill("\(p)/External/.build")
@@ -561,8 +561,8 @@ struct SafetyRegressionTests {
         #expect(home.isFile("\(p)/External/.build/file"))
     }
 
-    @Test("devclean --skip accepts spaces after the commas")
-    func skipWithSpaces() async {
+    @Test
+    func `devclean --skip accepts spaces after the commas`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(FakeHome.derivedData))
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
@@ -576,8 +576,8 @@ struct SafetyRegressionTests {
 
 @Suite("Device Support")
 struct DeviceSupportTests {
-    @Test("devclean deletes older Device Support but keeps the newest per device model")
-    func keepsNewest() async {
+    @Test
+    func `devclean deletes older Device Support but keeps the newest per device model`() async {
         let home = FakeHome(), tools = FakeTools(home: home), ds = home.path(FakeHome.iosDeviceSupport)
         home.makeDeviceSupport("\(ds)/iPhone15,2 27.0 (24A435)")
         home.makeDeviceSupport("\(ds)/iPhone15,2 26.6.1 (23G80)")
@@ -591,8 +591,8 @@ struct DeviceSupportTests {
         #expect(home.isDirectory("\(ds)/iPhone17,1 26.4 (23E244)"))
     }
 
-    @Test("devclean compares Device Support versions as numbers")
-    func numericVersions() async {
+    @Test
+    func `devclean compares Device Support versions as numbers`() async {
         let home = FakeHome(), tools = FakeTools(home: home), ds = home.path(FakeHome.iosDeviceSupport)
         home.makeDeviceSupport("\(ds)/iPhone9,1 9.3 (13E233)")
         home.makeDeviceSupport("\(ds)/iPhone9,1 10.0 (14A346)")
@@ -603,8 +603,8 @@ struct DeviceSupportTests {
         #expect(home.isDirectory("\(ds)/iPhone9,1 10.0 (14A346)"))
     }
 
-    @Test("devclean handles Device Support names without a device and arch copies")
-    func archCopies() async {
+    @Test
+    func `devclean handles Device Support names without a device and arch copies`() async {
         let home = FakeHome(), tools = FakeTools(home: home), ds = home.path(FakeHome.iosDeviceSupport)
         home.makeDeviceSupport("\(ds)/16.4 (20E247) arm64e")
         home.makeDeviceSupport("\(ds)/16.4 (20E247)")
@@ -617,8 +617,8 @@ struct DeviceSupportTests {
         #expect(home.isDirectory("\(ds)/16.4 (20E247)"))
     }
 
-    @Test("devclean keeps Device Support it can't parse and handles each OS separately")
-    func unparsedAndPerOS() async {
+    @Test
+    func `devclean keeps Device Support it can't parse and handles each OS separately`() async {
         let home = FakeHome(), tools = FakeTools(home: home), xcode = home.path("Library/Developer/Xcode")
         home.makeDeviceSupport("\(xcode)/iOS DeviceSupport/Some Folder")
         home.makeDeviceSupport("\(xcode)/iOS DeviceSupport/iPhone15,2 Beta")
@@ -637,8 +637,8 @@ struct DeviceSupportTests {
         #expect(home.isDirectory("\(xcode)/macOS DeviceSupport/15.0"))
     }
 
-    @Test("devclean keeps the most recently used build when a version has several")
-    func mostRecentBuild() async {
+    @Test
+    func `devclean keeps the most recently used build when a version has several`() async {
         let home = FakeHome(), tools = FakeTools(home: home), ds = home.path(FakeHome.iosDeviceSupport)
         home.makeDeviceSupport("\(ds)/iPhone15,2 27.0 (24A5264n)", modified: "202609010000")
         home.makeDeviceSupport("\(ds)/iPhone15,2 27.0 (24A435)", modified: "202609200000")
@@ -652,8 +652,8 @@ struct DeviceSupportTests {
 
 @Suite("DerivedData breakdown")
 struct DerivedDataBreakdownTests {
-    @Test("devclean breaks DerivedData down into shared caches and projects")
-    func breakdown() async {
+    @Test
+    func `devclean breaks DerivedData down into shared caches and projects`() async {
         let home = FakeHome(), tools = FakeTools(home: home), dd = home.path(FakeHome.derivedData)
         home.fill("\(dd)/CompilationCache.noindex")
         home.fill("\(dd)/ModuleCache.noindex")
@@ -675,8 +675,8 @@ struct DerivedDataBreakdownTests {
         #expect(home.isDirectory("\(dd)/App-abcdefghijklmnopqrstuvwxyz"))
     }
 
-    @Test("devclean shows the five biggest DerivedData projects and sums the rest")
-    func fiveBiggest() async {
+    @Test
+    func `devclean shows the five biggest DerivedData projects and sums the rest`() async {
         let home = FakeHome(), tools = FakeTools(home: home), dd = home.path(FakeHome.derivedData)
         for n in 1...7 {
             home.mkdir("\(home.projects)/P\(n)/P\(n).xcodeproj")
@@ -695,8 +695,8 @@ struct DerivedDataBreakdownTests {
 
 @Suite("Locale")
 struct LocaleTests {
-    @Test("devclean reads and prints sizes the same in a comma-decimal locale")
-    func commaLocale() async {
+    @Test
+    func `devclean reads and prints sizes the same in a comma-decimal locale`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.brewDryRun = "==> This operation would free approximately 1.5GB of disk space.\n"
 
@@ -708,8 +708,8 @@ struct LocaleTests {
 
 @Suite("Default project folders")
 struct DefaultProjectFolderTests {
-    @Test("devclean looks in ~/Development and ~/dev by default")
-    func defaults() async {
+    @Test
+    func `devclean looks in ~/Development and ~/dev by default`() async {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.mkdir(home.path("Development"))
         home.touch(home.path("dev/App/Package.swift"))

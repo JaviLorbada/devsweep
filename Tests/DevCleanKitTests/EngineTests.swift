@@ -24,8 +24,8 @@ extension [ScanEvent] {
 
 @Suite("Scanning")
 struct ScanTests {
-    @Test("Events arrive in order: folders, each item, done, extras")
-    func order() async throws {
+    @Test
+    func `events arrive in order: folders, each item, done, extras`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
         let events = await collect(try engine(home, tools, skipped: [.homebrew]))
@@ -52,8 +52,8 @@ struct ScanTests {
         #expect(total == 4096)
     }
 
-    @Test("Without extras the scan ends at done")
-    func noExtras() async throws {
+    @Test
+    func `without extras the scan ends at done`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let events = await collect(try engine(home, tools, includeExtras: false))
         guard case .done = events.last else { Issue.record("last event is not done"); return }
@@ -61,8 +61,8 @@ struct ScanTests {
         #expect(!tools.log.contains("xcode-select -p"))
     }
 
-    @Test("Results hold resolved, sorted paths and the breakdown")
-    func results() async throws {
+    @Test
+    func `results hold resolved, sorted paths and the breakdown`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path("Library/Caches/JetBrains/Toolbox/download"))
         home.fill(home.path("Library/Caches/CocoaPods"))
@@ -80,8 +80,8 @@ struct ScanTests {
         #expect(events.result(.homebrew)?.location == "brew cleanup --prune=all")
     }
 
-    @Test("Homebrew that isn't installed says so and costs nothing")
-    func noHomebrew() async throws {
+    @Test
+    func `homebrew that isn't installed says so and costs nothing`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.brewInstalled = false
         let events = await collect(try engine(home, tools))
@@ -89,8 +89,8 @@ struct ScanTests {
         #expect(!tools.log.calls.contains { $0.hasPrefix("brew") })
     }
 
-    @Test("Simulators aren't asked for when xcrun is missing")
-    func noXcrun() async throws {
+    @Test
+    func `simulators aren't asked for when xcrun is missing`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.simctlInstalled = false
         tools.unavailableListing = "x (F3062B90-F7DB-4DBF-A21D-9AF6BC6EC06D)"
@@ -100,8 +100,8 @@ struct ScanTests {
         #expect(!tools.log.calls.contains { $0.hasPrefix("xcrun") })
     }
 
-    @Test("A folder that can't be read is listed with an unknown size")
-    func unreadable() async throws {
+    @Test
+    func `A folder that can't be read is listed with an unknown size`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(FakeHome.deviceInstalls))
         chmod(home.path(FakeHome.deviceInstalls), 0o100)
@@ -113,8 +113,8 @@ struct ScanTests {
         #expect(result.isEmpty)
     }
 
-    @Test("The build folder search prunes .git, node_modules, Pods, DerivedData and ~/Library")
-    func pruning() async throws {
+    @Test
+    func `the build folder search prunes .git, node_modules, Pods, DerivedData and ~/Library`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         for folder in ["node_modules/x", "Pods/x", "DerivedData/x", "nested/.git/x", "ok"] {
             home.touch("\(home.projects)/\(folder)/Package.swift")
@@ -131,8 +131,8 @@ struct ScanTests {
         #expect(paths == ["\(engine.policy.homeReal)/Other/.build", "\(engine.policy.homeReal)/Workspace/ok/.build"])
     }
 
-    @Test("Running apps block cleaning only when an Xcode item would be cleaned")
-    func runningApps() async throws {
+    @Test
+    func `running apps block cleaning only when an Xcode item would be cleaned`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.running = [.simulator]
         #expect(try await engine(home, tools).runningAppsBlockingClean() == [.simulator])
@@ -140,8 +140,8 @@ struct ScanTests {
             .runningAppsBlockingClean() == [])
     }
 
-    @Test("Cancelling the consumer stops the scan")
-    func cancel() async throws {
+    @Test
+    func `cancelling the consumer stops the scan`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         for n in 0..<200 { home.fill(home.path("\(FakeHome.derivedData)/P\(n)")) }
         let engine = try engine(home, tools)

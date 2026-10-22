@@ -4,7 +4,7 @@ import Testing
 
 @Suite("Report format")
 struct ReportFormatTests {
-    @Test("Sizes use binary multiples with decimal labels", arguments: [
+    @Test(arguments: [
         (Int64(0), "0 KB"),
         (1023, "1023 KB"),
         (1024, "1 MB"),
@@ -15,12 +15,12 @@ struct ReportFormatTests {
         (8_388_608, "8.0 GB"),
         (1_073_741_824, "1024.0 GB"),
     ])
-    func human(kilobytes: Int64, expected: String) {
+    func `sizes use binary multiples with decimal labels`(kilobytes: Int64, expected: String) {
         #expect(Report.human(kilobytes: kilobytes) == expected)
     }
 
-    @Test("An item row pads by bytes, like printf under LC_ALL=C")
-    func row() {
+    @Test
+    func `an item row pads by bytes, like printf under LC_ALL=C`() {
         let result = ItemResult(item: .swiftpmBuilds, paths: ["/a", "/b"], kilobytes: 8, location: ".build next to a Package.swift, in project folders")
         #expect(Report.row(result) == """
               swiftpm-builds   SwiftPM .build folders (2)                   8 KB
@@ -29,8 +29,8 @@ struct ReportFormatTests {
             """)
     }
 
-    @Test("An empty item shows none and no count")
-    func emptyRow() {
+    @Test
+    func `an empty item shows none and no count`() {
         let result = ItemResult(item: .toolCaches, paths: [], kilobytes: 0, location: "where")
         #expect(Report.row(result, style: .terminal) == """
               tool-caches      Tool caches                                  none
@@ -39,8 +39,8 @@ struct ReportFormatTests {
             """)
     }
 
-    @Test("The DerivedData breakdown matches the script's columns")
-    func derivedData() {
+    @Test
+    func `the DerivedData breakdown matches the script's columns`() {
         let projects = (1...7).map { n in
             DerivedDataProject(name: "P\(n)/P\(n)", status: .built("2026-09-0\(n)"), kilobytes: Int64(80 - n), folder: "/dd/P\(n)", workspacePath: "/w")
         } + [DerivedDataProject(name: "AVeryLongProjectFolderName/App", status: .gone, kilobytes: 1, folder: "/dd/L", workspacePath: "/w")]
@@ -63,8 +63,8 @@ struct ReportFormatTests {
             """)
     }
 
-    @Test("Six projects end with one more project")
-    func sixProjects() {
+    @Test
+    func `six projects end with one more project`() {
         let projects = (1...6).map {
             DerivedDataProject(name: "P\($0)/P\($0)", status: .gone, kilobytes: 8, folder: "/\($0)", workspacePath: "/w")
         }
@@ -74,16 +74,16 @@ struct ReportFormatTests {
         #expect(!text.contains("Other"))
     }
 
-    @Test("Long project names are cut to 21 bytes")
-    func longNames() {
+    @Test
+    func `long project names are cut to 21 bytes`() {
         let project = DerivedDataProject(name: "AVeryLongProjectFolderName/AnEvenLongerProjectName", status: .gone, kilobytes: 8, folder: "/", workspacePath: "/w")
         #expect(Report.derivedData(DerivedDataBreakdown(projects: [project])).hasPrefix(
             "                     AVeryLongProjectFolde project gone         8 KB\n"
         ))
     }
 
-    @Test("The summary prints Total and Free space now")
-    func summary() {
+    @Test
+    func `the summary prints Total and Free space now`() {
         #expect(Report.summary(totalKilobytes: nil, freeKilobytes: 30_000_000) == """
               ------------------------------------------------------------------
               Total                                                         none
@@ -94,7 +94,7 @@ struct ReportFormatTests {
         #expect(Report.summary(totalKilobytes: 3_077_864, freeKilobytes: 1).contains("Total                                                       2.9 GB\n"))
     }
 
-    @Test("Project folder lines", arguments: [
+    @Test(arguments: [
         (ProjectFolders(found: ["~/Workspace"]), "Project folders: ~/Workspace\n\n"),
         (ProjectFolders(found: ["~/A", "~/B"], missing: ["~/C"]), "Project folders: ~/A, ~/B (not found: ~/C)\n\n"),
         (ProjectFolders(found: ["~/A"], outside: ["~/Code"]), "Project folders: ~/A (outside your home folder, skipped: ~/Code)\n\n"),
@@ -103,12 +103,12 @@ struct ReportFormatTests {
         (ProjectFolders(missing: ["~/Nope"]), "Project folders: none found (looked for ~/Nope).\nUse --projects or DEVCLEAN_PROJECT_DIRS to say where your code lives.\n\n"),
         (ProjectFolders(outside: ["~/Code"]), "Project folders: none found (outside your home folder, skipped: ~/Code).\nUse --projects or DEVCLEAN_PROJECT_DIRS to say where your code lives.\n\n"),
     ])
-    func projectFolders(folders: ProjectFolders, expected: String) {
+    func `project folder lines`(folders: ProjectFolders, expected: String) {
         #expect(Report.projectFolders(folders) == expected)
     }
 
-    @Test("The extras section lists Xcodes and runtimes with their notes")
-    func extras() throws {
+    @Test
+    func `the extras section lists Xcodes and runtimes with their notes`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         let extras = Extras(
@@ -144,8 +144,8 @@ struct ReportFormatTests {
             """)
     }
 
-    @Test("Empty extras say None found")
-    func emptyExtras() throws {
+    @Test
+    func `empty extras say None found`() throws {
         let home = FakeHome()
         let text = Report.extras(Extras(), staleDays: 90, policy: try PathPolicy(home: home.home))
         #expect(text == "Also worth a look. devclean never deletes these:\n\nXcode versions\n  None found.\n\nSimulator runtimes\n  None found.\n\n")

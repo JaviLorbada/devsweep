@@ -1,0 +1,12 @@
+{
+  "RECENT-RUNTIME": {
+    "build": "24A434", "version": "27.0", "sizeBytes": 8589934592,
+    "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+    "lastUsedAt": "$TODAY"
+  },
+  "OLD-RUNTIME": {
+    "build": "21F79", "version": "17.5", "sizeBytes": 7516192768,
+    "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-17-5",
+    "lastUsedAt": "2020-01-01T00:00:00Z"
+  }
+}

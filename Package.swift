@@ -22,7 +22,7 @@ let package = Package(
             ]
         ),
         .executableTarget(name: "DevCleanApp", dependencies: ["DevCleanKit"]),
-        .testTarget(name: "DevCleanKitTests", dependencies: ["DevCleanKit"]),
+        .testTarget(name: "DevCleanKitTests", dependencies: ["DevCleanKit"], resources: [.copy("Fixtures")]),
         .testTarget(name: "DevCleanAppTests", dependencies: ["DevCleanApp", "DevCleanKit"]),
     ]
 )

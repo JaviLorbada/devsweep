@@ -28,8 +28,8 @@ func write(_ kilobytes: Int, to folder: String) {
 @MainActor
 @Suite("Remembering the last scan")
 struct ScanMemoryTests {
-    @Test("A finished scan is shown, dimmed, on the next launch until a new one replaces it")
-    func remembers() async throws {
+    @Test
+    func `A finished scan is shown, dimmed, on the next launch until a new one replaces it`() async throws {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Caches/org.swift.swiftpm")
         write(32, to: "\(home.path)/.npm/_cacache")
@@ -54,8 +54,8 @@ struct ScanMemoryTests {
         #expect(next.statusLine.hasPrefix("Scanned just now"))
     }
 
-    @Test("A scan of another home is not shown")
-    func otherHome() async throws {
+    @Test
+    func `A scan of another home is not shown`() async throws {
         let home = TemporaryHome(), other = TemporaryHome()
         write(16, to: "\(other.path)/.npm/_cacache")
         let otherModel = scanningModel(home: other)
@@ -70,8 +70,8 @@ struct ScanMemoryTests {
         #expect(model.statusLine == "Not scanned yet")
     }
 
-    @Test("While measuring, an item counts toward the totals")
-    func counting() {
+    @Test
+    func `while measuring, an item counts toward the totals`() {
         var row = AppModel.Row(item: .derivedData)
         row.state = .measuring
         row.progressBytes = 5 * 1024 * 1024

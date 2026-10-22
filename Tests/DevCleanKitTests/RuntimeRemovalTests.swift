@@ -9,8 +9,8 @@ struct RuntimeRemovalTests {
                          lastUsedDay: nil, daysSinceUsed: nil, simulatorCount: 0)
     }
 
-    @Test("Removing a runtime runs exactly the command the report shows")
-    func removes() async throws {
+    @Test
+    func `removing a runtime runs exactly the command the report shows`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.stubRuntimes()
         let engine = try engine(home, tools)
@@ -20,22 +20,22 @@ struct RuntimeRemovalTests {
         #expect(old.removalCommand == "xcrun simctl runtime delete OLD-RUNTIME")
     }
 
-    @Test("A failing simctl is reported")
-    func failure() async throws {
+    @Test
+    func `A failing simctl is reported`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.simctlDeleteSucceeds = false
         #expect(try await !engine(home, tools).removeRuntime(runtime("ABC")))
     }
 
-    @Test("Ids simctl could read as options are refused before anything runs", arguments: ["", "-h", "--all"])
-    func refusesOptions(id: String) async throws {
+    @Test(arguments: ["", "-h", "--all"])
+    func `ids simctl could read as options are refused before anything runs`(id: String) async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         #expect(try await !engine(home, tools).removeRuntime(runtime(id)))
         #expect(!tools.log.calls.contains { $0.contains("runtime delete") })
     }
 
-    @Test("Extras can be listed again without a scan, and a scan never removes runtimes")
-    func extrasAgain() async throws {
+    @Test
+    func `extras can be listed again without a scan, and a scan never removes runtimes`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         tools.stubRuntimes()
         home.makeXcode(home.path("Applications/Xcode.app"), version: "27.0", build: "27A266a")

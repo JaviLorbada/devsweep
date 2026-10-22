@@ -5,8 +5,8 @@ import Testing
 
 @Suite("Path policy")
 struct PathPolicyTests {
-    @Test("Home is resolved once, and must be an absolute folder other than /")
-    func home() throws {
+    @Test
+    func `home is resolved once, and must be an absolute folder other than /`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         #expect(policy.homeReal.hasPrefix("/private/var/") || !home.home.hasPrefix("/var/"))
@@ -20,8 +20,8 @@ struct PathPolicyTests {
         #expect(throws: PreflightError.runningAsRoot) { try PathPolicy.preflight(home: home.home, effectiveUserID: 0) }
     }
 
-    @Test("Only real folders strictly inside home pass")
-    func safePaths() throws {
+    @Test
+    func `only real folders strictly inside home pass`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         home.fill(home.path("inside"))
@@ -43,8 +43,8 @@ struct PathPolicyTests {
         #expect(policy.safePath(home.path("missing")) == nil)
     }
 
-    @Test("A sibling whose name starts with home's name is outside")
-    func prefixSibling() throws {
+    @Test
+    func `A sibling whose name starts with home's name is outside`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         home.fill(home.outside("home2/cache"))
@@ -53,8 +53,8 @@ struct PathPolicyTests {
         #expect(!policy.isStrictlyInsideHome("\(policy.homeReal)/"))
     }
 
-    @Test("A path is still safe only while it resolves to exactly itself")
-    func recheck() throws {
+    @Test
+    func `A path is still safe only while it resolves to exactly itself`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         home.fill(home.path("Library/Caches/thing"))
@@ -66,8 +66,8 @@ struct PathPolicyTests {
         #expect(!policy.stillSafe(real))
     }
 
-    @Test("~ shortens and expands against HOME as given")
-    func tilde() throws {
+    @Test
+    func `~ shortens and expands against HOME as given`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         #expect(policy.tilde(home.home) == "~")
@@ -79,8 +79,8 @@ struct PathPolicyTests {
         #expect(policy.expandTilde("/a/~") == "/a/~")
     }
 
-    @Test("Project folders are found, missing, or outside home")
-    func projectFolders() throws {
+    @Test
+    func `project folders are found, missing, or outside home`() throws {
         let home = FakeHome()
         let policy = try PathPolicy(home: home.home)
         home.mkdir(home.outside("elsewhere"))
@@ -104,8 +104,8 @@ struct GitTrackingTests {
         return (untracked, warnings)
     }
 
-    @Test("Without any .git up the tree, git is never asked")
-    func noRepository() async throws {
+    @Test
+    func `without any .git up the tree, git is never asked`() async throws {
         let home = FakeHome(), log = CallLog()
         home.fill(home.path("Workspace/App/.build"))
         let (untracked, warnings) = try await check(home.path("Workspace/App/.build"), home: home,
@@ -115,8 +115,8 @@ struct GitTrackingTests {
         #expect(log.calls.isEmpty)
     }
 
-    @Test("Git's answer decides when a .git exists, and any failure keeps the folder")
-    func repository() async throws {
+    @Test
+    func `git's answer decides when a .git exists, and any failure keeps the folder`() async throws {
         let home = FakeHome(), log = CallLog()
         home.fill(home.path("Workspace/App/.build"))
         home.mkdir(home.path("Workspace/.git"))
@@ -130,8 +130,8 @@ struct GitTrackingTests {
         #expect(log.calls.first == "git -C \(home.path("Workspace/App")) ls-files -- .build")
     }
 
-    @Test("GIT_DIR or GIT_WORK_TREE alone is enough to ask git")
-    func environment() async throws {
+    @Test
+    func `GIT_DIR or GIT_WORK_TREE alone is enough to ask git`() async throws {
         let home = FakeHome(), log = CallLog()
         home.fill(home.path("Workspace/App/.build"))
         let git = FakeGit(log: log) { _, _ in nil }
@@ -140,8 +140,8 @@ struct GitTrackingTests {
         #expect(try await check(home.path("Workspace/App/.build"), home: home, environment: ["GIT_DIR": ""], git: git).0)
     }
 
-    @Test("A missing git binary keeps the folder")
-    func missingGit() async throws {
+    @Test
+    func `A missing git binary keeps the folder`() async throws {
         let home = FakeHome()
         home.fill(home.path("Workspace/App/.build"))
         home.mkdir(home.path("Workspace/App/.git"))
@@ -154,8 +154,8 @@ struct GitTrackingTests {
 
 @Suite("Running tools")
 struct ProcessRunnerTests {
-    @Test("Tools are found through the environment's PATH and run in the C locale")
-    func foundThroughPath() async throws {
+    @Test
+    func `tools are found through the environment's PATH and run in the C locale`() async throws {
         let runner = LiveProcessRunner(environment: ["PATH": "/nonexistent:/usr/bin:/bin", "LC_ALL": "es_ES.UTF-8"])
         #expect(runner.locate("env") == "/usr/bin/env")
         #expect(runner.locate("no-such-tool-anywhere") == nil)
@@ -164,8 +164,8 @@ struct ProcessRunnerTests {
         #expect(output.text.split(separator: "\n").contains("LC_ALL=C"))
     }
 
-    @Test("A tool that isn't installed is reported, not run")
-    func missingTool() async {
+    @Test
+    func `A tool that isn't installed is reported, not run`() async {
         let runner = LiveProcessRunner(environment: ["PATH": "/nonexistent"])
         #expect(await runner.run("xcrun", []) == nil)
         #expect(!LiveSimctlClient(runner: runner).isAvailable)
@@ -189,8 +189,8 @@ struct MeasuringTests {
         return Int64(output.split(separator: "\t").first ?? "0") ?? 0
     }
 
-    @Test("Sizes match du -sk, counting hard links once and never following symlinks")
-    func matchesDu() {
+    @Test
+    func `sizes match du -sk, counting hard links once and never following symlinks`() {
         let home = FakeHome()
         let tree = home.path("tree")
         home.fill("\(tree)/a/b/c")
@@ -208,8 +208,8 @@ struct MeasuringTests {
         #expect(SizeMeasurer().measure(home.path("missing")).kilobytes == 0)
     }
 
-    @Test("Progress reports a running total that ends at the size")
-    func progress() {
+    @Test
+    func `progress reports a running total that ends at the size`() {
         let home = FakeHome()
         for n in 0..<20 { home.writeZeros(home.path("tree/f\(n)"), kilobytes: 8) }
         let totals = Mutex<[Int64]>([])
@@ -222,8 +222,8 @@ struct MeasuringTests {
         #expect(reported.last == measured.kilobytes * 1024)
     }
 
-    @Test("A folder that can't be read has an unknown size")
-    func unreadable() {
+    @Test
+    func `A folder that can't be read has an unknown size`() {
         let home = FakeHome()
         home.fill(home.path("locked"))
         chmod(home.path("locked"), 0)
@@ -233,8 +233,8 @@ struct MeasuringTests {
         #expect(measured.kilobytes == 0)
     }
 
-    @Test("Free space matches df -k")
-    func freeSpace() throws {
+    @Test
+    func `free space matches df -k`() throws {
         let home = FakeHome()
         let space = try #require(DiskSpace.of(home.home))
         #expect(space.availableKilobytes > 0)

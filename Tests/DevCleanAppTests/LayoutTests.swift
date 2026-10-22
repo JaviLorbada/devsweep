@@ -12,8 +12,8 @@ import Testing
 @MainActor
 @Suite("Window layout")
 struct LayoutTests {
-    @Test("The Xcode versions screen fits the narrowest center column")
-    func xcodesScreenWidth() {
+    @Test
+    func `the Xcode versions screen fits the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         model.screen = .xcodeVersions
@@ -21,8 +21,8 @@ struct LayoutTests {
         #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
     }
 
-    @Test("The Xcode inspector never asks the window for more height")
-    func xcodeInspectorHeight() {
+    @Test
+    func `the Xcode inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         model.screen = .xcodeVersions
@@ -32,8 +32,8 @@ struct LayoutTests {
 }
 
 extension LayoutTests {
-    @Test("The Simulator runtimes screen fits the narrowest center column")
-    func runtimesScreenWidth() {
+    @Test
+    func `the Simulator runtimes screen fits the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         model.screen = .simulatorRuntimes
@@ -41,8 +41,8 @@ extension LayoutTests {
         #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
     }
 
-    @Test("The runtime inspector never asks the window for more height")
-    func runtimeInspectorHeight() {
+    @Test
+    func `the runtime inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         model.screen = .simulatorRuntimes
@@ -53,8 +53,8 @@ extension LayoutTests {
 }
 
 extension LayoutTests {
-    @Test("The overview fits the narrowest center column")
-    func overviewWidth() {
+    @Test
+    func `the overview fits the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         model.showResults(sampleResults)
@@ -67,8 +67,8 @@ extension LayoutTests {
         #expect(footer.width <= WindowLayout.centerMinimumWidth, "the footer needs \(footer.width) points")
     }
 
-    @Test("The item inspector never asks the window for more height")
-    func itemInspectorHeight() {
+    @Test
+    func `the item inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
         model.showResults(sampleResults)
@@ -77,8 +77,8 @@ extension LayoutTests {
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
 
-    @Test("The inspector hides before the center would go below its minimum, and nothing is ever clipped")
-    func collapseOrder() {
+    @Test
+    func `the inspector hides before the center would go below its minimum, and nothing is ever clipped`() {
         let gap = WindowLayout.gap
         #expect(WindowLayout.detailWidthWithInspector >= gap + WindowLayout.centerMinimumWidth + gap + WindowLayout.inspectorWidth + gap)
         #expect(WindowLayout.inspectorHideBelow > WindowLayout.detailWidthWithInspector)
@@ -88,8 +88,8 @@ extension LayoutTests {
         #expect(WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom < 1100, "1100 points shows all three")
     }
 
-    @Test("The ring shrinks with its card, and the table drops its bar first")
-    func scaling() {
+    @Test
+    func `the ring shrinks with its card, and the table drops its bar first`() {
         #expect(RingChart.diameter(forWidth: 800) == 240)
         #expect(RingChart.diameter(forWidth: 376) < 200)
         #expect(RingChart.diameter(forWidth: 100) == 150)
@@ -99,8 +99,8 @@ extension LayoutTests {
 }
 
 extension LayoutTests {
-    @Test("The Android Studio screens fit the narrowest center column")
-    func androidScreensWidth() {
+    @Test
+    func `the Android Studio screens fit the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
         model.android = sampleAndroid
@@ -113,8 +113,8 @@ extension LayoutTests {
         }
     }
 
-    @Test("The Android inspector never asks the window for more height")
-    func androidInspectorHeight() {
+    @Test
+    func `the Android inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
         model.android = sampleAndroid

@@ -62,8 +62,8 @@ struct AndroidTests {
         return await engine.android()
     }
 
-    @Test("Lists Android Studio, the SDK's parts, emulators and Gradle's caches with sizes")
-    func listing() async throws {
+    @Test
+    func `lists Android Studio, the SDK's parts, emulators and Gradle's caches with sizes`() async throws {
         let (home, tools) = androidHome()
         let report = try await report(home, tools)
 
@@ -82,8 +82,8 @@ struct AndroidTests {
         #expect(report.systemImages.first?.kilobytes ?? 0 >= 64)
     }
 
-    @Test("Keeps out anything the path policy refuses")
-    func policy() async throws {
+    @Test
+    func `keeps out anything the path policy refuses`() async throws {
         let (home, tools) = androidHome()
         let report = try await report(home, tools)
         #expect(!report.all.contains { $0.path.contains("elsewhere") || $0.path.hasSuffix("/linked") })
@@ -91,8 +91,8 @@ struct AndroidTests {
         #expect(report.sdkEntries.allSatisfy { $0.path.hasPrefix(homeReal + "/") })
     }
 
-    @Test("Flags system images and emulators unused for the threshold, by modification date")
-    func flags() async throws {
+    @Test
+    func `flags system images and emulators unused for the threshold, by modification date`() async throws {
         let (home, tools) = androidHome()
         let report = try await report(home, tools)
         let pixel = try #require(report.emulators.first { $0.title == "Pixel 8" })
@@ -113,8 +113,8 @@ struct AndroidTests {
         #expect((report.studios + report.platforms + report.buildTools + report.gradleCaches).allSatisfy { $0.flagReason(staleDays: 0) == nil })
     }
 
-    @Test("Only a scan that asks for it lists Android Studio, so the command line never does")
-    func onlyWhenAsked() async throws {
+    @Test
+    func `only a scan that asks for it lists Android Studio, so the command line never does`() async throws {
         let (home, tools) = androidHome()
         let commandLine = try engine(home, tools)
         #expect(!commandLine.config.includeAndroid)
@@ -131,16 +131,16 @@ struct AndroidTests {
         #expect(reports == 1)
     }
 
-    @Test("An empty home lists nothing")
-    func empty() async throws {
+    @Test
+    func `an empty home lists nothing`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let report = try await report(home, tools)
         #expect(report.all.isEmpty)
         #expect(report.sdk == nil)
     }
 
-    @Test("A saved scan from before Android Studio was listed still loads")
-    func olderSavedScan() throws {
+    @Test
+    func `A saved scan from before Android Studio was listed still loads`() throws {
         let home = FakeHome()
         let store = ScanStore(url: URL(fileURLWithPath: home.path("last-scan.json")))
         let json = #"{"version":1,"date":"2026-10-21T10:00:00Z","home":"/x","results":[],"extras":null}"#

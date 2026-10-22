@@ -66,23 +66,8 @@ final class FakeTools: @unchecked Sendable {
     /// simulators, and iOS 17.5 last used in 2020 with none.
     func stubRuntimes(now: Date = Date()) {
         let today = ISO8601DateFormatter().string(from: now)
-        runtimesJSON = Data("""
-            {
-              "RECENT-RUNTIME": {
-                "build": "24A434", "version": "27.0", "sizeBytes": 8589934592,
-                "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
-                "lastUsedAt": "\(today)"
-              },
-              "OLD-RUNTIME": {
-                "build": "21F79", "version": "17.5", "sizeBytes": 7516192768,
-                "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-17-5",
-                "lastUsedAt": "2020-01-01T00:00:00Z"
-              }
-            }
-            """.utf8)
-        devicesJSON = Data("""
-            { "devices": { "com.apple.CoreSimulator.SimRuntime.iOS-27-0": [ { "name": "iPhone" }, { "name": "iPad" } ] } }
-            """.utf8)
+        runtimesJSON = Data(fixture("simctl-runtimes.json").replacingOccurrences(of: "$TODAY", with: today).utf8)
+        devicesJSON = Data(fixture("simctl-devices.json").utf8)
     }
 }
 
@@ -302,4 +287,10 @@ extension String {
         }
         return true
     }
+}
+
+/// A file from the test target's Fixtures folder, a package resource.
+func fixture(_ name: String) -> String {
+    let url = Bundle.module.url(forResource: name, withExtension: nil, subdirectory: "Fixtures")!
+    return try! String(contentsOf: url, encoding: .utf8)
 }

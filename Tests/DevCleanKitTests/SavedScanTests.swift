@@ -25,8 +25,8 @@ struct SavedScanTests {
         )
     }
 
-    @Test("A saved scan comes back as it was, for the same home")
-    func roundTrip() throws {
+    @Test
+    func `A saved scan comes back as it was, for the same home`() throws {
         let home = FakeHome()
         let store = ScanStore.standard(home: home.home)
         #expect(store.url.path(percentEncoded: false).hasSuffix("/Library/Application Support/DevClean/last-scan.json"))
@@ -35,8 +35,8 @@ struct SavedScanTests {
         #expect(store.load(home: home.home) == sample(home: home.home))
     }
 
-    @Test("A scan of another folder, another version or a broken file is ignored")
-    func ignored() throws {
+    @Test
+    func `A scan of another folder, another version or a broken file is ignored`() throws {
         let home = FakeHome()
         let store = ScanStore.standard(home: home.home)
         try store.save(sample(home: "/somewhere/else"))
