@@ -149,8 +149,11 @@ struct ContentView: View {
                     wantsInspector.toggle()
                 }
             }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.capsule)
             .help("Show or hide the inspector")
         }
+        .sharedBackgroundVisibility(.hidden)
     }
 }
 

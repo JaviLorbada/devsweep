@@ -10,7 +10,8 @@ import SwiftUI
 ///   unattended runs skip it.
 /// - `DEVCLEAN_WINDOW_WIDTH=900` resizes the window once it is up.
 /// - `DEVCLEAN_SCREEN=xcodes|runtimes|overview` switches screens once the scan
-///   and the extras are done, the way a click in the sidebar does.
+///   and the extras are done, the way a click in the sidebar does; `scanning`
+///   instead winds the finished scan back to look half done.
 /// - `DEVCLEAN_THEN_WIDTHS=900,1400` then resizes to each width in turn.
 /// - `DEVCLEAN_PROBE=/path/report.txt` then waits a few seconds, writes
 ///   whether the content fits the window (split views, columns, scroll views,
@@ -65,6 +66,7 @@ enum DebugLaunch {
         case "xcodes": model.screen = .xcodeVersions
         case "runtimes": model.screen = .simulatorRuntimes
         case "overview": model.screen = .overview
+        case "scanning": model.rewindScan(toMeasured: 5)
         default: break
         }
         try? await Task.sleep(for: .seconds(3))
@@ -79,6 +81,11 @@ enum DebugLaunch {
             trace("then \(Int(window.frame.width)) wide")
         }
         if let output = environment["DEVCLEAN_CAPTURE"], let window = mainWindow {
+            // Drawn as the key window, so controls don't show their inactive look.
+            NSApplication.shared.activate()
+            window.makeKeyAndOrderFront(nil)
+            try? await Task.sleep(for: .milliseconds(500))
+            trace("capturing; key window \(window.isKeyWindow), scan button enabled \(model.engine != nil)")
             trace(capture(window, to: output) ? "captured \(output)" : "capture failed")
             if environment["DEVCLEAN_PROBE"] == nil { exit(0) }
         }

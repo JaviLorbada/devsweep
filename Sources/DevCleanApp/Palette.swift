@@ -46,6 +46,8 @@ enum Palette {
 
     /// The window behind the panels, a step darker than them.
     static let backdrop = Color(light: 0xE2E2E5, dark: 0x161618)
+    /// The selected segment of a glass segmented control.
+    static let raisedSegment = Color(light: 0xFFFFFF, dark: 0x5E5E62)
     /// The rounded panels the sidebar, the center and the inspector sit in.
     static let panel = Color(light: 0xF9F9FA, dark: 0x262628)
 }

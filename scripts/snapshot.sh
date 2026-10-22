@@ -139,7 +139,7 @@ for screen in "${screens[@]}"; do
     name="$name-$WIDTH"
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
       DEVCLEAN_CAPTURE="$out/$name.png" DEVCLEAN_SCREEN="$screen" DEVCLEAN_APPEARANCE="$appearance" \
-      "$app/Contents/MacOS/DevClean" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>&1 &
+      "$app/Contents/MacOS/DevClean" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_TRASH_FOLDER="$work/trash-$name" \
       DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \

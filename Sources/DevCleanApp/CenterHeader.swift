@@ -47,33 +47,26 @@ struct CenterHeader: View {
                     .truncationMode(.tail)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Group {
-                if model.isScanning {
-                    ScanCapsule(showsText: fit.capsuleText)
-                }
-                if model.screen == .overview {
-                    // Two pickers rather than a condition inside one: a
-                    // segmented picker shows every branch it finds.
-                    if fit.pickerText {
-                        Picker("Chart", selection: $model.chartStyle) {
-                            ForEach(AppModel.ChartStyle.allCases) { Text($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .help("Show sizes as a ring or as blocks")
-                    } else {
-                        Picker("Chart", selection: $model.chartStyle) {
-                            ForEach(AppModel.ChartStyle.allCases) { Image(systemName: $0.systemImage).accessibilityLabel($0.rawValue).tag($0) }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .help("Show sizes as a ring or as blocks")
+            GlassEffectContainer(spacing: 10) {
+                HStack(spacing: 10) {
+                    if model.isScanning {
+                        // With the container's default transition, the capsule
+                        // appearing when a scan starts stayed invisible and took
+                        // no room.
+                        ScanCapsule(showsText: fit.capsuleText)
+                            .glassEffectTransition(.identity)
                     }
+                    if model.screen == .overview {
+                        ChartStylePicker(selection: $model.chartStyle, showsText: fit.pickerText)
+                    }
+                    Button(model.isScanning ? "Stop" : "Scan Again") {
+                        model.isScanning ? model.stopScan() : model.scan()
+                    }
+                    .buttonStyle(.glass)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.large)
+                    .disabled(model.engine == nil)
                 }
-                Button(model.isScanning ? "Stop" : "Scan Again") {
-                    model.isScanning ? model.stopScan() : model.scan()
-                }
-                .disabled(model.engine == nil)
             }
             .fixedSize()
         }
@@ -101,7 +94,9 @@ struct ScanCapsule: View {
                 .frame(width: 64)
                 .animation(.easeInOut(duration: 0.3), value: model.scanProgress)
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 14)
+        .frame(height: ChartStylePicker.height)
+        .glassEffect(.regular, in: .capsule)
         .help(capsuleText)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(capsuleText)
@@ -113,6 +108,62 @@ struct ScanCapsule: View {
         let measuring = model.measuringItems
         guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
         return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and \(measuring.count - 1) more"
+    }
+}
+
+/// Ring or Blocks as a glass pill with the selected segment raised, the way
+/// macOS 26 draws a segmented control in a toolbar; outside one, the system
+/// control has no glass.
+struct ChartStylePicker: View {
+    @Binding var selection: AppModel.ChartStyle
+    var showsText = true
+    @Namespace private var knob
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    static let height: CGFloat = 32
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(AppModel.ChartStyle.allCases) { style in
+                segment(style, selected: style == selection)
+            }
+        }
+        .padding(3)
+        .frame(height: Self.height)
+        .glassEffect(.regular, in: .capsule)
+        .help("Show sizes as a ring or as blocks")
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Chart")
+    }
+
+    private func segment(_ style: AppModel.ChartStyle, selected: Bool) -> some View {
+        Button {
+            withAnimation(reduceMotion ? nil : .snappy(duration: 0.25)) { selection = style }
+        } label: {
+            Group {
+                if showsText {
+                    Text(style.rawValue)
+                } else {
+                    Image(systemName: style.systemImage)
+                }
+            }
+            .font(.callout.weight(.medium))
+            .foregroundStyle(selected ? .primary : .secondary)
+            .padding(.horizontal, showsText ? 14 : 10)
+            .frame(maxHeight: .infinity)
+            .background {
+                if selected {
+                    Capsule()
+                        .fill(Palette.raisedSegment)
+                        .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
+                        .matchedGeometryEffect(id: "knob", in: knob)
+                }
+            }
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(style.rawValue)
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
 
