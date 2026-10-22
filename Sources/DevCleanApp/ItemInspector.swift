@@ -126,6 +126,7 @@ struct ItemDetails: View {
 
 /// The DerivedData breakdown: shared caches, then projects with their last build.
 struct DerivedDataParts: View {
+    @Environment(AppModel.self) private var model
     let breakdown: DerivedDataBreakdown
     let color: Color
 
@@ -135,6 +136,8 @@ struct DerivedDataParts: View {
         let status: String
         let gone: Bool
         let kilobytes: Int64
+        /// The full workspace path, for a project.
+        var path: String?
     }
 
     var parts: [Part] {
@@ -145,14 +148,13 @@ struct DerivedDataParts: View {
         if breakdown.moduleCacheKilobytes > 0 {
             parts.append(Part(id: "module", name: "Module cache, all projects", status: "", gone: false, kilobytes: breakdown.moduleCacheKilobytes))
         }
-        let shown = breakdown.projects.prefix(5)
-        for project in shown {
+        for project in breakdown.projects.prefix(5) {
             let status: String = switch project.status {
             case .built(let day): "built \(day)"
             case .gone: ""
             }
-            parts.append(Part(id: project.folder, name: Self.displayName(project, among: Array(shown)), status: status,
-                              gone: project.status == .gone, kilobytes: project.kilobytes))
+            parts.append(Part(id: project.folder, name: Self.displayName(project), status: status,
+                              gone: project.status == .gone, kilobytes: project.kilobytes, path: project.workspacePath))
         }
         let rest = breakdown.projects.dropFirst(5)
         if !rest.isEmpty {
@@ -165,17 +167,13 @@ struct DerivedDataParts: View {
         return parts.sorted { $0.kilobytes > $1.kilobytes }
     }
 
-    /// "Atlas" for "Atlas/Atlas"; "Waypoint (kite-1)" when several
-    /// projects share a name in different folders.
-    static func displayName(_ project: DerivedDataProject, among projects: [DerivedDataProject]) -> String {
-        let (folder, name) = split(project.name)
-        let shared = projects.filter { split($0.name).name == name }.count > 1
-        return shared && folder != name ? "\(name) (\(folder))" : name
-    }
-
-    private static func split(_ name: String) -> (folder: String, name: String) {
-        guard let slash = name.lastIndex(of: "/") else { return ("", name) }
-        return (String(name[..<slash]), String(name[name.index(after: slash)...]))
+    /// The folder the project lives in, "kite-1" for `.../kite-1/Waypoint.xcodeproj`:
+    /// what tells apart copies of one project, and what you see in Finder.
+    /// The project's own name when it sits at the top of the disk.
+    static func displayName(_ project: DerivedDataProject) -> String {
+        guard let slash = project.name.lastIndex(of: "/") else { return project.name }
+        let folder = project.name[..<slash]
+        return folder.isEmpty ? String(project.name[project.name.index(after: slash)...]) : String(folder)
     }
 
     var body: some View {
@@ -186,7 +184,10 @@ struct DerivedDataParts: View {
             ForEach(parts) { part in
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(part.name).lineLimit(1).truncationMode(.middle)
+                        Text(part.name)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .help(part.path.map(model.tilde) ?? "")
                         if part.gone { Badge(text: "project gone", color: .orange) }
                         Spacer(minLength: 4)
                         Text(part.status).font(.caption).foregroundStyle(.secondary).lineLimit(1)
