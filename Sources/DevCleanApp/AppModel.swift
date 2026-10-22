@@ -511,6 +511,9 @@ final class AppModel {
     }
 
     #if DEBUG
+    /// Whether the window shows its inspector, for the launch harness's report.
+    var debugInspectorShown = false
+
     /// Puts the model back to the moment `measured` items were done, for snapshots.
     func rewindScan(toMeasured measured: Int) {
         for (index, item) in scanOrder.enumerated() where index >= measured {

@@ -14,7 +14,8 @@ enum WindowLayout {
     }
 
     static let sidebar = Range(min: 200, ideal: 232, max: 300)
-    static let inspector = Range(min: 260, ideal: 300, max: 380)
+    /// The inspector is a fixed column at the right of the detail area.
+    static let inspectorWidth: CGFloat = 300
     /// The center column never gets narrower than this; screens must fit it.
     static let centerMinimumWidth: CGFloat = 460
     /// The lowest the window goes; columns must not ask for more height.
@@ -26,9 +27,13 @@ enum WindowLayout {
     /// their minimums, so nothing is ever clipped.
     static let minimumWidth = sidebar.min + centerMinimumWidth + dividers
 
-    /// Narrower than this, the inspector collapses on its own, the way Mail
-    /// and Finder do, before AppKit would have to squeeze a column. It comes
-    /// back once the window is `inspectorReturnWidth` wide again.
-    static let inspectorCollapseWidth = sidebar.min + centerMinimumWidth + inspector.min + dividers + 30
-    static let inspectorReturnWidth = inspectorCollapseWidth + 30
+    /// The detail area holds the center at its minimum and the inspector.
+    static let detailWidthWithInspector = centerMinimumWidth + inspectorWidth + 1
+    /// The inspector hides, the way Mail collapses a pane, when the detail
+    /// area gets narrower than this, before the center would have to go
+    /// below its minimum; it comes back from `inspectorShowFrom`, a little
+    /// wider, so it doesn't flicker at the edge. With the sidebar at its usual
+    /// width that is about 1000 points of window.
+    static let inspectorHideBelow = detailWidthWithInspector + 20
+    static let inspectorShowFrom = detailWidthWithInspector + 40
 }

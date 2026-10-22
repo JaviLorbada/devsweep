@@ -77,13 +77,14 @@ extension LayoutTests {
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
 
-    @Test("The inspector collapses before the columns would have to shrink below their minimums")
+    @Test("The inspector hides before the center would go below its minimum, and nothing is ever clipped")
     func collapseOrder() {
-        let threeColumns = WindowLayout.sidebar.min + WindowLayout.centerMinimumWidth + WindowLayout.inspector.min + WindowLayout.dividers
-        #expect(WindowLayout.inspectorCollapseWidth > threeColumns)
-        #expect(WindowLayout.inspectorReturnWidth > WindowLayout.inspectorCollapseWidth)
+        #expect(WindowLayout.detailWidthWithInspector >= WindowLayout.centerMinimumWidth + WindowLayout.inspectorWidth)
+        #expect(WindowLayout.inspectorHideBelow > WindowLayout.detailWidthWithInspector)
+        #expect(WindowLayout.inspectorShowFrom > WindowLayout.inspectorHideBelow)
         #expect(WindowLayout.minimumWidth == WindowLayout.sidebar.min + WindowLayout.centerMinimumWidth + WindowLayout.dividers)
         #expect(WindowLayout.minimumWidth < 900, "900 points must still show the sidebar and the center")
+        #expect(WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom < 1100, "1100 points shows all three")
     }
 
     @Test("The ring shrinks with its card, and the table drops its bar first")

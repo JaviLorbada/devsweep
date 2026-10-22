@@ -28,16 +28,28 @@ enum DebugLaunch {
         // SwiftUI animates the window to its restored size at launch; resize
         // only once that has settled, then check the new width holds.
         await waitForSteadyWidth()
-        if let width = environment["DEVCLEAN_WINDOW_WIDTH"].flatMap(Double.init), let window = mainWindow {
+        // Best launched with the frame as a defaults argument, `-"NSWindow
+        // Frame main" "x y w h screen"`: SwiftUI keeps its own record of the
+        // window's size and puts it back after a resize it didn't make.
+        if let width = environment["DEVCLEAN_WINDOW_WIDTH"].flatMap(Double.init), let window = mainWindow,
+           abs(window.frame.width - width) > 0.5 {
             var frame = window.frame
             frame.size.width = width
             window.setFrame(frame, display: true)
             await waitForSteadyWidth()
         }
         trace("window \(Int(mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
+        var lastWidth = mainWindow?.frame.width ?? 0
+        let start = Date()
         while model.isScanning || model.isLoadingExtras {
             if Task.isCancelled { trace("cancelled while waiting"); return }
-            try? await Task.sleep(for: .milliseconds(200))
+            try? await Task.sleep(for: .milliseconds(100))
+            let width = mainWindow?.frame.width ?? 0
+            if width != lastWidth {
+                trace(String(format: "at %.1fs width %.0f -> %.0f, measuring %@", Date().timeIntervalSince(start), lastWidth, width,
+                             model.measuringItems.map(\.rawValue).joined(separator: ",")))
+                lastWidth = width
+            }
         }
         trace("scan done; switching to \(environment["DEVCLEAN_SCREEN"] ?? "-")")
         switch environment["DEVCLEAN_SCREEN"] {
@@ -67,6 +79,7 @@ enum DebugLaunch {
     @MainActor
     private static func waitForSteadyWidth() async {
         var last = mainWindow?.frame.width ?? 0
+        trace("width \(Int(last)) at launch")
         var steady = 0
         for _ in 0..<60 where steady < 5 {
             try? await Task.sleep(for: .milliseconds(100))
@@ -94,7 +107,7 @@ enum DebugLaunch {
         var lines: [String] = []
         let size = content.bounds.size
         lines.append("window \(Int(window.frame.width))x\(Int(window.frame.height)) min \(Int(window.minSize.width))x\(Int(window.minSize.height))")
-        lines.append("screen \(model.screen)")
+        lines.append("screen \(model.screen), inspector \(model.debugInspectorShown ? "shown" : "hidden")")
         if let timing = model.scanTiming {
             lines.append(String(format: "scan: items measured after %.1fs, everything after %.1fs", timing.items, timing.total))
         }

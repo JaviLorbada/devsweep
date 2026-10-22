@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    /// Whether you want the inspector; it shows when the window also has room.
+    /// Whether you want the inspector; it shows when the center also has room.
     @State private var wantsInspector = true
     @State private var inspectorHasRoom = true
 
@@ -16,31 +16,43 @@ struct ContentView: View {
                     min: WindowLayout.sidebar.min, ideal: WindowLayout.sidebar.ideal, max: WindowLayout.sidebar.max
                 )
         } detail: {
-            Group {
-                switch model.screen {
-                case .overview: OverviewView()
-                case .xcodeVersions: XcodeVersionsView()
-                case .simulatorRuntimes: SimulatorRuntimesView()
+            // The inspector is a column inside the detail area, not SwiftUI's
+            // inspector: showing or hiding that one resizes the window, and with
+            // the window also resizing on its own the two fed each other until
+            // AppKit gave up mid-layout.
+            HStack(spacing: 0) {
+                Group {
+                    switch model.screen {
+                    case .overview: OverviewView()
+                    case .xcodeVersions: XcodeVersionsView()
+                    case .simulatorRuntimes: SimulatorRuntimesView()
+                    }
+                }
+                .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity)
+                if wantsInspector && inspectorHasRoom {
+                    Divider()
+                    Group {
+                        switch model.screen {
+                        case .overview: ItemInspector()
+                        case .xcodeVersions: XcodeInspector()
+                        case .simulatorRuntimes: RuntimeInspector()
+                        }
+                    }
+                    .frame(width: WindowLayout.inspectorWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(.background.secondary)
+                    .transition(.move(edge: .trailing))
                 }
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
+                updateInspectorRoom(forDetailWidth: width)
+            }
+            #if DEBUG
+            .onChange(of: wantsInspector && inspectorHasRoom, initial: true) { _, shown in model.debugInspectorShown = shown }
+            #endif
             .navigationTitle(title)
             .navigationSubtitle(model.subtitle)
             .toolbar { toolbar }
-        }
-        .inspector(isPresented: inspectorShown) {
-            Group {
-                switch model.screen {
-                case .overview: ItemInspector()
-                case .xcodeVersions: XcodeInspector()
-                case .simulatorRuntimes: RuntimeInspector()
-                }
-            }
-            .inspectorColumnWidth(
-                min: WindowLayout.inspector.min, ideal: WindowLayout.inspector.ideal, max: WindowLayout.inspector.max
-            )
-        }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
-            updateInspectorRoom(for: width)
         }
         .alert(
             pendingTitle,
@@ -88,37 +100,19 @@ struct ContentView: View {
         }
     }
 
-    /// Shown when wanted and there is room. Asking for it in a window too
-    /// narrow for three columns widens the window first.
-    private var inspectorShown: Binding<Bool> {
-        Binding {
-            wantsInspector && inspectorHasRoom
-        } set: { show in
-            if inspectorHasRoom {
-                wantsInspector = show
-            } else if show {
-                // Collapsed for room: showing it widens the window. A "false"
-                // written back while collapsed is the collapse, not you.
-                wantsInspector = true
-                WindowSizing.widen(to: WindowLayout.inspectorReturnWidth)
-            }
-        }
-    }
-
-    /// Collapses the inspector below `inspectorCollapseWidth` and brings it
-    /// back above `inspectorReturnWidth`. The change waits for the current
-    /// layout pass to end and isn't animated, so AppKit never collapses a
-    /// column in the middle of one.
-    private func updateInspectorRoom(for width: CGFloat) {
+    /// Hides the inspector when the detail area can't hold the center at its
+    /// minimum next to it, the way Mail collapses a pane, and brings it back
+    /// with some room to spare. The detail area's width doesn't depend on
+    /// whether the inspector shows, so this can't feed back on itself, and
+    /// it is set right away: no AppKit column collapses.
+    private func updateInspectorRoom(forDetailWidth width: CGFloat) {
         let hasRoom = inspectorHasRoom
-            ? width >= WindowLayout.inspectorCollapseWidth
-            : width >= WindowLayout.inspectorReturnWidth
+            ? width >= WindowLayout.inspectorHideBelow
+            : width >= WindowLayout.inspectorShowFrom
         guard hasRoom != inspectorHasRoom else { return }
-        Task { @MainActor in
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) { inspectorHasRoom = hasRoom }
-        }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { inspectorHasRoom = hasRoom }
     }
 
     private var pendingTitle: String {
@@ -160,7 +154,12 @@ struct ContentView: View {
         }
         ToolbarItem {
             Button("Inspector", systemImage: "sidebar.trailing") {
-                inspectorShown.wrappedValue.toggle()
+                if wantsInspector && !inspectorHasRoom {
+                    // Asked for while hidden for room: make room.
+                    WindowSizing.widen(to: WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom + 10)
+                } else {
+                    wantsInspector.toggle()
+                }
             }
             .help("Show or hide the inspector")
         }

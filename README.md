@@ -64,23 +64,31 @@ buttons, glass buttons) come out as placeholders in those images, and the
 toolbar is approximated.
 
 The real window is checked with a debug-only launch harness
-(`DebugLaunch.swift`), used on the real home in report mode: launched with
-`DEVCLEAN_WINDOW_WIDTH`, `DEVCLEAN_SCREEN` (`overview`, `xcodes`,
-`runtimes`), optionally `DEVCLEAN_THEN_WIDTHS` and `DEVCLEAN_SKIP`, and
-`DEVCLEAN_PROBE=/path`, the app sizes its window, switches screens the way
-a click in the sidebar does, and writes whether the content fits: each split
-view against the window, each column's width or collapsed state, and every
-scroll view whose content is wider than it. Read from the view hierarchy, so
-it needs no screen recording. It also records how long the scan took.
+(`DebugLaunch.swift`), used on the real home in report mode. Launched with
+the window frame as a defaults argument (`-"NSWindow Frame main" "x y w h
+screen"`), `DEVCLEAN_SCREEN` (`overview`, `xcodes`, `runtimes`), optionally
+`DEVCLEAN_SKIP`, and `DEVCLEAN_PROBE=/path`, the app opens at that size,
+scans, switches screens the way a click in the sidebar does, and writes
+whether the content fits: each split view against the window, each column,
+whether the inspector shows, and every scroll view whose content is wider
+than it. Read from the view hierarchy, so it needs no screen recording. It
+also records how long the scan took. Resizing a running window from code is
+no test of a person dragging its edge: SwiftUI keeps its own record of the
+window's size and puts it back.
 
 Window layout:
 
-- The sidebar is 200 to 300 points wide, the inspector 260 to 380, and the
-  center at least 460. The window never gets narrower than sidebar plus
-  center (670 points), so nothing is clipped.
-- Below 960 points the inspector collapses on its own, the way Mail does,
-  and comes back from 990. Asking for it in a narrower window widens the
-  window first.
+- The sidebar is 200 to 300 points wide, the inspector 300, and the center
+  at least 460. The window never gets narrower than sidebar plus center
+  (670 points), so nothing is clipped.
+- The inspector is a column inside the detail area, not SwiftUI's
+  `.inspector`, which resizes the window when it shows or hides. It hides
+  when the detail area can't hold the center at its minimum next to it (about
+  1000 points of window) and comes back with a little room to spare. The
+  inspector button in a window too narrow for it widens the window.
+- The window has a fixed ideal size. SwiftUI animates a window to its
+  content's ideal size whenever an animated change alters that size, and
+  with flexible content the window shrank or grew with scan events.
 - In a narrow center the ring scales down from 240 to 150 points, the family
   legend drops its share column, the items table drops its bar column
   first, Xcode and runtime rows drop the bar and then the date, and the

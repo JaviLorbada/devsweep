@@ -17,9 +17,12 @@ struct DevCleanApp: App {
         Window("DevClean", id: "main") {
             ContentView()
                 .environment(model)
+                // A fixed ideal size: SwiftUI animates the window to the
+                // content's ideal size whenever an animated change alters it,
+                // and with flexible content that size followed every scan event.
                 .frame(
-                    minWidth: WindowLayout.minimumWidth, maxWidth: .infinity,
-                    minHeight: WindowLayout.minimumHeight, maxHeight: .infinity
+                    minWidth: WindowLayout.minimumWidth, idealWidth: 1280, maxWidth: .infinity,
+                    minHeight: WindowLayout.minimumHeight, idealHeight: 860, maxHeight: .infinity
                 )
         }
         .defaultSize(width: 1280, height: 860)
