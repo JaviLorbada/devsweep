@@ -30,7 +30,7 @@ public struct DerivedDataScanner: Scanner {
             return ItemResult(item: item, paths: [], kilobytes: 0, location: location)
         }
         // Measured entry by entry, once, for both the total and the breakdown.
-        let (breakdown, known) = Self.breakdown(of: folder, measurer: context.measurer, progress: progress)
+        let (breakdown, known) = await Self.breakdown(of: folder, context: context, progress: progress)
         return ItemResult(
             item: item,
             paths: paths,
@@ -46,31 +46,24 @@ public struct DerivedDataScanner: Scanner {
     /// otherwise.
     static func breakdown(
         of folder: String,
-        measurer: SizeMeasurer,
+        context: ScanContext,
         progress: @escaping @Sendable (Int64) -> Void
-    ) -> (DerivedDataBreakdown, Bool) {
+    ) async -> (DerivedDataBreakdown, Bool) {
+        // The glob `* .[!.]*`: every entry except names starting with "..".
+        let names = FileSystem.childNames(folder).filter { !$0.hasPrefix("..") }
+        let measured = await context.measure(names.map { "\(folder)/\($0)" }, progress: progress)
+
         var result = DerivedDataBreakdown()
         var projects: [DerivedDataProject] = []
-        var running: Int64 = 0
-        var known = true
-
-        // The glob `* .[!.]*`: every entry except names starting with "..".
-        for name in FileSystem.childNames(folder) where !name.hasPrefix("..") {
-            if Task.isCancelled { break }
-            let entry = "\(folder)/\(name)"
-            let base = running * 1024
-            let measured = measurer.measure(entry) { progress(base + $0) }
-            let kilobytes = measured.kilobytes
-            running += kilobytes
-            known = known && measured.readable
-
+        for (name, measurement) in zip(names, measured) {
+            let kilobytes = measurement.kilobytes
             switch name {
             case "CompilationCache.noindex":
                 result.compilationCacheKilobytes += kilobytes
             case "ModuleCache.noindex":
                 result.moduleCacheKilobytes += kilobytes
             default:
-                if let project = project(at: entry, kilobytes: kilobytes) {
+                if let project = project(at: "\(folder)/\(name)", kilobytes: kilobytes) {
                     projects.append(project)
                 } else {
                     result.otherKilobytes += kilobytes
@@ -83,7 +76,7 @@ public struct DerivedDataScanner: Scanner {
             if a.kilobytes != b.kilobytes { return a.kilobytes > b.kilobytes }
             return "\(a.name)\t\(a.statusText)".utf8.lexicographicallyPrecedes("\(b.name)\t\(b.statusText)".utf8)
         }
-        return (result, known)
+        return (result, measured.allSatisfy(\.readable))
     }
 
     static func project(at entry: String, kilobytes: Int64) -> DerivedDataProject? {

@@ -59,26 +59,75 @@ screen gets a fresh fake home, the Trash is pointed at a folder inside it,
 and the stubs refuse `simctl delete` and `brew cleanup`. It never touches the
 real home folder. Grabbing the real window needs screen recording
 permission, so the debug build draws the same content views with
-`ImageRenderer` instead;
-controls that AppKit draws (checkboxes, link buttons, glass buttons) come
-out as placeholders in those images, and the toolbar is approximated.
+`ImageRenderer` instead; controls that AppKit draws (checkboxes, link
+buttons, glass buttons) come out as placeholders in those images, and the
+toolbar is approximated.
+
+The real window is checked with a debug-only launch harness
+(`DebugLaunch.swift`), used on the real home in report mode: launched with
+`DEVCLEAN_WINDOW_WIDTH`, `DEVCLEAN_SCREEN` (`overview`, `xcodes`,
+`runtimes`), optionally `DEVCLEAN_THEN_WIDTHS` and `DEVCLEAN_SKIP`, and
+`DEVCLEAN_PROBE=/path`, the app sizes its window, switches screens the way
+a click in the sidebar does, and writes whether the content fits: each split
+view against the window, each column's width or collapsed state, and every
+scroll view whose content is wider than it. Read from the view hierarchy, so
+it needs no screen recording. It also records how long the scan took.
+
+Window layout:
+
+- The sidebar is 200 to 300 points wide, the inspector 260 to 380, and the
+  center at least 460. The window never gets narrower than sidebar plus
+  center (670 points), so nothing is clipped.
+- Below 960 points the inspector collapses on its own, the way Mail does,
+  and comes back from 990. Asking for it in a narrower window widens the
+  window first.
+- In a narrow center the ring scales down from 240 to 150 points, the family
+  legend drops its share column, the items table drops its bar column
+  first, Xcode and runtime rows drop the bar and then the date, and the
+  footer shortens its Trash label. These choices are made at layout time
+  from the width offered, never kept as state: a view whose minimum follows
+  the width it last had makes SwiftUI grow the window without end.
+- Inspectors scroll. A column that isn't in a scroll view asks the window
+  for the height of its text at its narrowest, which was thousands of points.
+- The app ignores saved session state, so it always opens its window.
 
 What is in the window:
 
 - Sidebar: Overview; the five families with their color and size, which
   select the family's biggest item; Xcode versions and Simulator runtimes
   with their sizes; and a meter for the boot volume (used, reclaimable, free).
-- Toolbar: title and status line, a capsule with the item being measured
+- Toolbar: title and status line, a capsule with what is being measured
   and a thin progress bar, Ring or Blocks, Scan Again that turns into Stop.
 - Ring: Swift Charts `SectorMark` rings, families inside and their items
-  outside, two degrees or so apart, the total in the hole. Items not measured
-  yet are drawn in a faint tone at their size from the last scan (or the
-  average so far), so the ring is whole from the start and fills in. Clicking
-  a segment selects it; the others dim. To the right, a stacked family bar
+  outside, two degrees or so apart, the total in the hole. Clicking a
+  segment selects it; the others dim. To the right, a stacked family bar
   and the family legend with share and size.
 - Items: mark, color, name and family, a proportional bar, size, and the
   row's state (Waiting, a pulsing Measuring, Not measured if the scan was
   stopped). Measured items sort largest first as they arrive.
+
+Scanning:
+
+- The window scans four items at a time, the quick fixed folders first and
+  DerivedData last, with up to four folders of one item (DerivedData's
+  parts, build folders) measured at once and the Xcodes and runtimes listed
+  alongside (`ScanOptions.interactive`). Walks run on GCD threads, not the
+  few threads Swift concurrency uses for tasks. The command line keeps
+  `ScanOptions.report`, one item at a time in report order, so its output is
+  unchanged.
+- An item being measured counts up live in the ring, the hero number, the
+  sidebar and the table, from the scan's progress events, shown about ten
+  times a second.
+- The last finished scan is saved to
+  `~/Library/Application Support/DevClean/last-scan.json` (inside the home
+  folder it describes) and shown, dimmed, on the next launch with "Last
+  scanned 3 hours ago", while the new scan replaces it item by item. Nothing
+  from the last scan can be cleaned until it has been measured again. After
+  cleaning, the saved copy records the cleaned items as empty.
+- On this machine the full scan, `device-installs` aside, takes about 25
+  seconds in the window. Measured back to back on warm caches, the engine
+  scans the same 331.5 GB in 23 seconds this way against 95 seconds one
+  item at a time.
 - Inspector: family, name, size and state, where it lives with Reveal in
   Finder, what cleaning does, and for DerivedData what is inside: the
   compilation and module caches and each project with its last build, a bar

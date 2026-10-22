@@ -38,7 +38,7 @@ struct RingChart: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                         .contentTransition(.numericText())
-                    Text(model.isScanning ? "found so far" : "reclaimable")
+                    Text(model.isScanning ? (model.showsPrevious ? "updating" : "found so far") : "reclaimable")
                         .font(diameter < 200 ? .caption : .callout)
                         .foregroundStyle(.secondary)
                 }
@@ -78,10 +78,13 @@ struct RingChart: View {
         Family.allCases.map { family in
             let rows = family.items.compactMap { model.rows[$0] }
             let weight = rows.reduce(0) { $0 + model.chartWeight($1) }
-            let measured = rows.contains(where: \.wasMeasured)
+            let measured = rows.contains { $0.wasMeasured || $0.isCounting }
+            let previousOnly = model.familyShowsPrevious(family)
             let reclaimable = rows.filter { $0.isLive || $0.state == .cleaned }
             let allCleaned = !reclaimable.isEmpty && reclaimable.allSatisfy { $0.state == .cleaned }
-            let color: Color = if !measured {
+            let color: Color = if previousOnly {
+                Palette.color(family).opacity(0.25)
+            } else if !measured {
                 Palette.placeholder
             } else if allCleaned {
                 Palette.cleaned
@@ -96,6 +99,10 @@ struct RingChart: View {
 
     private func color(for row: AppModel.Row) -> Color {
         switch row.state {
+        case .measuring where row.isCounting:
+            return Palette.color(row.item).opacity(0.6)
+        case .waiting where row.showsPrevious:
+            return Palette.color(row.item).opacity(0.25)
         case .waiting, .measuring, .notMeasured:
             return Palette.placeholder
         case .cleaning, .cleaned:

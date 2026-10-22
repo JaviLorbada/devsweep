@@ -96,7 +96,7 @@ enum DebugLaunch {
         lines.append("window \(Int(window.frame.width))x\(Int(window.frame.height)) min \(Int(window.minSize.width))x\(Int(window.minSize.height))")
         lines.append("screen \(model.screen)")
         if let timing = model.scanTiming {
-            lines.append(String(format: "scan items %.1fs, extras %.1fs", timing.items, timing.extras))
+            lines.append(String(format: "scan: items measured after %.1fs, everything after %.1fs", timing.items, timing.total))
         }
         var problems = 0
         var splits: [NSSplitView] = []

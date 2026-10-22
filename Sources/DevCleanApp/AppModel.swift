@@ -37,8 +37,31 @@ final class AppModel {
         var progressBytes: Int64 = 0
         var outcome: CleanOutcome?
 
+        /// What the last scan found, shown dimmed until this scan reaches the item.
+        var previous: ItemResult?
+
         var id: Item { item }
         var kilobytes: Int64 { result?.kilobytes ?? progressBytes / 1024 }
+
+        /// The size to show now: the new size once measured, the running count
+        /// while measuring, the last scan's size before that.
+        var shownKilobytes: Int64 {
+            switch state {
+            case .measured, .cleaning, .cleaned: result?.kilobytes ?? 0
+            case .measuring: progressBytes / 1024
+            case .waiting: previous.map { $0.isEmpty ? 0 : $0.kilobytes } ?? 0
+            case .notMeasured: 0
+            }
+        }
+
+        /// Showing the last scan's size, not this scan's.
+        var showsPrevious: Bool { state == .waiting && previous != nil }
+
+        /// Being measured and already counting.
+        var isCounting: Bool { state == .measuring && progressBytes > 0 }
+
+        /// The result the inspector describes: this scan's, or the last one's.
+        var shownResult: ItemResult? { result ?? previous }
         /// Measured, with something to reclaim.
         var isLive: Bool { state == .measured && !(result?.isEmpty ?? true) }
         var sizeKnown: Bool { result?.sizeKnown ?? true }
@@ -95,18 +118,26 @@ final class AppModel {
     let engine: Engine?
     let startupError: String?
 
-    /// How long the last scan took: the items, then the extras after them.
-    private(set) var scanTiming: (items: Double, extras: Double)?
+    /// How long the last scan took, in seconds since it started: until every
+    /// item was measured, and until the extras were listed too.
+    private(set) var scanTiming: (items: Double, total: Double)?
     private var scanStarted: ContinuousClock.Instant?
-    private var itemsDone: ContinuousClock.Instant?
+    private var itemsDone: Double?
+    private var extrasDone: Double?
 
-    /// Sizes from the previous scan, so unmeasured segments keep their place.
-    private var previousKilobytes: [Item: Int64] = [:]
+    /// When the results on screen came from the last launch's scan.
+    private(set) var previousScanDate: Date?
+    /// Ticks every half minute so "3 minutes ago" stays true.
+    private(set) var now = Date()
+    private var store: ScanStore?
+    /// Progress that arrived since the screen last showed it.
+    private var pendingProgress: [Item: Int64] = [:]
+    private var progressFlush: Task<Void, Never>?
     private var marksTouched = false
     private var scanTask: Task<Void, Never>?
     private let workspaceApps: WorkspaceRunningApps
 
-    init(environment: [String: String] = ProcessInfo.processInfo.environment) {
+    init(environment: [String: String] = ProcessInfo.processInfo.environment, store: ScanStore? = nil) {
         let workspaceApps = WorkspaceRunningApps()
         self.workspaceApps = workspaceApps
         // Opened from Finder, the app gets launchd's short PATH, without
@@ -141,19 +172,59 @@ final class AppModel {
         rows = Dictionary(uniqueKeysWithValues: (engine?.items ?? []).map { ($0, Row(item: $0)) })
         scanOrder = engine?.items ?? []
         diskSpace = engine?.diskSpace()
+        self.store = store ?? engine.map { ScanStore.standard(home: $0.config.home) }
+        restorePreviousScan()
         workspaceApps.onChange = { [weak self] in
             Task { await self?.refreshRunningApps() }
         }
+        Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                guard let self else { return }
+                self.now = Date()
+            }
+        }
+    }
+
+    /// Shows the last launch's scan of this home, dimmed, until this one replaces it.
+    private func restorePreviousScan() {
+        guard let engine, let saved = store?.load(home: engine.policy.homeReal) else { return }
+        for result in saved.results {
+            rows[result.item]?.previous = result
+        }
+        extras = saved.extras
+        previousScanDate = saved.date
+    }
+
+    /// Keeps this scan's results for the next launch. Cleaned items are kept
+    /// as found nothing, since they are gone.
+    private func saveScan() {
+        guard let engine, let store else { return }
+        let results: [ItemResult] = scanOrder.compactMap { item in
+            guard let row = rows[item], var result = row.result, row.wasMeasured else { return nil }
+            if row.state == .cleaned {
+                result.paths = []
+                result.kilobytes = 0
+                result.derivedData = nil
+            }
+            return result
+        }
+        guard results.count == scanOrder.count else { return }
+        let scan = SavedScan(date: lastScan ?? Date(), home: engine.policy.homeReal, results: results, extras: extras)
+        try? store.save(scan)
     }
 
     // MARK: Scanning
 
     func scan() {
         guard let engine, !isScanning, !isCleaning else { return }
-        for (item, row) in rows where row.result != nil {
-            previousKilobytes[item] = row.kilobytes
-        }
-        rows = Dictionary(uniqueKeysWithValues: engine.items.map { ($0, Row(item: $0)) })
+        // What was on screen becomes the dimmed "last scan" until replaced.
+        rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in
+            var row = Row(item: item)
+            row.previous = rows[item]?.result ?? rows[item]?.previous
+            return (item, row)
+        })
+        if lastScan != nil { previousScanDate = lastScan }
         scanOrder = engine.items
         warnings = []
         marksTouched = false
@@ -162,13 +233,15 @@ final class AppModel {
         isLoadingExtras = engine.config.includeExtras
         scanStarted = .now
         itemsDone = nil
+        extrasDone = nil
         scanTiming = nil
 
         scanTask = Task {
             await refreshRunningApps()
-            for await event in engine.scan() {
+            for await event in engine.scan(.interactive) {
                 apply(event)
             }
+            flushProgress()
             finishScan()
         }
     }
@@ -184,29 +257,62 @@ final class AppModel {
         case .started(let item):
             withAnimation(.easeInOut(duration: 0.25)) { rows[item]?.state = .measuring }
         case .progress(let item, let bytes):
-            rows[item]?.progressBytes = bytes
+            // Several walks report thousands of times a second; the screen
+            // shows the latest count about ten times a second.
+            pendingProgress[item] = bytes
+            if progressFlush == nil {
+                progressFlush = Task {
+                    try? await Task.sleep(for: .milliseconds(100))
+                    flushProgress()
+                }
+            }
         case .warning(let message):
             warnings.append(message)
         case .finished(let result):
+            pendingProgress[result.item] = nil
             withAnimation(.easeInOut(duration: 0.4)) {
                 rows[result.item]?.result = result
                 rows[result.item]?.state = .measured
             }
         case .done:
-            itemsDone = .now
+            itemsDone = secondsSinceScanStarted
             diskSpace = engine?.diskSpace()
             lastScan = Date()
+            now = Date()
+            previousScanDate = nil
             withAnimation { isScanning = false }
             applyDefaultMarks()
             if selection == nil { selection = orderedRows.first?.item }
+            finishTiming()
         case .extras(let extras):
             withAnimation { self.extras = extras }
             isLoadingExtras = false
-            if let scanStarted, let itemsDone {
-                let seconds = { (duration: Duration) in Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18 }
-                scanTiming = (seconds(itemsDone - scanStarted), seconds(ContinuousClock.now - itemsDone))
-            }
+            extrasDone = secondsSinceScanStarted
+            finishTiming()
         }
+    }
+
+    private func flushProgress() {
+        progressFlush = nil
+        for (item, bytes) in pendingProgress where rows[item]?.state == .measuring {
+            rows[item]?.progressBytes = bytes
+        }
+        pendingProgress = [:]
+    }
+
+    private var secondsSinceScanStarted: Double? {
+        scanStarted.map { start in
+            let elapsed = ContinuousClock.now - start
+            return Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
+        }
+    }
+
+    /// Once both the items and the extras are in: the timing, and a copy of
+    /// the results for the next launch.
+    private func finishTiming() {
+        guard let itemsDone, extrasDone != nil || !(engine?.config.includeExtras ?? false) else { return }
+        scanTiming = (itemsDone, max(itemsDone, extrasDone ?? 0))
+        saveScan()
     }
 
     private func finishScan() {
@@ -266,34 +372,59 @@ final class AppModel {
 
     // MARK: Derived values
 
-    /// Measured items largest first, then the one being measured, then the rest in scan order.
+    /// Measured items largest first, then the ones being measured, then the
+    /// rest; those two by what the last scan found, so rows keep their places.
     var orderedRows: [Row] {
         let all = scanOrder.compactMap { rows[$0] }
+        let byPrevious = { (a: Row, b: Row) in (a.previous?.kilobytes ?? 0) > (b.previous?.kilobytes ?? 0) }
         let measured = all.filter(\.wasMeasured).sorted { $0.kilobytes > $1.kilobytes }
-        return measured + all.filter { $0.state == .measuring } + all.filter { $0.state == .waiting || $0.state == .notMeasured }
+        return measured + all.filter { $0.state == .measuring }.sorted(by: byPrevious)
+            + all.filter { $0.state == .waiting || $0.state == .notMeasured }.sorted(by: byPrevious)
     }
 
     var liveRows: [Row] { orderedRows.filter(\.isLive) }
 
     var markedRows: [Row] { liveRows.filter { marked.contains($0.item) } }
 
-    var reclaimableKilobytes: Int64 { liveRows.reduce(0) { $0 + $1.kilobytes } }
+    /// Rows whose size counts toward the totals on screen: measured with
+    /// something to reclaim, counting up, or still showing the last scan.
+    private var countedRows: [Row] {
+        orderedRows.filter { $0.isLive || $0.isCounting || $0.showsPrevious }
+    }
+
+    /// The total on screen: this scan's sizes where it has them, the running
+    /// counts, and the last scan's sizes for what it hasn't reached yet.
+    var reclaimableKilobytes: Int64 { countedRows.reduce(0) { $0 + $1.shownKilobytes } }
 
     var markedKilobytes: Int64 { markedRows.reduce(0) { $0 + $1.kilobytes } }
 
     func kilobytes(of family: Family) -> Int64 {
-        liveRows.filter { $0.item.family == family }.reduce(0) { $0 + $1.kilobytes }
+        countedRows.filter { $0.item.family == family }.reduce(0) { $0 + $1.shownKilobytes }
     }
 
-    /// The family's size once any of its items is measured, nil before.
+    /// The family's size once anything is known about it, nil before.
     func measuredKilobytes(of family: Family) -> Int64? {
-        let measured = family.items.contains { rows[$0]?.wasMeasured ?? false }
-        return measured ? kilobytes(of: family) : nil
+        let known = family.items.contains { item in
+            guard let row = rows[item] else { return false }
+            return row.wasMeasured || row.isCounting || row.showsPrevious
+        }
+        return known ? kilobytes(of: family) : nil
     }
+
+    /// Whether everything shown for the family comes from the last scan.
+    func familyShowsPrevious(_ family: Family) -> Bool {
+        let rows = family.items.compactMap { self.rows[$0] }
+        return rows.contains(where: \.showsPrevious) && !rows.contains { $0.wasMeasured || $0.isCounting }
+    }
+
+    /// Whether the totals still lean on the last scan.
+    var showsPrevious: Bool { scanOrder.contains { rows[$0]?.showsPrevious ?? false } }
 
     var measuredCount: Int { scanOrder.filter { rows[$0]?.wasMeasured ?? false }.count }
 
-    var currentItem: Item? { scanOrder.first { rows[$0]?.state == .measuring } }
+    var measuringItems: [Item] { scanOrder.filter { rows[$0]?.state == .measuring } }
+
+    var currentItem: Item? { measuringItems.first }
 
     var scanProgress: Double {
         scanOrder.isEmpty ? 0 : Double(measuredCount) / Double(scanOrder.count)
@@ -307,8 +438,10 @@ final class AppModel {
             return Double(max(row.kilobytes, 0))
         case .notMeasured:
             return 0
+        case .measuring where row.progressBytes > 0:
+            return Double(row.progressBytes / 1024)
         case .waiting, .measuring:
-            if let previous = previousKilobytes[row.item] { return Double(max(previous, 1)) }
+            if let previous = row.previous { return Double(max(previous.kilobytes, 1)) }
             let measured = scanOrder.compactMap { rows[$0] }.filter(\.wasMeasured)
             let total = measured.reduce(0) { $0 + Double($1.kilobytes) }
             return measured.isEmpty || total == 0 ? 1 : total / Double(measured.count)
@@ -318,13 +451,19 @@ final class AppModel {
     var statusLine: String {
         if let startupError { return startupError }
         if isScanning {
-            return "Scanning \(min(measuredCount + 1, scanOrder.count)) of \(scanOrder.count) items"
+            let progress = "Scanning, \(measuredCount) of \(scanOrder.count) items measured"
+            if let previousScanDate, showsPrevious {
+                return "Last scanned \(Self.relative(previousScanDate, to: now)). \(progress)."
+            }
+            return progress
         }
-        guard lastScan != nil else { return "Not scanned yet" }
+        guard let lastScan else {
+            return previousScanDate.map { "Last scanned \(Self.relative($0, to: now))." } ?? "Not scanned yet"
+        }
         let unmeasured = scanOrder.filter { rows[$0]?.state == .notMeasured }.count
         let scanned = unmeasured > 0
             ? "Stopped after \(measuredCount) of \(scanOrder.count) items."
-            : "Scanned just now, \(scanOrder.count) items."
+            : "Scanned \(Self.relative(lastScan, to: now)), \(scanOrder.count) items."
         var line = "\(scanned) \(runningAppsSentence)"
         if trashedThisSession > 0 {
             line += " \(SizeText.of(kilobytes: trashedThisSession)) moved to Trash this session."
@@ -333,6 +472,15 @@ final class AppModel {
             line += " \(SizeText.of(kilobytes: deletedThisSession)) deleted this session."
         }
         return line
+    }
+
+    /// "just now", "3 minutes ago", "yesterday".
+    static func relative(_ date: Date, to now: Date) -> String {
+        if now.timeIntervalSince(date) < 60 { return "just now" }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        formatter.dateTimeStyle = .named
+        return formatter.localizedString(for: date, relativeTo: now)
     }
 
     var runningAppsSentence: String {
@@ -367,7 +515,7 @@ final class AppModel {
     func rewindScan(toMeasured measured: Int) {
         for (index, item) in scanOrder.enumerated() where index >= measured {
             guard var row = rows[item] else { continue }
-            previousKilobytes[item] = row.kilobytes
+            row.previous = row.result
             row.progressBytes = index == measured ? row.kilobytes * 1024 / 3 : 0
             row.state = index == measured ? .measuring : .waiting
             row.result = nil
@@ -478,6 +626,7 @@ final class AppModel {
 
         isCleaning = false
         diskSpace = engine.diskSpace()
+        saveScan()
         warnings += problems
         if !problems.isEmpty {
             notice = Notice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
@@ -496,6 +645,7 @@ final class AppModel {
             }
         }
         diskSpace = engine.diskSpace()
+        saveScan()
         if !result.failed.isEmpty {
             notice = Notice(
                 title: "Some folders couldn't be put back",

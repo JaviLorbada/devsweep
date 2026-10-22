@@ -1,7 +1,7 @@
 import Foundation
 
 /// Things the report lists but devclean never deletes.
-public struct Extras: Sendable {
+public struct Extras: Sendable, Codable, Equatable {
     public var xcodes: [InstalledXcode]
     public var runtimes: [SimulatorRuntime]
 
@@ -11,7 +11,7 @@ public struct Extras: Sendable {
     }
 }
 
-public struct InstalledXcode: Sendable, Identifiable, Equatable {
+public struct InstalledXcode: Sendable, Identifiable, Equatable, Codable {
     /// The app as found, not resolved.
     public var path: String
     public var version: String
@@ -41,7 +41,7 @@ public struct InstalledXcode: Sendable, Identifiable, Equatable {
     }
 }
 
-public struct SimulatorRuntime: Sendable, Identifiable, Equatable {
+public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
     /// The id `simctl runtime delete` takes.
     public var id: String
     public var identifier: String

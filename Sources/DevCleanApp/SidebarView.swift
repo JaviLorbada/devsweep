@@ -20,6 +20,7 @@ struct SidebarView: View {
                             Text(family.name).lineLimit(1)
                             Spacer()
                             SidebarSize(kilobytes: model.measuredKilobytes(of: family))
+                                .opacity(model.familyShowsPrevious(family) ? 0.5 : 1)
                         }
                         .contentShape(Rectangle())
                     }

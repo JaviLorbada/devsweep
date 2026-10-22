@@ -1,3 +1,5 @@
+import Synchronization
+
 /// What every scanner gets to work with.
 public struct ScanContext: Sendable {
     public let config: ScanConfig
@@ -5,6 +7,9 @@ public struct ScanContext: Sendable {
     public let tools: Tools
     let projects: ProjectSearch
     let measurer: SizeMeasurer
+    /// Folders of one item measured at the same time; 1 measures them in
+    /// order on the scanning task, as the report always has.
+    let concurrentFolders: Int
     let warn: @Sendable (String) -> Void
 
     init(
@@ -13,6 +18,7 @@ public struct ScanContext: Sendable {
         tools: Tools,
         projects: ProjectSearch,
         measurer: SizeMeasurer,
+        concurrentFolders: Int = 1,
         warn: @escaping @Sendable (String) -> Void
     ) {
         self.config = config
@@ -20,7 +26,46 @@ public struct ScanContext: Sendable {
         self.tools = tools
         self.projects = projects
         self.measurer = measurer
+        self.concurrentFolders = concurrentFolders
         self.warn = warn
+    }
+
+    /// Measures each path, reporting the running total of all of them in
+    /// bytes. The results come back in the order of `paths`.
+    func measure(_ paths: [String], progress: @escaping @Sendable (Int64) -> Void) async -> [Measurement] {
+        if concurrentFolders <= 1 || paths.count <= 1 {
+            var results: [Measurement] = []
+            var done: Int64 = 0
+            for path in paths {
+                if Task.isCancelled { break }
+                let base = done * 1024
+                let measured = measurer.measure(path) { progress(base + $0) }
+                done += measured.kilobytes
+                results.append(measured)
+            }
+            return results
+        }
+        let running = Mutex([Int64](repeating: 0, count: paths.count))
+        return await withTaskGroup(of: (Int, Measurement).self) { group in
+            var next = 0
+            func add() {
+                let index = next
+                next += 1
+                group.addTask {
+                    let measured = await measurer.measureOffPool(paths[index]) { bytes in
+                        progress(running.withLock { $0[index] = bytes; return $0.reduce(0, +) })
+                    }
+                    return (index, measured)
+                }
+            }
+            while next < min(concurrentFolders, paths.count) { add() }
+            var results = [Measurement?](repeating: nil, count: paths.count)
+            while let (index, measured) = await group.next() {
+                results[index] = measured
+                if next < paths.count, !Task.isCancelled { add() }
+            }
+            return results.compactMap { $0 }
+        }
     }
 
     var home: String { config.home }
@@ -46,14 +91,9 @@ public protocol Scanner: Sendable {
 extension Scanner {
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
         let paths = await collect(in: context).sortedUniqueBytewise()
-        var kilobytes: Int64 = 0
-        var known = true
-        for path in paths {
-            let base = kilobytes * 1024
-            let measured = context.measurer.measure(path) { progress(base + $0) }
-            kilobytes += measured.kilobytes
-            known = known && measured.readable
-        }
+        let measured = await context.measure(paths, progress: progress)
+        let kilobytes = measured.reduce(0) { $0 + $1.kilobytes }
+        let known = measured.allSatisfy(\.readable)
         return ItemResult(
             item: item,
             paths: paths,

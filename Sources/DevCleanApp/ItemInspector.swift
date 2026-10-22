@@ -39,7 +39,7 @@ struct ItemDetails: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if let breakdown = row.result?.derivedData, row.wasMeasured, !(row.result?.isEmpty ?? true) {
+            if let breakdown = row.shownResult?.derivedData, row.wasMeasured || row.showsPrevious, !(row.shownResult?.isEmpty ?? true) {
                 DerivedDataParts(breakdown: breakdown, color: Palette.color(item))
             }
         }
@@ -54,7 +54,7 @@ struct ItemDetails: View {
                 Dot(color: Palette.color(row.item.family))
                 Eyebrow(text: row.item.family.name)
             }
-            Text(row.result?.label ?? row.item.name)
+            Text(row.shownResult?.label ?? row.item.name)
                 .font(.title3.weight(.semibold))
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(heroSize(row))
@@ -69,10 +69,10 @@ struct ItemDetails: View {
     }
 
     private func location(_ row: AppModel.Row) -> some View {
-        let paths = row.result?.paths ?? []
+        let paths = row.shownResult?.paths ?? []
         return VStack(alignment: .leading, spacing: 5) {
             Eyebrow(text: "Where")
-            Text(row.result?.location ?? "")
+            Text(row.shownResult?.location ?? "")
                 .font(.caption.monospaced())
                 .foregroundStyle(.secondary)
                 .textSelection(.enabled)
@@ -101,7 +101,8 @@ struct ItemDetails: View {
 
     private func heroSize(_ row: AppModel.Row) -> String {
         switch row.state {
-        case .waiting, .notMeasured: "–"
+        case .waiting: row.showsPrevious ? SizeText.of(kilobytes: row.shownKilobytes) : "–"
+        case .notMeasured: "–"
         case .measuring: SizeText.of(bytes: row.progressBytes)
         case .measured: !row.sizeKnown && row.kilobytes == 0 ? "?" : SizeText.of(kilobytes: row.kilobytes)
         case .cleaning, .cleaned: SizeText.of(kilobytes: row.kilobytes)
@@ -110,7 +111,7 @@ struct ItemDetails: View {
 
     private func stateWord(_ row: AppModel.Row) -> String {
         switch row.state {
-        case .waiting: "waiting"
+        case .waiting: row.showsPrevious ? "last scan, waiting" : "waiting"
         case .measuring: "measuring"
         case .notMeasured: "not measured"
         case .cleaning: "cleaning"

@@ -173,7 +173,7 @@ struct ScanCapsule: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(model.currentItem.map { "Measuring \($0.shortName)" } ?? "Listing Xcodes and runtimes")
+            Text(capsuleText)
                 .font(.callout)
                 .lineLimit(1)
                 .frame(maxWidth: 180, alignment: .leading)
@@ -201,6 +201,15 @@ enum WindowSizing {
             if frame.maxX > visible.maxX { frame.origin.x = max(visible.minX, visible.maxX - frame.width) }
         }
         window.setFrame(frame, display: true, animate: true)
+    }
+}
+
+extension ScanCapsule {
+    /// "Measuring DerivedData", "Measuring DerivedData and 2 more".
+    var capsuleText: String {
+        let measuring = model.measuringItems
+        guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
+        return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and \(measuring.count - 1) more"
     }
 }
 

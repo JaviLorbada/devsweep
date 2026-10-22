@@ -14,7 +14,7 @@ struct BlocksChart: View {
                         .font(.system(size: 30, weight: .bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
-                    Text(model.isScanning ? "found so far" : "reclaimable")
+                    Text(model.isScanning ? (model.showsPrevious ? "updating" : "found so far") : "reclaimable")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
@@ -52,8 +52,8 @@ private struct TreemapCells: View {
     let size: CGSize
 
     var body: some View {
-        let rows = model.liveRows
-        let cells = Treemap.squarify(rows.map { (id: $0.item, weight: Double($0.kilobytes)) }, in: size)
+        let rows = model.orderedRows.filter { $0.isLive || $0.isCounting || ($0.showsPrevious && $0.shownKilobytes > 0) }
+        let cells = Treemap.squarify(rows.map { (id: $0.item, weight: Double($0.shownKilobytes)) }, in: size)
         ZStack(alignment: .topLeading) {
             if cells.isEmpty {
                 RoundedRectangle(cornerRadius: 6)
@@ -91,7 +91,7 @@ private struct TreemapCell: View {
                         .font(.callout.weight(.semibold))
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    Text(SizeText.of(kilobytes: row.kilobytes))
+                    Text(SizeText.of(kilobytes: row.shownKilobytes))
                         .font(.caption)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
@@ -102,10 +102,11 @@ private struct TreemapCell: View {
             .frame(width: max(frame.width, 0), height: max(frame.height, 0), alignment: .topLeading)
             .background(color.opacity(selected ? 0.55 : 0.3), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(selected ? color : color.opacity(0.6), lineWidth: 1))
+            .opacity(row.isLive ? 1 : 0.5)
             .contentShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
-        .help("\(row.item.name), \(SizeText.of(kilobytes: row.kilobytes))")
+        .help("\(row.item.name), \(SizeText.of(kilobytes: row.shownKilobytes))\(row.showsPrevious ? ", last scan" : "")")
         .offset(x: frame.minX, y: frame.minY)
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }

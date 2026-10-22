@@ -1,5 +1,5 @@
 /// What one item found: the folders it would delete and how much space they take.
-public struct ItemResult: Sendable, Identifiable {
+public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
     public var item: Item
     /// Resolved paths, sorted and without duplicates. Each one passed the path
     /// policy when it was listed. Empty for Homebrew, which brew cleans itself.
@@ -38,7 +38,7 @@ public struct ItemResult: Sendable, Identifiable {
 }
 
 /// What DerivedData holds: the caches every project shares, and one folder per project.
-public struct DerivedDataBreakdown: Sendable, Equatable {
+public struct DerivedDataBreakdown: Sendable, Equatable, Codable {
     public var compilationCacheKilobytes: Int64
     public var moduleCacheKilobytes: Int64
     public var otherKilobytes: Int64
@@ -63,8 +63,8 @@ public struct DerivedDataBreakdown: Sendable, Equatable {
     }
 }
 
-public struct DerivedDataProject: Sendable, Equatable, Identifiable {
-    public enum Status: Sendable, Equatable {
+public struct DerivedDataProject: Sendable, Equatable, Identifiable, Codable {
+    public enum Status: Sendable, Equatable, Codable {
         /// Last built on this day, `YYYY-MM-DD`.
         case built(String)
         /// The workspace it was built from no longer exists.

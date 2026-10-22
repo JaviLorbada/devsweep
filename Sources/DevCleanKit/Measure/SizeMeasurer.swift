@@ -1,4 +1,6 @@
 import Darwin
+import Dispatch
+import Synchronization
 
 /// What `du -sk` would print for one path, and whether every part of it could be read.
 public struct Measurement: Sendable, Equatable {
@@ -29,6 +31,26 @@ public struct SizeMeasurer: Sendable {
 
     /// Measures one path. `progress` receives the running total in bytes.
     public func measure(_ path: String, progress: ((Int64) -> Void)? = nil) -> Measurement {
+        measure(path, shouldStop: { Task.isCancelled }, progress: progress)
+    }
+
+    /// Measures one path on a GCD thread, so a long walk doesn't hold one of
+    /// the few threads Swift concurrency runs tasks on. Cancelling the calling
+    /// task stops the walk.
+    public func measureOffPool(_ path: String, progress: (@Sendable (Int64) -> Void)? = nil) async -> Measurement {
+        let stop = Mutex(false)
+        return await withTaskCancellationHandler {
+            await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    continuation.resume(returning: measure(path, shouldStop: { stop.withLock { $0 } }, progress: progress))
+                }
+            }
+        } onCancel: {
+            stop.withLock { $0 = true }
+        }
+    }
+
+    func measure(_ path: String, shouldStop: () -> Bool, progress: ((Int64) -> Void)?) -> Measurement {
         var blocks: Int64 = 0
         var seenLinks = Set<FileID>()
         var visited = 0
@@ -37,7 +59,7 @@ public struct SizeMeasurer: Sendable {
         FileTree.walk(path) { entry in
             visited += 1
             if visited.isMultiple(of: progressInterval) {
-                if Task.isCancelled { return .stop }
+                if shouldStop() { return .stop }
                 progress?((blocks + 1) / 2 * 1024)
             }
             switch entry.kind {

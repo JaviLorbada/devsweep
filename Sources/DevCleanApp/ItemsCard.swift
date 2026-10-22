@@ -24,7 +24,7 @@ struct ItemsCard: View {
     }
 
     private func table(rows: [AppModel.Row], showsBar: Bool) -> some View {
-        let largest = Double(max(rows.map(\.kilobytes).max() ?? 1, 1))
+        let largest = Double(max(rows.map(\.shownKilobytes).max() ?? 1, 1))
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
                 Text("Items").fontWeight(.semibold).layoutPriority(1)
@@ -93,15 +93,15 @@ struct ItemRow: View {
             .buttonStyle(.plain)
 
             if showsBar {
-                ThinBar(fraction: row.wasMeasured ? Double(row.kilobytes) / largest : 0,
-                        color: row.state == .cleaned ? Palette.cleaned : Palette.color(row.item))
+                ThinBar(fraction: Double(row.shownKilobytes) / largest, color: barColor)
                     .frame(width: 120)
             }
 
             Text(sizeText)
                 .font(.callout.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(row.isLive ? .primary : .secondary)
+                .foregroundStyle(row.isLive ? AnyShapeStyle(.primary) : row.showsPrevious ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+                .help(row.showsPrevious ? "From the last scan" : "")
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
                 .contentTransition(.numericText())
@@ -117,9 +117,19 @@ struct ItemRow: View {
         .animation(.easeInOut(duration: 0.4), value: row.kilobytes)
     }
 
+    private var barColor: Color {
+        switch row.state {
+        case .cleaned, .cleaning: Palette.cleaned
+        case .measuring: Palette.color(row.item).opacity(0.6)
+        case .waiting, .notMeasured: Palette.color(row.item).opacity(0.25)
+        case .measured: Palette.color(row.item)
+        }
+    }
+
     private var sizeText: String {
         switch row.state {
-        case .waiting, .notMeasured: ""
+        case .waiting: row.showsPrevious && row.shownKilobytes > 0 ? SizeText.of(kilobytes: row.shownKilobytes) : ""
+        case .notMeasured: ""
         case .measuring: row.progressBytes > 0 ? SizeText.of(bytes: row.progressBytes) : ""
         case .cleaning, .cleaned: SizeText.of(kilobytes: row.kilobytes)
         case .measured:

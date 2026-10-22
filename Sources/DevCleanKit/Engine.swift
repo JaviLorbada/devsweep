@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 /// Scans and cleans one home folder with one set of tools.
 public struct Engine: Sendable {
@@ -36,33 +37,53 @@ public struct Engine: Sendable {
         return running
     }
 
-    /// Scans every item that isn't skipped, one at a time in report order, then
-    /// the extras when asked. Cancelling the consuming task stops the scan.
-    public func scan() -> AsyncStream<ScanEvent> {
+    /// Scans every item that isn't skipped, then the extras when asked.
+    /// Cancelling the consuming task stops the scan.
+    ///
+    /// With `.report`, the default, items go one at a time in report order and
+    /// events arrive as `ScanEvent` describes. With more concurrency, several
+    /// items are `started` before others `finish`, and `extras` can arrive
+    /// before `done`.
+    public func scan(_ options: ScanOptions = .report) -> AsyncStream<ScanEvent> {
         AsyncStream { continuation in
             let task = Task {
-                await run(continuation)
+                if options.concurrentItems > 1 {
+                    await runConcurrently(continuation, options: options)
+                } else {
+                    await run(continuation, options: options)
+                }
                 continuation.finish()
             }
             continuation.onTermination = { _ in task.cancel() }
         }
     }
 
-    private func run(_ continuation: AsyncStream<ScanEvent>.Continuation) async {
+    private func makeContext(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) -> ScanContext {
         let folders = policy.projectFolders(config.projectDirectories)
         continuation.yield(.projectFolders(folders))
-
-        let context = ScanContext(
+        return ScanContext(
             config: config,
             policy: policy,
             tools: tools,
             projects: ProjectSearch(roots: folders.roots, homeReal: policy.homeReal),
             measurer: measurer,
+            concurrentFolders: options.concurrentFolders,
             warn: { continuation.yield(.warning($0)) }
         )
+    }
+
+    /// The order items run in: the options' order, without skipped items,
+    /// with anything the order leaves out at the end.
+    private func ordered(_ options: ScanOptions) -> [Item] {
+        let chosen = options.order.filter(items.contains)
+        return chosen + items.filter { !chosen.contains($0) }
+    }
+
+    private func run(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) async {
+        let context = makeContext(continuation, options: options)
 
         var totalKilobytes: Int64 = 0
-        for item in items {
+        for item in ordered(options) {
             if Task.isCancelled { return }
             continuation.yield(.started(item))
             let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
@@ -81,6 +102,61 @@ public struct Engine: Sendable {
         }
     }
 
+    private enum Job: Sendable {
+        case item(Item)
+        case extras
+    }
+
+    /// Up to `concurrentItems` jobs at a time, in the options' order, with
+    /// the extras as one more job. `done` goes out when the last item finishes.
+    private func runConcurrently(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) async {
+        let context = makeContext(continuation, options: options)
+        let order = ordered(options)
+        let jobs = order.map(Job.item) + (config.includeExtras ? [.extras] : [])
+        let progress = Mutex((finished: 0, kilobytes: Int64(0)))
+
+        await withTaskGroup(of: Void.self) { group in
+            var pending = jobs.makeIterator()
+            func perform(_ job: Job) async {
+                switch job {
+                case .extras:
+                    let extras = await ExtrasScanner.scan(in: context)
+                    if !Task.isCancelled { continuation.yield(.extras(extras)) }
+                case .item(let item):
+                    continuation.yield(.started(item))
+                    let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
+                        continuation.yield(.progress(item, bytes: bytes))
+                    }
+                    guard !Task.isCancelled else { return }
+                    continuation.yield(.finished(result))
+                    let (finished, total) = progress.withLock { state in
+                        state.finished += 1
+                        if !result.isEmpty { state.kilobytes += result.kilobytes }
+                        return (state.finished, state.kilobytes)
+                    }
+                    if finished == order.count {
+                        let free = DiskSpace.of(config.home)?.availableKilobytes ?? 0
+                        continuation.yield(.done(totalBytes: total * 1024, freeBytes: free * 1024))
+                    }
+                }
+            }
+            for _ in 0..<options.concurrentItems {
+                guard let job = pending.next() else { break }
+                group.addTask { await perform(job) }
+            }
+            while await group.next() != nil {
+                if Task.isCancelled { group.cancelAll(); continue }
+                if let job = pending.next() {
+                    group.addTask { await perform(job) }
+                }
+            }
+        }
+        if order.isEmpty {
+            let free = DiskSpace.of(config.home)?.availableKilobytes ?? 0
+            continuation.yield(.done(totalBytes: 0, freeBytes: free * 1024))
+        }
+    }
+
     /// Free space on the home folder's volume.
     public func diskSpace() -> DiskSpace? {
         DiskSpace.of(config.home)
@@ -94,6 +170,7 @@ public struct Engine: Sendable {
             tools: tools,
             projects: ProjectSearch(roots: [], homeReal: policy.homeReal),
             measurer: measurer,
+            concurrentFolders: 1,
             warn: { _ in }
         )
         return await ExtrasScanner.scan(in: context)
