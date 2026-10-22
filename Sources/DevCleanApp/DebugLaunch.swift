@@ -12,6 +12,9 @@ import SwiftUI
 /// - `DEVCLEAN_SCREEN=xcodes|runtimes|overview` switches screens once the scan
 ///   and the extras are done, the way a click in the sidebar does; `scanning`
 ///   instead winds the finished scan back to look half done.
+/// - `DEVCLEAN_SELECT=swiftpm-builds` selects an item, or a runtime by its id.
+/// - `DEVCLEAN_PRESS=label` then presses the control with that accessibility
+///   label, as VoiceOver would.
 /// - `DEVCLEAN_THEN_WIDTHS=900,1400` then resizes to each width in turn.
 /// - `DEVCLEAN_PROBE=/path/report.txt` then waits a few seconds, writes
 ///   whether the content fits the window (split views, columns, scroll views,
@@ -69,6 +72,11 @@ enum DebugLaunch {
         case "scanning": model.rewindScan(toMeasured: 5)
         default: break
         }
+        if let id = environment["DEVCLEAN_SELECT"], !id.isEmpty { model.select(snapshotID: id) }
+        if let label = environment["DEVCLEAN_PRESS"], let window = mainWindow {
+            try? await Task.sleep(for: .seconds(1))
+            trace(press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
+        }
         try? await Task.sleep(for: .seconds(3))
         // Then any further widths, one after another, as a person dragging would.
         for width in (environment["DEVCLEAN_THEN_WIDTHS"] ?? "").split(separator: ",").compactMap({ Double($0) }) {
@@ -93,6 +101,24 @@ enum DebugLaunch {
         guard let output = environment["DEVCLEAN_PROBE"] else { return }
         try? probe(model).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
+    }
+
+    /// Presses the first element labeled `label`, searching the window's
+    /// accessibility tree the way VoiceOver sees it.
+    @MainActor
+    private static func press(_ label: String, in window: NSWindow) -> Bool {
+        var queue: [Any] = [window]
+        var visited = 0
+        while !queue.isEmpty, visited < 20_000 {
+            let element = queue.removeFirst()
+            visited += 1
+            guard let element = element as? NSAccessibilityElementProtocol & NSObjectProtocol else { continue }
+            let object = element as AnyObject
+            let title = (object.accessibilityLabel?() ?? nil) ?? (object.accessibilityTitle?() ?? nil)
+            if title == label, object.accessibilityPerformPress?() == true { return true }
+            if let children = object.accessibilityChildren?() ?? nil { queue.append(contentsOf: children) }
+        }
+        return false
     }
 
     /// Draws the window as the window server composites it, glass included,
