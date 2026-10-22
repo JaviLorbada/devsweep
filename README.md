@@ -180,10 +180,11 @@ CLI and the app behave the same: the scan pauses on that item until the
 prompt is answered, and a refusal shows up as an unknown size, not an error.
 
 Colors: marks use the palette from HANDOFF section 4; chrome uses system
-materials and semantic colors, so light and dark both work. The light
-appearance moves each ramp one step darker, so the lightest steps stay
-visible on a light card. That light ramp is a proposal and has not been
-checked for color blindness the way the dark one was.
+materials and semantic colors, so light and dark both work. Both palettes
+are validated: the dark one on the dark card, the light one on a white card.
+In light mode three family hues sit below 3:1 against white, which is
+acceptable only because every segment also has a labeled legend row and a
+table row; those labels stay in both appearances.
 
 ## Layout
 
@@ -319,7 +320,6 @@ folders are searched, and `warning`, for the script's warnings.
   bar presence, preferences for project folders and the stale-runtime
   threshold (today they come from the same environment variables as the
   CLI, and 90 days), and more scanners.
-- The light palette needs the same color-blindness check the dark one had.
 - The app's own logic (prompts, marks, selection) has no automated tests;
   what it calls in the kit does. It was checked through `scripts/snapshot.sh`.
 - Put Back is offered only until the next scan.

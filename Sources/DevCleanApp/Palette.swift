@@ -5,33 +5,35 @@ import SwiftUI
 /// Chart colors. Used for marks only: dots, rings, bars and cells. Everything
 /// else uses system materials and semantic colors.
 ///
-/// Dark values are the palette validated for the dark card surface. Light
-/// values move each ramp one step darker so the lightest marks stay visible
-/// on a light card.
+/// Dark values are the palette validated on the dark card surface (#27272B),
+/// light values the one validated on a white card. In light mode three family
+/// hues sit below 3:1 against white; that is acceptable only because every
+/// segment also has a labeled legend row and a table row, so those labels
+/// must stay in both appearances.
 enum Palette {
     static func color(_ item: Item) -> Color {
         switch item {
-        case .derivedData: Color(light: 0x0E3F7A, dark: 0x1C5CAB)
+        case .derivedData: Color(light: 0x104281, dark: 0x1C5CAB)
         case .deviceSupport: Color(light: 0x1C5CAB, dark: 0x3987E5)
-        case .simulators: Color(light: 0x3987E5, dark: 0x6DA7EC)
-        case .xcodeBuilds: Color(light: 0x6DA7EC, dark: 0x9EC5F4)
-        case .deviceInstalls: Color(light: 0x9EC5F4, dark: 0xCDE2FB)
-        case .swiftpmCache: Color(light: 0xB5461A, dark: 0xD95926)
-        case .swiftpmBuilds: Color(light: 0xD95926, dark: 0xEE9A74)
-        case .homebrew: Color(light: 0x127A56, dark: 0x199E70)
-        case .npmCache: Color(light: 0x9E6800, dark: 0xC98500)
-        case .toolCaches: Color(light: 0xB03A66, dark: 0xD55181)
-        case .gradleBuilds: Color(light: 0xD55181, dark: 0xEA9DBD)
+        case .simulators: Color(light: 0x2A78D6, dark: 0x6DA7EC)
+        case .xcodeBuilds: Color(light: 0x5598E7, dark: 0x9EC5F4)
+        case .deviceInstalls: Color(light: 0x86B6EF, dark: 0xCDE2FB)
+        case .swiftpmCache: Color(light: 0xC94A1C, dark: 0xD95926)
+        case .swiftpmBuilds: Color(light: 0xEB6834, dark: 0xEE9A74)
+        case .homebrew: Color(light: 0x1BAF7A, dark: 0x199E70)
+        case .npmCache: Color(light: 0xEDA100, dark: 0xC98500)
+        case .toolCaches: Color(light: 0xC9497C, dark: 0xD55181)
+        case .gradleBuilds: Color(light: 0xE87BA4, dark: 0xEA9DBD)
         }
     }
 
     static func color(_ family: Family) -> Color {
         switch family {
-        case .xcode: Color(light: 0x1C5CAB, dark: 0x3987E5)
-        case .swiftPackages: Color(light: 0xB5461A, dark: 0xD95926)
-        case .homebrew: Color(light: 0x127A56, dark: 0x199E70)
-        case .npm: Color(light: 0x9E6800, dark: 0xC98500)
-        case .otherTools: Color(light: 0xB03A66, dark: 0xD55181)
+        case .xcode: Color(light: 0x2A78D6, dark: 0x3987E5)
+        case .swiftPackages: Color(light: 0xEB6834, dark: 0xD95926)
+        case .homebrew: Color(light: 0x1BAF7A, dark: 0x199E70)
+        case .npm: Color(light: 0xEDA100, dark: 0xC98500)
+        case .otherTools: Color(light: 0xE87BA4, dark: 0xD55181)
         }
     }
 
@@ -40,7 +42,7 @@ enum Palette {
     /// Segments already cleaned.
     static let cleaned = Color.primary.opacity(0.12)
     /// The reclaimable part of the disk meter.
-    static let reclaimable = Color(light: 0x1C5CAB, dark: 0x3987E5)
+    static let reclaimable = Color(light: 0x2A78D6, dark: 0x3987E5)
 }
 
 extension Color {
