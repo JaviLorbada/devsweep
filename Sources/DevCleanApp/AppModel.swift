@@ -123,8 +123,12 @@ final class AppModel {
     private(set) var warnings: [String] = []
     private(set) var runningApps: Set<DeveloperApp> = []
     let volumeName: String
-    let engine: Engine?
-    let startupError: String?
+    /// Rebuilt from the preferences when a scan starts.
+    private(set) var engine: Engine?
+    private(set) var startupError: String?
+    let preferences: Preferences
+    private let environment: [String: String]
+    private let tools: Tools
 
     /// How long the last scan took, in seconds since it started: until every
     /// item was measured, and until the extras were listed too.
@@ -146,15 +150,24 @@ final class AppModel {
     private var scanTask: Task<Void, Never>?
     private let workspaceApps: WorkspaceRunningApps
 
-    init(environment: [String: String] = ProcessInfo.processInfo.environment, store: ScanStore? = nil) {
+    init(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        store: ScanStore? = nil,
+        preferences: Preferences? = nil
+    ) {
+        let preferences = preferences ?? Preferences()
+        self.preferences = preferences
         let workspaceApps = WorkspaceRunningApps()
         self.workspaceApps = workspaceApps
         // Opened from Finder, the app gets launchd's short PATH, without
-        // Homebrew. Its usual places go last, so a PATH given on purpose wins.
+        // Homebrew, so Homebrew's usual places go after it. A PATH given on
+        // purpose, a terminal's or a test's, is left as it is.
         var environment = environment
-        let path = environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
-        let missing = ["/opt/homebrew/bin", "/usr/local/bin"].filter { !path.split(separator: ":").contains(Substring($0)) }
-        environment["PATH"] = ([path] + missing).joined(separator: ":")
+        let launchdPath = "/usr/bin:/bin:/usr/sbin:/sbin"
+        let path = environment["PATH"] ?? launchdPath
+        if path == launchdPath {
+            environment["PATH"] = ([path] + ["/opt/homebrew/bin", "/usr/local/bin"]).joined(separator: ":")
+        }
         var tools = Tools.live(environment: environment)
         tools.runningApps = workspaceApps
         #if DEBUG
@@ -163,20 +176,10 @@ final class AppModel {
             tools.trash = FolderTrash(folder: folder)
         }
         #endif
-        do {
-            var config = ScanConfig.fromEnvironment(environment)
-            config.includeAndroid = true
-            #if DEBUG
-            if let skip = environment["DEVCLEAN_SKIP"], let items = try? ScanConfig.parseSkip(skip) {
-                config.skipped = items
-            }
-            #endif
-            engine = try Engine(config: config, tools: tools)
-            startupError = nil
-        } catch {
-            engine = nil
-            startupError = error.description
-        }
+        self.environment = environment
+        self.tools = tools
+        moveToTrash = preferences.moveToTrash
+        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, tools: tools)
         volumeName = (try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeLocalizedNameKey]))?
             .volumeLocalizedName ?? "Macintosh HD"
         rows = Dictionary(uniqueKeysWithValues: (engine?.items ?? []).map { ($0, Row(item: $0)) })
@@ -193,6 +196,20 @@ final class AppModel {
                 guard let self else { return }
                 self.now = Date()
             }
+        }
+    }
+
+    private static func makeEngine(preferences: Preferences, environment: [String: String], tools: Tools) -> (Engine?, String?) {
+        var config = preferences.scanConfig(environment: environment)
+        #if DEBUG
+        if let skip = environment["DEVCLEAN_SKIP"], let items = try? ScanConfig.parseSkip(skip) {
+            config.skipped.formUnion(items)
+        }
+        #endif
+        do {
+            return (try Engine(config: config, tools: tools), nil)
+        } catch {
+            return (nil, error.description)
         }
     }
 
@@ -228,7 +245,10 @@ final class AppModel {
     // MARK: Scanning
 
     func scan() {
-        guard let engine, !isScanning, !isCleaning else { return }
+        guard !isScanning, !isCleaning else { return }
+        // Preferences changed since the last scan apply from this one.
+        (engine, startupError) = Self.makeEngine(preferences: preferences, environment: environment, tools: tools)
+        guard let engine else { return }
         // What was on screen becomes the dimmed "last scan" until replaced.
         rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in
             var row = Row(item: item)
@@ -697,7 +717,7 @@ final class AppModel {
     private(set) var isRemovingRuntime = false
     var runtimeRemovalError: String?
 
-    var staleDays: Int { engine?.config.staleDays ?? 90 }
+    var staleDays: Int { preferences.staleDays }
 
     /// The selected runtime, or the first flagged one, or the first.
     var currentRuntime: SimulatorRuntime? {

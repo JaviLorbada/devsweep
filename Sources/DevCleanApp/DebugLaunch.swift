@@ -22,6 +22,8 @@ import SwiftUI
 /// - `DEVCLEAN_CAPTURE=/path/window.png` then draws the window, as the screen
 ///   shows it, into that file and quits. An app may capture its own windows
 ///   without screen recording permission.
+/// - `DEVCLEAN_SETTINGS=Folders` instead opens Settings on that tab, captures
+///   it there and quits.
 /// - `DEVCLEAN_APPEARANCE=light|dark` picks the appearance.
 enum DebugLaunch {
     static var isRequested: Bool {
@@ -76,7 +78,7 @@ enum DebugLaunch {
         default: break
         }
         if let id = environment["DEVCLEAN_SELECT"], !id.isEmpty { model.select(snapshotID: id) }
-        if let label = environment["DEVCLEAN_PRESS"], let window = mainWindow {
+        if let label = environment["DEVCLEAN_PRESS"], !label.isEmpty, let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
             trace(press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
         }
@@ -90,6 +92,29 @@ enum DebugLaunch {
             await waitForSteadyWidth()
             try? await Task.sleep(for: .seconds(1))
             trace("then \(Int(window.frame.width)) wide")
+        }
+        if let tab = environment["DEVCLEAN_SETTINGS"], !tab.isEmpty, let main = mainWindow {
+            // The app menu's Settings… item, as ⌘, would choose it.
+            if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
+               let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," }) {
+                menu.performActionForItem(at: index)
+            }
+            try? await Task.sleep(for: .seconds(1))
+            if let settings = NSApplication.shared.windows.first(where: { $0.isVisible && $0 !== main }) {
+                // Settings tabs are toolbar items.
+                if let item = settings.toolbar?.items.first(where: { $0.label == tab }), let action = item.action {
+                    settings.toolbar?.selectedItemIdentifier = item.itemIdentifier
+                    NSApplication.shared.sendAction(action, to: item.target, from: item)
+                    trace("showed \(tab)")
+                } else {
+                    trace("no tab \(tab)")
+                }
+                try? await Task.sleep(for: .seconds(1))
+                if let output = environment["DEVCLEAN_CAPTURE"] {
+                    trace(capture(settings, to: output) ? "captured \(output)" : "capture failed")
+                }
+            }
+            exit(0)
         }
         if let output = environment["DEVCLEAN_CAPTURE"], let window = mainWindow {
             // Drawn as the key window, so controls don't show their inactive look.

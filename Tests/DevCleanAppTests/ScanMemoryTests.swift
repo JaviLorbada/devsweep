@@ -9,7 +9,8 @@ import Testing
 func scanningModel(home: TemporaryHome) -> AppModel {
     let tools = "\(home.root)/no-tools"
     try? FileManager.default.createDirectory(atPath: tools, withIntermediateDirectories: true)
-    return AppModel(environment: ["HOME": home.path, "PATH": tools, "DEVCLEAN_PROJECT_DIRS": ""])
+    return AppModel(environment: ["HOME": home.path, "PATH": tools, "DEVCLEAN_PROJECT_DIRS": ""],
+                    preferences: Preferences(storage: MemoryPreferenceStorage()))
 }
 
 @MainActor

@@ -39,6 +39,11 @@ struct DevCleanApp: App {
                 .disabled(model.engine == nil)
             }
         }
+
+        Settings {
+            SettingsView()
+                .environment(model)
+        }
     }
 }
 

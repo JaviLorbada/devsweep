@@ -102,7 +102,7 @@ struct ContentView: View {
             #if DEBUG
             if DebugLaunch.isRequested { FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8)) }
             #endif
-            model.scan()
+            if model.preferences.scanOnLaunch { model.scan() }
             #if DEBUG
             await Snapshotter.runIfAsked(model)
             await DebugLaunch.run(model)

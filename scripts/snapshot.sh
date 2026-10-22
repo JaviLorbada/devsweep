@@ -114,6 +114,10 @@ make_home() {
   done
 }
 
+# Today's default preferences, as launch arguments: they win over whatever
+# the Settings window saved, and nothing is written.
+defaults_args=(-scanOnLaunch YES -skippedItems "()" -staleDays 90 -moveToTrash YES -projectFolders '("~/Developer")')
+
 stubs="$work/stubs"
 mkdir -p "$stubs"
 now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -172,14 +176,14 @@ for screen in "${screens[@]}"; do
     name="$name-$WIDTH"
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
       DEVCLEAN_CAPTURE="$out/$name.png" DEVCLEAN_SCREEN="$screen" DEVCLEAN_APPEARANCE="$appearance" \
-      DEVCLEAN_SELECT="${SELECT:-$select}" DEVCLEAN_PRESS="${PRESS:-}" \
-      "$app/Contents/MacOS/DevClean" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
+      DEVCLEAN_SELECT="${SELECT:-$select}" DEVCLEAN_PRESS="${PRESS:-}" DEVCLEAN_SETTINGS="${SETTINGS:-}" \
+      "$app/Contents/MacOS/DevClean" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_TRASH_FOLDER="$work/trash-$name" \
       DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
       DEVCLEAN_SNAPSHOT="$out/$name.png" DEVCLEAN_SNAPSHOT_SCREEN="$screen" \
       DEVCLEAN_SNAPSHOT_APPEARANCE="$appearance" DEVCLEAN_SNAPSHOT_SELECT="$select" \
-      "$app/Contents/MacOS/DevClean" >/dev/null 2>&1 &
+      "$app/Contents/MacOS/DevClean" "${defaults_args[@]}" >/dev/null 2>&1 &
   fi
   pid=$!
   for _ in $(seq 1 120); do
