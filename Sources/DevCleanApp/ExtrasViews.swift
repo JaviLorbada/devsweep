@@ -85,7 +85,7 @@ private struct XcodesCard: View {
 /// A card with a title line and rows. It tells its rows which columns fit,
 /// so a narrow window drops columns instead of making the card wider than
 /// its column.
-private struct ExtrasCard<Rows: View>: View {
+struct ExtrasCard<Rows: View>: View {
     let title: String
     let note: String
     /// Rows the card holds, each 41 points with its divider.
@@ -131,7 +131,7 @@ extension EnvironmentValues {
     @Entry var extrasColumns = ExtrasColumns.compact
 }
 
-private struct EmptyExtrasRow: View {
+struct EmptyExtrasRow: View {
     let text: String
 
     var body: some View {

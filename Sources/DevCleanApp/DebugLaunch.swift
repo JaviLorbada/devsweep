@@ -9,7 +9,7 @@ import SwiftUI
 ///   The first read of the CoreDevice container waits on a macOS prompt, so
 ///   unattended runs skip it.
 /// - `DEVCLEAN_WINDOW_WIDTH=900` resizes the window once it is up.
-/// - `DEVCLEAN_SCREEN=xcodes|runtimes|overview` switches screens once the scan
+/// - `DEVCLEAN_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|overview` switches screens once the scan
 ///   and the extras are done, the way a click in the sidebar does; `scanning`
 ///   instead winds the finished scan back to look half done.
 /// - `DEVCLEAN_SELECT=swiftpm-builds` selects an item, or a runtime by its id.
@@ -69,6 +69,9 @@ enum DebugLaunch {
         case "xcodes": model.screen = .xcodeVersions
         case "runtimes": model.screen = .simulatorRuntimes
         case "overview": model.screen = .overview
+        case "android-studios": model.screen = .androidStudios
+        case "android-sdk": model.screen = .androidSDK
+        case "gradle": model.screen = .gradleCaches
         case "scanning": model.rewindScan(toMeasured: 5)
         default: break
         }

@@ -92,6 +92,8 @@ private struct SnapshotLayout: View {
                 case .xcodeVersions:
                     XcodesContent()
                     Spacer(minLength: 0)
+                case .androidStudios, .androidSDK, .gradleCaches:
+                    Spacer(minLength: 0)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -108,6 +110,7 @@ private struct SnapshotLayout: View {
                     }
                 case .simulatorRuntimes: RuntimeInspector()
                 case .xcodeVersions: XcodeInspector()
+                case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
                 }
             }
             .frame(width: 300)

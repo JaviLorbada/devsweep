@@ -11,6 +11,9 @@ final class AppModel {
         case overview
         case xcodeVersions
         case simulatorRuntimes
+        case androidStudios
+        case androidSDK
+        case gradleCaches
     }
 
     enum ChartStyle: String, CaseIterable, Identifiable {
@@ -107,10 +110,15 @@ final class AppModel {
     private(set) var scanOrder: [Item] = []
     private(set) var isScanning = false
     private(set) var isLoadingExtras = false
+    private(set) var isLoadingAndroid = false
     private(set) var lastScan: Date?
     private(set) var diskSpace: DiskSpace?
     /// Installed Xcodes and runtimes. Set by scans; tests set it directly.
     var extras: Extras?
+    /// What Android Studio keeps. Set by scans; tests set it directly.
+    var android: AndroidReport?
+    /// The Android entry selected on its screen, by path.
+    var selectedAndroidEntry: String?
     private(set) var projectFolders: ProjectFolders?
     private(set) var warnings: [String] = []
     private(set) var runningApps: Set<DeveloperApp> = []
@@ -124,6 +132,7 @@ final class AppModel {
     private var scanStarted: ContinuousClock.Instant?
     private var itemsDone: Double?
     private var extrasDone: Double?
+    private var androidDone: Double?
 
     /// When the results on screen came from the last launch's scan.
     private(set) var previousScanDate: Date?
@@ -156,6 +165,7 @@ final class AppModel {
         #endif
         do {
             var config = ScanConfig.fromEnvironment(environment)
+            config.includeAndroid = true
             #if DEBUG
             if let skip = environment["DEVCLEAN_SKIP"], let items = try? ScanConfig.parseSkip(skip) {
                 config.skipped = items
@@ -193,6 +203,7 @@ final class AppModel {
             rows[result.item]?.previous = result
         }
         extras = saved.extras
+        android = saved.android
         previousScanDate = saved.date
     }
 
@@ -210,7 +221,7 @@ final class AppModel {
             return result
         }
         guard results.count == scanOrder.count else { return }
-        let scan = SavedScan(date: lastScan ?? Date(), home: engine.policy.homeReal, results: results, extras: extras)
+        let scan = SavedScan(date: lastScan ?? Date(), home: engine.policy.homeReal, results: results, extras: extras, android: android)
         try? store.save(scan)
     }
 
@@ -231,9 +242,11 @@ final class AppModel {
         marked = []
         isScanning = true
         isLoadingExtras = engine.config.includeExtras
+        isLoadingAndroid = engine.config.includeAndroid
         scanStarted = .now
         itemsDone = nil
         extrasDone = nil
+        androidDone = nil
         scanTiming = nil
 
         scanTask = Task {
@@ -293,6 +306,11 @@ final class AppModel {
             isLoadingExtras = false
             extrasDone = secondsSinceScanStarted
             finishTiming()
+        case .android(let report):
+            withAnimation { android = report }
+            isLoadingAndroid = false
+            androidDone = secondsSinceScanStarted
+            finishTiming()
         }
     }
 
@@ -311,16 +329,19 @@ final class AppModel {
         }
     }
 
-    /// Once both the items and the extras are in: the timing, and a copy of
-    /// the results for the next launch.
+    /// Once the items, the extras and Android Studio are all in: the timing,
+    /// and a copy of the results for the next launch.
     private func finishTiming() {
-        guard let itemsDone, extrasDone != nil || !(engine?.config.includeExtras ?? false) else { return }
-        scanTiming = (itemsDone, max(itemsDone, extrasDone ?? 0))
+        guard let itemsDone,
+              extrasDone != nil || !(engine?.config.includeExtras ?? false),
+              androidDone != nil || !(engine?.config.includeAndroid ?? false) else { return }
+        scanTiming = (itemsDone, max(itemsDone, extrasDone ?? 0, androidDone ?? 0))
         saveScan()
     }
 
     private func finishScan() {
         isLoadingExtras = false
+        isLoadingAndroid = false
         guard isScanning else { return }
         // Stopped before the end: what wasn't reached stays unmeasured.
         withAnimation {
@@ -497,6 +518,13 @@ final class AppModel {
     }
 
     var xcodesKilobytes: Int64? { extras.map { $0.xcodes.reduce(0) { $0 + $1.kilobytes } } }
+    var androidStudiosKilobytes: Int64? { android.map { total($0.studios) } }
+    var androidSDKKilobytes: Int64? { android.map { total($0.sdkEntries + $0.emulators) } }
+    var gradleCachesKilobytes: Int64? { android.map { total($0.gradleCaches) } }
+
+    private func total(_ entries: [AndroidEntry]) -> Int64 {
+        entries.reduce(0) { $0 + $1.kilobytes }
+    }
     var runtimesKilobytes: Int64? { extras.map { $0.runtimes.reduce(0) { $0 + $1.kilobytes } } }
 
     func tilde(_ path: String) -> String {
@@ -679,6 +707,25 @@ final class AppModel {
             ?? runtimes.first
     }
 
+    /// What the current Android screen lists, in the order it shows them.
+    var androidEntries: [AndroidEntry] {
+        guard let android else { return [] }
+        switch screen {
+        case .androidStudios: return android.studios
+        case .androidSDK: return android.emulators + android.systemImages + android.platforms + android.buildTools + android.otherSDKParts
+        case .gradleCaches: return android.gradleCaches
+        default: return []
+        }
+    }
+
+    /// The selected Android entry on this screen, or the first flagged one, or the first.
+    var currentAndroidEntry: AndroidEntry? {
+        let entries = androidEntries
+        return entries.first { $0.path == selectedAndroidEntry }
+            ?? entries.first { $0.flagReason(staleDays: staleDays) != nil }
+            ?? entries.first
+    }
+
     var currentXcode: InstalledXcode? {
         let xcodes = extras?.xcodes ?? []
         return xcodes.first { $0.path == selectedXcode } ?? xcodes.first { $0.isSelected } ?? xcodes.first
@@ -697,6 +744,16 @@ final class AppModel {
             guard let xcodes = extras?.xcodes else { return isLoadingExtras ? "Listing Xcodes" : "" }
             let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
             return "\(SizeText.of(kilobytes: xcodesKilobytes ?? 0)) in \(count). devclean never removes these."
+        case .androidStudios:
+            guard let studios = android?.studios else { return isLoadingAndroid ? "Listing Android Studio" : "" }
+            let count = studios.count == 1 ? "1 install" : "\(studios.count) installs"
+            return "\(SizeText.of(kilobytes: androidStudiosKilobytes ?? 0)) in \(count). devclean never removes these."
+        case .androidSDK:
+            guard android != nil else { return isLoadingAndroid ? "Listing the SDK and emulators" : "" }
+            return "\(SizeText.of(kilobytes: androidSDKKilobytes ?? 0)) in the SDK and emulators. devclean never removes these."
+        case .gradleCaches:
+            guard android != nil else { return isLoadingAndroid ? "Listing Gradle's caches" : "" }
+            return "\(SizeText.of(kilobytes: gradleCachesKilobytes ?? 0)) in ~/.gradle. devclean never removes these."
         }
     }
 

@@ -11,13 +11,16 @@ public struct SavedScan: Codable, Sendable, Equatable {
     public var home: String
     public var results: [ItemResult]
     public var extras: Extras?
+    /// Absent in scans saved before the app listed Android Studio.
+    public var android: AndroidReport?
 
-    public init(date: Date, home: String, results: [ItemResult], extras: Extras?) {
+    public init(date: Date, home: String, results: [ItemResult], extras: Extras?, android: AndroidReport? = nil) {
         self.version = Self.currentVersion
         self.date = date
         self.home = home
         self.results = results
         self.extras = extras
+        self.android = android
     }
 }
 

@@ -1,7 +1,7 @@
 /// What a scan reports as it goes. Events arrive in this order:
 /// `projectFolders`, then for each item `started`, any `progress` and
 /// `warning`, and `finished`; then `done` once every item is measured, and
-/// last `extras` when the scan was asked for them.
+/// last `extras` and `android` when the scan was asked for them.
 public enum ScanEvent: Sendable {
     /// Which project folders get searched, and which were missing or outside home.
     case projectFolders(ProjectFolders)
@@ -16,6 +16,8 @@ public enum ScanEvent: Sendable {
     case done(totalBytes: Int64, freeBytes: Int64)
     /// Installed Xcodes and simulator runtimes.
     case extras(Extras)
+    /// What Android Studio keeps on disk.
+    case android(AndroidReport)
 }
 
 /// The project folders a scan searches for build folders.

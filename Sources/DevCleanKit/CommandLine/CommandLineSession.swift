@@ -66,7 +66,7 @@ public enum CommandLineSession {
                 ))
             case .extras(let extras):
                 terminal.write(Report.extras(extras, staleDays: engine.config.staleDays, policy: engine.policy, style: style))
-            case .started, .progress:
+            case .started, .progress, .android:
                 break
             }
         }

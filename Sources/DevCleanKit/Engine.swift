@@ -100,11 +100,15 @@ public struct Engine: Sendable {
         if config.includeExtras, !Task.isCancelled {
             continuation.yield(.extras(await ExtrasScanner.scan(in: context)))
         }
+        if config.includeAndroid, !Task.isCancelled {
+            continuation.yield(.android(await AndroidScanner().scan(in: context)))
+        }
     }
 
     private enum Job: Sendable {
         case item(Item)
         case extras
+        case android
     }
 
     /// Up to `concurrentItems` jobs at a time, in the options' order, with
@@ -112,7 +116,7 @@ public struct Engine: Sendable {
     private func runConcurrently(_ continuation: AsyncStream<ScanEvent>.Continuation, options: ScanOptions) async {
         let context = makeContext(continuation, options: options)
         let order = ordered(options)
-        let jobs = order.map(Job.item) + (config.includeExtras ? [.extras] : [])
+        let jobs = order.map(Job.item) + (config.includeExtras ? [.extras] : []) + (config.includeAndroid ? [.android] : [])
         let progress = Mutex((finished: 0, kilobytes: Int64(0)))
 
         await withTaskGroup(of: Void.self) { group in
@@ -122,6 +126,9 @@ public struct Engine: Sendable {
                 case .extras:
                     let extras = await ExtrasScanner.scan(in: context)
                     if !Task.isCancelled { continuation.yield(.extras(extras)) }
+                case .android:
+                    let report = await AndroidScanner().scan(in: context)
+                    if !Task.isCancelled { continuation.yield(.android(report)) }
                 case .item(let item):
                     continuation.yield(.started(item))
                     let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
@@ -164,7 +171,16 @@ public struct Engine: Sendable {
 
     /// Lists installed Xcodes and simulator runtimes again, without scanning the items.
     public func extras() async -> Extras {
-        let context = ScanContext(
+        await ExtrasScanner.scan(in: listingContext())
+    }
+
+    /// Lists what Android Studio keeps, without scanning the items.
+    public func android() async -> AndroidReport {
+        await AndroidScanner().scan(in: listingContext())
+    }
+
+    private func listingContext() -> ScanContext {
+        ScanContext(
             config: config,
             policy: policy,
             tools: tools,
@@ -173,7 +189,6 @@ public struct Engine: Sendable {
             concurrentFolders: 1,
             warn: { _ in }
         )
-        return await ExtrasScanner.scan(in: context)
     }
 
     /// Removes a simulator runtime with `xcrun simctl runtime delete <id>`,

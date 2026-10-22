@@ -27,6 +27,9 @@ struct ContentView: View {
                     case .overview: OverviewView()
                     case .xcodeVersions: XcodeVersionsView()
                     case .simulatorRuntimes: SimulatorRuntimesView()
+                    case .androidStudios: AndroidStudiosView()
+                    case .androidSDK: AndroidSDKView()
+                    case .gradleCaches: GradleCachesView()
                     }
                 }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
@@ -37,6 +40,7 @@ struct ContentView: View {
                         case .overview: ItemInspector()
                         case .xcodeVersions: XcodeInspector()
                         case .simulatorRuntimes: RuntimeInspector()
+                        case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
                         }
                     }
                     .frame(width: WindowLayout.inspectorWidth)
@@ -132,6 +136,9 @@ struct ContentView: View {
         case .overview: "Overview"
         case .xcodeVersions: "Xcode versions"
         case .simulatorRuntimes: "Simulator runtimes"
+        case .androidStudios: "Android Studio versions"
+        case .androidSDK: "SDK and emulators"
+        case .gradleCaches: "Gradle caches"
         }
     }
 
@@ -186,6 +193,24 @@ struct PanelModifier: ViewModifier {
     }
 }
 
+/// A table row's selection as macOS draws it: the whole row, edge to edge, in
+/// the selection color while the window is active and gray when it is not,
+/// with text that turns light on the color.
+struct TableRowSelection: ViewModifier {
+    @Environment(\.appearsActive) private var appearsActive
+    let selected: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.backgroundProminence, selected && appearsActive ? .increased : .standard)
+            .background {
+                if selected {
+                    Rectangle().fill(Color(nsColor: appearsActive ? .selectedContentBackgroundColor : .unemphasizedSelectedContentBackgroundColor))
+                }
+            }
+    }
+}
+
 /// A rounded panel on the window background, for charts and lists.
 struct CardModifier: ViewModifier {
     func body(content: Content) -> some View {
@@ -198,6 +223,7 @@ struct CardModifier: ViewModifier {
 extension View {
     func card() -> some View { modifier(CardModifier()) }
     func panel() -> some View { modifier(PanelModifier()) }
+    func tableRowSelection(_ selected: Bool) -> some View { modifier(TableRowSelection(selected: selected)) }
 }
 
 /// The small upper-case headings used in the inspector.

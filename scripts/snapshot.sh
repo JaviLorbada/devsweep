@@ -8,7 +8,8 @@
 #
 # Usage: scripts/snapshot.sh [output folder] [screen...]
 #   screens: overview scanning blocks runtimes xcodes remove-runtime cleaned putback,
-#            any with -light (default: overview)
+#            any with -light (default: overview); with WIDTH also
+#            android-studios android-sdk gradle
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
 #
@@ -72,6 +73,38 @@ make_home() {
   blob "$home/Library/Caches/JetBrains/Toolbox/download/blob" 1
   mkdir -p "$ws/android/app"; touch "$ws/android/app/build.gradle.kts"
   blob "$ws/android/app/build/intermediates/blob" 4
+
+  plist "$home/Applications/Android Studio.app/Contents/Info.plist" \
+    "<key>CFBundleShortVersionString</key><string>2025.2</string><key>CFBundleVersion</key><string>AI-252.25557.131</string>"
+  blob "$home/Applications/Android Studio.app/Contents/MacOS/studio" 14
+  local sdk="$home/Library/Android/sdk" img avd="$home/.android/avd"
+  for img in "android-36 google_apis_playstore arm64-v8a 18 Google_Play" "android-33 google_apis arm64-v8a 11 Google_APIs"; do
+    set -- $img
+    mkdir -p "$sdk/system-images/$1/$2/$3"
+    printf 'AndroidVersion.ApiLevel=%s\nSystemImage.TagDisplay=%s\nSystemImage.Abi=%s\n' "${1#android-}" "${5//_/ }" "$3" \
+      > "$sdk/system-images/$1/$2/$3/source.properties"
+    blob "$sdk/system-images/$1/$2/$3/system.img" "$4"
+  done
+  touch -t 202505010900 "$sdk/system-images/android-33/google_apis/arm64-v8a"
+  mkdir -p "$sdk/platforms/android-36" "$sdk/platforms/android-33"
+  printf 'Platform.Version=16\nAndroidVersion.ApiLevel=36\n' > "$sdk/platforms/android-36/source.properties"
+  printf 'Platform.Version=13\nAndroidVersion.ApiLevel=33\n' > "$sdk/platforms/android-33/source.properties"
+  blob "$sdk/platforms/android-36/android.jar" 3
+  blob "$sdk/platforms/android-33/android.jar" 2
+  blob "$sdk/build-tools/36.0.0/aapt2" 2
+  blob "$sdk/emulator/qemu" 5
+  blob "$sdk/platform-tools/adb" 1
+  mkdir -p "$avd/Pixel_9.avd" "$avd/Old_Tablet.avd"
+  printf 'avd.ini.displayname=Pixel 9\nimage.sysdir.1=system-images/android-36/google_apis_playstore/arm64-v8a/\ntarget=android-36\ntag.display=Google Play\n' \
+    > "$avd/Pixel_9.avd/config.ini"
+  blob "$avd/Pixel_9.avd/userdata-qemu.img" 6
+  printf 'avd.ini.displayname=Old Tablet\nimage.sysdir.1=system-images/android-33/google_apis/arm64-v8a/\ntarget=android-33\ntag.display=Google APIs\n' \
+    > "$avd/Old_Tablet.avd/config.ini"
+  blob "$avd/Old_Tablet.avd/userdata-qemu.img" 4
+  touch -t 202505010900 "$avd/Old_Tablet.avd/config.ini" "$avd/Old_Tablet.avd/userdata-qemu.img" "$avd/Old_Tablet.avd"
+  blob "$home/.gradle/caches/modules-2/blob" 9
+  blob "$home/.gradle/wrapper/dists/gradle-9.1.0-bin/blob" 4
+  blob "$home/.gradle/daemon/9.1.0/blob" 1
 
   for app_dir in "Xcode.app 27.1 27B48" "Xcode-26.4.app 26.4 17E192"; do
     set -- $app_dir

@@ -104,6 +104,17 @@ extension Scanner {
     }
 }
 
+/// The counterpart of `Scanner` for groups the app lists without cleaning
+/// them yet. Same contract: paths come through the path policy and are
+/// measured with the context's measurer, so a clean step can take them
+/// later. Its result is a listing rather than an item's result, and no item
+/// id stands for it, so the command line's items, `--skip` and report stay
+/// as they are.
+public protocol ListingScanner: Sendable {
+    associatedtype Listing: Sendable
+    func scan(in context: ScanContext) async -> Listing
+}
+
 public enum Scanners {
     /// One scanner per item, in report order.
     public static let all: [any Scanner] = [

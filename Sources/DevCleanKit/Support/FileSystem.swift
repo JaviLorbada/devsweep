@@ -124,6 +124,12 @@ extension String {
         return String(decoding: bytes, as: UTF8.self)
     }
 
+    /// Strips one leading occurrence of `prefix`, like `${value#prefix}`.
+    func removingPrefix(_ prefix: String) -> String {
+        guard hasBytePrefix(prefix) else { return self }
+        return String(decoding: Array(utf8.dropFirst(prefix.utf8.count)), as: UTF8.self)
+    }
+
     /// The first `count` bytes, backing off so a character is never split.
     func prefixBytes(_ count: Int) -> String {
         var result = ""

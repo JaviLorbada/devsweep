@@ -12,6 +12,9 @@ public struct ScanConfig: Sendable {
     public var staleDays: Int
     /// Whether to list installed Xcodes and simulator runtimes after the items.
     public var includeExtras: Bool
+    /// Whether to list what Android Studio keeps. Only the app asks for it;
+    /// the command line's report has no such section.
+    public var includeAndroid: Bool
     /// The environment the scan runs in. Git's `GIT_DIR` and `GIT_WORK_TREE`
     /// come from here.
     public var environment: [String: String]
@@ -23,6 +26,7 @@ public struct ScanConfig: Sendable {
         skipped: Set<Item> = [],
         staleDays: Int = 90,
         includeExtras: Bool = true,
+        includeAndroid: Bool = false,
         environment: [String: String] = [:]
     ) {
         self.home = home
@@ -31,6 +35,7 @@ public struct ScanConfig: Sendable {
         self.skipped = skipped
         self.staleDays = staleDays
         self.includeExtras = includeExtras
+        self.includeAndroid = includeAndroid
         self.environment = environment
     }
 

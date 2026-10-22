@@ -76,3 +76,23 @@ let sampleResults: [ItemResult] = Item.allCases.enumerated().map { index, item i
         derivedData: breakdown
     )
 }
+
+/// Android Studio with long names in every list, an emulator unused since 2025.
+let sampleAndroid = AndroidReport(
+    studios: [AndroidEntry(kind: .studio, path: "/Applications/Android Studio Preview With A Long Name.app",
+                           title: "Android Studio Preview With A Long Name 2025.3", detail: "AI-253.1", kilobytes: 3_500_000)],
+    sdk: "/Users/someone/Library/Android/sdk",
+    systemImages: [AndroidEntry(kind: .systemImage, path: "/Users/someone/Library/Android/sdk/system-images/android-36/google_apis_playstore/arm64-v8a",
+                                title: "API 36, Google Play Store with a long tag", detail: "arm64-v8a", kilobytes: 9_000_000,
+                                lastUsed: Date(timeIntervalSince1970: 1_740_000_000), emulatorCount: 0)],
+    platforms: [AndroidEntry(kind: .platform, path: "/Users/someone/Library/Android/sdk/platforms/android-36",
+                             title: "Android 16 (API 36)", detail: "android-36", kilobytes: 120_000)],
+    buildTools: [AndroidEntry(kind: .buildTools, path: "/Users/someone/Library/Android/sdk/build-tools/36.0.0",
+                              title: "Build tools 36.0.0", kilobytes: 150_000)],
+    otherSDKParts: [AndroidEntry(kind: .sdkPart, path: "/Users/someone/Library/Android/sdk/emulator", title: "Emulator", detail: "emulator", kilobytes: 900_000)],
+    emulators: [AndroidEntry(kind: .emulator, path: "/Users/someone/.android/avd/Pixel_10_Pro_With_A_Long_Name.avd",
+                             title: "Pixel 10 Pro With A Long Name", detail: "API 36, Google Play", kilobytes: 6_000_000,
+                             lastUsed: Date(timeIntervalSince1970: 1_740_000_000))],
+    gradleCaches: [AndroidEntry(kind: .gradleCache, path: "/Users/someone/.gradle/caches", title: "Dependency and build caches",
+                                detail: "caches", kilobytes: 4_000_000)]
+)

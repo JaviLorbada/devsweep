@@ -41,6 +41,7 @@ struct ScanTests {
             case .finished(let result): "finish \(result.item.rawValue)"
             case .done: "done"
             case .extras: "extras"
+            case .android: "android"
             }
         }.filter { $0 != "progress" }
         let expected = ["folders"] + Item.allCases.filter { $0 != .homebrew }.flatMap { ["start \($0.rawValue)", "finish \($0.rawValue)"] }

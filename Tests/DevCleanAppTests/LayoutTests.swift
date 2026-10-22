@@ -97,3 +97,31 @@ extension LayoutTests {
         #expect(ItemsCard.showsBar(forWidth: 900))
     }
 }
+
+extension LayoutTests {
+    @Test("The Android Studio screens fit the narrowest center column")
+    func androidScreensWidth() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        model.android = sampleAndroid
+        for (screen, size) in [
+            (AppModel.Screen.androidStudios, minimumSize(of: AndroidStudiosContent(), model: model)),
+            (.androidSDK, minimumSize(of: AndroidSDKContent(), model: model)),
+            (.gradleCaches, minimumSize(of: GradleCachesContent(), model: model)),
+        ] {
+            #expect(size.width <= WindowLayout.centerMinimumWidth, "\(screen) needs \(size.width) points")
+        }
+    }
+
+    @Test("The Android inspector never asks the window for more height")
+    func androidInspectorHeight() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        model.android = sampleAndroid
+        for screen in [AppModel.Screen.androidStudios, .androidSDK, .gradleCaches] {
+            model.screen = screen
+            let size = minimumSize(of: AndroidInspector(), model: model)
+            #expect(size.height <= WindowLayout.minimumHeight, "\(screen) needs \(size.height) points")
+        }
+    }
+}

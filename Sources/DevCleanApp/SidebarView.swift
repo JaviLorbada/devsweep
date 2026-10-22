@@ -3,6 +3,18 @@ import SwiftUI
 
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
+    @State private var showsXcode = true
+    @State private var showsAndroid = true
+
+    private func row(_ title: String, kilobytes: Int64?, screen: AppModel.Screen) -> some View {
+        HStack {
+            Text(title).lineLimit(1)
+            Spacer()
+            SidebarSize(kilobytes: kilobytes)
+        }
+        .tag(screen)
+        .accessibilityElement(children: .combine)
+    }
 
     var body: some View {
         @Bindable var model = model
@@ -28,19 +40,21 @@ struct SidebarView: View {
                 }
             }
 
+            // Listed, never cleaned: each tool's group under its own heading.
             Section("Also worth a look") {
-                HStack {
-                    Text("Xcode versions")
-                    Spacer()
-                    SidebarSize(kilobytes: model.xcodesKilobytes)
+                DisclosureGroup(isExpanded: $showsXcode) {
+                    row("Versions", kilobytes: model.xcodesKilobytes, screen: .xcodeVersions)
+                    row("Simulator runtimes", kilobytes: model.runtimesKilobytes, screen: .simulatorRuntimes)
+                } label: {
+                    Label("Xcode", systemImage: "hammer")
                 }
-                .tag(AppModel.Screen.xcodeVersions)
-                HStack {
-                    Text("Simulator runtimes")
-                    Spacer()
-                    SidebarSize(kilobytes: model.runtimesKilobytes)
+                DisclosureGroup(isExpanded: $showsAndroid) {
+                    row("Versions", kilobytes: model.androidStudiosKilobytes, screen: .androidStudios)
+                    row("SDK and emulators", kilobytes: model.androidSDKKilobytes, screen: .androidSDK)
+                    row("Gradle caches", kilobytes: model.gradleCachesKilobytes, screen: .gradleCaches)
+                } label: {
+                    Label("Android Studio", systemImage: "iphone.gen3")
                 }
-                .tag(AppModel.Screen.simulatorRuntimes)
             }
         }
         .listStyle(.sidebar)

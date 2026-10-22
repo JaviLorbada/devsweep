@@ -117,15 +117,7 @@ struct ItemRow: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 32)
-        // Selected the way a macOS table selects: the whole row, edge to edge,
-        // in the selection color while the window is active and gray when not,
-        // with text that turns light on the color.
-        .environment(\.backgroundProminence, emphasized ? .increased : .standard)
-        .background {
-            if selected {
-                Rectangle().fill(Color(nsColor: appearsActive ? .selectedContentBackgroundColor : .unemphasizedSelectedContentBackgroundColor))
-            }
-        }
+        .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { model.selection = row.item }
         .animation(.easeInOut(duration: 0.4), value: row.kilobytes)
