@@ -325,10 +325,9 @@ folders are searched, and `warning`, for the script's warnings.
   Homebrew cask, Sparkle. Not started; `scripts/build-app.sh` only signs ad
   hoc for local use. The bundle id is `com.javilorbada.devclean`.
 - Still undecided in HANDOFF section 6: the final app name (DevClean for
-  now), icon, a menu
-  bar presence, preferences for project folders and the stale-runtime
-  threshold (today they come from the same environment variables as the
-  CLI, and 90 days), and more scanners.
-- The app's own logic (prompts, marks, selection) has no automated tests;
-  what it calls in the kit does. It was checked through `scripts/snapshot.sh`.
+  now), icon, a menu bar presence, preferences for project folders and the
+  stale-runtime threshold (today they come from the same environment
+  variables as the CLI, and 90 days), and more scanners.
+- Dragging the window's edge was not automated: the window was checked
+  opened at each width, and a resize made from code is undone by SwiftUI.
 - Put Back is offered only until the next scan.
