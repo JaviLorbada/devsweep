@@ -33,4 +33,4 @@
 ## Pull requests
 - What changed and why, and the commands run: `make lint test acceptance`.
 - Screenshots for window changes, from `WIDTH=1280 Scripts/snapshot.sh`.
-- A line under Unreleased in `CHANGELOG.md` for anything a user would notice.
+- A line under Unreleased in `CHANGELOG.md` for anything a user would notice, and README.md kept current.
