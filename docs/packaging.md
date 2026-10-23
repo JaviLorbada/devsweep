@@ -7,11 +7,11 @@ open `Package.swift`: Xcode keeps its workspace in
 ## The app
 
 ```bash
-Scripts/package_app.sh          # release build into build/DevClean.app
+Scripts/package_app.sh          # release build into build/DevSweep.app
 Scripts/package_app.sh debug    # debug build, with the debug-only harnesses
 ```
 
-The script builds the `DevCleanApp` executable and wraps it in a bundle:
+The script builds the `DevSweepApp` executable and wraps it in a bundle:
 
 - **Info.plist** gets the bundle id, name and version from `version.env`:
   `PRODUCT_NAME`, `BUNDLE_ID`, `MARKETING_VERSION` and `BUILD_NUMBER`. Change
@@ -33,13 +33,13 @@ System Settings > Privacy & Security.
 ## The command line tool
 
 ```bash
-swift build -c release --product devclean    # .build/release/devclean
+swift build -c release --product devsweep    # .build/release/devsweep
 Scripts/install-cli.sh                       # link it into ~/.local/bin
 Scripts/install-cli.sh --uninstall           # put back what was there
 ```
 
 ## Renaming
 
-The product's names live in `version.env` and `Sources/DevCleanKit/Support/ProductInfo.swift`.
+The product's names live in `version.env` and `Sources/DevSweepKit/Support/ProductInfo.swift`.
 A new name is a change to those two files, the folder names that carry it
-(`Sources/DevCleanApp`, the test targets), and the Homebrew files in `packaging/`.
+(`Sources/DevSweepApp`, the test targets), and the Homebrew files in `packaging/`.

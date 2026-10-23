@@ -17,10 +17,14 @@ dotfiles="${1:-${DOTFILES:-}}"
 script="$dotfiles/bin/devclean"
 [[ -x "$script" ]] || { echo "compare.sh: $script not found" >&2; exit 1; }
 
-swift build --package-path "$root" --product devclean >&2
-binary="$(swift build --package-path "$root" --product devclean --show-bin-path)/devclean"
+swift build --package-path "$root" --product devsweep >&2
+built="$(swift build --package-path "$root" --product devsweep --show-bin-path)/devsweep"
 
 work="$(mktemp -d)"
+# Run under the original script's name, devsweep is that script word for word.
+mkdir -p "$work/bin"
+ln -s "$built" "$work/bin/devclean"
+binary="$work/bin/devclean"
 if [[ -n "${KEEP:-}" ]]; then
   echo "Keeping $work" >&2
 else
@@ -147,7 +151,7 @@ run_one() {
   (
     cd "$work"
     export HOME="$home" WORK="$work" STUB_LOG="$work/$label.log"
-    export DEVCLEAN_PROJECT_DIRS="$home/Workspace:$home/Missing" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications"
+    export DEVSWEEP_PROJECT_DIRS="$home/Workspace:$home/Missing" DEVSWEEP_APPLICATIONS_DIRS="$home/Applications"
     export PATH="$work/stubs:$PATH"
     set +e
     "$program" "$@" > "$work/$label.out" 2> "$work/$label.err"

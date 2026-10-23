@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Runs the bash script's own acceptance suite, test/devclean.bats from the
-# dotfiles repo, unchanged, against the Swift devclean binary.
+# dotfiles repo, unchanged, against the Swift devsweep binary, run under the
+# script's name, devclean, as which it prints exactly what the script did.
 #
 # The suite runs "${DOTFILES_DIR}/bin/devclean", where DOTFILES_DIR is the
 # parent of the folder holding test_helper.bash. So this builds the binary,
@@ -23,8 +24,8 @@ for file in test/devclean.bats test/test_helper.bash; do
 done
 command -v bats >/dev/null || { echo "bats.sh: bats is not installed (brew install bats-core)" >&2; exit 1; }
 
-swift build --package-path "$root" --product devclean >&2
-binary="$(swift build --package-path "$root" --product devclean --show-bin-path)/devclean"
+swift build --package-path "$root" --product devsweep >&2
+binary="$(swift build --package-path "$root" --product devsweep --show-bin-path)/devsweep"
 
 harness="$(mktemp -d)"
 trap 'rm -rf "$harness"' EXIT

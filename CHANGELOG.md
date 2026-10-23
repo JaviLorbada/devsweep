@@ -7,8 +7,9 @@ line under Unreleased as it lands.
 ## Unreleased
 
 ### Command line
-- `devclean`, a Swift port of the bash script with the same output byte for
-  byte, the same flags and environment variables, and the same safety rules.
+- `devsweep`, a Swift port of the bash script `devclean` with the same flags
+  and safety rules; run under the script's name it prints the same output,
+  byte for byte.
 
 ### App
 - A window that scans the home folder, charts what each cache holds as a ring

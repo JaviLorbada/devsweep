@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 #
-# Builds the release devclean and links it into ~/.local/bin as devclean, in
-# place of whatever devclean was there, usually a link to the bash script.
-# The link it replaces is remembered, and --uninstall puts it back. Only the
-# link in the bin folder changes; the bash script itself is never touched.
+# Builds the release devsweep and links it into ~/.local/bin as devsweep. If
+# something else was linked there, the link it replaces is remembered and
+# --uninstall puts it back. Only the link in the bin folder changes; the
+# original bash script, devclean, is never touched.
 #
 # Usage: Scripts/install-cli.sh             build and link
 #        Scripts/install-cli.sh --uninstall remove the link, restore the old one
 #
-# DEVCLEAN_BIN_DIR picks another folder than ~/.local/bin.
+# DEVSWEEP_BIN_DIR picks another folder than ~/.local/bin.
 
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-bin_dir="${DEVCLEAN_BIN_DIR:-$HOME/.local/bin}"
-link="$bin_dir/devclean"
+bin_dir="${DEVSWEEP_BIN_DIR:-$HOME/.local/bin}"
+link="$bin_dir/devsweep"
 # The target of the link this replaced, one line.
-replaced="$bin_dir/.devclean-replaced"
+replaced="$bin_dir/.devsweep-replaced"
 
 usage() {
   sed -n '3,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -27,9 +27,9 @@ ours() {
 }
 
 install() {
-  swift build --package-path "$root" -c release --product devclean >&2
+  swift build --package-path "$root" -c release --product devsweep >&2
   local binary
-  binary="$(swift build --package-path "$root" -c release --product devclean --show-bin-path)/devclean"
+  binary="$(swift build --package-path "$root" -c release --product devsweep --show-bin-path)/devsweep"
   [[ -x "$binary" ]] || { echo "install-cli.sh: no binary at $binary" >&2; exit 1; }
 
   mkdir -p "$bin_dir"
@@ -44,9 +44,9 @@ install() {
   [[ -f "$replaced" ]] && echo "It replaces the link to $(cat "$replaced"); --uninstall puts that back."
 
   local found
-  found="$(PATH="$PATH" command -v devclean || true)"
+  found="$(PATH="$PATH" command -v devsweep || true)"
   if [[ "$found" != "$link" ]]; then
-    echo "Note: devclean on your PATH is ${found:-not found}, not $link. Put $bin_dir first on PATH." >&2
+    echo "Note: devsweep on your PATH is ${found:-not found}, not $link. Put $bin_dir first on PATH." >&2
   fi
 }
 

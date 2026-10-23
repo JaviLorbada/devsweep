@@ -47,10 +47,10 @@ SETTINGS=Folders WIDTH=1280 Scripts/snapshot.sh build/snapshots settings
 MENU=1 WIDTH=1280 Scripts/snapshot.sh build/snapshots menu
 ```
 
-The variables (`DEVCLEAN_CAPTURE`, `DEVCLEAN_SCREEN`, `DEVCLEAN_SELECT`,
-`DEVCLEAN_PRESS`, `DEVCLEAN_SETTINGS`, `DEVCLEAN_MENU`, `DEVCLEAN_PROBE` and
-others) are documented at the top of `Sources/DevCleanApp/DebugLaunch.swift`.
-`DEVCLEAN_PROBE` writes whether every column fits the window, read from the
+The variables (`DEVSWEEP_CAPTURE`, `DEVSWEEP_SCREEN`, `DEVSWEEP_SELECT`,
+`DEVSWEEP_PRESS`, `DEVSWEEP_SETTINGS`, `DEVSWEEP_MENU`, `DEVSWEEP_PROBE` and
+others) are documented at the top of `Sources/DevSweepApp/DebugLaunch.swift`.
+`DEVSWEEP_PROBE` writes whether every column fits the window, read from the
 view hierarchy, which is how the window was checked at 900, 1100, 1280 and
 1400 points wide.
 

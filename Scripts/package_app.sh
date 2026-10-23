@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Packages the app from the DevCleanApp executable: an Info.plist with the
+# Packages the app from the DevSweepApp executable: an Info.plist with the
 # bundle id and version from version.env, the icon built from docs/icon, and
 # a signature. Prints the bundle's path.
 #
@@ -18,12 +18,12 @@ config="${1:-${CONFIG:-release}}"
 source "$root/version.env"
 app="$root/build/$PRODUCT_NAME.app"
 
-swift build --package-path "$root" -c "$config" --product DevCleanApp >&2
-bin="$(swift build --package-path "$root" -c "$config" --product DevCleanApp --show-bin-path)"
+swift build --package-path "$root" -c "$config" --product DevSweepApp >&2
+bin="$(swift build --package-path "$root" -c "$config" --product DevSweepApp --show-bin-path)"
 
 rm -rf "$app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
-cp "$bin/DevCleanApp" "$app/Contents/MacOS/$PRODUCT_NAME"
+cp "$bin/DevSweepApp" "$app/Contents/MacOS/$PRODUCT_NAME"
 
 # The icon: docs/icon holds the PNGs an iconset needs, icon_16x16.png up to
 # icon_512x512@2x.png; iconutil turns them into one .icns.

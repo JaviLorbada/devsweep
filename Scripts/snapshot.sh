@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Draws the app's window into PNG files without touching the real home folder:
-# it builds a debug DevClean.app, makes a fake home in a temp folder with
+# it builds a debug DevSweep.app, makes a fake home in a temp folder with
 # something in every item, puts stubs for xcrun, brew, pgrep, defaults and
 # xcode-select first on PATH, and launches the app with that HOME. The app
 # scans, draws its window into a file and quits. Nothing is cleaned.
@@ -174,16 +174,16 @@ for screen in "${screens[@]}"; do
   [[ "$screen" == runtimes || "$screen" == remove-runtime ]] && select="4C1F2B8E-0D3A-4F6B-9C21-7E5A1B2C3DA2"
   if [[ -n "${WIDTH:-}" ]]; then
     name="$name-$WIDTH"
-    HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
-      DEVCLEAN_CAPTURE="$out/$name.png" DEVCLEAN_SCREEN="$screen" DEVCLEAN_APPEARANCE="$appearance" \
-      DEVCLEAN_SELECT="${SELECT:-$select}" DEVCLEAN_PRESS="${PRESS:-}" DEVCLEAN_SETTINGS="${SETTINGS:-}" DEVCLEAN_MENU="${MENU:-}" \
-      "$app/Contents/MacOS/DevClean" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
+    HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
+      DEVSWEEP_CAPTURE="$out/$name.png" DEVSWEEP_SCREEN="$screen" DEVSWEEP_APPEARANCE="$appearance" \
+      DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
+      "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
   else
-    HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVCLEAN_TRASH_FOLDER="$work/trash-$name" \
-      DEVCLEAN_APPLICATIONS_DIRS="$home/Applications" \
-      DEVCLEAN_SNAPSHOT="$out/$name.png" DEVCLEAN_SNAPSHOT_SCREEN="$screen" \
-      DEVCLEAN_SNAPSHOT_APPEARANCE="$appearance" DEVCLEAN_SNAPSHOT_SELECT="$select" \
-      "$app/Contents/MacOS/DevClean" "${defaults_args[@]}" >/dev/null 2>&1 &
+    HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \
+      DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
+      DEVSWEEP_SNAPSHOT="$out/$name.png" DEVSWEEP_SNAPSHOT_SCREEN="$screen" \
+      DEVSWEEP_SNAPSHOT_APPEARANCE="$appearance" DEVSWEEP_SNAPSHOT_SELECT="$select" \
+      "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" >/dev/null 2>&1 &
   fi
   pid=$!
   for _ in $(seq 1 120); do

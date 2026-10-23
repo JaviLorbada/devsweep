@@ -2,27 +2,27 @@
 import PackageDescription
 
 let package = Package(
-    name: "devclean",
+    name: "devsweep",
     platforms: [.macOS(.v26)],
     products: [
-        .library(name: "DevCleanKit", targets: ["DevCleanKit"]),
-        .executable(name: "devclean", targets: ["devclean"]),
-        .executable(name: "DevCleanApp", targets: ["DevCleanApp"]),
+        .library(name: "DevSweepKit", targets: ["DevSweepKit"]),
+        .executable(name: "devsweep", targets: ["devsweep"]),
+        .executable(name: "DevSweepApp", targets: ["DevSweepApp"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.0"),
     ],
     targets: [
-        .target(name: "DevCleanKit"),
+        .target(name: "DevSweepKit"),
         .executableTarget(
-            name: "devclean",
+            name: "devsweep",
             dependencies: [
-                "DevCleanKit",
+                "DevSweepKit",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
-        .executableTarget(name: "DevCleanApp", dependencies: ["DevCleanKit"]),
-        .testTarget(name: "DevCleanKitTests", dependencies: ["DevCleanKit"], resources: [.copy("Fixtures")]),
-        .testTarget(name: "DevCleanAppTests", dependencies: ["DevCleanApp", "DevCleanKit"]),
+        .executableTarget(name: "DevSweepApp", dependencies: ["DevSweepKit"]),
+        .testTarget(name: "DevSweepKitTests", dependencies: ["DevSweepKit"], resources: [.copy("Fixtures")]),
+        .testTarget(name: "DevSweepAppTests", dependencies: ["DevSweepApp", "DevSweepKit"]),
     ]
 )

@@ -1,22 +1,24 @@
-# DevClean
+# DevSweep
 
-A macOS app and a command line tool, `devclean`, that show how much space
+A macOS app and a command line tool, `devsweep`, that show how much space
 developer caches take up (Xcode's DerivedData, old Device Support, SwiftPM,
 Homebrew, npm, Gradle and more) and reclaim it safely.
 
-![The DevClean window: a ring of what each cache holds, the items table and the inspector](docs/screenshot.png)
+![The DevSweep window: a ring of what each cache holds, the items table and the inspector](docs/screenshot.png)
 
-The command line tool is a Swift port of `bin/devclean`, a bash script in
-[a dotfiles repository](https://github.com/JaviLorbada/dotfiles), and prints
-exactly what the script prints, byte for byte. The app shows the same scan
+The command line tool is a Swift port of `devclean`, a bash script in
+[a dotfiles repository](https://github.com/JaviLorbada/dotfiles). That is the
+only thing the name devclean means here: the original script, its bats suite
+and the parity checks. Run under the script's name, the tool prints exactly
+what the script prints, byte for byte, which is how those checks run it. The app shows the same scan
 in a window and adds a Trash with Put Back, a menu bar item and a daily scan.
 
 ## Safety first
 
-DevClean deletes only caches that tools rebuild or download again, and it is
+DevSweep deletes only caches that tools rebuild or download again, and it is
 built to err on the side of keeping things.
 
-- **Report by default.** `devclean` on its own only reports. It deletes only
+- **Report by default.** `devsweep` on its own only reports. It deletes only
   with `--run`, after asking; without a terminal to ask in, it needs `--yes`.
   The app only cleans when you press Clean.
 - **Trash by default.** The app moves what it cleans to the Trash, with Put
@@ -57,38 +59,38 @@ Project folders default to `~/Developer`, `~/Development`, `~/dev`,
 
 ## Install
 
-Releases are on the [releases page](https://github.com/JaviLorbada/devclean/releases):
-`devclean-<version>-macos.zip` holds the command line tool, `DevClean-<version>.zip`
+Releases are on the [releases page](https://github.com/JaviLorbada/devsweep/releases):
+`devsweep-<version>-macos.zip` holds the command line tool, `DevSweep-<version>.zip`
 the app. Both need macOS 26.
 
 Until releases are notarized (see below), macOS refuses to open the app the
 first time: Control-click it in Finder and choose Open, or allow it in System
 Settings > Privacy & Security. For the tool, after unzipping:
-`xattr -d com.apple.quarantine devclean`.
+`xattr -d com.apple.quarantine devsweep`.
 
 A Homebrew tap is planned; `packaging/` has the formula and the cask.
 
 ### From source
 
 ```bash
-git clone https://github.com/JaviLorbada/devclean.git && cd devclean
-make app                       # build/DevClean.app
-Scripts/install-cli.sh         # links the release devclean into ~/.local/bin
+git clone https://github.com/JaviLorbada/devsweep.git && cd devsweep
+make app                       # build/DevSweep.app
+Scripts/install-cli.sh         # links the release devsweep into ~/.local/bin
 ```
 
-`Scripts/install-cli.sh` replaces whatever `devclean` was in `~/.local/bin`,
-usually a link to the bash script, and `--uninstall` puts it back.
+`Scripts/install-cli.sh` links `devsweep` into `~/.local/bin`, and
+`--uninstall` takes the link out and puts back anything it replaced.
 
 ## Use
 
 ```bash
-devclean                          # report only
-devclean --run                    # delete the items in the report, after asking
-devclean --skip homebrew,npm-cache --projects ~/Code:~/Work
-devclean --help
+devsweep                          # report only
+devsweep --run                    # delete the items in the report, after asking
+devsweep --skip homebrew,npm-cache --projects ~/Code:~/Work
+devsweep --help
 ```
 
-`DEVCLEAN_PROJECT_DIRS` and `DEVCLEAN_APPLICATIONS_DIRS` set the project and
+`DEVSWEEP_PROJECT_DIRS` and `DEVSWEEP_APPLICATIONS_DIRS` set the project and
 applications folders; `NO_COLOR` turns colors off.
 
 The app scans when it opens. Mark items, or click Clean on one, and press
@@ -110,7 +112,7 @@ make build        # the kit, the tool and the app
 make test         # Swift Testing, in parallel
 make lint         # SwiftFormat and SwiftLint, strict
 make acceptance DOTFILES=../dotfiles   # parity with the bash script
-make app          # build/DevClean.app
+make app          # build/DevSweep.app
 make release      # zips of the tool and the app in dist/
 ```
 

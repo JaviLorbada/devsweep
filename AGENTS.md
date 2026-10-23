@@ -1,17 +1,17 @@
 # Repository Guidelines
 
 ## Layout
-- `Sources/DevCleanKit`: scanning, measuring, the path policy, cleaning and the report. No AppKit except where a macOS API needs it.
-- `Sources/devclean`: the command line tool. Its output is the bash script's, byte for byte.
-- `Sources/DevCleanApp`: the SwiftUI app: the window, Settings and the menu bar item.
-- `Tests/DevCleanKitTests`, `Tests/DevCleanAppTests`: Swift Testing. Fixtures in `Tests/DevCleanKitTests/Fixtures`.
+- `Sources/DevSweepKit`: scanning, measuring, the path policy, cleaning and the report. No AppKit except where a macOS API needs it.
+- `Sources/devsweep`: the command line tool. Run under the original script's name, `devclean`, its output is the bash script's, byte for byte.
+- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item.
+- `Tests/DevSweepKitTests`, `Tests/DevSweepAppTests`: Swift Testing. Fixtures in `Tests/DevSweepKitTests/Fixtures`.
 - `Scripts`: packaging, lint, release, the parity checks and the debug captures.
 - `docs`: architecture, development, packaging, releasing, the original design.
 
 ## Build, test, lint
 - `make build`, `make test` (Swift Testing, in parallel), `make lint` (strict), `make format`.
 - `make acceptance DOTFILES=<dotfiles checkout>`: the bash script's bats suite against the binary, then both side by side on a fake home.
-- `make app` packages `build/DevClean.app`; `make release` zips the tool and the app into `dist/`.
+- `make app` packages `build/DevSweep.app`; `make release` zips the tool and the app into `dist/`.
 - Swift 6 strict concurrency and zero warnings. swift-argument-parser is the only dependency; ask before adding one.
 
 ## Safety rule

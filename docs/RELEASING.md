@@ -32,8 +32,8 @@ the signing secrets are set, and publishes a GitHub release with notes from
    zip; templates are in `packaging/`.
 
    ```bash
-   curl -sL https://github.com/JaviLorbada/devclean/archive/refs/tags/v0.2.0.tar.gz | shasum -a 256
-   shasum -a 256 DevClean-0.2.0.zip
+   curl -sL https://github.com/JaviLorbada/devsweep/archive/refs/tags/v0.2.0.tar.gz | shasum -a 256
+   shasum -a 256 DevSweep-0.2.0.zip
    ```
 
 ## Locally

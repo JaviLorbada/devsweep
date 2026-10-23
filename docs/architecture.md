@@ -4,9 +4,9 @@ One Swift package, three products:
 
 | Target | What it is |
 |---|---|
-| `DevCleanKit` | Scanning, measuring, the path policy, cleaning, the report. No AppKit except where a macOS API needs it (the Trash). |
-| `devclean` | The command line tool: the bash script's behavior, byte for byte, on top of the kit. |
-| `DevCleanApp` | The SwiftUI app: the window, Settings and the menu bar item. |
+| `DevSweepKit` | Scanning, measuring, the path policy, cleaning, the report. No AppKit except where a macOS API needs it (the Trash). |
+| `devsweep` | The command line tool on top of the kit. Run under the original script's name, `devclean`, it behaves as the bash script, byte for byte. |
+| `DevSweepApp` | The SwiftUI app: the window, Settings and the menu bar item. |
 
 ## The scan
 

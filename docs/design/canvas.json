@@ -1,7 +1,7 @@
 {
   "v": 3,
   "createdOnFiles": {"v": 1, "at": "2026-10-20T19:05:00Z"},
-  "title": "devclean app mockup",
+  "title": "DevSweep app mockup",
   "launch": {"view": "canvas"},
   "pages": [],
   "boards": {
@@ -11,7 +11,7 @@
   },
   "order": ["Main.dc.html", "Scanning.dc.html", "Extras.dc.html"],
   "notes": {
-    "t1": {"x": 0, "y": -300, "text": "devclean for Mac, dark appearance, macOS 26", "kind": "title1", "maxW": 4000}
+    "t1": {"x": 0, "y": -300, "text": "DevSweep for Mac, dark appearance, macOS 26", "kind": "title1", "maxW": 4000}
   },
   "designSystems": []
 }
