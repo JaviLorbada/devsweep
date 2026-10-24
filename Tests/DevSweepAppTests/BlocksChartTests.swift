@@ -33,13 +33,27 @@ struct BlocksChartTests {
     func `a block is labeled when the start of its name and its size fit, in points`() {
         // Tool caches and Xcode build folders got these cells at 1280 wide,
         // and the old fixed 78 by 36 points left them blank.
-        #expect(BlocksChart.fitsLabel(CGSize(width: 67, height: 92), name: "Tool caches", sizeText: "9 MB"))
-        #expect(BlocksChart.fitsLabel(CGSize(width: 73, height: 72), name: "Xcode build folders", sizeText: "7 MB"))
-        // Too narrow for four letters, or too low for two lines.
-        #expect(!BlocksChart.fitsLabel(CGSize(width: 30, height: 92), name: "Tool caches", sizeText: "9 MB"))
-        #expect(!BlocksChart.fitsLabel(CGSize(width: 120, height: 30), name: "Tool caches", sizeText: "9 MB"))
+        #expect(BlocksChart.label(for: CGSize(width: 67, height: 92), name: "Tool caches", sizeText: "9 MB")
+            == .nameAndSize)
+        #expect(BlocksChart.label(for: CGSize(width: 73, height: 72), name: "Xcode build folders", sizeText: "7 MB")
+            == .nameAndSize)
+        // Too narrow for four letters.
+        #expect(BlocksChart.label(for: CGSize(width: 30, height: 92), name: "Tool caches", sizeText: "9 MB") == nil)
         // What it needs follows the text: a short name and size fit where a long size doesn't.
-        #expect(BlocksChart.fitsLabel(CGSize(width: 52, height: 60), name: "npm", sizeText: "9 MB"))
-        #expect(!BlocksChart.fitsLabel(CGSize(width: 52, height: 60), name: "npm", sizeText: "1023 MB"))
+        #expect(BlocksChart.label(for: CGSize(width: 52, height: 60), name: "npm", sizeText: "9 MB") == .nameAndSize)
+        #expect(BlocksChart.label(for: CGSize(width: 52, height: 60), name: "npm", sizeText: "1023 MB") == nil)
+    }
+
+    @Test
+    func `a block too low for two lines shows its name alone, when the name fits`() {
+        // The flat Gradle block in round 6's drawing, about 120 by 31 points, was blank.
+        #expect(BlocksChart.label(for: CGSize(width: 120, height: 31), name: "Gradle build folders", sizeText: "4 MB")
+            == .name)
+        #expect(BlocksChart.label(for: CGSize(width: 400, height: 30), name: "Tool caches", sizeText: "9 MB") == .name)
+        // The size doesn't need to fit, only the name.
+        #expect(BlocksChart.label(for: CGSize(width: 52, height: 30), name: "npm", sizeText: "1023 MB") == .name)
+        // Too low even for one line, or too narrow for the name.
+        #expect(BlocksChart.label(for: CGSize(width: 120, height: 26), name: "Tool caches", sizeText: "9 MB") == nil)
+        #expect(BlocksChart.label(for: CGSize(width: 30, height: 30), name: "Tool caches", sizeText: "9 MB") == nil)
     }
 }

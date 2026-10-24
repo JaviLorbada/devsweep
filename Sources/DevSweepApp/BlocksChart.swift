@@ -53,10 +53,19 @@ struct BlocksChart: View {
     /// The space between a cell's edge and its label.
     static let labelPadding = (horizontal: CGFloat(9), vertical: CGFloat(7))
 
-    /// Whether a cell of `size` points has room for its label: the first four
-    /// letters of the name (or all of a shorter one) over the size, inside
-    /// the padding, measured in the fonts the label uses.
-    static func fitsLabel(_ size: CGSize, name: String, sizeText: String) -> Bool {
+    /// What a cell's label holds.
+    enum CellLabel {
+        /// The name over the size.
+        case nameAndSize
+        /// The name alone, in a cell too low for two lines.
+        case name
+    }
+
+    /// The label a cell of `size` points has room for inside the padding,
+    /// measured in the fonts the label uses: the name over the size, the name
+    /// alone where two lines don't fit the height, or none. The name fits
+    /// when its first four letters do (or all of a shorter one).
+    static func label(for size: CGSize, name: String, sizeText: String) -> CellLabel? {
         let nameFont = NSFont.systemFont(
             ofSize: NSFont.preferredFont(forTextStyle: .callout).pointSize,
             weight: .semibold)
@@ -64,10 +73,14 @@ struct BlocksChart: View {
             ofSize: NSFont.preferredFont(forTextStyle: .caption1).pointSize,
             weight: .regular)
         let shortest = name.count <= 4 ? name : name.prefix(4) + "…"
-        let width = max(Self.width(of: shortest, in: nameFont), Self.width(of: sizeText, in: sizeFont))
-        let height = Self.lineHeight(of: nameFont) + Self.lineHeight(of: sizeFont)
-        return size.width >= width + 2 * self.labelPadding.horizontal
-            && size.height >= height + 2 * self.labelPadding.vertical
+        let nameWidth = Self.width(of: shortest, in: nameFont)
+        let width = size.width - 2 * self.labelPadding.horizontal
+        let height = size.height - 2 * self.labelPadding.vertical
+        let nameLine = Self.lineHeight(of: nameFont)
+        if height >= nameLine + Self.lineHeight(of: sizeFont) {
+            return width >= max(nameWidth, Self.width(of: sizeText, in: sizeFont)) ? .nameAndSize : nil
+        }
+        return height >= nameLine && width >= nameWidth ? .name : nil
     }
 
     private static func width(of text: String, in font: NSFont) -> CGFloat {
@@ -130,14 +143,17 @@ private struct TreemapCell: View {
     var body: some View {
         let color = Palette.color(self.row.item)
         let size = SizeText.of(kilobytes: self.row.shownKilobytes)
+        let label = BlocksChart.label(for: self.frame.size, name: self.row.item.shortName, sizeText: size)
         Button {
             self.model.selection = self.row.item
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                if BlocksChart.fitsLabel(self.frame.size, name: self.row.item.shortName, sizeText: size) {
+                if label != nil {
                     Text(self.row.item.shortName)
                         .font(.callout.weight(.semibold))
                         .lineLimit(1)
+                }
+                if label == .nameAndSize {
                     Spacer(minLength: 0)
                     Text(size)
                         .font(.caption)
