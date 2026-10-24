@@ -17,9 +17,12 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   `PRODUCT_NAME`, `BUNDLE_ID`, `MARKETING_VERSION` and `BUILD_NUMBER`. Change
   them there, never in the plist. `ProductInfo.swift` holds the same names for
   the code, and a test fails when the two disagree.
-- **The icon** is built with `iconutil` from the PNGs in `docs/icon`, named the
-  way an iconset wants them, `icon_16x16.png` up to `icon_512x512@2x.png`. The
-  ones there now are a placeholder.
+- **The icon** is `docs/icon/AppIcon.icns`. `Scripts/make_icon.sh` draws it
+  from `AppIconView` in `Sources/DevSweepApp/AppIcon.swift`, a ring in the five
+  family colors on a dark rounded square: it writes the PNGs an iconset holds,
+  `icon_16x16.png` up to `icon_512x512@2x.png`, to `docs/icon` and builds the
+  `.icns` from them with `iconutil`. It is a placeholder; real artwork goes in
+  the same files, and the packaging takes it as it is.
 - **The signature** is ad hoc with the hardened runtime, enough to run the app
   on this Mac. When `DEVELOPER_ID_APPLICATION` names a Developer ID Application
   identity in the keychain, the script signs with it and a secure timestamp

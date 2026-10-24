@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Packages the app from the DevSweepApp executable: an Info.plist with the
-# bundle id and version from version.env, the icon built from docs/icon, and
+# bundle id and version from version.env, the icon from docs/icon, and
 # a signature. Prints the bundle's path.
 #
 # Usage: Scripts/package_app.sh [release|debug]   default release
@@ -29,11 +29,9 @@ app="$work/$PRODUCT_NAME.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin/DevSweepApp" "$app/Contents/MacOS/$PRODUCT_NAME"
 
-# The icon: docs/icon holds the PNGs an iconset needs, icon_16x16.png up to
-# icon_512x512@2x.png; iconutil turns them into one .icns.
-mkdir "$work/AppIcon.iconset"
-cp "$root"/docs/icon/icon_*.png "$work/AppIcon.iconset/"
-iconutil -c icns "$work/AppIcon.iconset" -o "$app/Contents/Resources/AppIcon.icns"
+# The icon: docs/icon/AppIcon.icns, drawn by Scripts/make_icon.sh, or real
+# artwork in its place.
+cp "$root/docs/icon/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
 
 cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

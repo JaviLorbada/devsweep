@@ -28,12 +28,18 @@ enum Palette {
     }
 
     static func color(_ family: Family) -> Color {
+        let hex = self.hex(family)
+        return Color(light: hex.light, dark: hex.dark)
+    }
+
+    /// A family's color in each appearance, as sRGB hex.
+    static func hex(_ family: Family) -> (light: UInt32, dark: UInt32) {
         switch family {
-        case .xcode: Color(light: 0x2A78D6, dark: 0x3987E5)
-        case .swiftPackages: Color(light: 0xEB6834, dark: 0xD95926)
-        case .homebrew: Color(light: 0x1BAF7A, dark: 0x199E70)
-        case .npm: Color(light: 0xEDA100, dark: 0xC98500)
-        case .otherTools: Color(light: 0xE87BA4, dark: 0xD55181)
+        case .xcode: (0x2A78D6, 0x3987E5)
+        case .swiftPackages: (0xEB6834, 0xD95926)
+        case .homebrew: (0x1BAF7A, 0x199E70)
+        case .npm: (0xEDA100, 0xC98500)
+        case .otherTools: (0xE87BA4, 0xD55181)
         }
     }
 

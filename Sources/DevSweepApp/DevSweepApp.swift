@@ -19,6 +19,9 @@ struct DevSweepApp: App {
     }
 
     init() {
+        #if DEBUG
+        AppIconRenderer.runIfAsked()
+        #endif
         // A one-window utility has no session worth restoring, and restored
         // state can say the window was closed, after which the app launched
         // with no window at all. Registered before AppKit reads it.
