@@ -24,3 +24,6 @@ line under Unreleased as it lands.
   notification when DerivedData grows past a threshold.
 - An About window with the version, links to the source and the MIT license,
   and acknowledgements.
+- Keyboard shortcuts: ⌘1 and ⌘2 for the ring and blocks, ⌥⌘I for the
+  inspector and ⌘R to scan again, and a Help menu linking to the project and
+  its issues.

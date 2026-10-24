@@ -96,22 +96,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// The menu bar's commands.
+/// The menu bar's commands: About, Scan Again in the File menu, the chart
+/// and the inspector in the View menu, and the project's pages under Help.
+/// Template items that would do nothing, such as New Window and a Help book
+/// there is none of, are replaced; the Edit menu stays for text fields.
 struct AppCommands: Commands {
     let model: AppModel
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openURL) private var openURL
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About \(ProductInfo.name)") { self.openWindow(id: "about") }
         }
-        CommandGroup(replacing: .newItem) {}
-        CommandMenu("Scan") {
+        CommandGroup(replacing: .newItem) {
             Button(self.model.isScanning ? "Stop Scan" : "Scan Again") {
                 self.model.isScanning ? self.model.stopScan() : self.model.scan()
             }
             .keyboardShortcut("r")
             .disabled(self.model.engine == nil)
+        }
+        CommandGroup(before: .toolbar) {
+            ForEach(AppModel.ChartStyle.allCases) { style in
+                Toggle(style.rawValue, isOn: Binding(
+                    get: { self.model.screen == .overview && self.model.chartStyle == style },
+                    set: { if $0 { self.model.showChart(style) } }))
+                    .keyboardShortcut(style == .ring ? "1" : "2")
+            }
+            Divider()
+            Button(self.model.inspectorShown ? "Hide Inspector" : "Show Inspector") { self.model.toggleInspector() }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+        }
+        CommandGroup(replacing: .help) {
+            Button("\(ProductInfo.name) on GitHub") { self.openURL(ProductInfo.repository) }
+            Button("Report a Problem") { self.openURL(ProductInfo.issues) }
         }
     }
 }

@@ -94,7 +94,8 @@ devsweep --help
 applications folders; `NO_COLOR` turns colors off.
 
 The app scans when it opens. Mark items, or click Clean on one, and press
-Clean. The sidebar's "Also worth a look" lists installed Xcodes and simulator
+Clean. ⌘1 and ⌘2 switch the chart between the ring and blocks, ⌥⌘I shows or
+hides the inspector, and ⌘R scans again. The sidebar's "Also worth a look" lists installed Xcodes and simulator
 runtimes, and what Android Studio keeps: its installs, the SDK's system
 images, platforms and build tools, emulators, and Gradle's caches, flagging
 what looks unused. Settings has the project folders, items to skip, when

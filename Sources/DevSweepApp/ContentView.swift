@@ -4,9 +4,6 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    /// Whether you want the inspector; it shows when the center also has room.
-    @State private var wantsInspector = true
-    @State private var inspectorHasRoom = true
 
     var body: some View {
         @Bindable var model = model
@@ -36,7 +33,7 @@ struct ContentView: View {
                 .safeAreaBar(edge: .top) { CenterHeader(title: self.title) }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
                 .panel()
-                if self.wantsInspector, self.inspectorHasRoom {
+                if model.inspectorShown {
                     Group {
                         switch model.screen {
                         case .overview: ItemInspector()
@@ -56,11 +53,6 @@ struct ContentView: View {
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
                 self.updateInspectorRoom(forDetailWidth: width)
             }
-            #if DEBUG
-            .onChange(of: self.wantsInspector && self.inspectorHasRoom, initial: true) { _, shown in
-                model.debugInspectorShown = shown
-            }
-            #endif
             .navigationTitle(self.title)
             .navigationSubtitle(model.subtitle)
             .toolbar { self.toolbar }
@@ -123,13 +115,13 @@ struct ContentView: View {
     /// whether the inspector shows, so this can't feed back on itself, and
     /// it is set right away: no AppKit column collapses.
     private func updateInspectorRoom(forDetailWidth width: CGFloat) {
-        let hasRoom = self.inspectorHasRoom
+        let hasRoom = self.model.inspectorHasRoom
             ? width >= WindowLayout.inspectorHideBelow
             : width >= WindowLayout.inspectorShowFrom
-        guard hasRoom != self.inspectorHasRoom else { return }
+        guard hasRoom != self.model.inspectorHasRoom else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true
-        withTransaction(transaction) { self.inspectorHasRoom = hasRoom }
+        withTransaction(transaction) { self.model.inspectorHasRoom = hasRoom }
     }
 
     private var pendingTitle: String {
@@ -155,17 +147,10 @@ struct ContentView: View {
     private var toolbar: some ToolbarContent {
         ToolbarSpacer(.flexible)
         ToolbarItem {
-            Button("Inspector", systemImage: "sidebar.trailing") {
-                if self.wantsInspector, !self.inspectorHasRoom {
-                    // Asked for while hidden for room: make room.
-                    WindowSizing.widen(to: WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom + 10)
-                } else {
-                    self.wantsInspector.toggle()
-                }
-            }
-            .buttonStyle(.glass)
-            .buttonBorderShape(.capsule)
-            .help("Show or hide the inspector")
+            Button("Inspector", systemImage: "sidebar.trailing") { self.model.toggleInspector() }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.capsule)
+                .help("Show or hide the inspector")
         }
         .sharedBackgroundVisibility(.hidden)
     }

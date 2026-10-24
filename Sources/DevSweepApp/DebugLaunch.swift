@@ -171,7 +171,7 @@ enum DebugLaunch {
             self.trace("windows: \(visible.map { "\"\($0.title)\"" }.joined(separator: ", "))")
             self.trace(
                 "screen \(model.screen), chart \(model.chartStyle.rawValue), "
-                    + "inspector \(model.debugInspectorShown ? "shown" : "hidden"), scanning \(model.isScanning)")
+                    + "inspector \(model.inspectorShown ? "shown" : "hidden"), scanning \(model.isScanning)")
         }
         if let points = environment["DEVSWEEP_SCROLL"].flatMap(Double.init), let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
@@ -390,7 +390,7 @@ enum DebugLaunch {
             .append(
                 "window \(Int(window.frame.width))x\(Int(window.frame.height)) min "
                     + "\(Int(window.minSize.width))x\(Int(window.minSize.height))")
-        lines.append("screen \(model.screen), inspector \(model.debugInspectorShown ? "shown" : "hidden")")
+        lines.append("screen \(model.screen), inspector \(model.inspectorShown ? "shown" : "hidden")")
         if let timing = model.scanTiming {
             lines.append(String(
                 format: "scan: items measured after %.1fs, everything after %.1fs",
@@ -453,7 +453,34 @@ enum DebugLaunch {
                 clipped ? " CLIPPED" : ""))
         }
         lines.insert(problems == 0 ? "result: fits" : "result: \(problems) problem(s)", at: 2)
+        lines += self.menuLines()
         return lines.joined(separator: "\n") + "\n"
+    }
+
+    /// The menu bar as it stands: each menu, its items with their shortcuts,
+    /// and which are disabled.
+    @MainActor
+    private static func menuLines() -> [String] {
+        (NSApplication.shared.mainMenu?.items ?? []).compactMap { top in
+            guard let menu = top.submenu else { return nil }
+            let items = menu.items.filter { !$0.isHidden }.map { item -> String in
+                if item.isSeparatorItem { return "|" }
+                var text = item.title
+                if !item.keyEquivalent.isEmpty {
+                    let flags = item.keyEquivalentModifierMask
+                    let modifiers = [
+                        (NSEvent.ModifierFlags.control, "⌃"),
+                        (.option, "⌥"),
+                        (.shift, "⇧"),
+                        (.command, "⌘"),
+                    ]
+                    .filter { flags.contains($0.0) }.map(\.1).joined()
+                    text += " \(modifiers)\(item.keyEquivalent.uppercased())"
+                }
+                return item.isEnabled ? text : "\(text) (disabled)"
+            }
+            return "menu \(menu.title.isEmpty ? top.title : menu.title): \(items.joined(separator: ", "))"
+        }
     }
 
     /// SwiftUI hosting views a few levels down: one per column and toolbar.

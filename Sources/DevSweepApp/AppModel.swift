@@ -118,6 +118,11 @@ final class AppModel {
 
     var screen: Screen = .overview
     var chartStyle: ChartStyle = .ring
+    /// Whether you want the inspector; it shows when the center also has room.
+    var wantsInspector = true
+    /// Whether the detail area has room for the inspector beside the center
+    /// at its minimum; the window sets it as it resizes.
+    var inspectorHasRoom = true
     var selection: Item?
     /// The runtime selected on the runtimes screen, by its simctl id.
     var selectedRuntime: String?
@@ -671,10 +676,28 @@ final class AppModel {
         self.selection = self.orderedRows.first?.item
     }
 
-    #if DEBUG
-    /// Whether the window shows its inspector, for the launch harness's report.
-    var debugInspectorShown = false
+    var inspectorShown: Bool {
+        self.wantsInspector && self.inspectorHasRoom
+    }
 
+    /// What the toolbar's inspector button and the View menu do: show or hide
+    /// it, or, asked for while it is hidden for room, widen the window to
+    /// make room.
+    func toggleInspector() {
+        if self.wantsInspector, !self.inspectorHasRoom {
+            WindowSizing.widen(to: WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom + 10)
+        } else {
+            self.wantsInspector.toggle()
+        }
+    }
+
+    /// Shows the overview with `style`, as the View menu's Ring and Blocks do.
+    func showChart(_ style: ChartStyle) {
+        self.screen = .overview
+        self.chartStyle = style
+    }
+
+    #if DEBUG
     /// Puts the model back to the moment `measured` items were done, for snapshots.
     func rewindScan(toMeasured measured: Int) {
         for (index, item) in self.scanOrder.enumerated() where index >= measured {
