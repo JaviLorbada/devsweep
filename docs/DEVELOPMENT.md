@@ -61,6 +61,18 @@ documented at the top of `Sources/DevSweepApp/DebugLaunch.swift`.
 view hierarchy, which is how the window was checked at 900, 1100, 1280 and
 1400 points wide.
 
+## Opening the latest build
+
+```bash
+make app && Scripts/open_app.sh
+```
+
+`open` alone brings a DevSweep that is already running forward, old build
+and all. `Scripts/open_app.sh` asks it to quit, waits for it to exit, then
+opens `build/DevSweep.app` and says which commit it was built from. Quitting
+it takes the terminal's Automation permission for DevSweep; when macOS
+refuses, the script says so and opens nothing.
+
 ## Commits
 
 Imperative subject, a short body saying why, one coherent change per commit
