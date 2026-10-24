@@ -151,7 +151,8 @@ run_one() {
   (
     cd "$work"
     export HOME="$home" WORK="$work" STUB_LOG="$work/$label.log"
-    export DEVSWEEP_PROJECT_DIRS="$home/Workspace:$home/Missing" DEVSWEEP_APPLICATIONS_DIRS="$home/Applications"
+    # Both run as devclean, so both read the script's variables.
+    export DEVCLEAN_PROJECT_DIRS="$home/Workspace:$home/Missing" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications"
     export PATH="$work/stubs:$PATH"
     set +e
     "$program" "$@" > "$work/$label.out" 2> "$work/$label.err"
