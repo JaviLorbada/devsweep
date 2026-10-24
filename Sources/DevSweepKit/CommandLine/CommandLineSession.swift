@@ -43,7 +43,7 @@ public enum CommandLineSession {
         effectiveUserID: uid_t = geteuid()) async -> Int32
     {
         let engine: Engine
-        do {
+        do throws(PreflightError) {
             // The script's preflight order: root and HOME first, then --skip.
             _ = try PathPolicy.preflight(home: environment["HOME"] ?? "", effectiveUserID: effectiveUserID)
             let skipped = try ScanConfig.parseSkip(options.skip ?? "")
@@ -55,7 +55,7 @@ public enum CommandLineSession {
                 command: command)
             engine = try Engine(config: config, dependencies: dependencies, effectiveUserID: effectiveUserID)
         } catch {
-            terminal.warn((error as? PreflightError)?.description(for: command) ?? error.description)
+            terminal.warn(error.description(for: command))
             return 1
         }
 
