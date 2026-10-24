@@ -26,6 +26,10 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   instead; `Scripts/sign-and-notarize.sh` then notarizes and staples. App
   Sandbox stays off: the app has to read and clean other tools' caches.
 
+The bundle is put together in a temp folder and replaces `build/DevSweep.app`
+only once it is signed, so a failed build or signature leaves the previous
+bundle as it was.
+
 An ad hoc signed app is not notarized, so the first time it opens Gatekeeper
 refuses it; open it from Finder with Control-click > Open, or allow it in
 System Settings > Privacy & Security.

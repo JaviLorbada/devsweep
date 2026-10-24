@@ -16,19 +16,21 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 config="${1:-${CONFIG:-release}}"
 # shellcheck source=../version.env
 source "$root/version.env"
-app="$root/build/$PRODUCT_NAME.app"
+destination="$root/build/$PRODUCT_NAME.app"
 
 swift build --package-path "$root" -c "$config" --product DevSweepApp >&2
 bin="$(swift build --package-path "$root" -c "$config" --product DevSweepApp --show-bin-path)"
 
-rm -rf "$app"
+# The bundle is put together in a temp folder and replaces the one in build/
+# only once it is signed, so a failed step leaves the previous bundle whole.
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+app="$work/$PRODUCT_NAME.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin/DevSweepApp" "$app/Contents/MacOS/$PRODUCT_NAME"
 
 # The icon: docs/icon holds the PNGs an iconset needs, icon_16x16.png up to
 # icon_512x512@2x.png; iconutil turns them into one .icns.
-work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
 mkdir "$work/AppIcon.iconset"
 cp "$root"/docs/icon/icon_*.png "$work/AppIcon.iconset/"
 iconutil -c icns "$work/AppIcon.iconset" -o "$app/Contents/Resources/AppIcon.icns"
@@ -60,4 +62,8 @@ if [[ -n "$identity" ]]; then
 else
   codesign --force --sign - --options runtime "$app" >&2
 fi
-echo "$app"
+
+mkdir -p "$(dirname "$destination")"
+rm -rf "$destination"
+mv "$app" "$destination"
+echo "$destination"
