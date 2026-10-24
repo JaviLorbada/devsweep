@@ -25,6 +25,11 @@ import SwiftUI
 ///   its shortcut would (the app menu is `DevSweep/...`), and says which
 ///   windows are open after it and what it changed. A window it opens is
 ///   the one `DEVSWEEP_CAPTURE` captures.
+/// - `DEVSWEEP_CLICK=1100,40;600,40` then clicks each point, in points from
+///   the window's top-left corner, with events sent to this app alone (the
+///   pointer doesn't move). It says which view the window found under each,
+///   whether that is in the content or the title bar, whether a drag there
+///   would move the window, and what changed.
 /// - `DEVSWEEP_THEN_WIDTHS=900,1400` then resizes to each width in turn.
 /// - `DEVSWEEP_PROBE=/path/report.txt` then waits a few seconds, writes
 ///   whether the content fits the window (split views, columns, scroll views,
@@ -44,7 +49,7 @@ enum DebugLaunch {
     static var isRequested: Bool {
         let environment = ProcessInfo.processInfo.environment
         return ["DEVSWEEP_WINDOW_WIDTH", "DEVSWEEP_SCREEN", "DEVSWEEP_PROBE", "DEVSWEEP_CAPTURE"]
-            .contains { environment[$0] != nil }
+            .contains { !(environment[$0] ?? "").isEmpty }
     }
 
     static var drawsActive: Bool {
@@ -78,10 +83,10 @@ enum DebugLaunch {
                 .trace(
                     "app menu \(appName), window title \(window.title), process \(ProcessInfo.processInfo.processName)")
             self.trace(self.capture(window, to: output) ? "captured \(output)" : "capture failed")
-            if environment["DEVSWEEP_PROBE"] == nil { exit(0) }
+            if (environment["DEVSWEEP_PROBE"] ?? "").isEmpty { exit(0) }
         }
         self.trace("probing")
-        guard let output = environment["DEVSWEEP_PROBE"] else { return }
+        guard let output = environment["DEVSWEEP_PROBE"], !output.isEmpty else { return }
         try? self.probe(model).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
     }
@@ -172,6 +177,18 @@ enum DebugLaunch {
             self.trace(
                 "screen \(model.screen), chart \(model.chartStyle.rawValue), "
                     + "inspector \(model.inspectorShown ? "shown" : "hidden"), scanning \(model.isScanning)")
+        }
+        if let clicks = environment["DEVSWEEP_CLICK"], !clicks.isEmpty, let window = mainWindow {
+            for pair in clicks.split(separator: ";") {
+                let numbers = pair.split(separator: ",").compactMap { Double($0) }
+                guard numbers.count == 2 else { continue }
+                try? await Task.sleep(for: .seconds(1))
+                self.trace(self.click(at: CGPoint(x: numbers[0], y: numbers[1]), in: window))
+                try? await Task.sleep(for: .seconds(1))
+                self.trace(
+                    "inspector \(model.inspectorShown ? "shown" : "hidden"), scanning \(model.isScanning), "
+                        + "chart \(model.chartStyle.rawValue)")
+            }
         }
         if let points = environment["DEVSWEEP_SCROLL"].flatMap(Double.init), let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
@@ -296,6 +313,39 @@ enum DebugLaunch {
         else { return false }
         menu.performActionForItem(at: index)
         return true
+    }
+
+    /// Clicks the window at `point`, in points from its top-left corner, with
+    /// a mouse down and up sent to this app only. The up is queued first, so
+    /// a drag the down starts, such as the title bar's, ends.
+    @MainActor
+    private static func click(at point: CGPoint, in window: NSWindow) -> String {
+        guard let content = window.contentView, let frameView = content.superview else { return "no window to click" }
+        let location = NSPoint(x: point.x, y: window.frame.height - point.y)
+        let hit = frameView.hitTest(frameView.convert(location, from: nil))
+        func event(_ type: NSEvent.EventType) -> NSEvent? {
+            NSEvent.mouseEvent(
+                with: type,
+                location: location,
+                modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: window.windowNumber,
+                context: nil,
+                eventNumber: 0,
+                clickCount: 1,
+                pressure: type == .leftMouseDown ? 1 : 0)
+        }
+        guard let down = event(.leftMouseDown), let up = event(.leftMouseUp) else { return "could not make a click" }
+        NSApplication.shared.postEvent(up, atStart: false)
+        window.sendEvent(down)
+        return String(
+            format: "clicked %.0f,%.0f, key window %@: %@ %@, %@",
+            point.x,
+            point.y,
+            window.isKeyWindow ? "yes" : "no",
+            hit.map { String(describing: type(of: $0)) } ?? "nothing",
+            hit?.isDescendant(of: content) == true ? "in the content" : "outside the content",
+            hit?.mouseDownCanMoveWindow == true ? "drags the window" : "doesn't drag the window")
     }
 
     /// Presses the first element labeled `label`, searching the window's

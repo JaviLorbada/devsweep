@@ -20,7 +20,11 @@
 #   SELECT=derived-data selects an item (or a runtime id, or an Xcode by its
 #   folder's name), CHART=blocks picks the chart, SCROLL=200 scrolls the
 #   center panel down that many points, and ACTIVE=1 draws the window as
-#   active when it can't be, as while the screen is locked.
+#   active when it can't be, as while the screen is locked. CLICK="x,y;x,y"
+#   clicks those points from the window's top-left, THEN_WIDTHS=900,1400
+#   resizes to each in turn, and PROBE=1 writes <screen>-<width>.txt, whether
+#   the content fits the window; CAPTURE_LOG=file keeps the app's trace.
+#   The debug build is build/debug/DevSweep.app, apart from the one you open.
 
 set -euo pipefail
 
@@ -183,6 +187,7 @@ for screen in "${screens[@]}"; do
       DEVSWEEP_CAPTURE="$out/$name.png" DEVSWEEP_SCREEN="$screen" DEVSWEEP_APPEARANCE="$appearance" \
       DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_ACTIVE="${ACTIVE:-}" DEVSWEEP_CHART="${CHART:-}" DEVSWEEP_SCROLL="${SCROLL:-}" \
       DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_PERFORM="${PERFORM:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
+      DEVSWEEP_CLICK="${CLICK:-}" DEVSWEEP_THEN_WIDTHS="${THEN_WIDTHS:-}" DEVSWEEP_PROBE="${PROBE:+$out/$name.txt}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \
