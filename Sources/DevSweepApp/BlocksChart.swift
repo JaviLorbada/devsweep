@@ -70,7 +70,9 @@ private struct TreemapCells: View {
     var body: some View {
         let rows = self.model.orderedRows
             .filter { $0.isLive || $0.isCounting || ($0.showsPrevious && $0.shownKilobytes > 0) }
-        let cells = Treemap.squarify(rows.map { (id: $0.item, weight: Double($0.shownKilobytes)) }, in: self.size)
+        // Small items are drawn larger so they stay visible (`ChartScale`).
+        let shares = ChartScale.shares(rows.map { Double($0.shownKilobytes) })
+        let cells = Treemap.squarify(zip(rows, shares).map { (id: $0.item, weight: $1) }, in: self.size)
         ZStack(alignment: .topLeading) {
             if cells.isEmpty {
                 RoundedRectangle(cornerRadius: 6)

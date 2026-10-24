@@ -24,16 +24,23 @@ struct OverviewContent: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Group {
-                switch self.model.chartStyle {
-                case .ring: RingChart()
-                case .blocks: BlocksChart()
+            VStack(alignment: .leading, spacing: 6) {
+                Group {
+                    switch self.model.chartStyle {
+                    case .ring: RingChart()
+                    case .blocks: BlocksChart()
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
+                .card()
+
+                Text("Small items are drawn larger so they stay visible.")
+                    .font(.caption)
+                    .foregroundStyle(.muted)
+                    .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity, minHeight: 280, maxHeight: 280)
-            .card()
 
             ItemsCard()
 

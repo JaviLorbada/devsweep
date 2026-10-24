@@ -25,11 +25,12 @@ struct RingChart: View {
 
     private func content(width: CGFloat) -> some View {
         let diameter = Self.diameter(forWidth: width)
+        let shares = self.itemShares
         return HStack(spacing: diameter < 200 ? 18 : 28) {
             ZStack {
-                Ring(segments: self.outerSegments, innerRatio: 0.75, inset: 1.6) { self.select($0) }
+                Ring(segments: self.outerSegments(shares), innerRatio: 0.75, inset: 1.6) { self.select($0) }
                     .frame(width: diameter, height: diameter)
-                Ring(segments: self.innerSegments, innerRatio: 0.786, inset: 1.6) { self.select($0) }
+                Ring(segments: self.innerSegments(shares), innerRatio: 0.786, inset: 1.6) { self.select($0) }
                     .frame(width: diameter * 0.7, height: diameter * 0.7)
                 VStack(spacing: 2) {
                     Text(SizeText.of(kilobytes: self.model.reclaimableKilobytes))
@@ -94,20 +95,30 @@ struct RingChart: View {
         self.model.selection?.family
     }
 
+    /// Each item's share of the ring, from its chart weight scaled so small
+    /// items stay visible (`ChartScale`).
+    private var itemShares: [Item: Double] {
+        let rows = Family.allCases.flatMap { $0.items.compactMap { self.model.rows[$0] } }
+        let shares = ChartScale.shares(rows.map { self.model.chartWeight($0) })
+        return Dictionary(uniqueKeysWithValues: zip(rows.map(\.item), shares))
+    }
+
     /// Items grouped by family, in palette order so segments keep their places.
-    private var outerSegments: [Ring.Segment] {
+    private func outerSegments(_ shares: [Item: Double]) -> [Ring.Segment] {
         Family.allCases.flatMap { family in
             family.items.compactMap { item -> Ring.Segment? in
                 guard let row = model.rows[item] else { return nil }
-                return Ring.Segment(id: item.rawValue, weight: self.model.chartWeight(row), color: self.color(for: row))
+                return Ring.Segment(id: item.rawValue, weight: shares[item] ?? 0, color: self.color(for: row))
             }
         }
     }
 
-    private var innerSegments: [Ring.Segment] {
+    /// Each family as the sum of its items' shares, so it spans exactly its
+    /// items in the outer ring.
+    private func innerSegments(_ shares: [Item: Double]) -> [Ring.Segment] {
         Family.allCases.map { family in
             let rows = family.items.compactMap { self.model.rows[$0] }
-            let weight = rows.reduce(0) { $0 + self.model.chartWeight($1) }
+            let weight = rows.reduce(0) { $0 + (shares[$1.item] ?? 0) }
             let measured = rows.contains { $0.wasMeasured || $0.isCounting }
             let previousOnly = self.model.familyShowsPrevious(family)
             let reclaimable = rows.filter { $0.isLive || $0.state == .cleaned }
@@ -187,6 +198,9 @@ struct Ring: View {
 }
 
 /// A thin stacked bar of the families, and one line per family with its share and size.
+///
+/// The bar draws the families as the ring does, with small ones larger
+/// (`ChartScale`); the percentages and sizes are exact.
 struct FamilyLegend: View {
     @Environment(AppModel.self) private var model
     var showsShare = true
@@ -195,7 +209,8 @@ struct FamilyLegend: View {
         let total = Double(max(model.reclaimableKilobytes, 1))
         VStack(alignment: .leading, spacing: 10) {
             GeometryReader { proxy in
-                let live = Family.allCases.filter { self.model.kilobytes(of: $0) > 0 }
+                let shares = self.model.familyChartShares
+                let live = Family.allCases.filter { (shares[$0] ?? 0) > 0 }
                 let gaps = CGFloat(max(live.count - 1, 0)) * 2
                 HStack(spacing: 2) {
                     if live.isEmpty {
@@ -204,8 +219,7 @@ struct FamilyLegend: View {
                     ForEach(live) { family in
                         Rectangle()
                             .fill(Palette.color(family))
-                            .frame(width: max(0, proxy.size.width - gaps) * Double(self.model.kilobytes(of: family)) /
-                                total)
+                            .frame(width: max(0, proxy.size.width - gaps) * (shares[family] ?? 0))
                     }
                 }
                 .clipShape(Capsule())

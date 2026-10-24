@@ -525,6 +525,15 @@ final class AppModel {
         self.countedRows.filter { $0.item.family == family }.reduce(0) { $0 + $1.shownKilobytes }
     }
 
+    /// What each family takes of the legend's bar: the sum of its items'
+    /// shares, with small items drawn larger (`ChartScale`), as the ring's
+    /// inner circle draws it once the scan is done.
+    var familyChartShares: [Family: Double] {
+        let rows = self.countedRows
+        let shares = ChartScale.shares(rows.map { Double($0.shownKilobytes) })
+        return zip(rows, shares).reduce(into: [:]) { $0[$1.0.item.family, default: 0] += $1.1 }
+    }
+
     /// The family's size once anything is known about it, nil before.
     func measuredKilobytes(of family: Family) -> Int64? {
         let known = family.items.contains { item in
