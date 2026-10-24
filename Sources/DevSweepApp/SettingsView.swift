@@ -47,6 +47,14 @@ private struct GeneralSettings: View {
                     .settingsFooter()
             }
             Section {
+                Toggle("Show in menu bar", isOn: $preferences.showInMenuBar)
+            } footer: {
+                Text(
+                    "The free space at a glance, and a menu to scan or open \(ProductInfo.name). With it, "
+                        + "\(ProductInfo.name) keeps running, and scanning daily, after its window closes.")
+                    .settingsFooter()
+            }
+            Section {
                 Stepper(value: $preferences.derivedDataGrowthGigabytes, in: Preferences.growthRange, step: 1) {
                     LabeledContent(
                         "Notify when DerivedData grows by",

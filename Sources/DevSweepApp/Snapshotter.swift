@@ -6,7 +6,8 @@ import SwiftUI
 /// Development aid: with `DEVSWEEP_SNAPSHOT=/path/file.png` set, waits for the
 /// scan to finish, draws the window's content into that file and quits.
 /// `DEVSWEEP_SNAPSHOT_SCREEN` picks `overview`, `scanning`, `blocks`, `runtimes`,
-/// `xcodes`, `about` (the About window's content), `remove-runtime` (shows the removal sheet, never confirms it),
+/// `xcodes`, `about` (the About window's content), `menubar` (the menu bar
+/// item's panel), `remove-runtime` (shows the removal sheet, never confirms it),
 /// `cleaned` (cleans what is marked first) or `putback` (then puts
 /// the SwiftPM cache back). Cleaning must only ever run against a fake home,
 /// with `DEVSWEEP_TRASH_FOLDER` set;
@@ -57,10 +58,13 @@ enum Snapshotter {
         try? await Task.sleep(for: .milliseconds(600))
 
         let width = environment["DEVSWEEP_SNAPSHOT_WIDTH"].flatMap(Double.init) ?? 1280
-        // `about` draws the About window's content instead of the main window.
-        let content = environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "about"
-            ? AnyView(AboutView().background(Color(nsColor: .windowBackgroundColor)))
-            : AnyView(SnapshotLayout(width: width))
+        // `about` and `menubar` draw the About window's content and the menu
+        // bar item's panel instead of the main window.
+        let content = switch environment["DEVSWEEP_SNAPSHOT_SCREEN"] {
+        case "about": AnyView(AboutView().background(Color(nsColor: .windowBackgroundColor)))
+        case "menubar": AnyView(MenuBarPanel().background(.regularMaterial))
+        default: AnyView(SnapshotLayout(width: width))
+        }
         let renderer = ImageRenderer(content: content
             .environment(model)
             .environment(\.colorScheme, dark ? .dark : .light))

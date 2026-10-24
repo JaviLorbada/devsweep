@@ -20,6 +20,7 @@ struct PreferencesTests {
         #expect(preferences.staleDays == 90)
         #expect(preferences.moveToTrash)
         #expect(preferences.scanOnLaunch)
+        #expect(preferences.showInMenuBar)
         // The same folders the command line searches without DEVSWEEP_PROJECT_DIRS.
         let config = preferences.scanConfig(environment: ["HOME": "/Users/someone"])
         #expect(config.projectDirectories.map { $0.replacingOccurrences(of: "~", with: "/Users/someone") }
@@ -35,6 +36,7 @@ struct PreferencesTests {
         preferences.staleDays = 30
         preferences.moveToTrash = false
         preferences.scanOnLaunch = false
+        preferences.showInMenuBar = false
 
         let again = Preferences(storage: storage)
         #expect(again.projectFolders == ["~/Code"])
@@ -42,6 +44,7 @@ struct PreferencesTests {
         #expect(again.staleDays == 30)
         #expect(!again.moveToTrash)
         #expect(!again.scanOnLaunch)
+        #expect(!again.showInMenuBar)
     }
 
     @Test

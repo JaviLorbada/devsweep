@@ -38,14 +38,22 @@ protocol NotificationPoster: Sendable {
     func post(title: String, body: String) async
 }
 
-/// Notification Center. Asks for permission the first time it has something
-/// to say, not at launch. Without a bundle, as `swift run` starts the app,
-/// there is no Notification Center to post to, so it stays quiet.
+/// Notification Center. Asks for permission once, the first time it has
+/// something to say, never at launch; after that it goes by the answer.
+/// Without a bundle, as `swift run` starts the app, there is no
+/// Notification Center to post to, so it stays quiet.
 struct UserNotificationPoster: NotificationPoster {
     func post(title: String, body: String) async {
         guard Bundle.main.bundleIdentifier != nil else { return }
         let center = UNUserNotificationCenter.current()
-        guard await (try? center.requestAuthorization(options: [.alert, .sound])) == true else { return }
+        switch await center.notificationSettings().authorizationStatus {
+        case .notDetermined:
+            guard await (try? center.requestAuthorization(options: [.alert, .sound])) == true else { return }
+        case .authorized, .provisional, .ephemeral:
+            break
+        default:
+            return
+        }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body

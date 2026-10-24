@@ -30,6 +30,7 @@ final class Preferences {
         static let moveToTrash = "moveToTrash"
         static let scanOnLaunch = "scanOnLaunch"
         static let derivedDataGrowthGigabytes = "derivedDataGrowthGigabytes"
+        static let showInMenuBar = "showInMenuBar"
     }
 
     /// Today's defaults, the folders the script searches.
@@ -70,6 +71,11 @@ final class Preferences {
         didSet { self.storage.set(self.derivedDataGrowthGigabytes, forKey: Key.derivedDataGrowthGigabytes) }
     }
 
+    /// The menu bar item, which also keeps the app running after its window closes.
+    var showInMenuBar: Bool {
+        didSet { self.storage.set(self.showInMenuBar, forKey: Key.showInMenuBar) }
+    }
+
     init(storage: PreferencesStore = UserDefaults.standard) {
         self.storage = storage
         self.projectFolders = storage.object(forKey: Key.projectFolders) as? [String] ?? Self.defaultProjectFolders
@@ -82,6 +88,7 @@ final class Preferences {
         self.scanOnLaunch = storage.object(forKey: Key.scanOnLaunch) as? Bool ?? true
         let growth = storage.object(forKey: Key.derivedDataGrowthGigabytes) as? Int ?? Self.defaultGrowthGigabytes
         self.derivedDataGrowthGigabytes = min(max(growth, Self.growthRange.lowerBound), Self.growthRange.upperBound)
+        self.showInMenuBar = storage.object(forKey: Key.showInMenuBar) as? Bool ?? true
     }
 
     var usesDefaultProjectFolders: Bool {

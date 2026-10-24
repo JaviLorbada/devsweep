@@ -63,7 +63,10 @@ struct DevSweepApp: App {
                 .environment(self.model)
         }
 
-        MenuBarExtra {
+        MenuBarExtra(isInserted: Binding(
+            get: { self.model.preferences.showInMenuBar },
+            set: { self.model.preferences.showInMenuBar = $0 }))
+        {
             MenuBarPanel()
                 .environment(self.model)
         } label: {
@@ -91,8 +94,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The menu bar item keeps the app, and its daily scan, running when the
     /// window closes; the item's Open DevSweep brings the window back.
+    /// Without the item, closing the window quits, as a utility does.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-        false
+        !(UserDefaults.standard.object(forKey: Preferences.Key.showInMenuBar) as? Bool ?? true)
     }
 }
 
