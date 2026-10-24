@@ -34,6 +34,8 @@ else
   echo "ad hoc" > "$dist/signing.txt"
 fi
 
+# Without extended attributes: unzip would turn them into ._ files inside the
+# bundle, which breaks its signature. The stapled ticket is a file, and stays.
 (cd "$dist" && ditto -c -k --norsrc --noextattr "$CLI_NAME" "$CLI_NAME-$MARKETING_VERSION-macos.zip")
-(cd "$dist" && ditto -c -k --keepParent "$PRODUCT_NAME.app" "$PRODUCT_NAME-$MARKETING_VERSION.zip")
+(cd "$dist" && ditto -c -k --norsrc --noextattr --keepParent "$PRODUCT_NAME.app" "$PRODUCT_NAME-$MARKETING_VERSION.zip")
 ls -1 "$dist"/*.zip
