@@ -24,7 +24,7 @@ line under Unreleased as it lands.
   the app runs, and a notification when DerivedData grows past a threshold; a
   setting hides it.
 - An About window with the version, links to the source and the MIT license,
-  and acknowledgements.
+  where to sponsor or tip, and acknowledgements.
 - Keyboard shortcuts: ⌘1 and ⌘2 for the ring and blocks, ⌥⌘I for the
-  inspector and ⌘R to scan again, and a Help menu linking to the project and
-  its issues.
+  inspector and ⌘R to scan again, and a Help menu linking to the project, its
+  issues and its tip jar.

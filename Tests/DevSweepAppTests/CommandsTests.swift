@@ -41,5 +41,6 @@ struct CommandsTests {
         model.toggleInspector()
         #expect(AppCommands.inspectorTitle(shown: model.inspectorShown) == "Show Inspector")
         #expect(AppCommands.reportProblemTitle == "Report a Problem")
+        #expect(AppCommands.supportTitle == "Support DevSweep")
     }
 }

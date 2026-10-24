@@ -214,6 +214,10 @@ let restored = await engine.putBack(outcome)
 Everything with a side effect comes through `Dependencies`: the tools, the
 file system and the clock. `docs/architecture.md` describes the seams.
 
+## Support
+
+To support DevSweep: [GitHub Sponsors](https://github.com/sponsors/JaviLorbada) or [Ko-fi](https://ko-fi.com/javilorbada).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

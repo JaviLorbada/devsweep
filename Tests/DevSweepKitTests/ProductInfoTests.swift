@@ -35,6 +35,17 @@ struct ProductInfoTests {
         #expect(ProductInfo.license.absoluteString == ProductInfo.repository.absoluteString + "/blob/main/LICENSE")
     }
 
+    @Test func `About, the Help menu and the README name the same places to sponsor and tip`() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let readme = try String(contentsOf: root.appending(path: "README.md"), encoding: .utf8)
+        #expect(ProductInfo.sponsor.absoluteString == "https://github.com/sponsors/JaviLorbada")
+        #expect(ProductInfo.tipJar.absoluteString == "https://ko-fi.com/javilorbada")
+        #expect(readme.contains("## Support"))
+        #expect(readme.contains(ProductInfo.sponsor.absoluteString))
+        #expect(readme.contains(ProductInfo.tipJar.absoluteString))
+    }
+
     @Test
     func `the tool is devsweep, and devclean when run under the original script's name`() {
         #expect(CommandLineOptions.usage().hasPrefix("Usage: devsweep [--run [--yes]]"))

@@ -101,7 +101,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// The menu bar's commands: About, Scan Again in the File menu, the chart
-/// and the inspector in the View menu, and the project's pages under Help.
+/// and the inspector in the View menu, and the project's pages and its tip
+/// jar under Help.
 /// Template items that would do nothing, such as New Window and a Help book
 /// there is none of, are replaced; the Edit menu stays for text fields.
 struct AppCommands: Commands {
@@ -117,6 +118,8 @@ struct AppCommands: Commands {
 
     /// In title case, as menu items are written.
     static let reportProblemTitle = "Report a Problem"
+    /// Opens the tip jar.
+    static let supportTitle = "Support \(ProductInfo.name)"
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
@@ -143,6 +146,8 @@ struct AppCommands: Commands {
         CommandGroup(replacing: .help) {
             Button("\(ProductInfo.name) on GitHub") { self.openURL(ProductInfo.repository) }
             Button(Self.reportProblemTitle) { self.openURL(ProductInfo.issues) }
+            Divider()
+            Button(Self.supportTitle) { self.openURL(ProductInfo.tipJar) }
         }
     }
 }

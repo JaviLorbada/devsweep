@@ -31,6 +31,10 @@ public enum ProductInfo {
     public static let issues = repository.appending(path: "issues")
     /// The MIT license the project is under.
     public static let license = repository.appending(path: "blob/main/LICENSE")
+    /// Where to sponsor the project, from About.
+    public static let sponsor = URL(string: "https://github.com/sponsors/JaviLorbada")!
+    /// A tip jar, from About and the Help menu.
+    public static let tipJar = URL(string: "https://ko-fi.com/javilorbada")!
 }
 
 /// The name the command line tool answers to, and its environment variables'

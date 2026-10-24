@@ -3,7 +3,7 @@ import DevSweepKit
 import SwiftUI
 
 /// The About window: the icon, the name and version, who made it, the
-/// repository and license, and what it builds on.
+/// repository and license, where to sponsor or tip, and what it builds on.
 struct AboutView: View {
     static let author = "Javi Lorbada"
     static let website = URL(string: "https://javilorbada.com")!
@@ -35,6 +35,13 @@ struct AboutView: View {
                 Link("MIT License", destination: ProductInfo.license)
             }
             .font(.callout)
+            // Where to go, for anyone who wants to; nothing here asks.
+            HStack(spacing: 8) {
+                Link("Sponsor on GitHub", destination: ProductInfo.sponsor)
+                Link("Tip jar on Ko-fi", destination: ProductInfo.tipJar)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
 
             Divider()
 
