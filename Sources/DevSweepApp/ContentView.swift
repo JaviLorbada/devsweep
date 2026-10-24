@@ -222,6 +222,21 @@ struct TableRowSelection: ViewModifier {
     }
 }
 
+/// A button in a table row. On the selection color its usual bezel is a
+/// translucent tint of the blue, and neither dark nor light text reaches
+/// 4.5:1 on it; dark glass with white text there reads at over 10:1.
+struct RowControlModifier: ViewModifier {
+    @Environment(\.backgroundProminence) private var prominence
+
+    func body(content: Content) -> some View {
+        if self.prominence == .increased {
+            content.buttonStyle(.glass).environment(\.colorScheme, .dark)
+        } else {
+            content
+        }
+    }
+}
+
 /// A rounded panel on the window background, for charts and lists.
 struct CardModifier: ViewModifier {
     func body(content: Content) -> some View {
@@ -235,6 +250,7 @@ extension View {
     func card() -> some View { modifier(CardModifier()) }
     func panel() -> some View { modifier(PanelModifier()) }
     func tableRowSelection(_ selected: Bool) -> some View { modifier(TableRowSelection(selected: selected)) }
+    func rowControl() -> some View { modifier(RowControlModifier()) }
 }
 
 /// The small upper-case headings used in the inspector.
@@ -281,17 +297,29 @@ struct Dot: View {
 }
 
 /// A small tinted label such as "project gone" or "selected".
+///
+/// The text is a darker shade of the color in light mode and a lighter one
+/// in dark mode: the color itself on its tint is about 2:1 for orange and
+/// 3:1 for blue. On a selected row it turns white on a darker patch of the
+/// selection color: a light patch, or the tint, would drop it below 4.5:1.
 struct Badge: View {
+    @Environment(\.backgroundProminence) private var prominence
+    @Environment(\.colorScheme) private var colorScheme
     let text: String
     let color: Color
 
     var body: some View {
+        let onSelection = self.prominence == .increased
+        let dark = self.colorScheme == .dark
+        let textColor = self.color.mix(with: dark ? .white : .black, by: dark ? 0.35 : 0.45, in: .device)
         Text(self.text)
             .font(.caption2.weight(.semibold))
             .lineLimit(1)
-            .foregroundStyle(self.color)
+            .foregroundStyle(onSelection ? .white : textColor)
             .padding(.horizontal, 6)
             .padding(.vertical, 1)
-            .background(self.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 4))
+            .background(
+                onSelection ? Color.black.opacity(0.2) : self.color.opacity(0.14),
+                in: RoundedRectangle(cornerRadius: 4))
     }
 }

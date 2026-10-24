@@ -197,6 +197,7 @@ struct RowAction: View {
                     Task { await self.model.requestClean([self.row.item]) }
                 }
                 .controlSize(.small)
+                .rowControl()
                 .disabled(self.model.isScanning || self.model.isCleaning)
             }
         }

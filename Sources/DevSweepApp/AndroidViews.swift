@@ -165,16 +165,19 @@ private struct AndroidRow: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
-            if self.columns == .compact {
-                Button("Reveal in Finder", systemImage: "folder") { self.model.revealInFinder([self.entry.path]) }
-                    .labelStyle(.iconOnly)
-                    .controlSize(.small)
-                    .help("Reveal in Finder")
-            } else {
-                Button("Reveal in Finder") { self.model.revealInFinder([self.entry.path]) }
-                    .controlSize(.small)
-                    .frame(width: 118)
+            Group {
+                if self.columns == .compact {
+                    Button("Reveal in Finder", systemImage: "folder") { self.model.revealInFinder([self.entry.path]) }
+                        .labelStyle(.iconOnly)
+                        .controlSize(.small)
+                        .help("Reveal in Finder")
+                } else {
+                    Button("Reveal in Finder") { self.model.revealInFinder([self.entry.path]) }
+                        .controlSize(.small)
+                        .frame(width: 118)
+                }
             }
+            .rowControl()
         }
         .padding(.horizontal, 14)
         .frame(height: 40)
