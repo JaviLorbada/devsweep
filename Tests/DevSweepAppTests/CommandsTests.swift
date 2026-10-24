@@ -32,4 +32,14 @@ struct CommandsTests {
         model.toggleInspector()
         #expect(model.wantsInspector)
     }
+
+    @Test
+    func `the inspector item says what choosing it does, and the problem report is in title case`() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        #expect(AppCommands.inspectorTitle(shown: model.inspectorShown) == "Hide Inspector")
+        model.toggleInspector()
+        #expect(AppCommands.inspectorTitle(shown: model.inspectorShown) == "Show Inspector")
+        #expect(AppCommands.reportProblemTitle == "Report a Problem")
+    }
 }

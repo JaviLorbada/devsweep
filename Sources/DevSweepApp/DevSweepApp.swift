@@ -109,6 +109,15 @@ struct AppCommands: Commands {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openURL) private var openURL
 
+    /// What choosing the inspector's item does, as a menu item whose title
+    /// changes says it, rather than "Toggle Inspector".
+    static func inspectorTitle(shown: Bool) -> String {
+        shown ? "Hide Inspector" : "Show Inspector"
+    }
+
+    /// In title case, as menu items are written.
+    static let reportProblemTitle = "Report a Problem"
+
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About \(ProductInfo.name)") { self.openWindow(id: "about") }
@@ -128,12 +137,12 @@ struct AppCommands: Commands {
                     .keyboardShortcut(style == .ring ? "1" : "2")
             }
             Divider()
-            Button(self.model.inspectorShown ? "Hide Inspector" : "Show Inspector") { self.model.toggleInspector() }
+            Button(Self.inspectorTitle(shown: self.model.inspectorShown)) { self.model.toggleInspector() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
         }
         CommandGroup(replacing: .help) {
             Button("\(ProductInfo.name) on GitHub") { self.openURL(ProductInfo.repository) }
-            Button("Report a Problem") { self.openURL(ProductInfo.issues) }
+            Button(Self.reportProblemTitle) { self.openURL(ProductInfo.issues) }
         }
     }
 }
