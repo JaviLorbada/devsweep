@@ -82,15 +82,19 @@ struct ItemRow: View {
             Button {
                 self.model.selection = self.row.item
             } label: {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(self.row.result?.label ?? self.row.item.name)
-                        .fontWeight(.medium)
-                        .lineLimit(1)
-                        .layoutPriority(1)
-                    Text(self.row.item.family.name)
-                        .font(.caption)
-                        .foregroundStyle(.muted)
-                        .lineLimit(1)
+                HStack(spacing: 0) {
+                    // The family shows whole or not at all: cut down beside a
+                    // long name in a narrow window, it was a stray letter.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            self.name
+                            Text(self.row.item.family.name)
+                                .font(.caption)
+                                .foregroundStyle(.muted)
+                                .lineLimit(1)
+                        }
+                        self.name
+                    }
                     Spacer(minLength: 0)
                 }
                 .frame(maxHeight: .infinity)
@@ -129,6 +133,12 @@ struct ItemRow: View {
                 + "\(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
         .accessibilityAddTraits(selected ? .isSelected : [])
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
+    }
+
+    private var name: some View {
+        Text(self.row.result?.label ?? self.row.item.name)
+            .fontWeight(.medium)
+            .lineLimit(1)
     }
 
     private var barColor: Color {
