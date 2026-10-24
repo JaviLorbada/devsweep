@@ -1,3 +1,4 @@
+import AppKit
 import DevSweepKit
 import SwiftUI
 
@@ -49,6 +50,33 @@ struct BlocksChart: View {
 
     /// The gap around each cell.
     static let cellInset: CGFloat = 1.5
+    /// The space between a cell's edge and its label.
+    static let labelPadding = (horizontal: CGFloat(9), vertical: CGFloat(7))
+
+    /// Whether a cell of `size` points has room for its label: the first four
+    /// letters of the name (or all of a shorter one) over the size, inside
+    /// the padding, measured in the fonts the label uses.
+    static func fitsLabel(_ size: CGSize, name: String, sizeText: String) -> Bool {
+        let nameFont = NSFont.systemFont(
+            ofSize: NSFont.preferredFont(forTextStyle: .callout).pointSize,
+            weight: .semibold)
+        let sizeFont = NSFont.monospacedDigitSystemFont(
+            ofSize: NSFont.preferredFont(forTextStyle: .caption1).pointSize,
+            weight: .regular)
+        let shortest = name.count <= 4 ? name : name.prefix(4) + "…"
+        let width = max(Self.width(of: shortest, in: nameFont), Self.width(of: sizeText, in: sizeFont))
+        let height = Self.lineHeight(of: nameFont) + Self.lineHeight(of: sizeFont)
+        return size.width >= width + 2 * self.labelPadding.horizontal
+            && size.height >= height + 2 * self.labelPadding.vertical
+    }
+
+    private static func width(of text: String, in font: NSFont) -> CGFloat {
+        ceil((text as NSString).size(withAttributes: [.font: font]).width)
+    }
+
+    private static func lineHeight(of font: NSFont) -> CGFloat {
+        ceil(font.ascender - font.descender + font.leading)
+    }
 
     /// The cells as drawn, each inset by the gap. A cell too thin to hold
     /// the gap has no frame to draw (inset, it would be CGRect.null and land
@@ -101,23 +129,25 @@ private struct TreemapCell: View {
 
     var body: some View {
         let color = Palette.color(self.row.item)
+        let size = SizeText.of(kilobytes: self.row.shownKilobytes)
         Button {
             self.model.selection = self.row.item
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                if self.frame.width >= 78, self.frame.height >= 36 {
+                if BlocksChart.fitsLabel(self.frame.size, name: self.row.item.shortName, sizeText: size) {
                     Text(self.row.item.shortName)
                         .font(.callout.weight(.semibold))
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    Text(SizeText.of(kilobytes: self.row.shownKilobytes))
+                    Text(size)
                         .font(.caption)
                         .monospacedDigit()
                         .foregroundStyle(.muted)
+                        .lineLimit(1)
                 }
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
+            .padding(.horizontal, BlocksChart.labelPadding.horizontal)
+            .padding(.vertical, BlocksChart.labelPadding.vertical)
             .frame(width: max(self.frame.width, 0), height: max(self.frame.height, 0), alignment: .topLeading)
             .background(color.opacity(self.selected ? 0.55 : 0.3), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(

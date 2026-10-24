@@ -28,4 +28,18 @@ struct BlocksChartTests {
             #expect(CGRect(origin: .zero, size: size).contains(cell.frame))
         }
     }
+
+    @Test
+    func `a block is labeled when the start of its name and its size fit, in points`() {
+        // Tool caches and Xcode build folders got these cells at 1280 wide,
+        // and the old fixed 78 by 36 points left them blank.
+        #expect(BlocksChart.fitsLabel(CGSize(width: 67, height: 92), name: "Tool caches", sizeText: "9 MB"))
+        #expect(BlocksChart.fitsLabel(CGSize(width: 73, height: 72), name: "Xcode build folders", sizeText: "7 MB"))
+        // Too narrow for four letters, or too low for two lines.
+        #expect(!BlocksChart.fitsLabel(CGSize(width: 30, height: 92), name: "Tool caches", sizeText: "9 MB"))
+        #expect(!BlocksChart.fitsLabel(CGSize(width: 120, height: 30), name: "Tool caches", sizeText: "9 MB"))
+        // What it needs follows the text: a short name and size fit where a long size doesn't.
+        #expect(BlocksChart.fitsLabel(CGSize(width: 52, height: 60), name: "npm", sizeText: "9 MB"))
+        #expect(!BlocksChart.fitsLabel(CGSize(width: 52, height: 60), name: "npm", sizeText: "1023 MB"))
+    }
 }
