@@ -216,7 +216,7 @@ struct DerivedDataParts: View {
         return parts.sorted { $0.kilobytes > $1.kilobytes }
     }
 
-    /// The folder the project lives in, "kite-1" for `.../kite-1/Waypoint.xcodeproj`:
+    /// The folder the project lives in, "atlas-2" for `.../atlas-2/Atlas.xcodeproj`:
     /// what tells apart copies of one project, and what you see in Finder.
     /// The project's own name when it sits at the top of the disk.
     static func displayName(_ project: DerivedDataProject) -> String {

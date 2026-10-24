@@ -15,8 +15,8 @@ struct InspectorTests {
                 folder: "\(name)-abcdefghijklmnop",
                 workspacePath: "/Users/someone/Developer/\(name).xcworkspace")
         }
-        #expect(DerivedDataParts.displayName(project("kite-1/Waypoint")) == "kite-1")
-        #expect(DerivedDataParts.displayName(project("Waypoint-iOS/Waypoint")) == "Waypoint-iOS")
+        #expect(DerivedDataParts.displayName(project("atlas-2/Atlas")) == "atlas-2")
+        #expect(DerivedDataParts.displayName(project("Atlas-iOS/Atlas")) == "Atlas-iOS")
         #expect(DerivedDataParts.displayName(project("Atlas/Atlas")) == "Atlas")
         #expect(DerivedDataParts.displayName(project("/Loose")) == "Loose")
     }
