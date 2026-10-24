@@ -46,6 +46,21 @@ struct BlocksChart: View {
             }
         }
     }
+
+    /// The gap around each cell.
+    static let cellInset: CGFloat = 1.5
+
+    /// The cells as drawn, each inset by the gap. A cell too thin to hold
+    /// the gap has no frame to draw (inset, it would be CGRect.null and land
+    /// far from the chart), so it is left out.
+    static func drawnCells<ID>(_ cells: [Treemap.Cell<ID>]) -> [Treemap.Cell<ID>] {
+        cells.compactMap { cell in
+            var drawn = cell
+            drawn.frame = cell.frame.insetBy(dx: Self.cellInset, dy: Self.cellInset)
+            guard !drawn.frame.isNull, drawn.frame.width >= 1, drawn.frame.height >= 1 else { return nil }
+            return drawn
+        }
+    }
 }
 
 private struct TreemapCells: View {
@@ -65,12 +80,9 @@ private struct TreemapCells: View {
                             .foregroundStyle(.muted)
                     }
             }
-            ForEach(cells, id: \.id) { cell in
+            ForEach(BlocksChart.drawnCells(cells), id: \.id) { cell in
                 if let row = model.rows[cell.id] {
-                    TreemapCell(
-                        row: row,
-                        frame: cell.frame.insetBy(dx: 1.5, dy: 1.5),
-                        selected: self.model.selection == cell.id)
+                    TreemapCell(row: row, frame: cell.frame, selected: self.model.selection == cell.id)
                 }
             }
         }
