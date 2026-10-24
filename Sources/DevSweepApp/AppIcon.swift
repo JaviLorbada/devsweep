@@ -50,10 +50,15 @@ struct AppIconView: View {
 
     /// Where each segment starts and ends around the ring, gaps taken out.
     static var segments: [(family: Family, from: Double, to: Double)] {
+        self.segments(gap: self.gap)
+    }
+
+    /// The segments with gaps of another share, for the menu bar's glyph.
+    static func segments(gap: Double) -> [(family: Family, from: Double, to: Double)] {
         var start = 0.0
         return self.shares.map { family, share in
             defer { start += share }
-            return (family, start + self.gap / 2, start + share - self.gap / 2)
+            return (family, start + gap / 2, start + share - gap / 2)
         }
     }
 }

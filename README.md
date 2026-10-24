@@ -101,9 +101,9 @@ images, platforms and build tools, emulators, and Gradle's caches, flagging
 what looks unused. Settings has the project folders, items to skip, when
 something counts as unused, how cleaning starts out, whether to scan on
 opening, and whether to show the menu bar item. The menu bar item shows the
-free space and keeps the app running after its window closes; while the app
-runs it scans once a day and says so when DerivedData has grown past a
-threshold. Nothing starts it at login.
+icon's ring in one color and the free space, and keeps the app running after
+its window closes; while the app runs it scans once a day and says so when
+DerivedData has grown past a threshold. Nothing starts it at login.
 
 ## Build and test
 

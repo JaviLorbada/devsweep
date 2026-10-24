@@ -14,6 +14,30 @@ final class RecordingPoster: NotificationPoster {
 @Suite("Menu bar and daily scan")
 struct MenuBarTests {
     @Test
+    func `the menu bar item's text is the free space, never a view's description`() {
+        for kilobytes: Int64 in [0, 900, 50_536_000, 4_000_000_000] {
+            let title = MenuBarLabel.title(DiskSpace(totalKilobytes: 5_000_000_000, availableKilobytes: kilobytes))
+            #expect(title == SizeText.of(kilobytes: kilobytes))
+            #expect(!title.contains("Image("))
+            #expect(!title.contains("provider:"))
+        }
+    }
+
+    @Test
+    func `the menu bar glyph is a 16-point template ring whose five segments stay apart`() {
+        let image = MenuBarGlyph.image
+        #expect(image.isTemplate)
+        #expect(image.size == CGSize(width: 16, height: 16))
+        // Each gap and each segment measured along the ring, in points.
+        let circumference = 2 * Double.pi * MenuBarGlyph.radius
+        let segments = AppIconView.segments(gap: MenuBarGlyph.gap)
+        #expect(segments.count == Family.allCases.count)
+        #expect(MenuBarGlyph.gap * circumference >= 1.5)
+        #expect(segments.allSatisfy { ($0.to - $0.from) * circumference >= 2 })
+        #expect(MenuBarGlyph.radius + MenuBarGlyph.lineWidth / 2 <= MenuBarGlyph.side / 2)
+    }
+
+    @Test
     func `A scan is due a day after the last one, and never before a first`() {
         let last = Date(timeIntervalSince1970: 1_800_000_000)
         #expect(!ScanSchedule.isDue(lastScan: nil, now: last))
