@@ -11,7 +11,9 @@ import SwiftUI
 /// the SwiftPM cache back). Cleaning must only ever run against a fake home,
 /// with `DEVSWEEP_TRASH_FOLDER` set;
 /// `DEVSWEEP_SNAPSHOT_APPEARANCE` picks `dark` or `light`;
-/// `DEVSWEEP_SNAPSHOT_SELECT` picks an item id or runtime id to select.
+/// `DEVSWEEP_SNAPSHOT_SELECT` picks an item id or runtime id to select;
+/// `DEVSWEEP_SNAPSHOT_WIDTH` lays it out that wide instead of 1280, without
+/// the inspector where the window would hide it.
 ///
 /// The window itself can't be captured without screen recording permission,
 /// so this draws the same content views with ImageRenderer, laid out like the
@@ -54,7 +56,8 @@ enum Snapshotter {
         }
         try? await Task.sleep(for: .milliseconds(600))
 
-        let renderer = ImageRenderer(content: SnapshotLayout()
+        let width = environment["DEVSWEEP_SNAPSHOT_WIDTH"].flatMap(Double.init) ?? 1280
+        let renderer = ImageRenderer(content: SnapshotLayout(width: width)
             .environment(model)
             .environment(\.colorScheme, dark ? .dark : .light))
         renderer.scale = 2
@@ -70,8 +73,11 @@ enum Snapshotter {
 /// The window's three columns, drawn without the views AppKit backs.
 private struct SnapshotLayout: View {
     @Environment(AppModel.self) private var model
+    let width: CGFloat
 
     var body: some View {
+        let showsInspector = self.width >= WindowLayout.sidebar.ideal + WindowLayout.dividers + WindowLayout
+            .inspectorShowFrom
         HStack(spacing: 0) {
             SnapshotSidebar()
                 .frame(width: 232)
@@ -97,27 +103,12 @@ private struct SnapshotLayout: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            Divider()
-            Group {
-                switch self.model.screen {
-                case .overview:
-                    if let item = model.selection, let row = model.rows[item] {
-                        VStack(spacing: 0) {
-                            ItemDetails(row: row)
-                            Spacer(minLength: 0)
-                            InspectorAction(row: row).padding(18)
-                        }
-                    }
-                case .simulatorRuntimes: RuntimeInspector()
-                case .xcodeVersions: XcodeInspector()
-                case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
-                }
+            if showsInspector {
+                Divider()
+                self.inspector
             }
-            .frame(width: 300)
-            .frame(maxHeight: .infinity, alignment: .top)
-            .background(.fill.quinary)
         }
-        .frame(width: 1280, height: 860)
+        .frame(width: self.width, height: 860)
         .background(Color(nsColor: .windowBackgroundColor))
         .overlay {
             if let runtime = model.runtimeToRemove {
@@ -129,6 +120,27 @@ private struct SnapshotLayout: View {
                 }
             }
         }
+    }
+
+    private var inspector: some View {
+        Group {
+            switch self.model.screen {
+            case .overview:
+                if let item = model.selection, let row = model.rows[item] {
+                    VStack(spacing: 0) {
+                        ItemDetails(row: row)
+                        Spacer(minLength: 0)
+                        InspectorAction(row: row).padding(18)
+                    }
+                }
+            case .simulatorRuntimes: RuntimeInspector()
+            case .xcodeVersions: XcodeInspector()
+            case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
+            }
+        }
+        .frame(width: 300)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(.fill.quinary)
     }
 }
 

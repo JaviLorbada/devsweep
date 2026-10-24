@@ -66,7 +66,9 @@ enum DebugLaunch {
             NSApplication.shared.activate()
             window.makeKeyAndOrderFront(nil)
             try? await Task.sleep(for: .milliseconds(500))
-            self.trace("capturing; key window \(window.isKeyWindow), scan button enabled \(model.engine != nil)")
+            self.trace(
+                "capturing; key window \(window.isKeyWindow), on screen \(window.occlusionState.contains(.visible)), "
+                    + "scan button enabled \(model.engine != nil)")
             let appName = NSApplication.shared.mainMenu?.items.first?.submenu?.title ?? "-"
             self
                 .trace(
@@ -284,6 +286,10 @@ enum DebugLaunch {
     /// Draws the window as the window server composites it, glass included,
     /// which drawing the views into a bitmap leaves out. The function is
     /// obsolete in the SDK but still in CoreGraphics, so it is looked up.
+    ///
+    /// Once the screen has locked and the display slept, the window counts as
+    /// hidden and is never drawn, and the image comes back empty. Then nothing
+    /// is written: drawing the views instead leaves out most of SwiftUI's.
     @MainActor
     private static func capture(_ window: NSWindow, to path: String) -> Bool {
         typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
@@ -292,10 +298,28 @@ enum DebugLaunch {
         let createImage = unsafeBitCast(symbol, to: CreateImage.self)
         guard let windowNumber = UInt32(exactly: window.windowNumber) else { return false }
         // Including just this window; ignoring its shadow, at full resolution.
-        guard let image = createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue(),
-              let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
+        guard let image = createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue()
         else { return false }
+        let bitmap = NSBitmapImageRep(cgImage: image)
+        if self.isEmpty(bitmap) {
+            self.trace("the window server gave an empty image: the window isn't drawn while the screen is locked")
+            return false
+        }
+        guard let png = bitmap.representation(using: .png, properties: [:]) else { return false }
         return (try? png.write(to: URL(fileURLWithPath: path))) != nil
+    }
+
+    /// Whether every pixel on a coarse grid is fully transparent.
+    private static func isEmpty(_ image: NSBitmapImageRep) -> Bool {
+        let step = max(1, min(image.pixelsWide, image.pixelsHigh) / 24)
+        for x in stride(from: 0, to: image.pixelsWide, by: step) {
+            for y in stride(from: 0, to: image.pixelsHigh, by: step)
+                where (image.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0
+            {
+                return false
+            }
+        }
+        return true
     }
 
     /// Waits until the window's width has not changed for half a second.

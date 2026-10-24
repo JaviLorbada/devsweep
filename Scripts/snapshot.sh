@@ -12,6 +12,7 @@
 #            android-studios android-sdk gradle
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
+#   SELECT picks an item, and SNAPSHOT_WIDTH=900 lays the drawing out that wide.
 #
 #        WIDTH=1100 Scripts/snapshot.sh [output folder] [screen...]
 #   opens the real window that wide instead and captures it as the screen
@@ -187,7 +188,8 @@ for screen in "${screens[@]}"; do
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \
       DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
       DEVSWEEP_SNAPSHOT="$out/$name.png" DEVSWEEP_SNAPSHOT_SCREEN="$screen" \
-      DEVSWEEP_SNAPSHOT_APPEARANCE="$appearance" DEVSWEEP_SNAPSHOT_SELECT="$select" \
+      DEVSWEEP_SNAPSHOT_APPEARANCE="$appearance" DEVSWEEP_SNAPSHOT_SELECT="${SELECT:-$select}" \
+      DEVSWEEP_SNAPSHOT_WIDTH="${SNAPSHOT_WIDTH:-}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" >/dev/null 2>&1 &
   fi
   pid=$!
