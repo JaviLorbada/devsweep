@@ -184,13 +184,20 @@ enum WindowSizing {
 }
 
 /// One of the window's columns as a rounded panel on the darker backdrop.
+///
+/// The corners follow the window's, as the sidebar's do: concentric with the
+/// window's corner where a panel meets it, and the sidebar's radius elsewhere.
 struct PanelModifier: ViewModifier {
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: WindowLayout.panelCornerRadius, style: .continuous)
+        let shape = ConcentricRectangle(
+            corners: .concentric(minimum: .fixed(WindowLayout.panelCornerRadius)),
+            isUniform: false)
+        // The shape can't be inset, so the border is a stroke twice as wide
+        // with its outer half clipped off.
         content
             .background(Palette.panel, in: shape)
+            .overlay(shape.stroke(.separator.opacity(0.5), lineWidth: 2))
             .clipShape(shape)
-            .overlay(shape.strokeBorder(.separator.opacity(0.5)))
     }
 }
 

@@ -24,7 +24,10 @@ enum WindowLayout {
     static let dividers: CGFloat = 10
     /// The space around and between the rounded panels the columns sit in.
     static let gap: CGFloat = 8
-    static let panelCornerRadius: CGFloat = 12
+    /// The sidebar's corner radius, which is concentric with the window's
+    /// 26-point corner at the 8-point gap. The panels use it wherever they
+    /// don't meet a window corner.
+    static let panelCornerRadius: CGFloat = 18
 
     /// The window never gets narrower than the sidebar and the center at
     /// their minimums, so nothing is ever clipped.
