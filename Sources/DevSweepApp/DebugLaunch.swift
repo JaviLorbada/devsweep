@@ -21,6 +21,10 @@ import SwiftUI
 /// - `DEVSWEEP_SCROLL=200` scrolls the center panel down that many points.
 /// - `DEVSWEEP_PRESS=label` then presses the control with that accessibility
 ///   label, as VoiceOver would.
+/// - `DEVSWEEP_PERFORM=View/Blocks` then chooses that menu item, as a click or
+///   its shortcut would (the app menu is `DevSweep/...`), and says which
+///   windows are open after it and what it changed. A window it opens is
+///   the one `DEVSWEEP_CAPTURE` captures.
 /// - `DEVSWEEP_THEN_WIDTHS=900,1400` then resizes to each width in turn.
 /// - `DEVSWEEP_PROBE=/path/report.txt` then waits a few seconds, writes
 ///   whether the content fits the window (split views, columns, scroll views,
@@ -61,7 +65,7 @@ enum DebugLaunch {
         if !(environment["DEVSWEEP_MENU"] ?? "").isEmpty {
             await self.captureMenuBarPanel(to: environment["DEVSWEEP_CAPTURE"])
         }
-        if let output = environment["DEVSWEEP_CAPTURE"], let window = mainWindow {
+        if let output = environment["DEVSWEEP_CAPTURE"], let window = self.opened ?? mainWindow {
             // Drawn as the key window, so controls don't show their inactive look.
             NSApplication.shared.activate()
             window.makeKeyAndOrderFront(nil)
@@ -157,6 +161,17 @@ enum DebugLaunch {
         if let label = environment["DEVSWEEP_PRESS"], !label.isEmpty, let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
             self.trace(self.press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
+        }
+        if let path = environment["DEVSWEEP_PERFORM"], !path.isEmpty {
+            let before = Set(NSApplication.shared.windows.filter(\.isVisible).map(ObjectIdentifier.init))
+            self.trace(self.perform(menuPath: path) ? "chose \(path)" : "no menu item \(path)")
+            try? await Task.sleep(for: .seconds(1))
+            let visible = NSApplication.shared.windows.filter(\.isVisible)
+            self.opened = visible.first { !before.contains(ObjectIdentifier($0)) && $0.contentView != nil }
+            self.trace("windows: \(visible.map { "\"\($0.title)\"" }.joined(separator: ", "))")
+            self.trace(
+                "screen \(model.screen), chart \(model.chartStyle.rawValue), "
+                    + "inspector \(model.debugInspectorShown ? "shown" : "hidden"), scanning \(model.isScanning)")
         }
         if let points = environment["DEVSWEEP_SCROLL"].flatMap(Double.init), let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
@@ -263,6 +278,24 @@ enum DebugLaunch {
         guard let view else { return nil }
         if let button = view as? NSButton { return button }
         return view.subviews.lazy.compactMap { self.findStatusButton(in: $0) }.first
+    }
+
+    /// A window a chosen menu item opened, such as About.
+    @MainActor private static var opened: NSWindow?
+
+    /// Chooses the menu item at `path`, its menu's title then its own, as
+    /// the menu bar shows them.
+    @MainActor
+    private static func perform(menuPath path: String) -> Bool {
+        let parts = path.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2,
+              let menu = NSApplication.shared.mainMenu?.items
+                  .first(where: { $0.title == parts[0] || $0.submenu?.title == parts[0] })?.submenu,
+              let index = menu.items.firstIndex(where: { $0.title == parts[1] }),
+              menu.items[index].isEnabled
+        else { return false }
+        menu.performActionForItem(at: index)
+        return true
     }
 
     /// Presses the first element labeled `label`, searching the window's
