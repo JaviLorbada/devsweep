@@ -17,6 +17,12 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   `PRODUCT_NAME`, `BUNDLE_ID`, `MARKETING_VERSION` and `BUILD_NUMBER`. Change
   them there, never in the plist. `ProductInfo.swift` holds the same names for
   the code, and a test fails when the two disagree.
+- **Which build it is** goes in the plist too: `DevSweepCommit`, the short
+  commit; `DevSweepTreeDirty`, whether the tree had uncommitted changes; and
+  `DevSweepReleaseSigned`, whether it was signed with a Developer ID. About
+  shows the commit, and so does the overview's status line unless the build
+  is signed for release. `defaults read <bundle>/Contents/Info DevSweepCommit`
+  reads it from outside.
 - **The icon** is `docs/icon/AppIcon.icns`. `Scripts/make_icon.sh` draws it
   from `AppIconView` in `Sources/DevSweepApp/AppIcon.swift`, a ring in the five
   family colors on a dark rounded square: it writes the PNGs an iconset holds,

@@ -890,7 +890,9 @@ final class AppModel {
     var subtitle: String {
         switch self.screen {
         case .overview:
-            return self.statusLine
+            // A development build says what it was built from, so an old
+            // bundle can't pass for the latest.
+            return [self.statusLine, BuildIdentity.current.statusNote].compactMap(\.self).joined(separator: " ")
         case .simulatorRuntimes:
             guard let runtimes = extras?.runtimes else { return self.isLoadingExtras ? "Listing runtimes" : "" }
             let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"

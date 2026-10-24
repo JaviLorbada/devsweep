@@ -33,6 +33,17 @@ cp "$bin/DevSweepApp" "$app/Contents/MacOS/$PRODUCT_NAME"
 # artwork in its place.
 cp "$root/docs/icon/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
 
+# Which build this is, so a bundle can say what it was built from: the
+# commit, whether the tree had uncommitted changes, and whether it is signed
+# for release. The app shows the commit in About, and in the overview's
+# status line unless it is signed for release.
+commit="$(git -C "$root" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+dirty="<false/>"
+[[ -z "$(git -C "$root" status --porcelain 2>/dev/null)" ]] || dirty="<true/>"
+identity="${DEVELOPER_ID_APPLICATION:-}"
+release_signed="<false/>"
+[[ -z "$identity" ]] || release_signed="<true/>"
+
 cat > "$app/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -50,11 +61,13 @@ cat > "$app/Contents/Info.plist" <<EOF
   <key>LSApplicationCategoryType</key><string>public.app-category.developer-tools</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>DevSweepCommit</key><string>$commit</string>
+  <key>DevSweepTreeDirty</key>$dirty
+  <key>DevSweepReleaseSigned</key>$release_signed
 </dict>
 </plist>
 EOF
 
-identity="${DEVELOPER_ID_APPLICATION:-}"
 if [[ -n "$identity" ]]; then
   codesign --force --sign "$identity" --options runtime --timestamp "$app" >&2
 else

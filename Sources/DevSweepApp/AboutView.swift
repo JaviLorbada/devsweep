@@ -22,6 +22,12 @@ struct AboutView: View {
                     .font(.callout)
                     .foregroundStyle(.muted)
                     .textSelection(.enabled)
+                if let commit = BuildIdentity.current.commitDescription {
+                    Text("Built from \(commit)")
+                        .font(.callout)
+                        .foregroundStyle(.muted)
+                        .textSelection(.enabled)
+                }
             }
             Link("Made by \(Self.author)", destination: Self.website)
             HStack(spacing: 18) {
