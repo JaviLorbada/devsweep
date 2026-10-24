@@ -205,7 +205,8 @@ struct AndroidInspector: View {
             ScrollView {
                 AndroidDetails(entry: entry)
             }
-            .safeAreaInset(edge: .bottom) {
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .safeAreaBar(edge: .bottom) {
                 Button("Reveal in Finder") { self.model.revealInFinder([entry.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)

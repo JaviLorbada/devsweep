@@ -14,7 +14,8 @@ struct ItemInspector: View {
                 ItemDetails(row: row)
                     .id(item)
             }
-            .safeAreaInset(edge: .bottom) {
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .safeAreaBar(edge: .bottom) {
                 InspectorAction(row: row)
                     .padding(18)
             }

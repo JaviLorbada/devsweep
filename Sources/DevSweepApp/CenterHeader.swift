@@ -112,26 +112,40 @@ struct ScanCapsule: View {
     }
 }
 
-/// Ring or Blocks as a glass pill with the selected segment raised, the way
-/// macOS 26 draws a segmented control in a toolbar; outside one, the system
-/// control has no glass.
+/// Ring or Blocks as a glass track with a glass thumb under the chosen one,
+/// the way macOS 26 draws a segmented control in a toolbar; outside one, the
+/// system control has no glass. Click a segment to choose it, or drag the
+/// thumb and let go nearer the other.
 struct ChartStylePicker: View {
     @Binding var selection: AppModel.ChartStyle
     var showsText = true
-    @Namespace private var knob
+    @Namespace private var glass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Each segment's frame in the track, where the thumb goes.
+    @State private var segmentFrames: [AppModel.ChartStyle: CGRect] = [:]
+    /// Where the thumb's center is while it is dragged.
+    @State private var dragX: CGFloat?
 
     static let height: CGFloat = 32
+    private nonisolated static let track = "chart style track"
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(AppModel.ChartStyle.allCases) { style in
-                self.segment(style, selected: style == self.selection)
+        GlassEffectContainer {
+            HStack(spacing: 0) {
+                ForEach(AppModel.ChartStyle.allCases) { style in
+                    self.segment(style, selected: style == self.selection)
+                        .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.track)) } action: { frame in
+                            self.segmentFrames[style] = frame
+                        }
+                }
             }
+            .coordinateSpace(.named(Self.track))
+            .background(alignment: .topLeading) { self.thumb }
+            .highPriorityGesture(self.drag)
+            .padding(3)
+            .frame(height: Self.height)
+            .glassEffect(.regular, in: .capsule)
         }
-        .padding(3)
-        .frame(height: Self.height)
-        .glassEffect(.regular, in: .capsule)
         .help("Show sizes as a ring or as blocks")
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Chart")
@@ -152,19 +166,54 @@ struct ChartStylePicker: View {
             .foregroundStyle(selected ? AnyShapeStyle(.primary) : AnyShapeStyle(.muted))
             .padding(.horizontal, self.showsText ? 14 : 10)
             .frame(maxHeight: .infinity)
-            .background {
-                if selected {
-                    Capsule()
-                        .fill(Palette.raisedSegment)
-                        .shadow(color: .black.opacity(0.18), radius: 1.5, y: 1)
-                        .matchedGeometryEffect(id: "knob", in: self.knob)
-                }
-            }
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(style.rawValue)
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    /// Under the chosen segment, or under the pointer while dragged.
+    @ViewBuilder
+    private var thumb: some View {
+        if let frame = self.thumbFrame {
+            Color.clear
+                .frame(width: frame.width, height: frame.height)
+                .glassEffect(.regular.tint(Palette.raisedSegment.opacity(0.8)).interactive(), in: .capsule)
+                .glassEffectID("thumb", in: self.glass)
+                .offset(x: frame.minX, y: frame.minY)
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var thumbFrame: CGRect? {
+        guard var frame = self.segmentFrames[self.selection] else { return nil }
+        if let dragX, let nearest = self.nearest(to: dragX), let width = self.segmentFrames[nearest]?.width {
+            let frames = self.segmentFrames.values
+            let leading = frames.map(\.minX).min() ?? 0
+            let trailing = frames.map(\.maxX).max() ?? 0
+            frame.size.width = width
+            frame.origin.x = min(max(dragX - width / 2, leading), trailing - width)
+        }
+        return frame
+    }
+
+    /// The segment whose middle is closest to `x`.
+    private func nearest(to x: CGFloat) -> AppModel.ChartStyle? {
+        self.segmentFrames.min { abs($0.value.midX - x) < abs($1.value.midX - x) }?.key
+    }
+
+    /// Moves the thumb with the pointer, then settles it on the nearest segment.
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 4, coordinateSpace: .named(Self.track))
+            .onChanged { value in self.dragX = value.location.x }
+            .onEnded { value in
+                let chosen = self.nearest(to: value.location.x) ?? self.selection
+                withAnimation(self.reduceMotion ? nil : .snappy(duration: 0.25)) {
+                    self.selection = chosen
+                    self.dragX = nil
+                }
+            }
     }
 }
 

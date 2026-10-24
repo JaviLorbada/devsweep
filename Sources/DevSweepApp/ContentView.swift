@@ -20,8 +20,9 @@ struct ContentView: View {
             // the window also resizing on its own the two fed each other until
             // AppKit gave up mid-layout.
             HStack(spacing: WindowLayout.gap) {
-                VStack(spacing: 0) {
-                    CenterHeader(title: self.title)
+                // The header is a bar over the screen's scroll view: content
+                // scrolls under it, softened by the scroll edge effect.
+                Group {
                     switch model.screen {
                     case .overview: OverviewView()
                     case .xcodeVersions: XcodeVersionsView()
@@ -31,6 +32,8 @@ struct ContentView: View {
                     case .gradleCaches: GradleCachesView()
                     }
                 }
+                .scrollEdgeEffectStyle(.soft, for: .top)
+                .safeAreaBar(edge: .top) { CenterHeader(title: self.title) }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
                 .panel()
                 if self.wantsInspector, self.inspectorHasRoom {

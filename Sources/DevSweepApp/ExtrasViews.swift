@@ -320,7 +320,8 @@ struct RuntimeInspector: View {
             ScrollView {
                 RuntimeDetails(runtime: runtime)
             }
-            .safeAreaInset(edge: .bottom) {
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .safeAreaBar(edge: .bottom) {
                 Button("Remove Runtime") { self.model.runtimeToRemove = runtime }
                     .buttonStyle(.glassProminent)
                     .controlSize(.large)
@@ -406,7 +407,8 @@ struct XcodeInspector: View {
             ScrollView {
                 XcodeDetails(xcode: xcode, installedCount: self.model.extras?.xcodes.count ?? 0)
             }
-            .safeAreaInset(edge: .bottom) {
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .safeAreaBar(edge: .bottom) {
                 Button("Reveal in Finder") { self.model.revealInFinder([xcode.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)

@@ -5,14 +5,16 @@ struct OverviewView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        // The footer is a bar the items scroll under, softened by the scroll
+        // edge effect, like the header above.
         ScrollView {
             OverviewContent()
         }
-        .safeAreaInset(edge: .bottom) {
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
+        .safeAreaBar(edge: .bottom) {
             OverviewFooter()
                 .padding(.horizontal, 22)
                 .padding(.vertical, 12)
-                .background(.bar)
         }
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.model.chartStyle)
     }
