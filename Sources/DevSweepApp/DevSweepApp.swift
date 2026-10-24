@@ -47,16 +47,16 @@ struct DevSweepApp: App {
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
-        .commands {
-            CommandGroup(replacing: .newItem) {}
-            CommandMenu("Scan") {
-                Button(self.model.isScanning ? "Stop Scan" : "Scan Again") {
-                    self.model.isScanning ? self.model.stopScan() : self.model.scan()
-                }
-                .keyboardShortcut("r")
-                .disabled(self.model.engine == nil)
-            }
+        .commands { AppCommands(model: self.model) }
+
+        Window("About \(ProductInfo.name)", id: "about") {
+            AboutView()
         }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .restorationBehavior(.disabled)
+        // The app menu opens it; it needs no item in the Window menu.
+        .commandsRemoved()
 
         Settings {
             SettingsView()
@@ -93,5 +93,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// window closes; the item's Open DevSweep brings the window back.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
+    }
+}
+
+/// The menu bar's commands.
+struct AppCommands: Commands {
+    let model: AppModel
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About \(ProductInfo.name)") { self.openWindow(id: "about") }
+        }
+        CommandGroup(replacing: .newItem) {}
+        CommandMenu("Scan") {
+            Button(self.model.isScanning ? "Stop Scan" : "Scan Again") {
+                self.model.isScanning ? self.model.stopScan() : self.model.scan()
+            }
+            .keyboardShortcut("r")
+            .disabled(self.model.engine == nil)
+        }
     }
 }

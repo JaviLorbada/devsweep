@@ -19,6 +19,18 @@ public enum ProductInfo {
     public static var version: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }
+
+    /// The build number the bundle was packaged with, from `version.env`.
+    public static var build: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "dev"
+    }
+
+    /// Where the project lives; the About window and the Help menu link here.
+    public static let repository = URL(string: "https://github.com/JaviLorbada/devsweep")!
+    /// Where to report a problem.
+    public static let issues = repository.appending(path: "issues")
+    /// The MIT license the project is under.
+    public static let license = repository.appending(path: "blob/main/LICENSE")
 }
 
 /// The name the command line tool answers to, and its environment variables'

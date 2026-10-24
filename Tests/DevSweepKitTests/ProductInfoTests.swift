@@ -26,6 +26,15 @@ struct ProductInfoTests {
         #expect(Int(file["BUILD_NUMBER"] ?? "") != nil)
     }
 
+    @Test func `the About window and Help menu link to the repository the README names`() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let readme = try String(contentsOf: root.appending(path: "README.md"), encoding: .utf8)
+        #expect(readme.contains(ProductInfo.repository.absoluteString))
+        #expect(ProductInfo.issues.absoluteString == ProductInfo.repository.absoluteString + "/issues")
+        #expect(ProductInfo.license.absoluteString == ProductInfo.repository.absoluteString + "/blob/main/LICENSE")
+    }
+
     @Test
     func `the tool is devsweep, and devclean when run under the original script's name`() {
         #expect(CommandLineOptions.usage().hasPrefix("Usage: devsweep [--run [--yes]]"))

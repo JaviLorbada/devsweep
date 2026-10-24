@@ -22,3 +22,5 @@ line under Unreleased as it lands.
   cleaning starts out and scanning on launch.
 - A menu bar item with the free space, a daily scan while the app runs, and a
   notification when DerivedData grows past a threshold.
+- An About window with the version, links to the source and the MIT license,
+  and acknowledgements.
