@@ -11,6 +11,11 @@ Scripts/package_app.sh          # release build into build/DevSweep.app
 Scripts/package_app.sh debug    # debug build, with the debug-only harnesses
 ```
 
+The debug build goes to `build/debug/DevSweep.app` with the bundle id
+`com.javilorbada.devsweep.debug`. `Scripts/snapshot.sh` uses it, so
+captures never replace the bundle you open, and its settings stay apart
+from the release build's.
+
 The script builds the `DevSweepApp` executable and wraps it in a bundle:
 
 - **Info.plist** gets the bundle id, name and version from `version.env`:

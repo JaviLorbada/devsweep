@@ -6,6 +6,10 @@
 #
 # Usage: Scripts/package_app.sh [release|debug]   default release
 #
+# A debug build goes to build/debug/DevSweep.app with its own bundle id, the
+# release one's plus .debug, so a debug run never replaces the bundle you
+# open, nor shares its settings.
+#
 # Signing: ad hoc, unless DEVELOPER_ID_APPLICATION names a Developer ID
 # Application identity in the keychain; then hardened runtime and a secure
 # timestamp, ready for Scripts/sign-and-notarize.sh. App Sandbox stays off.
@@ -17,6 +21,11 @@ config="${1:-${CONFIG:-release}}"
 # shellcheck source=../version.env
 source "$root/version.env"
 destination="$root/build/$PRODUCT_NAME.app"
+bundle_id="$BUNDLE_ID"
+if [[ "$config" == debug ]]; then
+  destination="$root/build/debug/$PRODUCT_NAME.app"
+  bundle_id="$BUNDLE_ID.debug"
+fi
 
 swift build --package-path "$root" -c "$config" --product DevSweepApp >&2
 bin="$(swift build --package-path "$root" -c "$config" --product DevSweepApp --show-bin-path)"
@@ -51,7 +60,7 @@ cat > "$app/Contents/Info.plist" <<EOF
 <dict>
   <key>CFBundleName</key><string>$PRODUCT_NAME</string>
   <key>CFBundleDisplayName</key><string>$PRODUCT_NAME</string>
-  <key>CFBundleIdentifier</key><string>$BUNDLE_ID</string>
+  <key>CFBundleIdentifier</key><string>$bundle_id</string>
   <key>CFBundleExecutable</key><string>$PRODUCT_NAME</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
