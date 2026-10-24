@@ -43,4 +43,11 @@ struct CommandsTests {
         #expect(AppCommands.reportProblemTitle == "Report a Problem")
         #expect(AppCommands.supportTitle == "Support DevSweep")
     }
+
+    @Test
+    func `the inspector moves with the sidebar's timing, and only fades with Reduce Motion`() {
+        #expect(InspectorMotion.duration == 0.25)
+        #expect(InspectorMotion.layoutAnimation(reduceMotion: false) == .easeInOut(duration: 0.25))
+        #expect(InspectorMotion.layoutAnimation(reduceMotion: true) == nil)
+    }
 }

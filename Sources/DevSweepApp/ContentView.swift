@@ -4,6 +4,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         @Bindable var model = model
@@ -45,9 +46,12 @@ struct ContentView: View {
                     .frame(width: WindowLayout.inspectorWidth)
                     .frame(maxHeight: .infinity)
                     .panel()
-                    .transition(.move(edge: .trailing))
+                    .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
                 }
             }
+            // Only showing or hiding it by choice moves anything; when the
+            // window gets too narrow for it, it goes at once.
+            .animation(InspectorMotion.layoutAnimation(reduceMotion: self.reduceMotion), value: model.wantsInspector)
             .padding([.horizontal, .bottom], WindowLayout.gap)
             .background(Palette.backdrop)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
@@ -153,6 +157,25 @@ struct ContentView: View {
                 .help("Show or hide the inspector")
         }
         .sharedBackgroundVisibility(.hidden)
+    }
+}
+
+/// How the inspector comes and goes when it is shown or hidden: it slides in
+/// from the trailing edge as the center narrows, with the sidebar's timing.
+/// That is AppKit's split view collapsing its sidebar, measured: ease in and
+/// out over a quarter of a second. With Reduce Motion it fades in place
+/// instead, and the center takes its new width at once.
+enum InspectorMotion {
+    static let duration = 0.25
+    static let animation = Animation.easeInOut(duration: duration)
+
+    /// The animation for the center's change of width, none with Reduce Motion.
+    static func layoutAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : self.animation
+    }
+
+    static func transition(reduceMotion: Bool) -> AnyTransition {
+        reduceMotion ? .opacity.animation(self.animation) : .move(edge: .trailing)
     }
 }
 
