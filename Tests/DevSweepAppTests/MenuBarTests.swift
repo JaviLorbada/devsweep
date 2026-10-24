@@ -1,5 +1,7 @@
+import AppKit
 import DevSweepKit
 import Foundation
+import SwiftUI
 import Synchronization
 import Testing
 @testable import DevSweepApp
@@ -35,6 +37,36 @@ struct MenuBarTests {
         #expect(MenuBarGlyph.gap * circumference >= 1.5)
         #expect(segments.allSatisfy { ($0.to - $0.from) * circumference >= 2 })
         #expect(MenuBarGlyph.radius + MenuBarGlyph.lineWidth / 2 <= MenuBarGlyph.side / 2)
+    }
+
+    @Test
+    func `the panel's title row draws the volume name stronger than the free space, light and dark`() throws {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        #expect(model.diskSpace != nil)
+        for scheme in [ColorScheme.light, .dark] {
+            // On a material, as the menu bar shows it, where the hierarchical
+            // styles turn vibrant: in light, `.secondary` drew darker than `.primary`.
+            let renderer = ImageRenderer(content: MenuBarPanel()
+                .background(.regularMaterial)
+                .environment(model)
+                .environment(\.colorScheme, scheme))
+            renderer.scale = 2
+            let image = try NSBitmapImageRep(cgImage: #require(renderer.cgImage))
+            let background = image.luminance(atPoint: CGPoint(x: 4, y: 4), scale: 2)
+            // The title row, just under the padding: the name from the left
+            // edge, the free space up to the right one.
+            let name = image.strongestContrast(
+                in: CGRect(x: 16, y: 14, width: 110, height: 24),
+                scale: 2,
+                on: background)
+            let free = image.strongestContrast(
+                in: CGRect(x: 170, y: 14, width: 94, height: 24),
+                scale: 2,
+                on: background)
+            #expect(free > 3, "no free space drawn in \(scheme)")
+            #expect(name > free * 1.2, "the name \(name):1, the free space \(free):1 in \(scheme)")
+        }
     }
 
     @Test
@@ -91,5 +123,32 @@ struct MenuBarTests {
         #expect(model.isScanning)
         model.stopScan()
         #expect(poster.posted.withLock { $0 }.isEmpty)
+    }
+}
+
+extension NSBitmapImageRep {
+    /// The relative luminance of the pixel at a point, as WCAG defines it.
+    func luminance(atPoint point: CGPoint, scale: CGFloat) -> Double {
+        guard let color = colorAt(x: Int(point.x * scale), y: Int(point.y * scale))?.usingColorSpace(.sRGB)
+        else { return 0 }
+        func linear(_ value: CGFloat) -> Double {
+            value <= 0.040_45 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear(color.redComponent) + 0.7152 * linear(color.greenComponent)
+            + 0.0722 * linear(color.blueComponent)
+    }
+
+    /// The highest contrast ratio any pixel in `rect`, in points, has with
+    /// `background`: what text there is drawn in, where it is solid.
+    func strongestContrast(in rect: CGRect, scale: CGFloat, on background: Double) -> Double {
+        var strongest = 1.0
+        for y in stride(from: rect.minY, to: rect.maxY, by: 1 / scale) {
+            for x in stride(from: rect.minX, to: rect.maxX, by: 1 / scale) {
+                let luminance = self.luminance(atPoint: CGPoint(x: x, y: y), scale: scale)
+                let ratio = (max(luminance, background) + 0.05) / (min(luminance, background) + 0.05)
+                strongest = max(strongest, ratio)
+            }
+        }
+        return strongest
     }
 }

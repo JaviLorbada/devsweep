@@ -67,12 +67,20 @@ enum MenuBarGlyph {
 }
 
 /// What the menu bar item opens: what the last scan found per family, when
-/// that was, and the two things to do from here. It sits on a material that
-/// shows the desktop through, so its quieter text is the system's vibrant
-/// secondary rather than the window's muted color.
+/// that was, and the two things to do from here. It sits on a material, where
+/// the hierarchical styles turn vibrant, and in the light appearance vibrancy
+/// drew `.secondary` darker than `.primary`: the volume name gray, its free
+/// space black. So the text is in plain colors, the label color's values over
+/// the window's muted color, which keep that order in both appearances.
 struct MenuBarPanel: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
+
+    /// The system label color's values, as a plain color. The material makes
+    /// `Color(nsColor: .labelColor)` vibrant, as it does `.primary`.
+    static let label = Color(nsColor: NSColor(name: nil) { appearance in
+        NSColor(white: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 1 : 0, alpha: 0.85)
+    })
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -83,9 +91,10 @@ struct MenuBarPanel: View {
                     Text("\(SizeText.of(kilobytes: space.availableKilobytes)) free")
                         .font(.callout)
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.muted)
                 }
             }
+            .foregroundStyle(Self.label)
             VStack(spacing: 6) {
                 ForEach(Family.allCases) { family in
                     HStack(spacing: 8) {
@@ -94,7 +103,7 @@ struct MenuBarPanel: View {
                         Spacer()
                         Text(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
                             .monospacedDigit()
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.muted)
                     }
                     .font(.callout)
                     .accessibilityElement(children: .combine)
@@ -109,9 +118,10 @@ struct MenuBarPanel: View {
                 .font(.callout)
                 .accessibilityElement(children: .combine)
             }
+            .foregroundStyle(Self.label)
             Text(self.model.menuBarStatus)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Button(self.model.isScanning ? "Scanning…" : "Scan Now") { self.model.scan() }
