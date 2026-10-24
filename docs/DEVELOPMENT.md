@@ -45,11 +45,18 @@ WIDTH=1280 Scripts/snapshot.sh build/snapshots overview runtimes-light
 SELECT=swiftpm-builds PRESS="and 2 more" WIDTH=1280 Scripts/snapshot.sh build/snapshots overview
 SETTINGS=Folders WIDTH=1280 Scripts/snapshot.sh build/snapshots settings
 MENU=1 WIDTH=1280 Scripts/snapshot.sh build/snapshots menu
+CHART=blocks WIDTH=1280 Scripts/snapshot.sh build/snapshots overview
+SCROLL=200 HEIGHT=700 WIDTH=1280 Scripts/snapshot.sh build/snapshots overview-light
 ```
 
+With the screen locked the app can't become active, and the window draws
+its inactive look; `ACTIVE=1` draws it as active, though AppKit still draws
+checkboxes and prominent buttons inactive.
+
 The variables (`DEVSWEEP_CAPTURE`, `DEVSWEEP_SCREEN`, `DEVSWEEP_SELECT`,
-`DEVSWEEP_PRESS`, `DEVSWEEP_SETTINGS`, `DEVSWEEP_MENU`, `DEVSWEEP_PROBE` and
-others) are documented at the top of `Sources/DevSweepApp/DebugLaunch.swift`.
+`DEVSWEEP_PRESS`, `DEVSWEEP_CHART`, `DEVSWEEP_SCROLL`, `DEVSWEEP_ACTIVE`,
+`DEVSWEEP_SETTINGS`, `DEVSWEEP_MENU`, `DEVSWEEP_PROBE` and others) are
+documented at the top of `Sources/DevSweepApp/DebugLaunch.swift`.
 `DEVSWEEP_PROBE` writes whether every column fits the window, read from the
 view hierarchy, which is how the window was checked at 900, 1100, 1280 and
 1400 points wide.

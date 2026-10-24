@@ -15,7 +15,11 @@
 #
 #        WIDTH=1100 Scripts/snapshot.sh [output folder] [screen...]
 #   opens the real window that wide instead and captures it as the screen
-#   shows it, glass and all, for overview, runtimes and xcodes.
+#   shows it, glass and all, for overview, runtimes and xcodes. With it:
+#   SELECT=derived-data selects an item (or a runtime id, or an Xcode by its
+#   folder's name), CHART=blocks picks the chart, SCROLL=200 scrolls the
+#   center panel down that many points, and ACTIVE=1 draws the window as
+#   active when it can't be, as while the screen is locked.
 
 set -euo pipefail
 
@@ -176,7 +180,8 @@ for screen in "${screens[@]}"; do
     name="$name-$WIDTH"
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
       DEVSWEEP_CAPTURE="$out/$name.png" DEVSWEEP_SCREEN="$screen" DEVSWEEP_APPEARANCE="$appearance" \
-      DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
+      DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_ACTIVE="${ACTIVE:-}" DEVSWEEP_CHART="${CHART:-}" DEVSWEEP_SCROLL="${SCROLL:-}" \
+      DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \

@@ -99,6 +99,9 @@ struct ContentView: View {
         } message: { notice in
             Text(notice.message)
         }
+        #if DEBUG
+        .transformEnvironment(\.appearsActive) { if DebugLaunch.drawsActive { $0 = true } }
+        #endif
         .task {
             #if DEBUG
             if DebugLaunch.isRequested { FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8)) }

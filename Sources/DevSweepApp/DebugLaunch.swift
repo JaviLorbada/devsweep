@@ -11,8 +11,14 @@ import SwiftUI
 /// - `DEVSWEEP_WINDOW_WIDTH=900` resizes the window once it is up.
 /// - `DEVSWEEP_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|overview` switches screens once the scan
 ///   and the extras are done, the way a click in the sidebar does; `scanning`
-///   instead winds the finished scan back to look half done.
-/// - `DEVSWEEP_SELECT=swiftpm-builds` selects an item, or a runtime by its id.
+///   instead winds the finished scan back to look half done, and `blocks`
+///   shows the overview's blocks.
+/// - `DEVSWEEP_SELECT=swiftpm-builds` selects an item, a runtime by its id,
+///   or an Xcode by its folder's name, such as `Xcode-26.4.app`.
+/// - `DEVSWEEP_CHART=blocks|ring` picks the overview's chart, as the toggle
+///   in its header does. Pressing that toggle by its label finds nothing,
+///   since the accessibility tree is empty while VoiceOver is off.
+/// - `DEVSWEEP_SCROLL=200` scrolls the center panel down that many points.
 /// - `DEVSWEEP_PRESS=label` then presses the control with that accessibility
 ///   label, as VoiceOver would.
 /// - `DEVSWEEP_THEN_WIDTHS=900,1400` then resizes to each width in turn.
@@ -27,11 +33,18 @@ import SwiftUI
 /// - `DEVSWEEP_MENU=1` instead opens the menu bar item's panel, captures it
 ///   there and quits.
 /// - `DEVSWEEP_APPEARANCE=light|dark` picks the appearance.
+/// - `DEVSWEEP_ACTIVE=1` draws the window as active even when the app can't
+///   be made active, as while the screen is locked: selected rows in the
+///   selection color rather than gray.
 enum DebugLaunch {
     static var isRequested: Bool {
         let environment = ProcessInfo.processInfo.environment
         return ["DEVSWEEP_WINDOW_WIDTH", "DEVSWEEP_SCREEN", "DEVSWEEP_PROBE", "DEVSWEEP_CAPTURE"]
             .contains { environment[$0] != nil }
+    }
+
+    static var drawsActive: Bool {
+        ProcessInfo.processInfo.environment["DEVSWEEP_ACTIVE"] == "1"
     }
 
     @MainActor
@@ -126,6 +139,7 @@ enum DebugLaunch {
         case "xcodes": model.screen = .xcodeVersions
         case "runtimes": model.screen = .simulatorRuntimes
         case "overview": model.screen = .overview
+        case "blocks": model.chartStyle = .blocks
         case "android-studios": model.screen = .androidStudios
         case "android-sdk": model.screen = .androidSDK
         case "gradle": model.screen = .gradleCaches
@@ -133,11 +147,50 @@ enum DebugLaunch {
         default: break
         }
         if let id = environment["DEVSWEEP_SELECT"], !id.isEmpty { model.select(snapshotID: id) }
+        switch environment["DEVSWEEP_CHART"] {
+        case "blocks": model.chartStyle = .blocks
+        case "ring": model.chartStyle = .ring
+        default: break
+        }
         if let label = environment["DEVSWEEP_PRESS"], !label.isEmpty, let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
             self.trace(self.press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
         }
+        if let points = environment["DEVSWEEP_SCROLL"].flatMap(Double.init), let window = mainWindow {
+            try? await Task.sleep(for: .seconds(1))
+            self.trace(self.scrollCenter(by: points, in: window))
+        }
         try? await Task.sleep(for: .seconds(3))
+    }
+
+    /// Scrolls the center panel, the widest scroll view in the window, down
+    /// from where it rests, as a scroll wheel would: no further than the end
+    /// of its content.
+    @MainActor
+    private static func scrollCenter(by points: Double, in window: NSWindow) -> String {
+        guard let content = window.contentView else { return "no content to scroll" }
+        var scrolls: [NSScrollView] = []
+        self.collect(content, into: &scrolls)
+        guard let scroll = scrolls.filter({ !$0.isHidden }).max(by: { $0.frame.width < $1.frame.width }),
+              let document = scroll.documentView
+        else { return "no scroll view" }
+        let clip = scroll.contentView
+        let insets = clip.contentInsets
+        var origin = clip.bounds.origin
+        if document.isFlipped {
+            let bottom = document.frame.maxY + insets.bottom - clip.bounds.height
+            origin.y = max(origin.y, min(origin.y + points, bottom))
+        } else {
+            let top = document.frame.minY - insets.bottom
+            origin.y = min(origin.y, max(origin.y - points, top))
+        }
+        clip.scroll(to: origin)
+        scroll.reflectScrolledClipView(clip)
+        return String(
+            format: "scrolled the %.0f-wide scroll view to y %.0f of %.0f",
+            scroll.frame.width,
+            clip.bounds.origin.y,
+            document.frame.height)
     }
 
     /// Any further widths, one after another, as a person dragging would.

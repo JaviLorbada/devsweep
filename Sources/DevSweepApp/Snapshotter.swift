@@ -225,10 +225,13 @@ private struct SnapshotSidebar: View {
 }
 
 extension AppModel {
-    /// Selects an item or a runtime by id, for snapshots.
+    /// Selects an item, an Xcode by its folder's name, or a runtime by id,
+    /// for snapshots.
     func select(snapshotID id: String) {
         if let item = Item(rawValue: id) {
             selection = item
+        } else if let xcode = extras?.xcodes.first(where: { ($0.path as NSString).lastPathComponent == id }) {
+            selectedXcode = xcode.path
         } else {
             selectedRuntime = id
         }
