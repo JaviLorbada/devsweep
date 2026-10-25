@@ -7,6 +7,11 @@ struct ContentView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The window's width, which caps the sidebar's.
     @State private var windowWidth: CGFloat?
+    /// Whether the sidebar is hidden, leaving the window's controls over the
+    /// center header. Read from where the detail area starts, not bound to
+    /// the split view: a binding's starting value overrode the hidden sidebar
+    /// AppKit restores at launch, and showing it widened the window.
+    @State private var sidebarHidden = false
 
     var body: some View {
         @Bindable var model = model
@@ -35,7 +40,9 @@ struct ContentView: View {
                     }
                 }
                 .scrollEdgeEffectStyle(.soft, for: .top)
-                .safeAreaBar(edge: .top) { CenterHeader(title: self.title) }
+                .safeAreaBar(edge: .top) {
+                    CenterHeader(title: self.title, sidebarHidden: self.sidebarHidden)
+                }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
                 .panel()
                 if model.inspectorPlacement == .docked {
@@ -71,6 +78,11 @@ struct ContentView: View {
                         .padding(.trailing, WindowLayout.gap)
                         .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
                 }
+            }
+            // With the sidebar shown, the detail area starts past it; hidden,
+            // a gap from the window's edge.
+            .onGeometryChange(for: Bool.self) { $0.frame(in: .global).minX < WindowLayout.sidebar.min } action: {
+                self.sidebarHidden = $0
             }
             // Only showing or hiding it by choice moves anything; when the
             // window gets too narrow for it beside the center, it floats at once.

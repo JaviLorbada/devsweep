@@ -29,6 +29,13 @@ enum WindowLayout {
     /// don't meet a window corner.
     static let panelCornerRadius: CGFloat = 18
 
+    /// While the sidebar is hidden, the window's traffic lights and the
+    /// sidebar's toggle sit over the center header's leading corner, with no
+    /// title bar strip above it. In macOS 26's window they end 144 points
+    /// from the window's edge, measured in a debug window; the header's title
+    /// starts 12 points after them.
+    static let windowControlsEnd: CGFloat = 144 + 12
+
     /// The window never gets narrower than the sidebar and the center at
     /// their minimums, so nothing is ever clipped.
     static let minimumWidth = sidebar.min + dividers + gap + centerMinimumWidth + gap

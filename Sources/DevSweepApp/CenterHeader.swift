@@ -8,7 +8,19 @@ import SwiftUI
 /// their words instead of asking the column for more room.
 struct CenterHeader: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let title: String
+    /// Whether the sidebar is hidden, leaving the window's own controls over
+    /// the header's leading corner.
+    var sidebarHidden = false
+
+    /// The space on each side of the row.
+    static let horizontalPadding: CGFloat = 22
+
+    /// Extra room on the leading side for the window's controls, while the
+    /// sidebar is hidden and the center panel starts a gap from the window's
+    /// edge.
+    static let insetWithoutSidebar = WindowLayout.windowControlsEnd - WindowLayout.gap - horizontalPadding
 
     static let height: CGFloat = 56
     /// The row sits this far below the panel's top edge.
@@ -28,14 +40,17 @@ struct CenterHeader: View {
     }
 
     var body: some View {
+        let inset = self.sidebarHidden ? Self.insetWithoutSidebar : 0
         GeometryReader { proxy in
-            self.row(fit: Fit(width: proxy.size.width))
+            // The controls drop their words by the width left after the inset.
+            self.row(fit: Fit(width: proxy.size.width - inset), inset: inset)
                 .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .frame(height: Self.height)
+        .animation(self.reduceMotion ? nil : InspectorMotion.animation, value: self.sidebarHidden)
     }
 
-    private func row(fit: Fit) -> some View {
+    private func row(fit: Fit, inset: CGFloat) -> some View {
         @Bindable var model = model
         return HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
@@ -75,7 +90,8 @@ struct CenterHeader: View {
             }
             .fixedSize()
         }
-        .padding(.horizontal, 22)
+        .padding(.leading, Self.horizontalPadding + inset)
+        .padding(.trailing, Self.horizontalPadding)
         .padding(.top, Self.topPadding)
     }
 }

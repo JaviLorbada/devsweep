@@ -102,6 +102,17 @@ extension LayoutTests {
     }
 
     @Test
+    func `with the sidebar hidden the header's title starts after the window's controls`() {
+        // The traffic lights and the sidebar's toggle end 144 points in.
+        let titleStart = WindowLayout.gap + CenterHeader.horizontalPadding + CenterHeader.insetWithoutSidebar
+        #expect(titleStart >= 144 + 8)
+        // The controls drop their words by what the inset takes: the
+        // screenshot's 686-point window, with the center 670 wide.
+        let fit = CenterHeader.Fit(width: 670 - CenterHeader.insetWithoutSidebar)
+        #expect(!fit.capsuleText && !fit.pickerText)
+    }
+
+    @Test
     func `the ring shrinks with its card, and the table drops its bar first`() {
         #expect(RingChart.diameter(forWidth: 800) == 240)
         #expect(RingChart.diameter(forWidth: 376) < 200)
