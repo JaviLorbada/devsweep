@@ -91,6 +91,17 @@ extension LayoutTests {
     }
 
     @Test
+    func `the sidebar gives way to the center as the window narrows, within its own limits`() {
+        // The sidebar's inset from the window's edge, then the center in its gaps.
+        let rest = WindowLayout.gap + WindowLayout.gap + WindowLayout.centerMinimumWidth + WindowLayout.gap
+        // The screenshot's window: 686 points, the sidebar dragged to 298.
+        #expect(WindowLayout.sidebarMaximum(forWindowWidth: 686) + rest <= 686)
+        #expect(WindowLayout.sidebarMaximum(forWindowWidth: WindowLayout.minimumWidth) >= WindowLayout.sidebar.min)
+        #expect(WindowLayout.sidebarMaximum(forWindowWidth: 1280) == WindowLayout.sidebar.max)
+        #expect(WindowLayout.sidebarMaximum(forWindowWidth: 300) == WindowLayout.sidebar.min)
+    }
+
+    @Test
     func `the ring shrinks with its card, and the table drops its bar first`() {
         #expect(RingChart.diameter(forWidth: 800) == 240)
         #expect(RingChart.diameter(forWidth: 376) < 200)

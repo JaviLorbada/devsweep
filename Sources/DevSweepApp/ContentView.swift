@@ -5,13 +5,17 @@ import SwiftUI
 struct ContentView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The window's width, which caps the sidebar's.
+    @State private var windowWidth: CGFloat?
 
     var body: some View {
         @Bindable var model = model
         NavigationSplitView {
             SidebarView()
                 .navigationSplitViewColumnWidth(
-                    min: WindowLayout.sidebar.min, ideal: WindowLayout.sidebar.ideal, max: WindowLayout.sidebar.max)
+                    min: WindowLayout.sidebar.min,
+                    ideal: WindowLayout.sidebar.ideal,
+                    max: self.windowWidth.map(WindowLayout.sidebarMaximum(forWindowWidth:)) ?? WindowLayout.sidebar.max)
         } detail: {
             // The inspector is a column inside the detail area, not SwiftUI's
             // inspector: showing or hiding that one resizes the window, and with
@@ -74,6 +78,10 @@ struct ContentView: View {
             .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
+        // The window's own width, from AppKit: SwiftUI's geometry here is the
+        // split view's, which grows past the window when the sidebar is too
+        // wide, and would keep the sidebar as wide as it is.
+        .background(WindowWidthReader { self.windowWidth = $0 })
         .alert(
             self.pendingTitle,
             isPresented: Binding(get: { model.pendingClean != nil }, set: { if !$0 { model.pendingClean = nil } }),
@@ -173,6 +181,53 @@ enum InspectorMotion {
 
     static func transition(reduceMotion: Bool) -> AnyTransition {
         reduceMotion ? .opacity.animation(self.animation) : .move(edge: .trailing)
+    }
+}
+
+/// Reports the width of the window it sits in, now and whenever it resizes.
+struct WindowWidthReader: NSViewRepresentable {
+    let onChange: @MainActor (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> ReaderView {
+        ReaderView(onChange: self.onChange)
+    }
+
+    func updateNSView(_ view: ReaderView, context: Context) {
+        view.onChange = self.onChange
+    }
+
+    final class ReaderView: NSView {
+        var onChange: @MainActor (CGFloat) -> Void
+        private var observation: (any NSObjectProtocol)?
+
+        init(onChange: @escaping @MainActor (CGFloat) -> Void) {
+            self.onChange = onChange
+            super.init(frame: .zero)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) is not used")
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let observation { NotificationCenter.default.removeObserver(observation) }
+            observation = nil
+            guard let window else { return }
+            self.observation = NotificationCenter.default.addObserver(
+                forName: NSWindow.didResizeNotification,
+                object: window,
+                queue: .main)
+            { [weak self] _ in
+                MainActor.assumeIsolated { self?.report() }
+            }
+            self.report()
+        }
+
+        private func report() {
+            if let width = window?.frame.width { self.onChange(width) }
+        }
     }
 }
 

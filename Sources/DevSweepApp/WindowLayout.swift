@@ -33,6 +33,17 @@ enum WindowLayout {
     /// their minimums, so nothing is ever clipped.
     static let minimumWidth = sidebar.min + dividers + gap + centerMinimumWidth + gap
 
+    /// The widest the sidebar may be in a window `width` points wide: what
+    /// the center at its minimum leaves, between the sidebar's own limits.
+    /// The sidebar sits a gap in from the window's edge, and the center a gap
+    /// from each side of it. A sidebar dragged wide in a wide window gives way
+    /// as the window narrows; AppKit kept it, and the split view grew past
+    /// the window, cutting off the sidebar's leading edge and the center's
+    /// trailing one.
+    static func sidebarMaximum(forWindowWidth width: CGFloat) -> CGFloat {
+        min(self.sidebar.max, max(self.sidebar.min, width - (self.gap + self.gap + self.centerMinimumWidth + self.gap)))
+    }
+
     /// The detail area holds the center at its minimum and the inspector,
     /// each in its panel.
     static let detailWidthWithInspector = gap + centerMinimumWidth + gap + inspectorWidth + gap
