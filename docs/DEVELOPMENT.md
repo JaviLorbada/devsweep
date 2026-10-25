@@ -49,9 +49,13 @@ CHART=blocks WIDTH=1280 Scripts/snapshot.sh build/snapshots overview
 SCROLL=200 HEIGHT=700 WIDTH=1280 Scripts/snapshot.sh build/snapshots overview-light
 ```
 
-With the screen locked the app can't become active, and the window draws
-its inactive look; `ACTIVE=1` draws it as active, though AppKit still draws
-checkboxes and prominent buttons inactive.
+While you work in another app, macOS doesn't let the app activate itself,
+and the window would draw its inactive look. So once the scan is done,
+`snapshot.sh` activates it through Launch Services, as a Dock click would,
+but only once it is listed running, so it never starts a second copy.
+With the screen locked nothing can activate it; `ACTIVE=1` draws it as
+active then, though AppKit still draws checkboxes and prominent buttons
+inactive.
 
 The variables (`DEVSWEEP_CAPTURE`, `DEVSWEEP_SCREEN`, `DEVSWEEP_SELECT`,
 `DEVSWEEP_PRESS`, `DEVSWEEP_CHART`, `DEVSWEEP_SCROLL`, `DEVSWEEP_ACTIVE`,

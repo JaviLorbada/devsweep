@@ -26,6 +26,11 @@
 #   the content fits the window; SIDEBAR_TIMING=1 traces the sidebar's
 #   width as it hides; CAPTURE_LOG=file keeps the app's trace.
 #   The debug build is build/debug/DevSweep.app, apart from the one you open.
+#   While you work in another app, macOS won't let the app activate itself,
+#   and its window would draw inactive; so once the scan is done the script
+#   activates it through Launch Services, as a Dock click would, and only
+#   once it is listed running, so it never starts a second copy. ACTIVE=1 is
+#   for when nothing can activate it, as while the screen is locked.
 
 set -euo pipefail
 
@@ -37,6 +42,7 @@ mkdir -p "$out"
 out="$(cd "$out" && pwd)"
 
 app="$("$root/Scripts/package_app.sh" debug)"
+bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
@@ -182,15 +188,18 @@ for screen in "${screens[@]}"; do
   make_home "$home"
   select=""
   [[ "$screen" == runtimes || "$screen" == remove-runtime ]] && select="4C1F2B8E-0D3A-4F6B-9C21-7E5A1B2C3DA2"
+  log=/dev/null
   if [[ -n "${WIDTH:-}" ]]; then
     name="$name-$WIDTH"
+    # The app's trace, which says when the scan is done.
+    log="${CAPTURE_LOG:-$work/$name.log}"
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
       DEVSWEEP_CAPTURE="$out/$name.png" DEVSWEEP_SCREEN="$screen" DEVSWEEP_APPEARANCE="$appearance" \
       DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_ACTIVE="${ACTIVE:-}" DEVSWEEP_CHART="${CHART:-}" DEVSWEEP_SCROLL="${SCROLL:-}" \
       DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_PERFORM="${PERFORM:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
       DEVSWEEP_CLICK="${CLICK:-}" DEVSWEEP_THEN_WIDTHS="${THEN_WIDTHS:-}" DEVSWEEP_PROBE="${PROBE:+$out/$name.txt}" \
       DEVSWEEP_SIDEBAR_TIMING="${SIDEBAR_TIMING:-}" \
-      "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"${CAPTURE_LOG:-/dev/null}" &
+      "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"$log" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \
       DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
@@ -200,8 +209,14 @@ for screen in "${screens[@]}"; do
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" >/dev/null 2>&1 &
   fi
   pid=$!
+  activated=""
   for _ in $(seq 1 120); do
     kill -0 "$pid" 2>/dev/null || break
+    if [[ -z "$activated" && "$log" != /dev/null ]] && grep -q "scan done" "$log" 2>/dev/null \
+      && [[ -n "$(lsappinfo info -only pid "$bundle_id")" ]]; then
+      open -b "$bundle_id"
+      activated=1
+    fi
     sleep 0.5
   done
   kill "$pid" 2>/dev/null || true
