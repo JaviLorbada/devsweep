@@ -46,7 +46,8 @@ import SwiftUI
 /// - `DEVSWEEP_SETTINGS=Folders` instead opens Settings on that tab, captures
 ///   it there and quits.
 /// - `DEVSWEEP_MENU=1` instead opens the menu bar item's panel, captures it
-///   there and quits.
+///   there and quits; `DEVSWEEP_MENU=item` captures the item itself, as the
+///   menu bar shows it.
 /// - `DEVSWEEP_APPEARANCE=light|dark` picks the appearance.
 /// - `DEVSWEEP_ACTIVE=1` draws the window as active even when the app can't
 ///   be made active, as while the screen is locked: selected rows in the
@@ -74,7 +75,9 @@ enum DebugLaunch {
             await self.captureSettings(tab: tab, to: environment["DEVSWEEP_CAPTURE"])
         }
         if !(environment["DEVSWEEP_MENU"] ?? "").isEmpty {
-            await self.captureMenuBarPanel(to: environment["DEVSWEEP_CAPTURE"])
+            await self.captureMenuBarPanel(
+                itemOnly: environment["DEVSWEEP_MENU"] == "item",
+                to: environment["DEVSWEEP_CAPTURE"])
         }
         if let output = environment["DEVSWEEP_CAPTURE"], let window = self.opened ?? mainWindow {
             // Drawn as the key window, so controls don't show their inactive look.
@@ -306,14 +309,32 @@ enum DebugLaunch {
         exit(0)
     }
 
-    /// Opens the menu bar item's panel, captures it and quits.
+    /// Opens the menu bar item's panel, captures it and quits; or, with
+    /// `itemOnly`, captures the item in the menu bar.
     @MainActor
-    private static func captureMenuBarPanel(to output: String?) async -> Never {
+    private static func captureMenuBarPanel(itemOnly: Bool, to output: String?) async -> Never {
         let before = Set(NSApplication.shared.windows.map(ObjectIdentifier.init))
-        let button = NSApplication.shared.windows
-            .filter { String(describing: type(of: $0)).contains("StatusBar") }
-            .compactMap { self.findStatusButton(in: $0.contentView) }
-            .first
+        let statusWindow = NSApplication.shared.windows.first { window in
+            String(describing: type(of: window)).contains("StatusBar")
+                && self.findStatusButton(in: window.contentView) != nil
+        }
+        if itemOnly {
+            // The window server hands back nothing for a status item's window,
+            // so its button draws itself instead, on a clear background.
+            if let button = self.findStatusButton(in: statusWindow?.contentView),
+               let rep = button.bitmapImageRepForCachingDisplay(in: button.bounds),
+               let output
+            {
+                button.cacheDisplay(in: button.bounds, to: rep)
+                let written = (try? rep.representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: output))) != nil
+                self.trace(written ? "captured \(output)" : "capture failed")
+            } else {
+                self.trace("no status item")
+            }
+            exit(0)
+        }
+        let button = self.findStatusButton(in: statusWindow?.contentView)
         button?.performClick(nil)
         try? await Task.sleep(for: .seconds(1))
         let panel = NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
