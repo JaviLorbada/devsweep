@@ -504,6 +504,16 @@ enum DebugLaunch {
                     split.isSubviewCollapsed($0) || $0.isHidden || $0.frame
                         .width < 1 ? "collapsed" : "\(Int($0.frame.width))"
                 }
+            if let controller = split.delegate as? NSSplitViewController {
+                lines.append("split \(index) items: " + controller.splitViewItems.map { item in
+                    String(
+                        format: "%@ min %.0f max %.0f holding %.0f",
+                        item.behavior == .sidebar ? "sidebar" : "other",
+                        item.minimumThickness,
+                        item.maximumThickness,
+                        item.holdingPriority.rawValue)
+                }.joined(separator: "; "))
+            }
             lines.append(String(
                 format: "split %d at %.0f,%.0f %.0fx%.0f %@ columns %@",
                 index,
