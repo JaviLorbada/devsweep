@@ -123,6 +123,11 @@ final class AppModel {
     /// Whether the detail area has room for the inspector beside the center
     /// at its minimum; the window sets it as it resizes.
     var inspectorHasRoom = true
+    /// The detail area's width as last laid out, which depends on the
+    /// sidebar's as well as the window's. Nothing draws from it.
+    @ObservationIgnored var detailWidth: CGFloat = 0
+    /// Makes the window that many points wider; tests record it instead.
+    @ObservationIgnored var widenWindow: @MainActor (CGFloat) -> Void = { WindowSizing.widen(by: $0) }
     var selection: Item?
     /// The runtime selected on the runtimes screen, by its simctl id.
     var selectedRuntime: String?
@@ -680,14 +685,22 @@ final class AppModel {
         self.wantsInspector && self.inspectorHasRoom
     }
 
-    /// What the toolbar's inspector button and the View menu do: show or hide
-    /// it, or, asked for while it is hidden for room, widen the window to
-    /// make room.
+    /// How much wider the window has to get for the inspector to have room
+    /// beside the center: what the detail area lacks, whatever the sidebar's
+    /// width, and nothing while there is room.
+    var inspectorShortfall: CGFloat {
+        self.inspectorHasRoom ? 0 : max(0, WindowLayout.inspectorShowFrom + 2 - self.detailWidth)
+    }
+
+    /// What the inspector's toggle and the View menu do: hide it while it
+    /// shows; otherwise show it, widening the window by what it lacks when
+    /// the center has no room beside it.
     func toggleInspector() {
-        if self.wantsInspector, !self.inspectorHasRoom {
-            WindowSizing.widen(to: WindowLayout.sidebar.ideal + WindowLayout.inspectorShowFrom + 10)
+        if self.inspectorShown {
+            self.wantsInspector = false
         } else {
-            self.wantsInspector.toggle()
+            self.wantsInspector = true
+            if self.inspectorShortfall > 0 { self.widenWindow(self.inspectorShortfall) }
         }
     }
 

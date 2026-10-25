@@ -1,3 +1,4 @@
+import CoreGraphics
 import DevSweepKit
 import Testing
 @testable import DevSweepApp
@@ -31,6 +32,34 @@ struct CommandsTests {
         #expect(!model.inspectorShown)
         model.toggleInspector()
         #expect(model.wantsInspector)
+    }
+
+    @Test
+    func `one press shows the inspector in a narrow window, widening it by what the detail area lacks`() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        var widened: [CGFloat] = []
+        model.widenWindow = { widened.append($0) }
+        // Hidden by hand, then the window made narrow: one press shows it.
+        model.toggleInspector()
+        #expect(!model.wantsInspector && widened.isEmpty)
+        model.inspectorHasRoom = false
+        model.detailWidth = 700
+        model.toggleInspector()
+        #expect(model.wantsInspector)
+        let missing: CGFloat = WindowLayout.inspectorShowFrom + 2 - 700
+        #expect(widened == [missing])
+        // The window from the recording: 1066 points, the width the old
+        // fixed target asked for, with the sidebar dragged to 298, which
+        // leaves 758 for the detail area. It still has to grow.
+        model.detailWidth = 758
+        model.toggleInspector()
+        let more: CGFloat = WindowLayout.inspectorShowFrom + 2 - 758
+        #expect(widened == [missing, more])
+        // With room, a press hides it and asks for nothing.
+        model.inspectorHasRoom = true
+        model.toggleInspector()
+        #expect(!model.wantsInspector && widened.count == 2)
     }
 
     @Test

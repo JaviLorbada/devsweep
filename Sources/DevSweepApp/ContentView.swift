@@ -129,6 +129,7 @@ struct ContentView: View {
     /// whether the inspector shows, so this can't feed back on itself, and
     /// it is set right away: no AppKit column collapses.
     private func updateInspectorRoom(forDetailWidth width: CGFloat) {
+        self.model.detailWidth = width
         let hasRoom = self.model.inspectorHasRoom
             ? width >= WindowLayout.inspectorHideBelow
             : width >= WindowLayout.inspectorShowFrom
@@ -177,14 +178,15 @@ enum InspectorMotion {
 
 /// Resizes the main window.
 enum WindowSizing {
-    /// Makes the key window at least `width` wide, growing to the right as far
-    /// as the screen allows and then to the left.
+    /// Makes the key window `points` wider, growing to the right as far as
+    /// the screen allows and then to the left.
     @MainActor
-    static func widen(to width: CGFloat) {
-        guard let window = NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first(where: \.isVisible),
-              window.frame.width < width else { return }
+    static func widen(by points: CGFloat) {
+        guard points > 0,
+              let window = NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first(where: \.isVisible)
+        else { return }
         var frame = window.frame
-        frame.size.width = width
+        frame.size.width += points
         if let visible = window.screen?.visibleFrame {
             frame.size.width = min(frame.width, visible.width)
             if frame.maxX > visible.maxX { frame.origin.x = max(visible.minX, visible.maxX - frame.width) }
