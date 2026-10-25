@@ -78,7 +78,7 @@ extension LayoutTests {
     }
 
     @Test
-    func `the inspector hides before the center would go below its minimum, and nothing is ever clipped`() {
+    func `the inspector docks only while the center keeps its minimum, and nothing is ever clipped`() {
         let gap = WindowLayout.gap
         #expect(WindowLayout.detailWidthWithInspector >= gap + WindowLayout.centerMinimumWidth + gap + WindowLayout
             .inspectorWidth + gap)

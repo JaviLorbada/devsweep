@@ -15,7 +15,9 @@ line under Unreleased as it lands.
 - A window that scans the home folder, charts what each cache holds as a ring
   or blocks (small caches drawn larger so they stay visible, with their exact
   sizes in the labels), and cleans what is marked, to the Trash by default
-  with Put Back.
+  with Put Back. In a window too narrow for the inspector beside the
+  center, the inspector floats over it, and the sidebar narrows rather than
+  being cut off.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
 - Settings for project folders, items to skip, the unused threshold, how

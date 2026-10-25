@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The center panel's top row: the screen's title and status on the left, and
 /// on the right what acts on the scan, its progress, Ring or Blocks, and Scan
-/// Again or Stop, then the inspector's toggle while the inspector is hidden.
+/// Again or Stop, then the inspector's toggle unless the inspector is docked.
 ///
 /// Sized from the width it is given, like the footer, so the controls drop
 /// their words instead of asking the column for more room.
@@ -68,7 +68,7 @@ struct CenterHeader: View {
                     .buttonBorderShape(.capsule)
                     .controlSize(.large)
                     .disabled(model.engine == nil)
-                    if !model.inspectorShown {
+                    if model.inspectorPlacement != .docked {
                         InspectorToggle()
                     }
                 }
@@ -81,8 +81,9 @@ struct CenterHeader: View {
 }
 
 /// Shows or hides the inspector. It sits in the inspector's top-right corner
-/// while the inspector shows, and in the center panel's header, after Scan
-/// Again, while it doesn't. The window has no toolbar strip to put it in.
+/// while the inspector is docked, and in the center panel's header, after
+/// Scan Again, while it floats or is hidden. The window has no toolbar strip
+/// to put it in.
 struct InspectorToggle: View {
     @Environment(AppModel.self) private var model
 

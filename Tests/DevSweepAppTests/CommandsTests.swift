@@ -1,4 +1,3 @@
-import CoreGraphics
 import DevSweepKit
 import Testing
 @testable import DevSweepApp
@@ -19,47 +18,27 @@ struct CommandsTests {
     }
 
     @Test
-    func `the inspector toggles, and asked for while hidden for room it stays wanted`() {
+    func `the inspector toggles, docked with room and floating over the center without it`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
-        #expect(model.inspectorShown)
+        #expect(model.inspectorPlacement == .docked)
         model.toggleInspector()
-        #expect(!model.inspectorShown && !model.wantsInspector)
-        model.toggleInspector()
-        #expect(model.inspectorShown)
-        // Too narrow: the toggle asks the window to widen, and keeps wanting it.
+        #expect(model.inspectorPlacement == .hidden && !model.inspectorShown)
+        // Hidden by hand, then the window made narrow: one press shows it,
+        // floating, and the window keeps its size.
         model.inspectorHasRoom = false
-        #expect(!model.inspectorShown)
+        #expect(model.inspectorPlacement == .hidden)
         model.toggleInspector()
-        #expect(model.wantsInspector)
-    }
-
-    @Test
-    func `one press shows the inspector in a narrow window, widening it by what the detail area lacks`() {
-        let home = TemporaryHome()
-        let model = makeModel(home: home)
-        var widened: [CGFloat] = []
-        model.widenWindow = { widened.append($0) }
-        // Hidden by hand, then the window made narrow: one press shows it.
+        #expect(model.inspectorPlacement == .floating && model.inspectorShown)
         model.toggleInspector()
-        #expect(!model.wantsInspector && widened.isEmpty)
-        model.inspectorHasRoom = false
-        model.detailWidth = 700
+        #expect(model.inspectorPlacement == .hidden)
+        // Wanted while the window narrows, it floats rather than going away,
+        // and docks again when the window widens.
         model.toggleInspector()
-        #expect(model.wantsInspector)
-        let missing: CGFloat = WindowLayout.inspectorShowFrom + 2 - 700
-        #expect(widened == [missing])
-        // The window from the recording: 1066 points, the width the old
-        // fixed target asked for, with the sidebar dragged to 298, which
-        // leaves 758 for the detail area. It still has to grow.
-        model.detailWidth = 758
-        model.toggleInspector()
-        let more: CGFloat = WindowLayout.inspectorShowFrom + 2 - 758
-        #expect(widened == [missing, more])
-        // With room, a press hides it and asks for nothing.
         model.inspectorHasRoom = true
-        model.toggleInspector()
-        #expect(!model.wantsInspector && widened.count == 2)
+        #expect(model.inspectorPlacement == .docked)
+        model.inspectorHasRoom = false
+        #expect(model.inspectorPlacement == .floating)
     }
 
     @Test

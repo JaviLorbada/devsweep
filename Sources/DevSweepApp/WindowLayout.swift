@@ -47,11 +47,11 @@ enum WindowLayout {
     /// The detail area holds the center at its minimum and the inspector,
     /// each in its panel.
     static let detailWidthWithInspector = gap + centerMinimumWidth + gap + inspectorWidth + gap
-    /// The inspector hides, the way Mail collapses a pane, when the detail
-    /// area gets narrower than this, before the center would have to go
-    /// below its minimum; it comes back from `inspectorShowFrom`, a little
-    /// wider, so it doesn't flicker at the edge. With the sidebar at its usual
-    /// width that is about 1000 points of window.
+    /// The inspector stops sitting beside the center and floats over it when
+    /// the detail area gets narrower than this, before the center would have
+    /// to go below its minimum; it docks again from `inspectorShowFrom`, a
+    /// little wider, so it doesn't flicker at the edge. With the sidebar at
+    /// its usual width that is about 1000 points of window.
     static let inspectorHideBelow = detailWidthWithInspector + 20
     static let inspectorShowFrom = detailWidthWithInspector + 40
 }

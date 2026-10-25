@@ -15,6 +15,9 @@ struct OverviewView: View {
             OverviewFooter()
                 .padding(.horizontal, 22)
                 .padding(.vertical, 12)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                    self.model.overviewFooterHeight = height
+                }
         }
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.model.chartStyle)
     }

@@ -190,7 +190,7 @@ enum DebugLaunch {
             self.trace("windows: \(visible.map { "\"\($0.title)\"" }.joined(separator: ", "))")
             self.trace(
                 "screen \(model.screen), chart \(model.chartStyle.rawValue), "
-                    + "inspector \(model.inspectorShown ? "shown" : "hidden"), scanning \(model.isScanning)")
+                    + "inspector \(model.inspectorPlacement.rawValue), scanning \(model.isScanning)")
         }
         if let clicks = environment["DEVSWEEP_CLICK"], !clicks.isEmpty, let window = mainWindow {
             for pair in clicks.split(separator: ";") {
@@ -200,7 +200,7 @@ enum DebugLaunch {
                 self.trace(self.click(at: CGPoint(x: numbers[0], y: numbers[1]), in: window))
                 try? await Task.sleep(for: .seconds(1))
                 self.trace(
-                    "inspector \(model.inspectorShown ? "shown" : "hidden") (wanted \(model.wantsInspector), "
+                    "inspector \(model.inspectorPlacement.rawValue) (wanted \(model.wantsInspector), "
                         + "room \(model.inspectorHasRoom)), window \(Int(window.frame.width)) wide, "
                         + "scanning \(model.isScanning), chart \(model.chartStyle.rawValue)")
             }
@@ -484,7 +484,7 @@ enum DebugLaunch {
             .append(
                 "window \(Int(window.frame.width))x\(Int(window.frame.height)) min "
                     + "\(Int(window.minSize.width))x\(Int(window.minSize.height))")
-        lines.append("screen \(model.screen), inspector \(model.inspectorShown ? "shown" : "hidden")")
+        lines.append("screen \(model.screen), inspector \(model.inspectorPlacement.rawValue)")
         if let timing = model.scanTiming {
             lines.append(String(
                 format: "scan: items measured after %.1fs, everything after %.1fs",

@@ -118,16 +118,15 @@ final class AppModel {
 
     var screen: Screen = .overview
     var chartStyle: ChartStyle = .ring
-    /// Whether you want the inspector; it shows when the center also has room.
+    /// Whether you want the inspector. It shows whenever you do, beside the
+    /// center or over it (`inspectorPlacement`).
     var wantsInspector = true
     /// Whether the detail area has room for the inspector beside the center
     /// at its minimum; the window sets it as it resizes.
     var inspectorHasRoom = true
-    /// The detail area's width as last laid out, which depends on the
-    /// sidebar's as well as the window's. Nothing draws from it.
-    @ObservationIgnored var detailWidth: CGFloat = 0
-    /// Makes the window that many points wider; tests record it instead.
-    @ObservationIgnored var widenWindow: @MainActor (CGFloat) -> Void = { WindowSizing.widen(by: $0) }
+    /// The height of the overview's footer, which a floating inspector stays
+    /// above so the footer's buttons stay in reach.
+    var overviewFooterHeight: CGFloat = 0
     var selection: Item?
     /// The runtime selected on the runtimes screen, by its simctl id.
     var selectedRuntime: String?
@@ -681,27 +680,30 @@ final class AppModel {
         self.selection = self.orderedRows.first?.item
     }
 
+    /// Where the inspector shows.
+    enum InspectorPlacement: String {
+        /// In its own panel beside the center, when the window has room.
+        case docked
+        /// Over the center's trailing side, when the window is too narrow
+        /// for it beside the center: still there to read, and to hide.
+        case floating
+        case hidden
+    }
+
+    var inspectorPlacement: InspectorPlacement {
+        guard self.wantsInspector else { return .hidden }
+        return self.inspectorHasRoom ? .docked : .floating
+    }
+
     var inspectorShown: Bool {
-        self.wantsInspector && self.inspectorHasRoom
+        self.inspectorPlacement != .hidden
     }
 
-    /// How much wider the window has to get for the inspector to have room
-    /// beside the center: what the detail area lacks, whatever the sidebar's
-    /// width, and nothing while there is room.
-    var inspectorShortfall: CGFloat {
-        self.inspectorHasRoom ? 0 : max(0, WindowLayout.inspectorShowFrom + 2 - self.detailWidth)
-    }
-
-    /// What the inspector's toggle and the View menu do: hide it while it
-    /// shows; otherwise show it, widening the window by what it lacks when
-    /// the center has no room beside it.
+    /// What the inspector's toggle and the View menu do: show or hide it. In
+    /// a window too narrow for it beside the center, it floats over it; the
+    /// window keeps its size.
     func toggleInspector() {
-        if self.inspectorShown {
-            self.wantsInspector = false
-        } else {
-            self.wantsInspector = true
-            if self.inspectorShortfall > 0 { self.widenWindow(self.inspectorShortfall) }
-        }
+        self.wantsInspector.toggle()
     }
 
     /// Shows the overview with `style`, as the View menu's Ring and Blocks do.

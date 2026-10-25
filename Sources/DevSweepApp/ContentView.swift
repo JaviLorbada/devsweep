@@ -38,30 +38,42 @@ struct ContentView: View {
                 .safeAreaBar(edge: .top) { CenterHeader(title: self.title) }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
                 .panel()
-                if model.inspectorShown {
-                    Group {
-                        switch model.screen {
-                        case .overview: ItemInspector()
-                        case .xcodeVersions: XcodeInspector()
-                        case .simulatorRuntimes: RuntimeInspector()
-                        case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
+                if model.inspectorPlacement == .docked {
+                    self.inspector
+                        .frame(width: WindowLayout.inspectorWidth)
+                        .frame(maxHeight: .infinity)
+                        .overlay(alignment: .topTrailing) {
+                            // Level with the center header's controls.
+                            InspectorToggle()
+                                .frame(height: CenterHeader.height - CenterHeader.topPadding)
+                                .padding(.top, CenterHeader.topPadding)
+                                .padding(.trailing, 14)
                         }
-                    }
-                    .frame(width: WindowLayout.inspectorWidth)
-                    .frame(maxHeight: .infinity)
-                    .overlay(alignment: .topTrailing) {
-                        // Level with the center header's controls.
-                        InspectorToggle()
-                            .frame(height: CenterHeader.height - CenterHeader.topPadding)
-                            .padding(.top, CenterHeader.topPadding)
-                            .padding(.trailing, 14)
-                    }
-                    .panel()
-                    .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
+                        .panel()
+                        .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
+                }
+            }
+            // Too narrow to sit beside the center, the inspector floats over
+            // its trailing side, below the header and above the overview's
+            // footer, so their controls stay in reach. Its toggle stays in the
+            // header.
+            .overlay(alignment: .topTrailing) {
+                if model.inspectorPlacement == .floating {
+                    self.inspector
+                        .frame(width: WindowLayout.inspectorWidth)
+                        .frame(maxHeight: .infinity)
+                        .panel()
+                        .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+                        .padding(.top, CenterHeader.height)
+                        .padding(
+                            .bottom,
+                            (model.screen == .overview ? model.overviewFooterHeight : 0) + WindowLayout.gap)
+                        .padding(.trailing, WindowLayout.gap)
+                        .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
                 }
             }
             // Only showing or hiding it by choice moves anything; when the
-            // window gets too narrow for it, it goes at once.
+            // window gets too narrow for it beside the center, it floats at once.
             .animation(InspectorMotion.layoutAnimation(reduceMotion: self.reduceMotion), value: model.wantsInspector)
             // No title bar strip above the panels: they start at the window's
             // top, level with the sidebar, the traffic lights in its corner.
@@ -131,13 +143,12 @@ struct ContentView: View {
         }
     }
 
-    /// Hides the inspector when the detail area can't hold the center at its
-    /// minimum next to it, the way Mail collapses a pane, and brings it back
-    /// with some room to spare. The detail area's width doesn't depend on
-    /// whether the inspector shows, so this can't feed back on itself, and
-    /// it is set right away: no AppKit column collapses.
+    /// Floats the inspector over the center when the detail area can't hold
+    /// the center at its minimum beside it, and docks it again with some
+    /// room to spare. The detail area's width doesn't depend on where the
+    /// inspector is, so this can't feed back on itself, and it is set right
+    /// away: no AppKit column collapses.
     private func updateInspectorRoom(forDetailWidth width: CGFloat) {
-        self.model.detailWidth = width
         let hasRoom = self.model.inspectorHasRoom
             ? width >= WindowLayout.inspectorHideBelow
             : width >= WindowLayout.inspectorShowFrom
@@ -145,6 +156,17 @@ struct ContentView: View {
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) { self.model.inspectorHasRoom = hasRoom }
+    }
+
+    /// The inspector for the screen showing, docked or floating.
+    @ViewBuilder
+    private var inspector: some View {
+        switch self.model.screen {
+        case .overview: ItemInspector()
+        case .xcodeVersions: XcodeInspector()
+        case .simulatorRuntimes: RuntimeInspector()
+        case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
+        }
     }
 
     private var pendingTitle: String {
@@ -228,25 +250,6 @@ struct WindowWidthReader: NSViewRepresentable {
         private func report() {
             if let width = window?.frame.width { self.onChange(width) }
         }
-    }
-}
-
-/// Resizes the main window.
-enum WindowSizing {
-    /// Makes the key window `points` wider, growing to the right as far as
-    /// the screen allows and then to the left.
-    @MainActor
-    static func widen(by points: CGFloat) {
-        guard points > 0,
-              let window = NSApplication.shared.keyWindow ?? NSApplication.shared.windows.first(where: \.isVisible)
-        else { return }
-        var frame = window.frame
-        frame.size.width += points
-        if let visible = window.screen?.visibleFrame {
-            frame.size.width = min(frame.width, visible.width)
-            if frame.maxX > visible.maxX { frame.origin.x = max(visible.minX, visible.maxX - frame.width) }
-        }
-        window.setFrame(frame, display: true, animate: true)
     }
 }
 
