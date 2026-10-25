@@ -10,7 +10,8 @@ import SwiftUI
 ///   unattended runs skip it.
 /// - `DEVSWEEP_WINDOW_WIDTH=900` resizes the window once it is up.
 /// - `DEVSWEEP_SIDEBAR_WIDTH=298` then sets the sidebar that wide, as
-///   dragging its edge would.
+///   dragging its edge would; `DEVSWEEP_SIDEBAR=hidden` or `shown` hides or
+///   shows it, as its toolbar button does, when it isn't already.
 /// - `DEVSWEEP_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|overview` switches screens once the scan
 ///   and the extras are done, the way a click in the sidebar does; `scanning`
 ///   instead winds the finished scan back to look half done, and `blocks`
@@ -126,6 +127,20 @@ enum DebugLaunch {
             splits.first?.setPosition(width, ofDividerAt: 0)
             try? await Task.sleep(for: .milliseconds(500))
             self.trace("sidebar \(Int(splits.first?.arrangedSubviews.first?.frame.width ?? 0)) wide")
+        }
+        if let wanted = environment["DEVSWEEP_SIDEBAR"], ["hidden", "shown"].contains(wanted),
+           let content = mainWindow?.contentView
+        {
+            var splits: [NSSplitView] = []
+            self.collect(content, into: &splits)
+            let hidden = splits.first.map { split in
+                split.arrangedSubviews.first.map { split.isSubviewCollapsed($0) || $0.isHidden } ?? false
+            } ?? false
+            if hidden != (wanted == "hidden") {
+                NSApplication.shared.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: nil)
+                try? await Task.sleep(for: .seconds(1))
+            }
+            self.trace("sidebar \(wanted), window \(Int(self.mainWindow?.frame.width ?? 0)) wide")
         }
     }
 
@@ -523,6 +538,14 @@ enum DebugLaunch {
                 frame.height,
                 fits ? "fits" : "OVERFLOWS",
                 columns.joined(separator: " | ")))
+        }
+        // The traffic lights, which the content runs under with no title bar strip.
+        if let zoom = window.standardWindowButton(.zoomButton) {
+            let frame = zoom.convert(zoom.bounds, to: nil)
+            lines.append(String(
+                format: "window buttons end at %.0f, %.0f from the top",
+                frame.maxX,
+                size.height - frame.minY))
         }
         var hosts: [NSView] = []
         self.collectHosts(content, depth: 0, into: &hosts)
