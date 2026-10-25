@@ -30,6 +30,9 @@ import SwiftUI
 ///   pointer doesn't move). It says which view the window found under each,
 ///   whether that is in the content or the title bar, whether a drag there
 ///   would move the window, and what changed.
+/// - `DEVSWEEP_SIDEBAR_TIMING=1` then hides the sidebar, as its toolbar
+///   button does, and traces the sidebar column's width every few
+///   milliseconds while it animates, then shows it again.
 /// - `DEVSWEEP_THEN_WIDTHS=900,1400` then resizes to each width in turn.
 /// - `DEVSWEEP_PROBE=/path/report.txt` then waits a few seconds, writes
 ///   whether the content fits the window (split views, columns, scroll views,
@@ -190,6 +193,10 @@ enum DebugLaunch {
                         + "chart \(model.chartStyle.rawValue)")
             }
         }
+        if environment["DEVSWEEP_SIDEBAR_TIMING"] == "1", let window = mainWindow {
+            try? await Task.sleep(for: .seconds(1))
+            await self.trace(self.sidebarTiming(in: window))
+        }
         if let points = environment["DEVSWEEP_SCROLL"].flatMap(Double.init), let window = mainWindow {
             try? await Task.sleep(for: .seconds(1))
             self.trace(self.scrollCenter(by: points, in: window))
@@ -346,6 +353,31 @@ enum DebugLaunch {
             hit.map { String(describing: type(of: $0)) } ?? "nothing",
             hit?.isDescendant(of: content) == true ? "in the content" : "outside the content",
             hit?.mouseDownCanMoveWindow == true ? "drags the window" : "doesn't drag the window")
+    }
+
+    /// The sidebar column's width over the 0.6 seconds after it is told to
+    /// hide, as "seconds:width" pairs, so its animation's length and curve
+    /// can be read off. It is shown again afterwards.
+    @MainActor
+    private static func sidebarTiming(in window: NSWindow) async -> String {
+        guard let content = window.contentView else { return "no window" }
+        var splits: [NSSplitView] = []
+        self.collect(content, into: &splits)
+        guard let split = splits.first, let column = split.arrangedSubviews.first else { return "no split view" }
+        let toggle = #selector(NSSplitViewController.toggleSidebar(_:))
+        let start = ProcessInfo.processInfo.systemUptime
+        guard NSApplication.shared.sendAction(toggle, to: nil, from: nil) else { return "nothing toggles the sidebar" }
+        var samples: [String] = []
+        while ProcessInfo.processInfo.systemUptime - start < 0.6 {
+            samples.append(String(
+                format: "%.3f:%.0f",
+                ProcessInfo.processInfo.systemUptime - start,
+                split.isSubviewCollapsed(column) && column.isHidden ? 0 : column.frame.width))
+            try? await Task.sleep(for: .milliseconds(8))
+        }
+        NSApplication.shared.sendAction(toggle, to: nil, from: nil)
+        try? await Task.sleep(for: .seconds(1))
+        return "sidebar width while hiding: " + samples.joined(separator: " ")
     }
 
     /// Presses the first element labeled `label`, searching the window's
