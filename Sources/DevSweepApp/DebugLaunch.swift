@@ -543,9 +543,9 @@ enum DebugLaunch {
         if let zoom = window.standardWindowButton(.zoomButton) {
             let frame = zoom.convert(zoom.bounds, to: nil)
             lines.append(String(
-                format: "window buttons end at %.0f, %.0f from the top",
+                format: "window buttons end at %.0f, centered %.1f from the top",
                 frame.maxX,
-                size.height - frame.minY))
+                size.height - frame.midY))
         }
         var hosts: [NSView] = []
         self.collectHosts(content, depth: 0, into: &hosts)
