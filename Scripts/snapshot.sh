@@ -24,7 +24,8 @@
 #   clicks those points from the window's top-left, THEN_WIDTHS=900,1400
 #   resizes to each in turn, and PROBE=1 writes <screen>-<width>.txt, whether
 #   the content fits the window; SIDEBAR_TIMING=1 traces the sidebar's
-#   width as it hides; CAPTURE_LOG=file keeps the app's trace.
+#   width as it hides, and SIDEBAR_WIDTH=298 sets the sidebar that wide;
+#   CAPTURE_LOG=file keeps the app's trace.
 #   The debug build is build/debug/DevSweep.app, apart from the one you open.
 #   While you work in another app, macOS won't let the app activate itself,
 #   and its window would draw inactive; so once the scan is done the script
@@ -198,7 +199,7 @@ for screen in "${screens[@]}"; do
       DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_ACTIVE="${ACTIVE:-}" DEVSWEEP_CHART="${CHART:-}" DEVSWEEP_SCROLL="${SCROLL:-}" \
       DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_PERFORM="${PERFORM:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
       DEVSWEEP_CLICK="${CLICK:-}" DEVSWEEP_THEN_WIDTHS="${THEN_WIDTHS:-}" DEVSWEEP_PROBE="${PROBE:+$out/$name.txt}" \
-      DEVSWEEP_SIDEBAR_TIMING="${SIDEBAR_TIMING:-}" \
+      DEVSWEEP_SIDEBAR_TIMING="${SIDEBAR_TIMING:-}" DEVSWEEP_SIDEBAR_WIDTH="${SIDEBAR_WIDTH:-}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"$log" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \

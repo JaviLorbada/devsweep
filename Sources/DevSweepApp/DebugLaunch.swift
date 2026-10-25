@@ -9,6 +9,8 @@ import SwiftUI
 ///   The first read of the CoreDevice container waits on a macOS prompt, so
 ///   unattended runs skip it.
 /// - `DEVSWEEP_WINDOW_WIDTH=900` resizes the window once it is up.
+/// - `DEVSWEEP_SIDEBAR_WIDTH=298` then sets the sidebar that wide, as
+///   dragging its edge would.
 /// - `DEVSWEEP_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|overview` switches screens once the scan
 ///   and the extras are done, the way a click in the sidebar does; `scanning`
 ///   instead winds the finished scan back to look half done, and `blocks`
@@ -116,6 +118,15 @@ enum DebugLaunch {
             window.setFrame(frame, display: true)
             await self.waitForSteadyWidth()
         }
+        if let width = environment["DEVSWEEP_SIDEBAR_WIDTH"].flatMap(Double.init),
+           let content = mainWindow?.contentView
+        {
+            var splits: [NSSplitView] = []
+            self.collect(content, into: &splits)
+            splits.first?.setPosition(width, ofDividerAt: 0)
+            try? await Task.sleep(for: .milliseconds(500))
+            self.trace("sidebar \(Int(splits.first?.arrangedSubviews.first?.frame.width ?? 0)) wide")
+        }
     }
 
     /// Waits for the whole scan, tracing any change of width meanwhile.
@@ -189,8 +200,9 @@ enum DebugLaunch {
                 self.trace(self.click(at: CGPoint(x: numbers[0], y: numbers[1]), in: window))
                 try? await Task.sleep(for: .seconds(1))
                 self.trace(
-                    "inspector \(model.inspectorShown ? "shown" : "hidden"), scanning \(model.isScanning), "
-                        + "chart \(model.chartStyle.rawValue)")
+                    "inspector \(model.inspectorShown ? "shown" : "hidden") (wanted \(model.wantsInspector), "
+                        + "room \(model.inspectorHasRoom)), window \(Int(window.frame.width)) wide, "
+                        + "scanning \(model.isScanning), chart \(model.chartStyle.rawValue)")
             }
         }
         if environment["DEVSWEEP_SIDEBAR_TIMING"] == "1", let window = mainWindow {
