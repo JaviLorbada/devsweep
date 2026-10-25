@@ -45,6 +45,13 @@ struct ContentView: View {
                     }
                     .frame(width: WindowLayout.inspectorWidth)
                     .frame(maxHeight: .infinity)
+                    .overlay(alignment: .topTrailing) {
+                        // Level with the center header's controls.
+                        InspectorToggle()
+                            .frame(height: CenterHeader.height - CenterHeader.topPadding)
+                            .padding(.top, CenterHeader.topPadding)
+                            .padding(.trailing, 14)
+                    }
                     .panel()
                     .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
                 }
@@ -52,15 +59,18 @@ struct ContentView: View {
             // Only showing or hiding it by choice moves anything; when the
             // window gets too narrow for it, it goes at once.
             .animation(InspectorMotion.layoutAnimation(reduceMotion: self.reduceMotion), value: model.wantsInspector)
-            .padding([.horizontal, .bottom], WindowLayout.gap)
+            // No title bar strip above the panels: they start at the window's
+            // top, level with the sidebar, the traffic lights in its corner.
+            .padding(WindowLayout.gap)
             .background(Palette.backdrop)
+            .ignoresSafeArea(.container, edges: .top)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
                 self.updateInspectorRoom(forDetailWidth: width)
             }
             .navigationTitle(self.title)
             .navigationSubtitle(model.subtitle)
-            .toolbar { self.toolbar }
-            // The title and status are in the center panel's header.
+            // The title and status are in the center panel's header, and
+            // the inspector's toggle in its panel's corner or that header.
             .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         }
@@ -143,20 +153,6 @@ struct ContentView: View {
         case .androidSDK: "SDK and emulators"
         case .gradleCaches: "Gradle caches"
         }
-    }
-
-    /// Only the inspector toggle: what acts on the scan is in the center
-    /// panel's header.
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarSpacer(.flexible)
-        ToolbarItem {
-            Button("Inspector", systemImage: "sidebar.trailing") { self.model.toggleInspector() }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.capsule)
-                .help("Show or hide the inspector")
-        }
-        .sharedBackgroundVisibility(.hidden)
     }
 }
 

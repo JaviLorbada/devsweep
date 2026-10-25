@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The center panel's top row: the screen's title and status on the left, and
 /// on the right what acts on the scan, its progress, Ring or Blocks, and Scan
-/// Again or Stop.
+/// Again or Stop, then the inspector's toggle while the inspector is hidden.
 ///
 /// Sized from the width it is given, like the footer, so the controls drop
 /// their words instead of asking the column for more room.
@@ -11,6 +11,8 @@ struct CenterHeader: View {
     let title: String
 
     static let height: CGFloat = 56
+    /// The row sits this far below the panel's top edge.
+    static let topPadding: CGFloat = 6
 
     /// What the controls show at a given width of the center panel.
     struct Fit: Equatable {
@@ -66,12 +68,32 @@ struct CenterHeader: View {
                     .buttonBorderShape(.capsule)
                     .controlSize(.large)
                     .disabled(model.engine == nil)
+                    if !model.inspectorShown {
+                        InspectorToggle()
+                    }
                 }
             }
             .fixedSize()
         }
         .padding(.horizontal, 22)
-        .padding(.top, 6)
+        .padding(.top, Self.topPadding)
+    }
+}
+
+/// Shows or hides the inspector. It sits in the inspector's top-right corner
+/// while the inspector shows, and in the center panel's header, after Scan
+/// Again, while it doesn't. The window has no toolbar strip to put it in.
+struct InspectorToggle: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let title = AppCommands.inspectorTitle(shown: self.model.inspectorShown)
+        Button(title, systemImage: "sidebar.trailing") { self.model.toggleInspector() }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.capsule)
+            .controlSize(.large)
+            .help(title)
     }
 }
 
