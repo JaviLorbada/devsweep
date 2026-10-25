@@ -50,11 +50,11 @@ struct ContentView: View {
                         .frame(width: WindowLayout.inspectorWidth)
                         .frame(maxHeight: .infinity)
                         .overlay(alignment: .topTrailing) {
-                            // Level with the center header's controls.
+                            // On the window's controls' line, with the center
+                            // header's row, and the inspector's own margin.
                             InspectorToggle()
-                                .frame(height: CenterHeader.height - CenterHeader.topPadding)
-                                .padding(.top, CenterHeader.topPadding)
-                                .padding(.trailing, 14)
+                                .frame(height: CenterHeader.rowHeight)
+                                .padding(.trailing, 18)
                         }
                         .panel()
                         .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))

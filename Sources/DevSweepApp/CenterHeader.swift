@@ -1,8 +1,11 @@
 import SwiftUI
 
-/// The center panel's top row: the screen's title and status on the left, and
-/// on the right what acts on the scan, its progress, Ring or Blocks, and Scan
-/// Again or Stop, then the inspector's toggle unless the inspector is docked.
+/// The center panel's top: a row with the screen's title on the left and, on
+/// the right, what acts on the scan, its progress, Ring or Blocks, and Scan
+/// Again or Stop, then the inspector's toggle unless the inspector is docked;
+/// and the status under it, across the panel. The row is centered on the
+/// window's controls' line, as the traffic lights and the sidebar's toggle
+/// are, so they read as one row whether the sidebar shows or not.
 ///
 /// Sized from the width it is given, like the footer, so the controls drop
 /// their words instead of asking the column for more room.
@@ -23,8 +26,9 @@ struct CenterHeader: View {
     static let insetWithoutSidebar = WindowLayout.windowControlsEnd - WindowLayout.gap - horizontalPadding
 
     static let height: CGFloat = 56
-    /// The row sits this far below the panel's top edge.
-    static let topPadding: CGFloat = 6
+    /// The row's height, which puts its middle on the window's controls'
+    /// line: the panel starts a gap below the window's top edge.
+    static let rowHeight = 2 * (WindowLayout.windowControlsLine - WindowLayout.gap)
 
     /// What the controls show at a given width of the center panel.
     struct Fit: Equatable {
@@ -52,47 +56,48 @@ struct CenterHeader: View {
 
     private func row(fit: Fit, inset: CGFloat) -> some View {
         @Bindable var model = model
-        return HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 10) {
                 Text(self.title)
                     .font(.title3.weight(.semibold))
                     .lineLimit(1)
-                Text(model.subtitle)
-                    .font(.callout)
-                    .foregroundStyle(.muted)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            GlassEffectContainer(spacing: 10) {
-                HStack(spacing: 10) {
-                    if model.isScanning {
-                        // With the container's default transition, the capsule
-                        // appearing when a scan starts stayed invisible and took
-                        // no room.
-                        ScanCapsule(showsText: fit.capsuleText)
-                            .glassEffectTransition(.identity)
-                    }
-                    if model.screen == .overview {
-                        ChartStylePicker(selection: $model.chartStyle, showsText: fit.pickerText)
-                    }
-                    Button(model.isScanning ? "Stop" : "Scan Again") {
-                        model.isScanning ? model.stopScan() : model.scan()
-                    }
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.capsule)
-                    .controlSize(.large)
-                    .disabled(model.engine == nil)
-                    if model.inspectorPlacement != .docked {
-                        InspectorToggle()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                GlassEffectContainer(spacing: 10) {
+                    HStack(spacing: 10) {
+                        if model.isScanning {
+                            // With the container's default transition, the capsule
+                            // appearing when a scan starts stayed invisible and took
+                            // no room.
+                            ScanCapsule(showsText: fit.capsuleText)
+                                .glassEffectTransition(.identity)
+                        }
+                        if model.screen == .overview {
+                            ChartStylePicker(selection: $model.chartStyle, showsText: fit.pickerText)
+                        }
+                        Button(model.isScanning ? "Stop" : "Scan Again") {
+                            model.isScanning ? model.stopScan() : model.scan()
+                        }
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.capsule)
+                        .controlSize(.large)
+                        .disabled(model.engine == nil)
+                        if model.inspectorPlacement != .docked {
+                            InspectorToggle()
+                        }
                     }
                 }
+                .fixedSize()
             }
-            .fixedSize()
+            .frame(height: Self.rowHeight)
+            Text(model.subtitle)
+                .font(.callout)
+                .foregroundStyle(.muted)
+                .lineLimit(1)
+                .truncationMode(.tail)
         }
+        .frame(maxHeight: .infinity, alignment: .top)
         .padding(.leading, Self.horizontalPadding + inset)
         .padding(.trailing, Self.horizontalPadding)
-        .padding(.top, Self.topPadding)
     }
 }
 

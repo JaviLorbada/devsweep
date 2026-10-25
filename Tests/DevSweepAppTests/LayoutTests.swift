@@ -102,6 +102,16 @@ extension LayoutTests {
     }
 
     @Test
+    func `the header's row is centered on the window's controls' line, under its own height`() {
+        // Measured in a debug window: the traffic lights are centered 26
+        // points from the top, with the sidebar shown or hidden.
+        #expect(WindowLayout.gap + CenterHeader.rowHeight / 2 == 26)
+        // The row and the status under it fit the header.
+        #expect(CenterHeader.rowHeight >= ChartStylePicker.height)
+        #expect(CenterHeader.rowHeight + 16 <= CenterHeader.height)
+    }
+
+    @Test
     func `with the sidebar hidden the header's title starts after the window's controls`() {
         // The traffic lights and the sidebar's toggle end 144 points in.
         let titleStart = WindowLayout.gap + CenterHeader.horizontalPadding + CenterHeader.insetWithoutSidebar

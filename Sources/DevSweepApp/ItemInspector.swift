@@ -57,7 +57,8 @@ struct ItemDetails: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 20)
+        .padding(.top, WindowLayout.inspectorTopPadding)
+        .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
