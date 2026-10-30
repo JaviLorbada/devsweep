@@ -10,6 +10,8 @@ line under Unreleased as it lands.
 - `devsweep`, a Swift port of the bash script `devclean` with the same flags
   and safety rules; run under the script's name it prints the same output,
   byte for byte.
+- `devsweep` lists the git worktrees of the repositories in the project
+  folders, and the command that removes each one with nothing to lose.
 
 ### App
 - A window that scans the home folder, charts what each cache holds as a ring
@@ -20,6 +22,10 @@ line under Unreleased as it lands.
   being cut off.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
+- A Worktrees screen for the git worktrees of the repositories in the project
+  folders, wherever they live, with their size, branch and last commit. It
+  removes one only when asked, with git, and only when nothing in it would
+  be lost; the branch stays.
 - Settings for project folders, items to skip, the unused threshold, how
   cleaning starts out and scanning on launch.
 - A menu bar item with the icon's ring and the free space, a daily scan while

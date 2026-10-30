@@ -31,6 +31,10 @@ built to err on the side of keeping things.
   tracks nothing in them. Any doubt keeps the folder.
 - **Not while Xcode runs.** Cleaning the Xcode items waits until Xcode and
   Simulator have quit.
+- **Worktrees only with nothing to lose.** The app removes a git worktree only
+  when you ask, with git's own `git worktree remove`, and only when it has no
+  changes waiting to be committed and a branch holds every commit in it. The
+  branch stays.
 - **Never touched:** Xcode Archives (their dSYMs symbolicate crash reports),
   simulators that still work, simulator runtimes, installed Xcodes, Android
   Studio and its SDK and emulators, build folders tracked in git, and
@@ -100,7 +104,10 @@ inspector beside the center, it floats over the center's trailing side
 instead. The sidebar's "Also worth a look" lists installed Xcodes and simulator
 runtimes, and what Android Studio keeps: its installs, the SDK's system
 images, platforms and build tools, emulators, and Gradle's caches, flagging
-what looks unused. Settings has the project folders, items to skip, when
+what looks unused. Under Git it lists the worktrees of the repositories in
+your project folders, wherever the worktrees are, with their size, branch and
+last commit, and removes one with nothing to lose when you ask. `devsweep`
+lists them too, with the command for each. Settings has the project folders, items to skip, when
 something counts as unused, how cleaning starts out, whether to scan on
 opening, and whether to show the menu bar item. The menu bar item shows the
 icon's ring in one color and the free space, and keeps the app running after
