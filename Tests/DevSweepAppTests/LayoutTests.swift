@@ -134,6 +134,27 @@ extension LayoutTests {
 
 extension LayoutTests {
     @Test
+    func `the worktrees screen fits the narrowest center column`() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home, extras: sampleExtras)
+        model.screen = .worktrees
+        let size = minimumSize(of: WorktreesContent(), model: model)
+        #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
+    }
+
+    @Test
+    func `the worktree inspector never asks the window for more height`() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home, extras: sampleExtras)
+        model.screen = .worktrees
+        for worktree in sampleWorktrees {
+            model.selectedWorktree = worktree.path
+            let size = minimumSize(of: WorktreeInspector(), model: model)
+            #expect(size.height <= WindowLayout.minimumHeight, "\(worktree.name) needs \(size.height) points")
+        }
+    }
+
+    @Test
     func `the Android Studio screens fit the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)

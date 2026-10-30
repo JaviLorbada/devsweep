@@ -1,0 +1,312 @@
+import DevSweepKit
+import SwiftUI
+
+// The git worktrees of the repositories in the project folders. DevSweep
+// lists them all and removes one only when asked, with git's own
+// `worktree remove`, and only when nothing in it would be lost.
+
+extension AppModel {
+    var worktreesKilobytes: Int64? {
+        self.extras.map { $0.worktrees.reduce(0) { $0 + $1.kilobytes } }
+    }
+
+    /// The selected worktree, or the first with nothing to lose, or the first.
+    var currentWorktree: GitWorktree? {
+        let worktrees = self.extras?.worktrees ?? []
+        return worktrees.first { $0.path == self.selectedWorktree }
+            ?? worktrees.first { $0.keptBecause == nil }
+            ?? worktrees.first
+    }
+}
+
+struct WorktreesView: View {
+    var body: some View {
+        ScrollView { WorktreesContent() }
+    }
+}
+
+struct WorktreesContent: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ExtrasCard(
+                title: "Worktrees",
+                note: "of the repositories in your project folders",
+                rowCount: self.model.extras?.worktrees.count ?? 0)
+            {
+                if let worktrees = model.extras?.worktrees, !worktrees.isEmpty {
+                    let largest = Double(worktrees.map(\.kilobytes).max() ?? 1)
+                    ForEach(worktrees) { worktree in
+                        Divider().opacity(0.6)
+                        WorktreeRow(worktree: worktree, largest: largest)
+                    }
+                } else {
+                    EmptyExtrasRow(text: self.model.isLoadingExtras ? "Listing worktrees…" : "No worktrees found.")
+                }
+            }
+            Text(
+                "Remove keeps the branch and runs only when there's nothing to lose: no changes waiting to be "
+                    + "committed, and every commit on a branch.")
+                .font(.callout)
+                .foregroundStyle(.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 18)
+    }
+}
+
+private struct WorktreeRow: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.extrasColumns) private var columns
+    let worktree: GitWorktree
+    let largest: Double
+
+    var body: some View {
+        let kept = self.worktree.keptBecause
+        let selected = self.model.screen == .worktrees && self.model.currentWorktree?.id == self.worktree.id
+        let tint: Color = kept == nil ? .orange : .secondary.opacity(0.6)
+        HStack(spacing: 12) {
+            Dot(color: tint)
+            // The reason or the branch gives way first, then the name truncates.
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(self.worktree.name).fontWeight(.medium).lineLimit(1).truncationMode(.middle).layoutPriority(2)
+                Text(kept ?? WorktreeWords.origin(self.worktree))
+                    .font(.caption)
+                    .foregroundStyle(.muted)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if self.columns.showsDate {
+                Text(self.worktree.lastCommit.map { "committed \(DayFormat.utc($0))" } ?? "no commits")
+                    .font(.callout)
+                    .foregroundStyle(.muted)
+                    .lineLimit(1)
+                    .frame(width: 140, alignment: .leading)
+            }
+            if self.columns.showsBar {
+                ThinBar(fraction: Double(self.worktree.kilobytes) / max(self.largest, 1), color: tint)
+                    .frame(width: 100)
+            }
+            Text(SizeText.of(kilobytes: self.worktree.kilobytes))
+                .font(.callout.weight(.semibold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .frame(width: 64, alignment: .trailing)
+            Group {
+                if kept != nil {
+                    Color.clear
+                } else if self.columns == .compact {
+                    Button("Remove Worktree", systemImage: "trash") { self.askToRemove() }
+                        .labelStyle(.iconOnly)
+                        .help("Remove Worktree")
+                } else {
+                    Button("Remove Worktree") { self.askToRemove() }
+                }
+            }
+            .controlSize(.small)
+            .rowControl()
+            .frame(width: self.columns == .compact ? 28 : 128)
+        }
+        .padding(.horizontal, 14)
+        .frame(height: 40)
+        .tableRowSelection(selected)
+        .contentShape(Rectangle())
+        .onTapGesture { self.model.selectedWorktree = self.worktree.id }
+        .focusable()
+        .onKeyPress(.space) { self.model.selectedWorktree = self.worktree.id; return .handled }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            "\(self.worktree.name), \(SizeText.of(kilobytes: self.worktree.kilobytes))\(kept.map { ", \($0)" } ?? "")")
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityAction(named: "Select") { self.model.selectedWorktree = self.worktree.id }
+    }
+
+    private func askToRemove() {
+        self.model.selectedWorktree = self.worktree.id
+        self.model.worktreeToRemove = self.worktree
+    }
+}
+
+struct WorktreeInspector: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if let worktree = model.currentWorktree {
+            // Scrolls, so the column never asks the window for the height of its text.
+            ScrollView {
+                WorktreeDetails(worktree: worktree)
+            }
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .safeAreaBar(edge: .bottom) {
+                Button("Remove Worktree") { self.model.worktreeToRemove = worktree }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    .disabled(worktree.keptBecause != nil)
+                    .help(worktree.keptBecause
+                        .map { "\($0), so it stays." } ?? "Removes it with git; the branch stays.")
+                    .frame(maxWidth: .infinity)
+                    .padding(18)
+            }
+        } else {
+            ContentUnavailableView(
+                "No worktree",
+                systemImage: "arrow.triangle.branch",
+                description: Text(self.model
+                    .isLoadingExtras ? "Listing worktrees…" : "No worktrees in your project folders' repositories."))
+        }
+    }
+}
+
+/// What the inspector says about one worktree.
+struct WorktreeDetails: View {
+    @Environment(AppModel.self) private var model
+    let worktree: GitWorktree
+
+    var body: some View {
+        let kept = self.worktree.keptBecause
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 7) {
+                Dot(color: kept == nil ? .orange : .secondary.opacity(0.6))
+                Eyebrow(text: "Git worktree")
+            }
+            Text(self.worktree.name).font(.title3.weight(.semibold))
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(SizeText.of(kilobytes: self.worktree.kilobytes))
+                    .font(.largeTitle.weight(.bold))
+                    .monospacedDigit()
+                Text(kept == nil ? "nothing to lose" : "keeps work")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(kept == nil ? AnyShapeStyle(.orange) : AnyShapeStyle(.muted))
+            }
+            Section("Repository") {
+                Text("\(self.worktree.repositoryName), " + (self.worktree.branch.map { "branch \($0)" } ?? "detached"))
+                Text(self.model.tilde(self.worktree.repository))
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+            }
+            Section("Where") {
+                Text(self.model.tilde(self.worktree.path))
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+                Button("Reveal in Finder") { self.model.revealInFinder([self.worktree.path]) }
+                    .buttonStyle(.link)
+            }
+            Section(kept == nil ? "What happens" : "Why it stays") {
+                Text(WorktreeWords.whatHappens(self.worktree))
+            }
+            Section("Runs") {
+                Text(self.model.engine.map { self.worktree.removalCommand(policy: $0.policy) } ?? "")
+                    .font(.caption.monospaced())
+                    .textSelection(.enabled)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, WindowLayout.inspectorTopPadding)
+        .padding(.bottom, 20)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    private struct Section<Content: View>: View {
+        let title: String
+        @ViewBuilder let content: Content
+
+        init(_ title: String, @ViewBuilder content: () -> Content) {
+            self.title = title
+            self.content = content()
+        }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 5) {
+                Eyebrow(text: self.title)
+                self.content
+                    .font(.callout)
+                    .foregroundStyle(.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+struct RemoveWorktreeSheet: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    let worktree: GitWorktree
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Remove the worktree \(self.worktree.name)?")
+                .font(.title3.weight(.semibold))
+            Text(
+                "This frees \(SizeText.of(kilobytes: self.worktree.kilobytes)). "
+                    + WorktreeWords.whatHappens(self.worktree))
+                .foregroundStyle(.muted)
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 5) {
+                Eyebrow(text: "Runs")
+                Text(self.model.engine.map { self.worktree.removalCommand(policy: $0.policy) } ?? "")
+                    .font(.callout.monospaced())
+                    .textSelection(.enabled)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
+            }
+            if let error = model.worktreeRemovalError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack {
+                if self.model.isRemovingWorktree {
+                    ProgressView().controlSize(.small)
+                    Text("Removing…").foregroundStyle(.muted)
+                }
+                Spacer()
+                Button("Cancel", role: .cancel) {
+                    self.model.worktreeRemovalError = nil
+                    self.dismiss()
+                }
+                .keyboardShortcut(.cancelAction)
+                Button("Remove Worktree", role: .destructive) {
+                    Task { await self.model.removeWorktree(self.worktree) }
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(self.model.isRemovingWorktree)
+            }
+        }
+        .padding(20)
+        .frame(width: 460)
+        .interactiveDismissDisabled(self.model.isRemovingWorktree)
+    }
+}
+
+enum WorktreeWords {
+    /// "Atlas, fix-login": its repository and branch, for a row.
+    static func origin(_ worktree: GitWorktree) -> String {
+        "\(worktree.repositoryName), \(worktree.branch ?? "detached")"
+    }
+
+    /// What removing it does, or why DevSweep keeps it.
+    static func whatHappens(_ worktree: GitWorktree) -> String {
+        if worktree.isLocked {
+            return "It's locked with git worktree lock, so git keeps it until it's unlocked."
+        }
+        guard let changes = worktree.changes else {
+            return "Git couldn't say whether it has changes, so it stays."
+        }
+        if changes > 0 {
+            let count = changes == 1 ? "a change" : "\(changes) changes"
+            let them = changes == 1 ? "it" : "them"
+            return "It has \(count) not committed. Commit or discard \(them) in the worktree, and it can go."
+        }
+        if !worktree.commitsKept {
+            return "It has commits on no branch, which removing it would lose. Make a branch for them first."
+        }
+        let kept = worktree.branch.map { "The branch \($0) stays in the repository" }
+            ?? "A branch already holds its commits"
+        return "Git removes the folder, with the dependencies and build output in it. \(kept), so nothing "
+            + "committed is lost."
+    }
+}

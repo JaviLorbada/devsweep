@@ -5,6 +5,7 @@ struct SidebarView: View {
     @Environment(AppModel.self) private var model
     @State private var showsXcode = true
     @State private var showsAndroid = true
+    @State private var showsGit = true
 
     private func row(_ title: String, kilobytes: Int64?, screen: AppModel.Screen) -> some View {
         HStack {
@@ -54,6 +55,11 @@ struct SidebarView: View {
                     self.row("Gradle caches", kilobytes: model.gradleCachesKilobytes, screen: .gradleCaches)
                 } label: {
                     Label("Android Studio", systemImage: "iphone.gen3")
+                }
+                DisclosureGroup(isExpanded: self.$showsGit) {
+                    self.row("Worktrees", kilobytes: model.worktreesKilobytes, screen: .worktrees)
+                } label: {
+                    Label("Git", systemImage: "arrow.triangle.branch")
                 }
             }
         }

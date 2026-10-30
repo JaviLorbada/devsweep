@@ -92,7 +92,36 @@ let sampleExtras = Extras(
             lastUsedDay: nil,
             daysSinceUsed: nil,
             simulatorCount: 1),
-    ])
+    ],
+    worktrees: sampleWorktrees)
+
+/// Worktrees in each state: kept for changes, with nothing to lose, with
+/// commits on no branch, and locked, with long names.
+let sampleWorktrees = [
+    sampleWorktree("portfolio-copy-typography-ec440f", changes: 15),
+    sampleWorktree("readme-credits-readability-9b0801", branch: nil),
+    sampleWorktree("marble-game-exploration-2c9287"),
+    sampleWorktree("theme-pr-review-testing-e2049e", branch: nil, commitsKept: false),
+    sampleWorktree("sync-integration-review-workflow-264975", locked: true),
+]
+
+func sampleWorktree(
+    _ name: String,
+    branch: String? = "javi/feature-with-a-long-branch-name",
+    changes: Int = 0,
+    commitsKept: Bool = true,
+    locked: Bool = false) -> GitWorktree
+{
+    GitWorktree(
+        path: "/Users/someone/Documents/Workspace/portfolio/.tool/worktrees/\(name)",
+        repository: "/Users/someone/Documents/Workspace/portfolio",
+        branch: branch,
+        kilobytes: 623_000,
+        lastCommit: Date(timeIntervalSince1970: 1_792_000_000),
+        changes: changes,
+        commitsKept: commitsKept,
+        isLocked: locked)
+}
 
 /// Results with every item measured, long labels and a full DerivedData breakdown.
 let sampleResults: [ItemResult] = Item.allCases.enumerated().map { index, item in

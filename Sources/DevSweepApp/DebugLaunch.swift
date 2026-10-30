@@ -12,7 +12,8 @@ import SwiftUI
 /// - `DEVSWEEP_SIDEBAR_WIDTH=298` then sets the sidebar that wide, as
 ///   dragging its edge would; `DEVSWEEP_SIDEBAR=hidden` or `shown` hides or
 ///   shows it, as its toolbar button does, when it isn't already.
-/// - `DEVSWEEP_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|overview` switches screens once the scan
+/// - `DEVSWEEP_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|worktrees|overview` switches screens once the
+/// scan
 ///   and the extras are done, the way a click in the sidebar does; `scanning`
 ///   instead winds the finished scan back to look half done, and `blocks`
 ///   shows the overview's blocks.
@@ -174,18 +175,24 @@ enum DebugLaunch {
         return true
     }
 
+    /// `DEVSWEEP_SCREEN`'s names for the screens.
+    private static let screens: [String: AppModel.Screen] = [
+        "overview": .overview,
+        "xcodes": .xcodeVersions,
+        "runtimes": .simulatorRuntimes,
+        "android-studios": .androidStudios,
+        "android-sdk": .androidSDK,
+        "gradle": .gradleCaches,
+        "worktrees": .worktrees,
+    ]
+
     /// The screen, the selection and a press, as clicks would make them.
     @MainActor
     private static func applyScreen(_ model: AppModel, _ environment: [String: String]) async {
         self.trace("scan done; switching to \(environment["DEVSWEEP_SCREEN"] ?? "-")")
         switch environment["DEVSWEEP_SCREEN"] {
-        case "xcodes": model.screen = .xcodeVersions
-        case "runtimes": model.screen = .simulatorRuntimes
-        case "overview": model.screen = .overview
+        case let name? where self.screens[name] != nil: model.screen = self.screens[name] ?? .overview
         case "blocks": model.chartStyle = .blocks
-        case "android-studios": model.screen = .androidStudios
-        case "android-sdk": model.screen = .androidSDK
-        case "gradle": model.screen = .gradleCaches
         case "scanning": model.rewindScan(toMeasured: 5)
         default: break
         }

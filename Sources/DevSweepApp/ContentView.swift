@@ -37,6 +37,7 @@ struct ContentView: View {
                     case .androidStudios: AndroidStudiosView()
                     case .androidSDK: AndroidSDKView()
                     case .gradleCaches: GradleCachesView()
+                    case .worktrees: WorktreesView()
                     }
                 }
                 .scrollEdgeEffectStyle(.soft, for: .top)
@@ -131,6 +132,10 @@ struct ContentView: View {
             RemoveRuntimeSheet(runtime: runtime)
                 .environment(model)
         }
+        .sheet(item: $model.worktreeToRemove) { worktree in
+            RemoveWorktreeSheet(worktree: worktree)
+                .environment(model)
+        }
         .alert(
             model.notice?.title ?? "",
             isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } }),
@@ -178,6 +183,7 @@ struct ContentView: View {
         case .xcodeVersions: XcodeInspector()
         case .simulatorRuntimes: RuntimeInspector()
         case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
+        case .worktrees: WorktreeInspector()
         }
     }
 
@@ -195,6 +201,7 @@ struct ContentView: View {
         case .androidStudios: "Android Studio versions"
         case .androidSDK: "SDK and emulators"
         case .gradleCaches: "Gradle caches"
+        case .worktrees: "Worktrees"
         }
     }
 }

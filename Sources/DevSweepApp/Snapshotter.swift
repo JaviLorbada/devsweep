@@ -106,6 +106,9 @@ private struct SnapshotLayout: View {
                 case .xcodeVersions:
                     XcodesContent()
                     Spacer(minLength: 0)
+                case .worktrees:
+                    WorktreesContent()
+                    Spacer(minLength: 0)
                 case .androidStudios, .androidSDK, .gradleCaches:
                     Spacer(minLength: 0)
                 }
@@ -144,6 +147,7 @@ private struct SnapshotLayout: View {
             case .simulatorRuntimes: RuntimeInspector()
             case .xcodeVersions: XcodeInspector()
             case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
+            case .worktrees: WorktreeInspector()
             }
         }
         .frame(width: 300)
@@ -252,6 +256,8 @@ extension AppModel {
             selection = item
         } else if let xcode = extras?.xcodes.first(where: { ($0.path as NSString).lastPathComponent == id }) {
             selectedXcode = xcode.path
+        } else if let worktree = extras?.worktrees.first(where: { $0.name == id }) {
+            selectedWorktree = worktree.path
         } else {
             selectedRuntime = id
         }

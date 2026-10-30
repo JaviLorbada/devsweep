@@ -14,6 +14,7 @@ final class AppModel {
         case androidStudios
         case androidSDK
         case gradleCaches
+        case worktrees
     }
 
     enum ChartStyle: String, CaseIterable, Identifiable {
@@ -132,6 +133,8 @@ final class AppModel {
     var selectedRuntime: String?
     /// The Xcode selected on the Xcode versions screen, by its path.
     var selectedXcode: String?
+    /// The worktree selected on the worktrees screen, by its path.
+    var selectedWorktree: String?
     var marked: Set<Item> = []
     /// Clean by moving to the Trash, so anything can be put back; off deletes for good.
     var moveToTrash = true
@@ -931,6 +934,11 @@ final class AppModel {
             guard self.android != nil else { return self.isLoadingAndroid ? "Listing Gradle's caches" : "" }
             return "\(SizeText.of(kilobytes: self.gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) "
                 + "never removes these."
+        case .worktrees:
+            guard let worktrees = extras?.worktrees else { return self.isLoadingExtras ? "Listing worktrees" : "" }
+            let count = worktrees.count == 1 ? "1 worktree" : "\(worktrees.count) worktrees"
+            return "\(SizeText.of(kilobytes: self.worktreesKilobytes ?? 0)) in \(count). \(ProductInfo.name) removes "
+                + "one only when you ask, with nothing in it to lose."
         }
     }
 
@@ -949,6 +957,29 @@ final class AppModel {
         } else {
             self.runtimeRemovalError = "simctl couldn't remove it. Run the command in Terminal to see why; "
                 + "a simulator using it may still be running."
+        }
+    }
+
+    /// The worktree waiting on the removal sheet.
+    var worktreeToRemove: GitWorktree?
+    private(set) var isRemovingWorktree = false
+    var worktreeRemovalError: String?
+
+    /// Removes the worktree on the sheet with git, then lists worktrees again.
+    func removeWorktree(_ worktree: GitWorktree) async {
+        guard let engine, !isRemovingWorktree else { return }
+        self.isRemovingWorktree = true
+        self.worktreeRemovalError = nil
+        let removed = await engine.removeWorktree(worktree)
+        self.isRemovingWorktree = false
+        if removed {
+            self.worktreeToRemove = nil
+            self.selectedWorktree = nil
+            await self.refreshExtras()
+            self.diskSpace = engine.diskSpace()
+        } else {
+            self.worktreeRemovalError = "Git didn't remove it. It may have changed since it was listed, or hold a "
+                + "submodule; run the command in Terminal to see why."
         }
     }
 
