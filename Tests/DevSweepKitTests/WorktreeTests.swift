@@ -169,6 +169,23 @@ struct WorktreeTests {
     }
 
     @Test
+    func `a worktree named like its repository is told apart by its parent folder`() {
+        func named(_ path: String) -> String {
+            GitWorktree(
+                path: path,
+                repository: "/h/Workspace/App",
+                branch: nil,
+                kilobytes: 0,
+                lastCommit: nil,
+                changes: 0,
+                commitsKept: true,
+                isLocked: false).name
+        }
+        #expect(named("/h/.tool/worktrees/fix-login/App") == "fix-login/App")
+        #expect(named("/h/Workspace/App/.tool/worktrees/fix-login") == "fix-login")
+    }
+
+    @Test
     func `git's porcelain listing is read entry by entry`() {
         let listing = """
         worktree /r/App

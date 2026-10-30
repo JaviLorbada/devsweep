@@ -70,9 +70,13 @@ public struct GitWorktree: Sendable, Identifiable, Equatable, Codable {
         self.path
     }
 
-    /// The worktree's folder name.
+    /// The worktree's folder name, with its parent's when it is just the
+    /// repository's name, as when a tool keeps each task's checkout in a
+    /// folder of its own: `fix-login/App` rather than `App`.
     public var name: String {
-        FileSystem.basename(self.path)
+        let folder = FileSystem.basename(self.path)
+        guard folder == self.repositoryName else { return folder }
+        return "\(FileSystem.basename(FileSystem.dirname(self.path)))/\(folder)"
     }
 
     /// The repository's folder name.
