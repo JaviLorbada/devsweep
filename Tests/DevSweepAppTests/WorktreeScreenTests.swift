@@ -13,7 +13,39 @@ struct WorktreeScreenTests {
         #expect(model.currentWorktree?.name == "readme-credits-readability-9b0801")
         model.selectedWorktree = sampleWorktrees[0].path
         #expect(model.currentWorktree?.name == "portfolio-copy-typography-ec440f")
-        #expect(model.subtitle.hasPrefix("\(SizeText.of(kilobytes: 5 * 623_000)) in 5 worktrees."))
+    }
+
+    @Test
+    func `the sidebar counts only what can go, and the subtitle says what stays`() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home, extras: sampleExtras)
+        model.screen = .worktrees
+        // Two of the five have nothing to lose.
+        let twoKilobytes: Int64 = 2 * 623_000
+        #expect(model.removableWorktreesKilobytes == twoKilobytes)
+        let twoGo = SizeText.of(kilobytes: twoKilobytes)
+        let threeStay = SizeText.of(kilobytes: 3 * 623_000)
+        #expect(model.subtitle == "\(twoGo) in 2 worktrees with nothing to lose. 3 more, \(threeStay), keep work, "
+            + "so they stay.")
+
+        let oneSize = SizeText.of(kilobytes: 623_000)
+        let kept = sampleWorktrees[0]
+        let removable = sampleWorktrees[1]
+        #expect(WorktreeWords.summary([removable, kept])
+            == "\(oneSize) in 1 worktree with nothing to lose. 1 more, \(oneSize), keeps work, so it stays.")
+        #expect(WorktreeWords.summary([kept]) == "\(oneSize) in 1 worktree that keeps work, so it stays.")
+        #expect(WorktreeWords.summary([removable, removable])
+            == "\(SizeText.of(kilobytes: 2 * 623_000)) in 2 worktrees with nothing to lose.")
+        #expect(WorktreeWords.summary([]) == "No worktrees in your project folders' repositories.")
+    }
+
+    @Test
+    func `with nothing to remove the sidebar's size is zero`() {
+        let home = TemporaryHome()
+        var extras = sampleExtras
+        extras.worktrees = [sampleWorktrees[0], sampleWorktrees[3]]
+        let model = makeModel(home: home, extras: extras)
+        #expect(model.removableWorktreesKilobytes == 0)
     }
 
     @Test

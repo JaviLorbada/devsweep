@@ -6,8 +6,10 @@ import SwiftUI
 // `worktree remove`, and only when nothing in it would be lost.
 
 extension AppModel {
-    var worktreesKilobytes: Int64? {
-        self.extras.map { $0.worktrees.reduce(0) { $0 + $1.kilobytes } }
+    /// What removing every worktree with nothing to lose would free. The
+    /// sidebar shows this, not the total, since the others stay.
+    var removableWorktreesKilobytes: Int64? {
+        self.extras.map { $0.worktrees.filter { $0.keptBecause == nil }.reduce(0) { $0 + $1.kilobytes } }
     }
 
     /// The selected worktree, or the first with nothing to lose, or the first.
@@ -283,6 +285,34 @@ struct RemoveWorktreeSheet: View {
 }
 
 enum WorktreeWords {
+    /// The screen's subtitle and the sidebar row's help: what can go, then what
+    /// stays. "1.2 GB in 2 worktrees with nothing to lose. 3 more, 1.9 GB,
+    /// keep work, so they stay."
+    static func summary(_ worktrees: [GitWorktree]) -> String {
+        let removable = worktrees.filter { $0.keptBecause == nil }
+        let kept = worktrees.filter { $0.keptBecause != nil }
+        let stays = kept.count == 1 ? "keeps work, so it stays" : "keep work, so they stay"
+        switch (removable.isEmpty, kept.isEmpty) {
+        case (true, true):
+            return "No worktrees in your project folders' repositories."
+        case (true, false):
+            return "\(self.size(kept)) in \(self.count(kept)) that \(stays)."
+        case (false, true):
+            return "\(self.size(removable)) in \(self.count(removable)) with nothing to lose."
+        case (false, false):
+            return "\(self.size(removable)) in \(self.count(removable)) with nothing to lose. "
+                + "\(kept.count) more, \(self.size(kept)), \(stays)."
+        }
+    }
+
+    private static func size(_ worktrees: [GitWorktree]) -> String {
+        SizeText.of(kilobytes: worktrees.reduce(0) { $0 + $1.kilobytes })
+    }
+
+    private static func count(_ worktrees: [GitWorktree]) -> String {
+        worktrees.count == 1 ? "1 worktree" : "\(worktrees.count) worktrees"
+    }
+
     /// "Atlas, fix-login": its repository and branch, for a row.
     static func origin(_ worktree: GitWorktree) -> String {
         "\(worktree.repositoryName), \(worktree.branch ?? "detached")"

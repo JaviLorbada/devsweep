@@ -936,9 +936,7 @@ final class AppModel {
                 + "never removes these."
         case .worktrees:
             guard let worktrees = extras?.worktrees else { return self.isLoadingExtras ? "Listing worktrees" : "" }
-            let count = worktrees.count == 1 ? "1 worktree" : "\(worktrees.count) worktrees"
-            return "\(SizeText.of(kilobytes: self.worktreesKilobytes ?? 0)) in \(count). \(ProductInfo.name) removes "
-                + "one only when you ask, with nothing in it to lose."
+            return WorktreeWords.summary(worktrees)
         }
     }
 

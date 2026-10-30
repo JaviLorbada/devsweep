@@ -25,7 +25,8 @@ line under Unreleased as it lands.
 - A Worktrees screen for the git worktrees of the repositories in the project
   folders, wherever they live, with their size, branch and last commit. It
   removes one only when asked, with git, and only when nothing in it would
-  be lost; the branch stays.
+  be lost; the branch stays. The sidebar's size is what can go, and the
+  screen says how much stays because it holds work.
 - Settings for project folders, items to skip, the unused threshold, how
   cleaning starts out and scanning on launch.
 - A menu bar item with the icon's ring and the free space, a daily scan while

@@ -7,11 +7,16 @@ struct SidebarView: View {
     @State private var showsAndroid = true
     @State private var showsGit = true
 
-    private func row(_ title: String, kilobytes: Int64?, screen: AppModel.Screen) -> some View {
+    private func row(
+        _ title: String,
+        kilobytes: Int64?,
+        screen: AppModel.Screen,
+        showsZero: Bool = true) -> some View
+    {
         HStack {
             Text(title).lineLimit(1)
             Spacer()
-            SidebarSize(kilobytes: kilobytes)
+            SidebarSize(kilobytes: kilobytes, showsZero: showsZero)
         }
         .tag(screen)
         .accessibilityElement(children: .combine)
@@ -57,7 +62,13 @@ struct SidebarView: View {
                     Label("Android Studio", systemImage: "iphone.gen3")
                 }
                 DisclosureGroup(isExpanded: self.$showsGit) {
-                    self.row("Worktrees", kilobytes: model.worktreesKilobytes, screen: .worktrees)
+                    // What can go, as the caches show; the help says what stays.
+                    self.row(
+                        "Worktrees",
+                        kilobytes: model.removableWorktreesKilobytes,
+                        screen: .worktrees,
+                        showsZero: false)
+                        .help(model.extras.map { WorktreeWords.summary($0.worktrees) } ?? "Listing worktrees…")
                 } label: {
                     Label("Git", systemImage: "arrow.triangle.branch")
                 }
@@ -74,9 +85,12 @@ struct SidebarView: View {
 
 private struct SidebarSize: View {
     let kilobytes: Int64?
+    /// False leaves a size of zero out rather than saying "Zero KB".
+    var showsZero = true
 
     var body: some View {
-        Text(self.kilobytes.map { SizeText.of(kilobytes: $0) } ?? "–")
+        let text = self.kilobytes.map { $0 == 0 && !self.showsZero ? "" : SizeText.of(kilobytes: $0) }
+        Text(text ?? "–")
             .font(.callout)
             .monospacedDigit()
             .foregroundStyle(.muted)
