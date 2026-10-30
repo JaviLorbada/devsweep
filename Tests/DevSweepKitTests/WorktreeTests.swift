@@ -100,7 +100,10 @@ struct WorktreeTests {
 
         #expect(await engine.removeWorktree(worktree))
         #expect(!home.exists(clean))
-        #expect(tools.log.contains("git -C \(worktree.repository) worktree remove \(worktree.path)"))
+        // With the path as git lists it, which may resolve symlinks HOME goes through.
+        #expect(tools.log.calls.contains {
+            $0.hasPrefix("git -C \(worktree.repository) worktree remove /") && $0.hasSuffix("/.tool/worktrees/clean")
+        })
         #expect(home.exists("\(fixture.repository)/.git/refs/heads/clean"))
         #expect(await engine.extras().worktrees.isEmpty)
     }
@@ -143,6 +146,18 @@ struct WorktreeTests {
         stranger.path = home.fill(home.path("Workspace/Other"))
         #expect(await !engine.removeWorktree(stranger))
         #expect(home.exists(stranger.path))
+    }
+
+    @Test
+    func `worktree paths read from HOME as given, so they shorten to the tilde`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        let fixture = WorktreeFixture(home)
+        fixture.add(home.path(".tool/worktrees/clean"), branch: "clean")
+        let engine = try engine(home, tools)
+        let worktree = try #require(await engine.extras().worktrees.first)
+        // The temp folder the fake home is in goes through a symlink, as /var does.
+        #expect(engine.policy.tilde(worktree.path) == "~/.tool/worktrees/clean")
+        #expect(engine.policy.tilde(worktree.repository) == "~/Workspace/App")
     }
 
     @Test

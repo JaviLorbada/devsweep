@@ -16,7 +16,11 @@ enum WorktreeScanner {
             // The first entry is always the repository's main working copy.
             for entry in self.parse(listing).dropFirst() where !entry.isPrunable {
                 guard let real = context.policy.safePath(entry.path), seen.insert(real).inserted else { continue }
-                await worktrees.append(self.describe(entry, real: real, repository: repository, in: context))
+                await worktrees.append(self.describe(
+                    entry,
+                    real: real,
+                    repository: self.fromHome(repository, policy: context.policy),
+                    in: context))
             }
         }
         return worktrees.sorted { $0.kilobytes > $1.kilobytes }
@@ -41,6 +45,14 @@ enum WorktreeScanner {
             }
         }
         return found
+    }
+
+    /// A path under the resolved home folder, as git gives paths, from the
+    /// home folder as `HOME` names it instead, so it shortens to `~`. The
+    /// two differ when `HOME` goes through a symlink.
+    static func fromHome(_ path: String, policy: PathPolicy) -> String {
+        guard !policy.home.bytesEqual(policy.homeReal), path.hasBytePrefix(policy.homeReal + "/") else { return path }
+        return policy.home + path.dropFirst(policy.homeReal.utf8.count)
     }
 
     /// One entry of `git worktree list --porcelain`.
@@ -85,7 +97,7 @@ enum WorktreeScanner {
         let refs = await git.refsContainingHead(in: entry.path)
         let time = await git.headCommitTime(in: entry.path)
         return await GitWorktree(
-            path: entry.path,
+            path: self.fromHome(entry.path, policy: context.policy),
             repository: repository,
             branch: entry.branch,
             kilobytes: context.measurer.measureOffPool(real).kilobytes,

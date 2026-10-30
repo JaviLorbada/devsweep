@@ -226,16 +226,17 @@ public struct Engine: Sendable {
     /// the branch.
     public func removeWorktree(_ worktree: GitWorktree) async -> Bool {
         let git = self.tools.git
-        guard self.policy.safePath(worktree.path) != nil, self.policy.safePath(worktree.repository) != nil,
+        guard let real = self.policy.safePath(worktree.path), self.policy.safePath(worktree.repository) != nil,
               let listing = await git.worktreeList(in: worktree.repository),
               let entry = WorktreeScanner.parse(listing).dropFirst()
-                  .first(where: { $0.path.bytesEqual(worktree.path) }),
+                  .first(where: { FileSystem.physicalDirectory($0.path)?.bytesEqual(real) ?? false }),
               !entry.isLocked, !entry.isPrunable,
-              let status = await git.status(in: worktree.path), status.isEmpty
+              let status = await git.status(in: entry.path), status.isEmpty
         else { return false }
         if entry.branch == nil {
-            guard let refs = await git.refsContainingHead(in: worktree.path), !refs.isEmpty else { return false }
+            guard let refs = await git.refsContainingHead(in: entry.path), !refs.isEmpty else { return false }
         }
-        return await git.removeWorktree(worktree.path, from: worktree.repository)
+        // The path as git lists it, which is how git finds the worktree.
+        return await git.removeWorktree(entry.path, from: worktree.repository)
     }
 }
