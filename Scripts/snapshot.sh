@@ -9,7 +9,7 @@
 # Usage: Scripts/snapshot.sh [output folder] [screen...]
 #   screens: overview scanning blocks runtimes xcodes remove-runtime cleaned putback,
 #            any with -light (default: overview); with WIDTH also
-#            android-studios android-sdk gradle
+#            android-studios android-sdk gradle worktrees
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
 #   SELECT picks an item, and SNAPSHOT_WIDTH=900 lays the drawing out that wide.
@@ -130,6 +130,30 @@ make_home() {
     plist "$home/Applications/$1/Contents/version.plist" "<key>ProductBuildVersion</key><string>$3</string>"
     blob "$home/Applications/$1/Contents/Developer/blob" 12
   done
+
+  make_worktrees "$home" "$ws/Atlas"
+}
+
+# make_worktrees <home> <repository>: makes the repository a git repository
+# with three worktrees, one in each state the app shows: one with nothing to
+# lose, kept in a hidden folder outside the project folders the way a tool
+# keeps them, one with a change not committed, and one detached with a commit
+# on no branch. Git runs with the fake home as HOME, and a fixed identity.
+make_worktrees() {
+  local home="$1" repo="$2" wt="$1/.agents/worktrees"
+  fake_git() { HOME="$home" git -c user.name=Snapshot -c user.email=snapshot@example.com -c commit.gpgsign=false "$@" >/dev/null; }
+  printf 'node_modules/\n.build/\nbuild/\n' > "$repo/.gitignore"
+  fake_git -C "$repo" init -q -b main
+  fake_git -C "$repo" add .gitignore
+  fake_git -C "$repo" commit -q -m "Start Atlas"
+  fake_git -C "$repo" worktree add -q -b fix-login "$wt/fix-login"
+  blob "$wt/fix-login/node_modules/react-dom/blob" 41
+  fake_git -C "$repo" worktree add -q -b new-onboarding "$repo/.tool/worktrees/new-onboarding"
+  blob "$repo/.tool/worktrees/new-onboarding/node_modules/blob" 6
+  printf 'Draft copy for the welcome screen\n' > "$repo/.tool/worktrees/new-onboarding/NOTES.md"
+  fake_git -C "$repo" worktree add -q --detach "$wt/try-cache"
+  blob "$wt/try-cache/.build/blob" 3
+  fake_git -C "$wt/try-cache" commit -q --allow-empty -m "Try a shared cache"
 }
 
 # Today's default preferences, as launch arguments: they win over whatever
