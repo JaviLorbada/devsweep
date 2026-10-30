@@ -216,4 +216,26 @@ public struct Engine: Sendable {
         guard !runtime.id.isEmpty, !runtime.id.hasPrefix("-") else { return false }
         return await self.tools.simctl.deleteRuntime(runtime.id)
     }
+
+    /// Removes a git worktree with `git worktree remove`, never forced, the
+    /// command the report shows. A scan never calls this; only an explicit
+    /// request does. Right before, it checks again what the listing said:
+    /// both folders are inside the home folder and not symlinks, git still
+    /// lists the folder as a worktree of that repository and not as locked,
+    /// it has no changes, and a branch holds every commit in it. Git keeps
+    /// the branch.
+    public func removeWorktree(_ worktree: GitWorktree) async -> Bool {
+        let git = self.tools.git
+        guard self.policy.safePath(worktree.path) != nil, self.policy.safePath(worktree.repository) != nil,
+              let listing = await git.worktreeList(in: worktree.repository),
+              let entry = WorktreeScanner.parse(listing).dropFirst()
+                  .first(where: { $0.path.bytesEqual(worktree.path) }),
+              !entry.isLocked, !entry.isPrunable,
+              let status = await git.status(in: worktree.path), status.isEmpty
+        else { return false }
+        if entry.branch == nil {
+            guard let refs = await git.refsContainingHead(in: worktree.path), !refs.isEmpty else { return false }
+        }
+        return await git.removeWorktree(worktree.path, from: worktree.repository)
+    }
 }

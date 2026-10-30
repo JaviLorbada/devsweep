@@ -1,9 +1,13 @@
 import Foundation
 
-/// Installed Xcodes and simulator runtimes. Listed, never deleted by a scan.
+/// Installed Xcodes, simulator runtimes and, when the config asks, git
+/// worktrees. Listed, never deleted by a scan.
 enum ExtrasScanner {
     static func scan(in context: ScanContext) async -> Extras {
-        await Extras(xcodes: self.xcodes(in: context), runtimes: self.runtimes(in: context))
+        await Extras(
+            xcodes: self.xcodes(in: context),
+            runtimes: self.runtimes(in: context),
+            worktrees: context.config.includeWorktrees ? WorktreeScanner.scan(in: context) : [])
     }
 
     // MARK: Xcodes

@@ -38,10 +38,25 @@ public protocol XcodeSelectReading: Sendable {
     func selectedDeveloperDirectory() async -> String
 }
 
-/// `git ls-files`, asked whether git tracks anything in a folder.
+/// `git`, asked whether it tracks anything in a folder, and about the
+/// worktrees of a repository.
 public protocol GitClient: Sendable {
     /// What `git -C directory ls-files -- name` prints, nil when git fails.
     func trackedFiles(in directory: String, named name: String) async -> String?
+    /// What `git -C directory worktree list --porcelain` prints, nil when git fails.
+    func worktreeList(in directory: String) async -> String?
+    /// What `git -C directory status --porcelain` prints, one line per changed
+    /// or untracked file; nil when git fails.
+    func status(in directory: String) async -> String?
+    /// The branches and remote branches that contain HEAD, one per line; nil
+    /// when git fails.
+    func refsContainingHead(in directory: String) async -> String?
+    /// When HEAD was committed, as `git log -1 --format=%ct` prints it; nil
+    /// when git fails.
+    func headCommitTime(in directory: String) async -> String?
+    /// `git -C repository worktree remove path`, never forced: git refuses a
+    /// worktree with changes, and keeps its branch.
+    func removeWorktree(_ path: String, from repository: String) async -> Bool
 }
 
 /// Whether Xcode or Simulator is running.
@@ -161,9 +176,33 @@ public struct LiveGitClient: GitClient {
     }
 
     public func trackedFiles(in directory: String, named name: String) async -> String? {
-        guard let output = await runner.run("git", ["-C", directory, "ls-files", "--", name]), output.succeeded else {
-            return nil
-        }
+        await self.text(["-C", directory, "ls-files", "--", name])
+    }
+
+    public func worktreeList(in directory: String) async -> String? {
+        await self.text(["-C", directory, "worktree", "list", "--porcelain"])
+    }
+
+    public func status(in directory: String) async -> String? {
+        await self.text(["-C", directory, "status", "--porcelain"])
+    }
+
+    public func refsContainingHead(in directory: String) async -> String? {
+        await self.text([
+            "-C", directory, "for-each-ref", "--contains", "HEAD", "--format=%(refname)", "refs/heads", "refs/remotes",
+        ])
+    }
+
+    public func headCommitTime(in directory: String) async -> String? {
+        await self.text(["-C", directory, "log", "-1", "--format=%ct"])
+    }
+
+    public func removeWorktree(_ path: String, from repository: String) async -> Bool {
+        await self.runner.run("git", ["-C", repository, "worktree", "remove", path])?.succeeded ?? false
+    }
+
+    private func text(_ arguments: [String]) async -> String? {
+        guard let output = await runner.run("git", arguments), output.succeeded else { return nil }
         return output.text
     }
 }

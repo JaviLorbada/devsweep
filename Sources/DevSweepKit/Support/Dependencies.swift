@@ -110,6 +110,11 @@ private struct UnavailableTool: SimctlClient, BrewClient, XcodeDefaultsReading, 
     func customDerivedDataLocation() async -> String { "" }
     func selectedDeveloperDirectory() async -> String { "" }
     func trackedFiles(in directory: String, named name: String) async -> String? { nil }
+    func worktreeList(in directory: String) async -> String? { nil }
+    func status(in directory: String) async -> String? { nil }
+    func refsContainingHead(in directory: String) async -> String? { nil }
+    func headCommitTime(in directory: String) async -> String? { nil }
+    func removeWorktree(_ path: String, from repository: String) async -> Bool { false }
     func isRunning(_ app: DeveloperApp) async -> Bool { false }
     func lastUsedDate(of path: String) -> Date? { nil }
     func trash(_ path: String) throws -> String { throw Refused() }

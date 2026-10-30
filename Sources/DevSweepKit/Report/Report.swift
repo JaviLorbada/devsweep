@@ -151,6 +151,31 @@ public enum Report {
             text += "  None look unused. To remove one anyway: Xcode > Settings > Components.\n"
         }
         text += "\n"
+        // Never under the original script's name, whose report has no such section.
+        if command == .product {
+            text += self.worktrees(extras.worktrees, policy: policy, style: style)
+        }
+        return text
+    }
+
+    /// The git worktrees of the repositories in the project folders, with the
+    /// command that removes each one with nothing in it to lose.
+    static func worktrees(_ worktrees: [GitWorktree], policy: PathPolicy, style: ReportStyle) -> String {
+        var text = "Git worktrees\n"
+        for worktree in worktrees {
+            text += "  \(self.left(worktree.name, 24)) \(self.right(self.human(kilobytes: worktree.kilobytes), 10))   "
+                + "\(worktree.note)\n"
+            if let kept = worktree.keptBecause {
+                text += "    \(style.dim)\(kept), so it stays.\(style.reset)\n"
+            } else {
+                text += "    \(style.dim)Nothing to lose. Remove with: "
+                    + "\(worktree.removalCommand(policy: policy))\(style.reset)\n"
+            }
+        }
+        if worktrees.isEmpty {
+            text += "  None found in the project folders' repositories.\n"
+        }
+        text += "\n"
         return text
     }
 

@@ -15,6 +15,10 @@ public struct ScanConfig: Sendable {
     /// Whether to list what Android Studio keeps. Only the app asks for it;
     /// the command line's report has no such section.
     public var includeAndroid: Bool
+    /// Whether to list the git worktrees of repositories in the project
+    /// folders with the extras. Run under the original script's name the tool
+    /// runs no git for them, so its report and tool calls stay the script's.
+    public var includeWorktrees: Bool
     /// The environment the scan runs in. Git's `GIT_DIR` and `GIT_WORK_TREE`
     /// come from here.
     public var environment: [String: String]
@@ -27,6 +31,7 @@ public struct ScanConfig: Sendable {
         staleDays: Int = 90,
         includeExtras: Bool = true,
         includeAndroid: Bool = false,
+        includeWorktrees: Bool = false,
         environment: [String: String] = [:])
     {
         self.home = home
@@ -36,6 +41,7 @@ public struct ScanConfig: Sendable {
         self.staleDays = staleDays
         self.includeExtras = includeExtras
         self.includeAndroid = includeAndroid
+        self.includeWorktrees = includeWorktrees
         self.environment = environment
     }
 
@@ -61,6 +67,7 @@ public struct ScanConfig: Sendable {
             applicationsDirectories: self.splitList(applicationsList),
             skipped: skipped,
             includeExtras: includeExtras,
+            includeWorktrees: includeExtras && command == .product,
             environment: environment)
     }
 

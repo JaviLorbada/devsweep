@@ -187,6 +187,31 @@ struct LoggingGit: GitClient {
         self.log.record("git -C \(directory) ls-files -- \(name)")
         return await self.live.trackedFiles(in: directory, named: name)
     }
+
+    func worktreeList(in directory: String) async -> String? {
+        self.log.record("git -C \(directory) worktree list --porcelain")
+        return await self.live.worktreeList(in: directory)
+    }
+
+    func status(in directory: String) async -> String? {
+        self.log.record("git -C \(directory) status --porcelain")
+        return await self.live.status(in: directory)
+    }
+
+    func refsContainingHead(in directory: String) async -> String? {
+        self.log.record("git -C \(directory) for-each-ref --contains HEAD")
+        return await self.live.refsContainingHead(in: directory)
+    }
+
+    func headCommitTime(in directory: String) async -> String? {
+        self.log.record("git -C \(directory) log -1 --format=%ct")
+        return await self.live.headCommitTime(in: directory)
+    }
+
+    func removeWorktree(_ path: String, from repository: String) async -> Bool {
+        self.log.record("git -C \(repository) worktree remove \(path)")
+        return await self.live.removeWorktree(path, from: repository)
+    }
 }
 
 struct FakeGit: GitClient {
@@ -197,6 +222,13 @@ struct FakeGit: GitClient {
         self.log.record("git -C \(directory) ls-files -- \(name)")
         return self.answer(directory, name)
     }
+
+    // Answers only `ls-files`; everything else fails, as a broken git would.
+    func worktreeList(in directory: String) async -> String? { nil }
+    func status(in directory: String) async -> String? { nil }
+    func refsContainingHead(in directory: String) async -> String? { nil }
+    func headCommitTime(in directory: String) async -> String? { nil }
+    func removeWorktree(_ path: String, from repository: String) async -> Bool { false }
 }
 
 /// A Trash inside the fake home, so tests never touch the real one.
