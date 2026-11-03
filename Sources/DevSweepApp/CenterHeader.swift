@@ -80,7 +80,8 @@ struct CenterHeader: View {
                         .buttonStyle(.glass)
                         .buttonBorderShape(.capsule)
                         .controlSize(.large)
-                        .disabled(model.engine == nil)
+                        .disabled(!model.canScanOrStop)
+                        .help(model.isCleaning ? "Scan again once cleaning is done" : "")
                         if model.inspectorPlacement != .docked {
                             InspectorToggle()
                         }

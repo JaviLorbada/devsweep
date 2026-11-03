@@ -128,7 +128,8 @@ struct ItemDetails: View {
         case .notMeasured: "–"
         case .measuring: SizeText.of(bytes: row.progressBytes)
         case .measured: !row.sizeKnown && row.kilobytes == 0 ? "?" : SizeText.of(kilobytes: row.kilobytes)
-        case .cleaning, .cleaned: SizeText.of(kilobytes: row.kilobytes)
+        case .cleaning: SizeText.of(kilobytes: row.leftKilobytes)
+        case .cleaned: SizeText.of(kilobytes: row.kilobytes)
         }
     }
 
@@ -137,7 +138,7 @@ struct ItemDetails: View {
         case .waiting: row.showsPrevious ? "last scan, waiting" : "waiting"
         case .measuring: "measuring"
         case .notMeasured: "not measured"
-        case .cleaning: "cleaning"
+        case .cleaning: row.cleaningProgress == nil ? "cleaning" : "left to delete"
         case .cleaned: row.canPutBack ? "in Trash" : "deleted"
         case .measured:
             if !row.sizeKnown {

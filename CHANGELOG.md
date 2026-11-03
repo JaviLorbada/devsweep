@@ -22,7 +22,9 @@ line under Unreleased as it lands.
   sizes in the labels), and cleans what is marked, to the Trash by default
   with Put Back. In a window too narrow for the inspector beside the
   center, the inspector floats over it, and the sidebar narrows rather than
-  being cut off.
+  being cut off. While an item is deleted for good, its size counts down
+  and its row shows how far it has got, and Scan Again waits until cleaning
+  is done.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
 - A Worktrees screen for the git worktrees of the repositories in the project

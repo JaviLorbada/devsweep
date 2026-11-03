@@ -130,7 +130,7 @@ struct AppCommands: Commands {
                 self.model.isScanning ? self.model.stopScan() : self.model.scan()
             }
             .keyboardShortcut("r")
-            .disabled(self.model.engine == nil)
+            .disabled(!self.model.canScanOrStop)
         }
         CommandGroup(before: .toolbar) {
             ForEach(AppModel.ChartStyle.allCases) { style in

@@ -104,7 +104,8 @@ struct ItemRow: View {
 
             if self.showsBar {
                 ThinBar(
-                    fraction: Double(self.row.shownKilobytes) / self.largest,
+                    fraction: Double(self.row.state == .cleaning ? self.row.leftKilobytes : self.row.shownKilobytes)
+                        / self.largest,
                     color: emphasized ? .white : self.barColor)
                     .frame(width: 120)
             }
@@ -156,7 +157,8 @@ struct ItemRow: View {
             .of(kilobytes: self.row.shownKilobytes) : ""
         case .notMeasured: ""
         case .measuring: self.row.progressBytes > 0 ? SizeText.of(bytes: self.row.progressBytes) : ""
-        case .cleaning, .cleaned: SizeText.of(kilobytes: self.row.kilobytes)
+        case .cleaning: SizeText.of(kilobytes: self.row.leftKilobytes)
+        case .cleaned: SizeText.of(kilobytes: self.row.kilobytes)
         case .measured:
             if !self.row.sizeKnown, self.row.kilobytes == 0 {
                 "Unknown"
@@ -195,7 +197,11 @@ struct RowAction: View {
         case .notMeasured:
             Text("Not measured").font(.caption).foregroundStyle(.muted)
         case .cleaning:
-            ProgressView().controlSize(.small)
+            if let progress = self.row.cleaningProgress {
+                ProgressView(value: progress).progressViewStyle(.circular).controlSize(.small)
+            } else {
+                ProgressView().controlSize(.small)
+            }
         case .cleaned:
             Text(self.row.canPutBack ? "In Trash" : "Deleted")
                 .font(.caption.weight(.semibold))
