@@ -14,7 +14,9 @@ final class RecordingFileSystem: FileSystemAccess {
     func exists(_ path: String) -> Bool { self.disk.exists(path) }
     func modificationTime(_ path: String) -> Int { self.disk.modificationTime(path) }
     func contents(of path: String) -> Data? { self.disk.contents(of: path) }
-    func remove(_ path: String) throws { self.removed.withLock { $0.append(path) } }
+    func remove(_ path: String, progress: @escaping @Sendable (Int64) -> Void) throws {
+        self.removed.withLock { $0.append(path) }
+    }
 }
 
 struct FixedClock: WallClock {

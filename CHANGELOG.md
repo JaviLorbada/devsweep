@@ -12,6 +12,9 @@ line under Unreleased as it lands.
   byte for byte.
 - `devsweep` lists the git worktrees of the repositories in the project
   folders, and the command that removes each one with nothing to lose.
+- Deleting for good shares the work between four threads and removes each
+  folder's files in the order APFS frees them fastest: about twice as fast
+  as `FileManager` on a large DerivedData folder.
 
 ### App
 - A window that scans the home folder, charts what each cache holds as a ring

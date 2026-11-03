@@ -35,8 +35,9 @@ public protocol FileSystemAccess: Sendable {
     /// Modification time in seconds of the path itself, 0 when it can't be read.
     func modificationTime(_ path: String) -> Int
     func contents(of path: String) -> Data?
-    /// Removes a file, or a folder and everything in it.
-    func remove(_ path: String) throws
+    /// Removes a file, or a folder and everything in it. `progress` receives
+    /// the bytes removed so far, from any thread.
+    func remove(_ path: String, progress: @escaping @Sendable (Int64) -> Void) throws
 }
 
 extension FileSystemAccess {
@@ -57,7 +58,12 @@ public struct LiveFileSystem: FileSystemAccess {
     public func exists(_ path: String) -> Bool { FileSystem.exists(path) }
     public func modificationTime(_ path: String) -> Int { FileSystem.modificationTime(path) }
     public func contents(of path: String) -> Data? { FileManager.default.contents(atPath: path) }
-    public func remove(_ path: String) throws { try FileManager.default.removeItem(atPath: path) }
+    public func remove(_ path: String, progress: @escaping @Sendable (Int64) -> Void) throws {
+        if TreeRemover.remove(path, progress: progress) || !FileSystem.existsOrIsSymlink(path) { return }
+        // Whatever the fast walk couldn't remove, FileManager tries again,
+        // and says why when it can't either.
+        try FileManager.default.removeItem(atPath: path)
+    }
 }
 
 /// What time it is.

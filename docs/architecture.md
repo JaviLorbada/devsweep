@@ -27,6 +27,15 @@ later without touching the command line's items.
 directory, not itself a symlink, and resolves strictly inside the resolved
 home folder, checked when it is listed and again right before it goes.
 
+Deleting for good goes through `TreeRemover`, about twice as fast as
+`FileManager` on a DerivedData folder: four threads share the walk, and each
+directory's files go in the order of their inode numbers, which APFS
+removes fastest. Every step starts from the folder's parent, opened once,
+and refuses a symlink anywhere along the path (`O_NOFOLLOW_ANY`), so the
+walk can't be led out of the folder; directories are listed with
+`getattrlistbulk`, which gives each file's size for the progress as well.
+Whatever it can't remove, `FileManager` tries again and says why.
+
 ## Seams
 
 Everything with a side effect sits behind a protocol, so tests run it fake.

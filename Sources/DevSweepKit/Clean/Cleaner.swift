@@ -1,4 +1,6 @@
+import Dispatch
 import Foundation
+import Synchronization
 
 public enum CleanMode: Sendable, Equatable {
     /// Move to the Trash, so each folder can be put back.
@@ -40,8 +42,16 @@ extension Engine {
     /// skipped with a warning. Simulators go through `simctl delete
     /// unavailable` and Homebrew through `brew cleanup` whatever the mode, since
     /// those tools own their files.
-    public func clean(_ result: ItemResult, mode: CleanMode) async -> CleanOutcome {
+    ///
+    /// - Parameter progress: while deleting, the bytes removed so far across
+    ///   the item's paths, several times a second, from any thread.
+    public func clean(
+        _ result: ItemResult,
+        mode: CleanMode,
+        progress: (@Sendable (Int64) -> Void)? = nil) async -> CleanOutcome
+    {
         var outcome = CleanOutcome(item: result.item, mode: mode)
+        let tally = Tally(progress)
         switch result.item {
         case .simulators:
             let succeeded = await tools.simctl.deleteUnavailable()
@@ -67,12 +77,15 @@ extension Engine {
                 switch mode {
                 case .delete:
                     do {
-                        try dependencies.files.remove(path)
+                        try await Self.offPool { [files = dependencies.files] in
+                            try files.remove(path, progress: tally.report)
+                        }
                         outcome.removed.append(.init(original: path, trashed: nil))
                     } catch {
                         outcome.failed.append(path)
                         outcome.warnings.append("Couldn't fully delete \(policy.tilde(path))")
                     }
+                    tally.finishPath()
                 case .trash:
                     do {
                         let trashed = try tools.trash.trash(path)
@@ -85,6 +98,16 @@ extension Engine {
             }
         }
         return outcome
+    }
+
+    /// Runs `work` on a GCD thread, so a delete that takes a minute doesn't
+    /// hold one of the few threads Swift concurrency runs tasks on.
+    private static func offPool(_ work: @escaping @Sendable () throws -> Void) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, any Error>) in
+            DispatchQueue.global(qos: .userInitiated).async {
+                continuation.resume(with: Result { try work() })
+            }
+        }
     }
 
     /// Moves what a Trash clean removed back where it was. A folder is put
@@ -111,6 +134,33 @@ extension Engine {
             }
         }
         return result
+    }
+}
+
+/// Adds up the bytes each deleted path reports into one running total.
+private final class Tally: Sendable {
+    private let progress: (@Sendable (Int64) -> Void)?
+    private let bytes = Mutex((finished: Int64(0), current: Int64(0)))
+
+    init(_ progress: (@Sendable (Int64) -> Void)?) {
+        self.progress = progress
+    }
+
+    @Sendable func report(_ current: Int64) {
+        guard let progress else { return }
+        // Threads report out of order now and then; the total only grows,
+        // and goes out under the lock so it arrives in order too.
+        self.bytes.withLock {
+            $0.current = max($0.current, current)
+            progress($0.finished + $0.current)
+        }
+    }
+
+    func finishPath() {
+        self.bytes.withLock {
+            $0.finished += $0.current
+            $0.current = 0
+        }
     }
 }
 
