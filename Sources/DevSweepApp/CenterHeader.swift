@@ -3,9 +3,9 @@ import SwiftUI
 /// The center panel's top: a row with the screen's title on the left and, on
 /// the right, what acts on the scan, its progress, Ring or Blocks, and Scan
 /// Again or Stop, then the inspector's toggle unless the inspector is docked;
-/// and the status under it, across the panel. The row is centered on the
-/// window's controls' line, as the traffic lights and the sidebar's toggle
-/// are, so they read as one row whether the sidebar shows or not.
+/// and the status under it, across the panel. The row's controls sit the
+/// panels' control inset below its top edge, on the line the docked
+/// inspector's first row shares.
 ///
 /// Sized from the width it is given, like the footer, so the controls drop
 /// their words instead of asking the column for more room.
@@ -25,10 +25,9 @@ struct CenterHeader: View {
     /// edge.
     static let insetWithoutSidebar = WindowLayout.windowControlsEnd - WindowLayout.gap - horizontalPadding
 
-    static let height: CGFloat = 56
-    /// The row's height, which puts its middle on the window's controls'
-    /// line: the panel starts a gap below the window's top edge.
-    static let rowHeight = 2 * (WindowLayout.windowControlsLine - WindowLayout.gap)
+    static let rowHeight = WindowLayout.topRowHeight
+    /// The inset above the row, the row, and the status under it.
+    static let height: CGFloat = WindowLayout.controlInset + rowHeight + 22
 
     /// What the controls show at a given width of the center panel.
     struct Fit: Equatable {
@@ -56,7 +55,7 @@ struct CenterHeader: View {
 
     private func row(fit: Fit, inset: CGFloat) -> some View {
         @Bindable var model = model
-        return VStack(alignment: .leading, spacing: 0) {
+        return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
                 Text(self.title)
                     .font(.title3.weight(.semibold))
@@ -97,6 +96,7 @@ struct CenterHeader: View {
                 .truncationMode(.tail)
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .padding(.top, WindowLayout.controlInset)
         .padding(.leading, Self.horizontalPadding + inset)
         .padding(.trailing, Self.horizontalPadding)
     }

@@ -35,15 +35,24 @@ enum WindowLayout {
     /// from the window's edge, measured in a debug window; the header's title
     /// starts 12 points after them.
     static let windowControlsEnd: CGFloat = 144 + 12
-    /// The line the traffic lights and the sidebar's toggle are centered on,
-    /// 26 points below the window's top edge whether the sidebar shows or
-    /// not. The panels' top rows sit on it too, so one line runs across the
-    /// window.
-    static let windowControlsLine: CGFloat = 26
+    /// The room between a panel's top or bottom edge and the glass controls
+    /// along it: the center header's row, the docked inspector's toggle and
+    /// the overview's footer. The header's row used to be centered on the
+    /// traffic lights' line, 26 points below the window's top, which left its
+    /// 32-point controls 2 to 4 points under the panel's edge while text sits
+    /// 18 to 22 in from the sides. AppKit keeps the traffic lights where they
+    /// are, so they stay on their own line in the sidebar's corner.
+    static let controlInset: CGFloat = 16
+    /// The panels' top row: as tall as its tallest control, the chart picker.
+    static let topRowHeight: CGFloat = 32
+    /// The line the panels' top rows are centered on, from a panel's top
+    /// edge: the center's title and controls, and the docked inspector's
+    /// first line and toggle.
+    static let topRowLine = controlInset + topRowHeight / 2
     /// The space above an inspector's first line, its eyebrow, which puts that
-    /// line on the window's controls' line beside the inspector's toggle
-    /// while the inspector is docked: the eyebrow's line is about 13 points.
-    static let inspectorTopPadding: CGFloat = windowControlsLine - gap - 13 / 2
+    /// line on the top row's line beside the inspector's toggle while the
+    /// inspector is docked: the eyebrow's line is about 13 points.
+    static let inspectorTopPadding: CGFloat = topRowLine - 13 / 2
 
     /// The window never gets narrower than the sidebar and the center at
     /// their minimums, so nothing is ever clipped.

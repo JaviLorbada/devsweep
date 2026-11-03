@@ -14,7 +14,8 @@ struct OverviewView: View {
         .safeAreaBar(edge: .bottom) {
             OverviewFooter()
                 .padding(.horizontal, 22)
-                .padding(.vertical, 12)
+                .padding(.top, 12)
+                .padding(.bottom, WindowLayout.controlInset)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
                     self.model.overviewFooterHeight = height
                 }

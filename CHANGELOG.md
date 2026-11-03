@@ -24,7 +24,8 @@ line under Unreleased as it lands.
   center, the inspector floats over it, and the sidebar narrows rather than
   being cut off. While an item is deleted for good, its size counts down
   and its row shows how far it has got, and Scan Again waits until cleaning
-  is done.
+  is done. The controls along the panels' top and bottom edges sit 16
+  points in from them.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
 - A Worktrees screen for the git worktrees of the repositories in the project

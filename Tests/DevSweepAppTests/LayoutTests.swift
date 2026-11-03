@@ -102,13 +102,16 @@ extension LayoutTests {
     }
 
     @Test
-    func `the header's row is centered on the window's controls' line, under its own height`() {
-        // Measured in a debug window: the traffic lights are centered 26
-        // points from the top, with the sidebar shown or hidden.
-        #expect(WindowLayout.gap + CenterHeader.rowHeight / 2 == 26)
-        // The row and the status under it fit the header.
+    func `the header's controls have room above them, and the inspector's first line shares their line`() {
+        // Centered on the traffic lights' line, 26 points from the window's
+        // top, the controls came within 2 to 4 points of the panel's edge.
+        #expect(WindowLayout.controlInset >= 14)
         #expect(CenterHeader.rowHeight >= ChartStylePicker.height)
-        #expect(CenterHeader.rowHeight + 16 <= CenterHeader.height)
+        #expect(WindowLayout.controlInset + CenterHeader.rowHeight / 2 == WindowLayout.topRowLine)
+        // The eyebrow's line is about 13 points.
+        #expect(WindowLayout.inspectorTopPadding + 13 / 2 == WindowLayout.topRowLine)
+        // The inset, the row and the status under it fit the header.
+        #expect(WindowLayout.controlInset + CenterHeader.rowHeight + 16 <= CenterHeader.height)
     }
 
     @Test
