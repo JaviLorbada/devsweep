@@ -299,7 +299,14 @@ struct PartsList: View {
                 name: rest.count == 1 ? "1 more project" : "\(rest.count) more projects",
                 kilobytes: rest.reduce(0) { $0 + $1.kilobytes }))
         }
-        return lines.sorted { $0.kilobytes > $1.kilobytes }
+        return Self.ordered(lines)
+    }
+
+    /// Largest first, with the summed line, which opens to show the rest,
+    /// last, where "Show fewer" takes its place once open.
+    static func ordered(_ lines: [Line]) -> [Line] {
+        let parts = lines.filter { $0.part != nil }.sorted { $0.kilobytes > $1.kilobytes }
+        return parts + lines.filter { $0.part == nil }
     }
 
     /// Each folder by the folder it sits in, "kite-1" for
