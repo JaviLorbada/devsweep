@@ -45,7 +45,9 @@ out="$(cd "$out" && pwd)"
 
 app="$("$root/Scripts/package_app.sh" debug)"
 bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Contents/Info.plist")"
-work="$(mktemp -d)"
+# Resolved, /private/var rather than /var, so the fake home matches the
+# paths the scan finds under it and the window shows them with a ~.
+work="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$work"' EXIT
 
 blob() { mkdir -p "$(dirname "$1")"; dd if=/dev/zero of="$1" bs=1048576 count="$2" 2>/dev/null; }
