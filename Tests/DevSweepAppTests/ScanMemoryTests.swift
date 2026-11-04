@@ -72,7 +72,7 @@ struct ScanMemoryTests {
 
         let model = scanningModel(home: home)
         #expect(!model.showsPrevious)
-        #expect(model.statusLine == "Not scanned yet")
+        #expect(model.statusLine == "Not scanned yet.")
     }
 
     @Test

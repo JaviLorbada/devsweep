@@ -539,10 +539,12 @@ final class AppModel {
             if let previousScanDate, showsPrevious {
                 return "Last scanned \(Self.relative(previousScanDate, to: self.now)). \(progress)."
             }
-            return progress
+            // Full stops throughout: the build note can follow.
+            return "\(progress)."
         }
         guard let lastScan else {
-            return self.previousScanDate.map { "Last scanned \(Self.relative($0, to: self.now))." } ?? "Not scanned yet"
+            return self.previousScanDate
+                .map { "Last scanned \(Self.relative($0, to: self.now))." } ?? "Not scanned yet."
         }
         let unmeasured = self.scanOrder.filter { self.rows[$0]?.state == .notMeasured }.count
         let scanned = unmeasured > 0
