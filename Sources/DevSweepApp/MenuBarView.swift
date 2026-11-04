@@ -131,7 +131,7 @@ struct MenuBarPanel: View {
                     self.openWindow(id: "main")
                     NSApplication.shared.activate()
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.prominentAction)
             }
             .controlSize(.large)
         }

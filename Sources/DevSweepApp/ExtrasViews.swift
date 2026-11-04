@@ -323,7 +323,7 @@ struct RuntimeInspector: View {
             .scrollEdgeEffectStyle(.soft, for: .bottom)
             .safeAreaBar(edge: .bottom) {
                 Button("Remove Runtime") { self.model.runtimeToRemove = runtime }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.prominentAction)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
                     .padding(18)

@@ -268,12 +268,12 @@ struct InspectorAction: View {
     var body: some View {
         switch self.row.state {
         case .waiting, .measuring:
-            self.wide(Button("Measuring") {}.buttonStyle(.glassProminent).disabled(true))
+            self.wide(Button("Measuring") {}.buttonStyle(.prominentAction).disabled(true))
         case .measured where self.row.isLive:
             self.wide(Button("Clean \(self.row.item.shortName)") {
                 Task { await self.model.requestClean([self.row.item]) }
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.prominentAction)
             .disabled(self.model.isScanning || self.model.isCleaning))
         case .cleaning:
             self.wide(Button("Cleaning") {}.buttonStyle(.glass).disabled(true))

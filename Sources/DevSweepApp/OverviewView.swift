@@ -121,7 +121,7 @@ struct OverviewFooter: View {
             {
                 Task { await model.requestClean(model.markedRows.map(\.item)) }
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.prominentAction)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
             .disabled(model.markedRows.isEmpty || model.isScanning || model.isCleaning)

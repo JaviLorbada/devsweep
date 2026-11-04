@@ -144,7 +144,7 @@ struct WorktreeInspector: View {
             .scrollEdgeEffectStyle(.soft, for: .bottom)
             .safeAreaBar(edge: .bottom) {
                 Button("Remove Worktree") { self.model.worktreeToRemove = worktree }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.prominentAction)
                     .controlSize(.large)
                     .disabled(worktree.keptBecause != nil)
                     .help(worktree.keptBecause

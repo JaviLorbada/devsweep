@@ -56,6 +56,56 @@ enum Palette {
     static let raisedSegment = Color(light: 0xFFFFFF, dark: 0x5E5E62)
     /// The rounded panels the sidebar, the center and the inspector sit in.
     static let panel = Color(light: 0xF9F9FA, dark: 0x262628)
+    /// The fill of the window's main buttons: the accent color a step darker,
+    /// so a white label reads at 4.5:1 or more on it. On the system blue as it
+    /// is, the glass's own label came out light cyan, at 3.5:1 in the light
+    /// appearance.
+    static let action = Color(nsColor: NSColor(name: nil) { appearance in
+        let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        var accent = NSColor.controlAccentColor
+        appearance.performAsCurrentDrawingAppearance {
+            accent = NSColor.controlAccentColor.usingColorSpace(.sRGB) ?? accent
+        }
+        return Palette.darkened(accent, dark: isDark)
+    })
+
+    /// The accent a step darker, for `action`.
+    static func darkened(_ accent: NSColor, dark: Bool) -> NSColor {
+        accent.blended(withFraction: dark ? 0.15 : 0.2, of: .black) ?? accent
+    }
+}
+
+/// The window's main actions, like Clean: the system's prominent glass on
+/// `Palette.action`, with a white label while it can be pressed. Set on the
+/// button, a white foreground never reached the label, which the glass drew
+/// light cyan.
+struct ProminentActionStyle: PrimitiveButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        ProminentActionButton(configuration: configuration)
+    }
+}
+
+private struct ProminentActionButton: View {
+    @Environment(\.isEnabled) private var isEnabled
+    let configuration: PrimitiveButtonStyleConfiguration
+
+    var body: some View {
+        Button(role: self.configuration.role) { self.configuration.trigger() } label: {
+            if self.isEnabled {
+                self.configuration.label.foregroundStyle(.white)
+            } else {
+                self.configuration.label
+            }
+        }
+        .buttonStyle(.glassProminent)
+        .tint(Palette.action)
+    }
+}
+
+extension PrimitiveButtonStyle where Self == ProminentActionStyle {
+    static var prominentAction: ProminentActionStyle {
+        ProminentActionStyle()
+    }
 }
 
 /// Text a step quieter than the primary label that still reads at 4.5:1 or
