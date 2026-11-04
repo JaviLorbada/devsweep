@@ -111,14 +111,19 @@ extension LayoutTests {
         // The eyebrow's line is about 13 points.
         #expect(WindowLayout.inspectorTopPadding + 13 / 2 == WindowLayout.topRowLine)
         // The inset, the row and the status under it fit the header.
-        #expect(WindowLayout.controlInset + CenterHeader.rowHeight + 16 <= CenterHeader.height)
+        #expect(WindowLayout.controlInset + CenterHeader.rowHeight + 16 <= CenterHeader.height(sidebarHidden: false))
     }
 
     @Test
-    func `with the sidebar hidden the header's title starts after the window's controls`() {
+    func `with the sidebar hidden the title goes under the window's controls, and the controls after them`() {
         // The traffic lights and the sidebar's plain toggle end 124 points in.
-        let titleStart = WindowLayout.gap + CenterHeader.horizontalPadding + CenterHeader.insetWithoutSidebar
-        #expect(titleStart >= 124 + 12)
+        let controlsStart = WindowLayout.gap + CenterHeader.horizontalPadding + CenterHeader.insetWithoutSidebar
+        #expect(controlsStart >= 124 + 12)
+        // The title's line starts below the row, which is below the traffic
+        // lights, centered 26 points down and 14 tall.
+        #expect(WindowLayout.gap + WindowLayout.controlInset + CenterHeader.rowHeight >= 26 + 7)
+        #expect(CenterHeader.height(sidebarHidden: true)
+            == CenterHeader.height(sidebarHidden: false) + CenterHeader.titleLineHeight)
         // The controls drop their words by what the inset takes: in the
         // screenshot's 686-point window, with the center 670 wide, the
         // progress drops its text and Ring and Blocks keep theirs.

@@ -33,7 +33,8 @@ enum WindowLayout {
     /// sidebar's toggle sit over the center header's leading corner, with no
     /// title bar strip above it. The toggle, a plain icon there, ends 124
     /// points from the window's edge, measured in a debug window; the
-    /// header's title starts 16 points after it.
+    /// header's controls may start 16 points after it, and its title goes
+    /// on a line of its own below.
     static let windowControlsEnd: CGFloat = 124 + 16
     /// The room between a panel's top or bottom edge and the glass controls
     /// along it: the center header's row, the docked inspector's toggle and

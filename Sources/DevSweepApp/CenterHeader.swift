@@ -5,13 +5,16 @@ import SwiftUI
 /// Again or Stop, then the inspector's toggle unless the inspector is docked;
 /// and the status under it, across the panel. The row's controls sit the
 /// panels' control inset below its top edge, on the line the docked
-/// inspector's first row shares.
+/// inspector's first row shares. While the sidebar is hidden, the window's
+/// controls take the row's leading end, and the title goes under them on a
+/// line of its own, at the panel's margin, as Reminders puts its title.
 ///
 /// Sized from the width it is given, like the footer, so the controls drop
 /// their words instead of asking the column for more room.
 struct CenterHeader: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var titleSpace
     let title: String
     /// Whether the sidebar is hidden, leaving the window's own controls over
     /// the header's leading corner.
@@ -20,14 +23,20 @@ struct CenterHeader: View {
     /// The space on each side of the row.
     static let horizontalPadding: CGFloat = 22
 
-    /// Extra room on the leading side for the window's controls, while the
-    /// sidebar is hidden and the center panel starts a gap from the window's
-    /// edge.
+    /// Extra room on the leading side of the row for the window's controls,
+    /// while the sidebar is hidden and the center panel starts a gap from
+    /// the window's edge.
     static let insetWithoutSidebar = WindowLayout.windowControlsEnd - WindowLayout.gap - horizontalPadding
 
     static let rowHeight = WindowLayout.topRowHeight
-    /// The inset above the row, the row, and the status under it.
-    static let height: CGFloat = WindowLayout.controlInset + rowHeight + 22
+    /// The title's own line under the row, while the sidebar is hidden.
+    static let titleLineHeight: CGFloat = 30
+
+    /// The inset above the row, the row, the title's line while the sidebar
+    /// is hidden, and the status.
+    static func height(sidebarHidden: Bool) -> CGFloat {
+        WindowLayout.controlInset + self.rowHeight + (sidebarHidden ? self.titleLineHeight : 0) + 22
+    }
 
     /// What the controls show at a given width of the center panel.
     struct Fit: Equatable {
@@ -49,18 +58,23 @@ struct CenterHeader: View {
             self.row(fit: Fit(width: proxy.size.width - inset), inset: inset)
                 .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .frame(height: Self.height)
+        .frame(height: Self.height(sidebarHidden: self.sidebarHidden))
         .animation(self.reduceMotion ? nil : InspectorMotion.animation, value: self.sidebarHidden)
+    }
+
+    private var titleText: some View {
+        Text(self.title)
+            .font(.title3.weight(.semibold))
+            .lineLimit(1)
+            .matchedGeometryEffect(id: "title", in: self.titleSpace)
     }
 
     private func row(fit: Fit, inset: CGFloat) -> some View {
         @Bindable var model = model
         return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
-                Text(self.title)
-                    .font(.title3.weight(.semibold))
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !self.sidebarHidden { self.titleText }
+                Spacer(minLength: 0)
                 GlassEffectContainer(spacing: 10) {
                     HStack(spacing: 10) {
                         if model.isScanning {
@@ -89,6 +103,11 @@ struct CenterHeader: View {
                 .fixedSize()
             }
             .frame(height: Self.rowHeight)
+            .padding(.leading, inset)
+            if self.sidebarHidden {
+                self.titleText
+                    .frame(height: Self.titleLineHeight, alignment: .bottom)
+            }
             Text(model.subtitle)
                 .font(.callout)
                 .foregroundStyle(.muted)
@@ -97,8 +116,7 @@ struct CenterHeader: View {
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .padding(.top, WindowLayout.controlInset)
-        .padding(.leading, Self.horizontalPadding + inset)
-        .padding(.trailing, Self.horizontalPadding)
+        .padding(.horizontal, Self.horizontalPadding)
     }
 }
 

@@ -78,7 +78,7 @@ struct ContentView: View {
                         .frame(maxHeight: .infinity)
                         .panel()
                         .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
-                        .padding(.top, CenterHeader.height)
+                        .padding(.top, CenterHeader.height(sidebarHidden: self.sidebarHidden))
                         .padding(
                             .bottom,
                             (model.screen == .overview ? model.overviewFooterHeight : 0) + WindowLayout.gap)
