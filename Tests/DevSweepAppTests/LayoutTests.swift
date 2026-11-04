@@ -116,13 +116,14 @@ extension LayoutTests {
 
     @Test
     func `with the sidebar hidden the header's title starts after the window's controls`() {
-        // The traffic lights and the sidebar's toggle end 144 points in.
+        // The traffic lights and the sidebar's plain toggle end 124 points in.
         let titleStart = WindowLayout.gap + CenterHeader.horizontalPadding + CenterHeader.insetWithoutSidebar
-        #expect(titleStart >= 144 + 8)
-        // The controls drop their words by what the inset takes: the
-        // screenshot's 686-point window, with the center 670 wide.
+        #expect(titleStart >= 124 + 12)
+        // The controls drop their words by what the inset takes: in the
+        // screenshot's 686-point window, with the center 670 wide, the
+        // progress drops its text and Ring and Blocks keep theirs.
         let fit = CenterHeader.Fit(width: 670 - CenterHeader.insetWithoutSidebar)
-        #expect(!fit.capsuleText && !fit.pickerText)
+        #expect(!fit.capsuleText && fit.pickerText)
     }
 
     @Test

@@ -17,6 +17,11 @@ struct ContentView: View {
         @Bindable var model = model
         NavigationSplitView {
             SidebarView()
+                // While the sidebar is hidden, the system's toggle sat in a
+                // glass circle 2 points under the center panel's edge; a plain
+                // one stands in for it. Shown, the sidebar keeps the system's,
+                // plain on it.
+                .toolbar(removing: self.sidebarHidden ? .sidebarToggle : nil)
                 .navigationSplitViewColumnWidth(
                     min: WindowLayout.sidebar.min,
                     ideal: WindowLayout.sidebar.ideal,
@@ -103,6 +108,12 @@ struct ContentView: View {
             // the inspector's toggle in its panel's corner or that header.
             .toolbar(removing: .title)
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+            .toolbar {
+                if self.sidebarHidden {
+                    ToolbarItem(placement: .navigation) { SidebarToggle() }
+                        .sharedBackgroundVisibility(.hidden)
+                }
+            }
         }
         // The window's own width, from AppKit: SwiftUI's geometry here is the
         // split view's, which grows past the window when the sidebar is too
@@ -227,6 +238,17 @@ enum InspectorMotion {
 }
 
 /// Reports the width of the window it sits in, now and whenever it resizes.
+/// Shows the hidden sidebar, as the system's toggle does, without the glass
+/// circle the window's toolbar puts behind it over the center panel.
+struct SidebarToggle: View {
+    var body: some View {
+        Button("Show Sidebar", systemImage: "sidebar.left") {
+            NSApplication.shared.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: nil)
+        }
+        .help("Show Sidebar")
+    }
+}
+
 struct WindowWidthReader: NSViewRepresentable {
     let onChange: @MainActor (CGFloat) -> Void
 
