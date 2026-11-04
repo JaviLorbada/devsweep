@@ -26,6 +26,11 @@ line under Unreleased as it lands.
   and its row shows how far it has got, and Scan Again waits until cleaning
   is done. The controls along the panels' top and bottom edges sit 16
   points in from them.
+- DerivedData's projects and shared caches can be ticked in the inspector
+  and cleaned on their own, with Put Back from the Trash. A project can go
+  while Xcode is open, after a question; the shared caches ask to quit
+  Xcode, as the whole folder does. Past the five largest projects, the rest
+  open to show each.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
 - A Worktrees screen for the git worktrees of the repositories in the project

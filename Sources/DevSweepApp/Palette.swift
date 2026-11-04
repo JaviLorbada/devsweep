@@ -69,6 +69,12 @@ enum Palette {
         return Palette.darkened(accent, dark: isDark)
     })
 
+    /// A bright color as text: mixed toward black, or white in the dark, so
+    /// it reads on the panels.
+    static func text(_ color: Color, dark: Bool) -> Color {
+        color.mix(with: dark ? .white : .black, by: dark ? 0.35 : 0.45, in: .device)
+    }
+
     /// The accent a step darker, for `action`.
     static func darkened(_ accent: NSColor, dark: Bool) -> NSColor {
         accent.blended(withFraction: dark ? 0.15 : 0.2, of: .black) ?? accent

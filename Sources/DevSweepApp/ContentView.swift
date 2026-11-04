@@ -127,7 +127,7 @@ struct ContentView: View {
             switch pending.stage {
             case .quitApps:
                 Button("Quit and Clean") { Task { await model.quitAppsAndClean(pending) } }
-                if pending.items.contains(where: { !$0.needsXcodeClosed }) {
+                if pending.hasOthers {
                     Button("Clean the Others") { model.cleanSkippingXcodeItems(pending) }
                 }
                 Button("Cancel", role: .cancel) {}
@@ -201,7 +201,10 @@ struct ContentView: View {
 
     private var pendingTitle: String {
         guard let pending = model.pendingClean else { return "" }
-        let size = SizeText.of(kilobytes: pending.items.compactMap { self.model.rows[$0]?.kilobytes }.reduce(0, +))
+        let kilobytes = pending.parts.isEmpty
+            ? pending.items.compactMap { self.model.rows[$0]?.kilobytes }.reduce(0, +)
+            : self.model.kilobytes(of: pending.parts)
+        let size = SizeText.of(kilobytes: kilobytes)
         return CleanPrompt.title(for: pending, size: size, moveToTrash: self.model.moveToTrash)
     }
 
@@ -423,7 +426,7 @@ struct Badge: View {
     var body: some View {
         let onSelection = self.prominence == .increased
         let dark = self.colorScheme == .dark
-        let textColor = self.color.mix(with: dark ? .white : .black, by: dark ? 0.35 : 0.45, in: .device)
+        let textColor = Palette.text(self.color, dark: dark)
         Text(self.text)
             .font(.caption2.weight(.semibold))
             .lineLimit(1)

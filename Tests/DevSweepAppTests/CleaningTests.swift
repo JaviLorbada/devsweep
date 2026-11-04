@@ -73,3 +73,117 @@ struct CleaningTests {
         #expect(model.rows[.npmCache]?.cleaningProgress == nil)
     }
 }
+
+/// Xcode is open; Simulator isn't.
+struct XcodeOpen: RunningAppsChecking {
+    func isRunning(_ app: DeveloperApp) async -> Bool { app == .xcode }
+}
+
+/// Nothing is running.
+struct NothingRunning: RunningAppsChecking {
+    func isRunning(_ app: DeveloperApp) async -> Bool { false }
+}
+
+@MainActor
+@Suite("Cleaning parts of DerivedData")
+struct PartsCleaningTests {
+    /// A model that has scanned a DerivedData folder with the compilation
+    /// cache and two projects, moving things to a Trash folder in the temp home.
+    func scanned(_ home: TemporaryHome, runningApps: any RunningAppsChecking = NothingRunning()) async -> AppModel {
+        let folder = "\(home.path)/Library/Developer/Xcode/DerivedData"
+        write(64, to: "\(folder)/CompilationCache.noindex")
+        for project in ["Atlas", "Fieldwork"] {
+            write(32, to: "\(folder)/\(project)-abc")
+            FileManager.default.createFile(
+                atPath: "\(folder)/\(project)-abc/info.plist",
+                contents: Data("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <plist version="1.0"><dict><key>WorkspacePath</key>\
+                <string>\(home.path)/Workspace/\(project)/\(project).xcodeproj</string></dict></plist>
+                """.utf8))
+        }
+        var tools = Tools.unavailable
+        tools.trash = FolderTrash(folder: "\(home.root)/Trash")
+        tools.runningApps = runningApps
+        let model = AppModel(
+            environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": ""],
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: InMemoryPreferencesStore()),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: tools))
+        await finishScan(model)
+        return model
+    }
+
+    func project(_ name: String, in model: AppModel) throws -> String {
+        try #require(model.rows[.derivedData]?.result?.derivedData?.projects.first {
+            $0.folder.hasSuffix("/\(name)-abc")
+        }).folder
+    }
+
+    @Test
+    func `ticking a project cleans just it, says so, and Put Back brings it back`() async throws {
+        let home = TemporaryHome()
+        let model = await scanned(home)
+        let atlas = try project("Atlas", in: model)
+        let before = try #require(model.rows[.derivedData]?.result)
+        let atlasKilobytes = try #require(before.derivedData).kilobytes(of: .project(atlas))
+        #expect(model.moveToTrash)
+
+        model.setMarked(.project(atlas), true)
+        #expect(model.markedPartsKilobytes == atlasKilobytes)
+        await model.requestCleanParts()
+        for _ in 0..<200 where model.lastPartsClean == nil {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+
+        let clean = try #require(model.lastPartsClean)
+        #expect(clean.summary == "1 project")
+        #expect(clean.canPutBack)
+        #expect(!FileManager.default.fileExists(atPath: atlas))
+        #expect(try FileManager.default.fileExists(atPath: self.project("Fieldwork", in: model)))
+        let left = try #require(model.rows[.derivedData]?.result)
+        #expect(left.kilobytes == before.kilobytes - atlasKilobytes)
+        #expect(left.derivedData?.projects.count == 1)
+        #expect(model.rows[.derivedData]?.state == .measured)
+        #expect(model.markedParts.isEmpty)
+        #expect(model.trashedThisSession == atlasKilobytes)
+
+        await model.putBackParts()
+        #expect(FileManager.default.fileExists(atPath: atlas))
+        #expect(model.rows[.derivedData]?.result == before)
+        #expect(model.lastPartsClean == nil)
+        #expect(model.trashedThisSession == 0)
+    }
+
+    @Test
+    func `the shared cache asks to quit Xcode, and a project alone asks first while Xcode is open`() async throws {
+        let home = TemporaryHome()
+        let model = await scanned(home, runningApps: XcodeOpen())
+        let atlas = try project("Atlas", in: model)
+
+        model.setMarked(.compilationCache, true)
+        model.setMarked(.project(atlas), true)
+        await model.requestCleanParts()
+        let quit = try #require(model.pendingClean)
+        guard case .quitApps([.xcode]) = quit.stage else {
+            Issue.record("expected to be asked to quit Xcode")
+            return
+        }
+        #expect(quit.hasOthers)
+        #expect(CleanPrompt.message(for: quit, moveToTrash: true).hasPrefix(
+            "The compilation cache can't be cleaned while Xcode is open."))
+
+        // Clean the Others: the project, once asked again with Xcode open.
+        model.cleanSkippingXcodeItems(quit)
+        for _ in 0..<100 where model.pendingClean == nil {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        let confirm = try #require(model.pendingClean)
+        #expect(confirm.parts == [.project(atlas)])
+        #expect(CleanPrompt.message(for: confirm, moveToTrash: true)
+            == "Atlas goes to the Trash, so it can be put back. Xcode is open: if Atlas is open in it, close it there "
+            + "first. Xcode builds it again either way.")
+        #expect(FileManager.default.fileExists(atPath: atlas), "nothing goes before the answer")
+    }
+}

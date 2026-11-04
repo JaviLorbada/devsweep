@@ -35,6 +35,21 @@ final class AppModel {
         let id = UUID()
         let items: [Item]
         let stage: Stage
+        /// Parts of DerivedData to clean instead of the whole of it.
+        var parts: Set<DerivedDataPart> = []
+        /// What the question calls those parts, largest first.
+        var partNames: [String] = []
+        /// Those of them that need Xcode closed, by name.
+        var blockedPartNames: [String] = []
+        /// Asked about projects while Xcode is open, which may have one of them open.
+        var xcodeOpen = false
+
+        /// Whether some of it can be cleaned with Xcode and Simulator open.
+        var hasOthers: Bool {
+            self.parts.isEmpty
+                ? self.items.contains { !$0.needsXcodeClosed }
+                : self.parts.contains { !$0.needsXcodeClosed }
+        }
     }
 
     struct Notice: Identifiable {
@@ -62,6 +77,11 @@ final class AppModel {
     /// The worktree selected on the worktrees screen, by its path.
     var selectedWorktree: String?
     var marked: Set<Item> = []
+    /// The DerivedData parts ticked in the inspector, cleaned on their own.
+    var markedParts: Set<DerivedDataPart> = []
+    /// The last clean of DerivedData parts, which the inspector reports and
+    /// can put back from the Trash.
+    private(set) var lastPartsClean: PartsClean?
     /// Clean by moving to the Trash, so anything can be put back; off deletes for good.
     var moveToTrash = true
     var pendingClean: PendingClean?
@@ -255,6 +275,8 @@ final class AppModel {
         self.warnings = []
         self.marksTouched = false
         self.marked = []
+        self.markedParts = []
+        self.lastPartsClean = nil
         self.isScanning = true
         self.isLoadingExtras = engine.config.includeExtras
         self.isLoadingAndroid = engine.config.includeAndroid
@@ -396,7 +418,8 @@ final class AppModel {
 
     func refreshRunningApps() async {
         var running = Set<DeveloperApp>()
-        for app in DeveloperApp.allCases where await self.workspaceApps.isRunning(app) {
+        // The live dependencies ask the workspace; tests say what runs.
+        for app in DeveloperApp.allCases where await self.dependencies.tools.runningApps.isRunning(app) {
             running.insert(app)
         }
         self.runningApps = running
@@ -687,7 +710,7 @@ final class AppModel {
         self.pendingClean = nil
         guard case let .quitApps(apps) = pending.stage else { return }
         if await self.quit(apps) {
-            self.confirmOrClean(pending.items, afterAlert: true)
+            self.confirmOrClean(pending.items, parts: pending.parts, afterAlert: true)
         } else {
             self.notice = Notice(
                 title: "\(apps.map(\.rawValue).joined(separator: " and ")) didn't quit",
@@ -696,34 +719,53 @@ final class AppModel {
         }
     }
 
-    /// Goes on with the items that don't need Xcode closed.
+    /// Goes on with the items, or the parts, that don't need Xcode closed.
     func cleanSkippingXcodeItems(_ pending: PendingClean) {
         self.pendingClean = nil
+        if !pending.parts.isEmpty {
+            let rest = pending.parts.filter { !$0.needsXcodeClosed }
+            if !rest.isEmpty { self.confirmOrClean(pending.items, parts: rest, afterAlert: true) }
+            return
+        }
         let rest = pending.items.filter { !$0.needsXcodeClosed }
         if !rest.isEmpty { self.confirmOrClean(rest, afterAlert: true) }
     }
 
     func confirmClean(_ pending: PendingClean) async {
         self.pendingClean = nil
-        await self.performClean(pending.items)
+        if pending.parts.isEmpty {
+            await self.performClean(pending.items)
+        } else {
+            await self.performClean(pending.parts)
+        }
     }
 
     /// Whether these items need a yes first: everything does when deleting
-    /// for good, and Simulators and Homebrew always, since their tools delete them.
-    func needsConfirmation(_ items: [Item]) -> Bool {
+    /// for good, and Simulators and Homebrew always, since their tools delete
+    /// them. Parts of DerivedData do while Xcode is open, which may have one
+    /// of the projects open.
+    func needsConfirmation(_ items: [Item], parts: Set<DerivedDataPart> = []) -> Bool {
         !self.moveToTrash || items.contains(where: \.cleanedByItsTool)
+            || (!parts.isEmpty && self.runningApps.contains(.xcode))
     }
 
     /// - Parameter afterAlert: an alert is closing, so give it a moment
     ///   before showing the next one.
-    private func confirmOrClean(_ items: [Item], afterAlert: Bool = false) {
-        if self.needsConfirmation(items) {
+    private func confirmOrClean(_ items: [Item], parts: Set<DerivedDataPart> = [], afterAlert: Bool = false) {
+        if self.needsConfirmation(items, parts: parts) {
             Task {
                 if afterAlert { try? await Task.sleep(for: .milliseconds(300)) }
-                self.pendingClean = PendingClean(items: items, stage: .confirm)
+                self.pendingClean = PendingClean(
+                    items: items,
+                    stage: .confirm,
+                    parts: parts,
+                    partNames: self.names(of: parts),
+                    xcodeOpen: !parts.isEmpty && self.runningApps.contains(.xcode))
             }
-        } else {
+        } else if parts.isEmpty {
             Task { await self.performClean(items) }
+        } else {
+            Task { await self.performClean(parts) }
         }
     }
 
@@ -744,19 +786,7 @@ final class AppModel {
                 }
             }
             withAnimation(Motion.animation()) { self.rows[item]?.state = .cleaning }
-            // The removal reports from several threads; the row shows the
-            // latest count about ten times a second.
-            let (removed, reporter) = AsyncStream.makeStream(of: Int64.self, bufferingPolicy: .bufferingNewest(1))
-            let counter = Task {
-                for await bytes in removed {
-                    self.rows[item]?.removedBytes = bytes
-                    try? await Task.sleep(for: .milliseconds(100))
-                }
-            }
-            let outcome = await engine.clean(result, mode: mode) { reporter.yield($0) }
-            reporter.finish()
-            counter.cancel()
-            self.rows[item]?.removedBytes = 0
+            let outcome = await self.countingDown(item) { await engine.clean(result, mode: mode, progress: $0) }
             problems += outcome.warnings
             let removedSomething = !outcome.removed.isEmpty || outcome.toolSucceeded == true
             withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
@@ -764,6 +794,8 @@ final class AppModel {
                     self.rows[item]?.state = .cleaned
                     self.rows[item]?.outcome = outcome
                     self.marked.remove(item)
+                    // What a parts clean put in the Trash went with the folder.
+                    if item == .derivedData { self.lastPartsClean = nil }
                     if outcome.canPutBack {
                         self.trashedThisSession += result.kilobytes
                     } else {
@@ -784,6 +816,27 @@ final class AppModel {
         }
     }
 
+    /// Runs a clean with `item`'s row counting down as it reports. The
+    /// removal reports from several threads; the row shows the latest count
+    /// about ten times a second.
+    private func countingDown<Outcome>(
+        _ item: Item,
+        _ clean: (@escaping @Sendable (Int64) -> Void) async -> Outcome) async -> Outcome
+    {
+        let (removed, reporter) = AsyncStream.makeStream(of: Int64.self, bufferingPolicy: .bufferingNewest(1))
+        let counter = Task {
+            for await bytes in removed {
+                self.rows[item]?.removedBytes = bytes
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+        let outcome = await clean { reporter.yield($0) }
+        reporter.finish()
+        counter.cancel()
+        self.rows[item]?.removedBytes = 0
+        return outcome
+    }
+
     /// Moves what cleaning `item` put in the Trash back where it was.
     func putBack(_ item: Item) async {
         guard let engine, let row = rows[item], row.canPutBack, let outcome = row.outcome else { return }
@@ -797,13 +850,16 @@ final class AppModel {
         }
         self.diskSpace = engine.diskSpace()
         self.saveScan()
-        if !result.failed.isEmpty {
-            self.notice = Notice(
-                title: "Some folders couldn't be put back",
-                message: "Something now stands where they were, or the folder that held them changed. They are still "
-                    + "in the Trash:\n"
-                    + result.failed.map(self.tilde).joined(separator: "\n"))
-        }
+        self.reportPutBackFailures(result.failed)
+    }
+
+    private func reportPutBackFailures(_ failed: [String]) {
+        guard !failed.isEmpty else { return }
+        self.notice = Notice(
+            title: "Some folders couldn't be put back",
+            message: "Something now stands where they were, or the folder that held them changed. They are still "
+                + "in the Trash:\n"
+                + failed.map(self.tilde).joined(separator: "\n"))
     }
 
     // MARK: Xcodes and runtimes
@@ -977,6 +1033,8 @@ extension AppModel {
         var progressBytes: Int64 = 0
         /// While deleting, how much is gone so far.
         var removedBytes: Int64 = 0
+        /// While cleaning parts of it, their size; the whole otherwise.
+        var cleaningKilobytes: Int64?
         var outcome: CleanOutcome?
 
         /// What the last scan found, shown dimmed until this scan reaches the item.
@@ -998,8 +1056,9 @@ extension AppModel {
         /// How far deleting has got, once it has removed something; moving
         /// to the Trash takes no time and has none.
         var cleaningProgress: Double? {
-            guard self.state == .cleaning, self.removedBytes > 0, self.kilobytes > 0 else { return nil }
-            return min(1, Double(self.removedBytes / 1024) / Double(self.kilobytes))
+            let total = self.cleaningKilobytes ?? self.kilobytes
+            guard self.state == .cleaning, self.removedBytes > 0, total > 0 else { return nil }
+            return min(1, Double(self.removedBytes / 1024) / Double(total))
         }
 
         /// The size to show now: the new size once measured, the running count
@@ -1072,5 +1131,159 @@ final class WorkspaceRunningApps: RunningAppsChecking, @unchecked Sendable {
             NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleIdentifier)
                 .contains { !$0.isTerminated }
         }
+    }
+}
+
+// MARK: Cleaning parts of DerivedData
+
+extension AppModel {
+    /// A clean of some parts of DerivedData, which the inspector reports.
+    struct PartsClean {
+        let outcome: PartsCleanOutcome
+        /// The breakdown before, to put parts back as they were measured.
+        let before: DerivedDataBreakdown
+        /// What it took from DerivedData's size.
+        let kilobytes: Int64
+        /// "2 projects".
+        let summary: String
+
+        var canPutBack: Bool {
+            self.outcome.outcome.canPutBack
+        }
+    }
+
+    var markedPartsKilobytes: Int64 {
+        self.kilobytes(of: self.markedParts)
+    }
+
+    func kilobytes(of parts: Set<DerivedDataPart>) -> Int64 {
+        guard let breakdown = self.rows[.derivedData]?.result?.derivedData else { return 0 }
+        return parts.reduce(0) { $0 + breakdown.kilobytes(of: $1) }
+    }
+
+    func setMarked(_ part: DerivedDataPart, _ marked: Bool) {
+        if marked { self.markedParts.insert(part) } else { self.markedParts.remove(part) }
+    }
+
+    /// "1 project", "2 projects", or "3 parts" once a cache or the rest is among them.
+    nonisolated static func summary(of parts: Set<DerivedDataPart>) -> String {
+        let projects = parts.allSatisfy {
+            if case .project = $0 {
+                true
+            } else {
+                false
+            }
+        }
+        let noun = projects ? "project" : "part"
+        return parts.count == 1 ? "1 \(noun)" : "\(parts.count) \(noun)s"
+    }
+
+    /// What a question calls these parts, largest first: "kite-1 and the
+    /// compilation cache".
+    func names(of parts: Set<DerivedDataPart>) -> [String] {
+        guard let breakdown = self.rows[.derivedData]?.result?.derivedData else { return [] }
+        let named: [(name: String, kilobytes: Int64)] = parts.map { part in
+            (part.name(in: breakdown), breakdown.kilobytes(of: part))
+        }
+        return named.sorted { a, b in
+            a.kilobytes != b.kilobytes ? a.kilobytes > b.kilobytes : a.name < b.name
+        }.map(\.name)
+    }
+
+    /// Starts cleaning the ticked parts of DerivedData. The shared caches and
+    /// the rest need Xcode and Simulator closed, as the whole folder does;
+    /// projects alone can go while Xcode is open, after a question, since it
+    /// may have one of them open.
+    func requestCleanParts() async {
+        guard !self.isScanning, !self.isCleaning, self.rows[.derivedData]?.isLive == true else { return }
+        let parts = self.markedParts
+        guard !parts.isEmpty else { return }
+        await self.refreshRunningApps()
+        let blocking = DeveloperApp.allCases.filter(self.runningApps.contains)
+        if parts.contains(where: \.needsXcodeClosed), !blocking.isEmpty {
+            self.pendingClean = PendingClean(
+                items: [.derivedData],
+                stage: .quitApps(blocking),
+                parts: parts,
+                partNames: self.names(of: parts),
+                blockedPartNames: self.names(of: parts.filter(\.needsXcodeClosed)))
+        } else {
+            self.confirmOrClean([.derivedData], parts: parts)
+        }
+    }
+
+    func performClean(_ parts: Set<DerivedDataPart>) async {
+        guard let engine, !self.isCleaning, let row = self.rows[.derivedData], row.isLive,
+              let result = row.result, let before = result.derivedData
+        else { return }
+        // Xcode may have been opened since the question was asked.
+        if parts.contains(where: \.needsXcodeClosed) {
+            await self.refreshRunningApps()
+            if !self.runningApps.isEmpty {
+                self.notice = Notice(title: "Nothing was cleaned", message: self.runningAppsSentence)
+                return
+            }
+        }
+        self.isCleaning = true
+        let mode: CleanMode = self.moveToTrash ? .trash : .delete
+        withAnimation(Motion.animation()) {
+            self.rows[.derivedData]?.state = .cleaning
+            self.rows[.derivedData]?.cleaningKilobytes = parts.reduce(0) { $0 + before.kilobytes(of: $1) }
+        }
+        let outcome = await self.countingDown(.derivedData) {
+            await engine.clean(parts, of: result, mode: mode, progress: $0)
+        }
+        let cleaned = outcome.cleaned
+        let freed = cleaned.reduce(0) { $0 + before.kilobytes(of: $1) }
+        var left = result
+        left.derivedData = before.removing(cleaned)
+        left.kilobytes = result.kilobytes - freed
+        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
+            self.rows[.derivedData]?.result = left
+            self.rows[.derivedData]?.state = .measured
+            self.rows[.derivedData]?.cleaningKilobytes = nil
+            self.markedParts.subtract(cleaned)
+        }
+        if !cleaned.isEmpty {
+            if outcome.outcome.canPutBack {
+                self.trashedThisSession += freed
+            } else {
+                self.deletedThisSession += freed
+            }
+            self.lastPartsClean = PartsClean(
+                outcome: outcome,
+                before: before,
+                kilobytes: freed,
+                summary: Self.summary(of: cleaned))
+        }
+        self.isCleaning = false
+        self.diskSpace = engine.diskSpace()
+        self.saveScan()
+        let problems = outcome.outcome.warnings
+        self.warnings += problems
+        if !problems.isEmpty {
+            self.notice = Notice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
+        }
+    }
+
+    /// Moves what the last parts clean put in the Trash back where it was.
+    func putBackParts() async {
+        guard let engine, !self.isCleaning, let clean = self.lastPartsClean, clean.canPutBack,
+              let result = self.rows[.derivedData]?.result, let current = result.derivedData
+        else { return }
+        let putBack = await engine.putBack(clean.outcome.outcome)
+        let restored = clean.outcome.restored(by: putBack)
+        let back = restored.reduce(0) { $0 + clean.before.kilobytes(of: $1) }
+        var whole = result
+        whole.derivedData = current.restoring(restored, from: clean.before)
+        whole.kilobytes = result.kilobytes + back
+        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) {
+            self.rows[.derivedData]?.result = whole
+        }
+        self.trashedThisSession = max(0, self.trashedThisSession - back)
+        self.lastPartsClean = nil
+        self.diskSpace = engine.diskSpace()
+        self.saveScan()
+        self.reportPutBackFailures(putBack.failed)
     }
 }
