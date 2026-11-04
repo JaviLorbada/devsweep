@@ -42,24 +42,22 @@ enum CleanPrompt {
             return "\(self.capitalized(self.names(pending.blockedPartNames))) can't be cleaned while "
                 + "\(self.names(apps.map(\.rawValue))) \(verb) open. Xcode asks to save unsaved work before it quits."
         case .confirm:
-            let one = pending.parts.count == 1
-            let names = pending.partNames.count <= 3
-                ? self.names(pending.partNames) : AppModel.summary(of: pending.parts)
-            let listed = self.capitalized(names)
+            let subject = self.capitalized(pending.partsSubject)
+            let plural = pending.partsPlural
             var message: String
             if moveToTrash {
-                message = "\(listed) \(one ? "goes" : "go") to the Trash, so \(one ? "it" : "they") can be put back."
+                message = "\(subject) \(plural ? "go" : "goes") to the Trash, so "
+                message += "\(plural ? "they" : "it") can be put back."
             } else {
-                message = "\(listed) will be deleted and can't be put back. Each comes back as you build again; "
+                message = "\(subject) will be deleted and can't be put back. Each comes back as you build again; "
                 message += "projects you no longer build stay gone."
             }
-            if pending.xcodeOpen, one {
-                let name = pending.partNames.first ?? "it"
-                message += " Xcode is open: if \(name) is open in it, close it there first. Xcode builds it again "
-                message += "either way."
+            if pending.xcodeOpen, !pending.xcodeName.isEmpty {
+                message += " Xcode is open: if \(pending.xcodeName) is open in it, close it there first. Xcode builds "
+                message += "it again either way."
             } else if pending.xcodeOpen {
-                message += " Xcode is open: if any of them is open in it, close it there first. Xcode builds them "
-                message += "again either way."
+                message += " Xcode is open: if one of these projects is open in it, close it there first. Xcode "
+                message += "builds them again either way."
             }
             return message
         }

@@ -28,11 +28,12 @@ line under Unreleased as it lands.
   points in from them, the hidden sidebar's toggle is a plain icon with the
   title on its own line under it, and the main buttons' labels are white on
   a deeper accent color.
-- DerivedData's projects and shared caches can be ticked in the inspector
-  and cleaned on their own, with Put Back from the Trash. A project can go
-  while Xcode is open, after a question; the shared caches ask to quit
-  Xcode, as the whole folder does. Past the five largest projects, the rest
-  open to show each.
+- DerivedData's projects and shared caches, and each SwiftPM, Xcode and
+  Gradle build folder, can be ticked in the inspector and cleaned on their
+  own, with Put Back from the Trash. A project can go while Xcode is open,
+  after a question; the shared caches ask to quit Xcode, as the whole
+  folder does. Past the five largest projects or folders, the rest open to
+  show each.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
 - A Worktrees screen for the git worktrees of the repositories in the project

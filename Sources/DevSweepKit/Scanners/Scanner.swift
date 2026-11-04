@@ -115,7 +115,8 @@ extension Scanner {
             paths: paths,
             kilobytes: kilobytes,
             location: location(in: context),
-            sizeKnown: known)
+            sizeKnown: known,
+            folderKilobytes: Dictionary(uniqueKeysWithValues: zip(paths, measured.map(\.kilobytes))))
     }
 }
 

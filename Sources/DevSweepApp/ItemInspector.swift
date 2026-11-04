@@ -51,11 +51,11 @@ struct ItemDetails: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             // Shown empty too after its parts went, to say so and put them back.
-            if let breakdown = row.shownResult?.derivedData, row.wasMeasured || row.showsPrevious,
-               !(row.shownResult?.isEmpty ?? true) || self.model.lastPartsClean != nil
+            if let result = row.shownResult, row.wasMeasured || row.showsPrevious, PartsList.lists(result),
+               !result.isEmpty || self.model.lastPartsClean(of: item) != nil
             {
-                DerivedDataParts(
-                    breakdown: breakdown,
+                PartsList(
+                    result: result,
                     color: Palette.color(item),
                     selectable: self.row.result != nil && [.measured, .cleaning].contains(self.row.state))
             }
@@ -95,7 +95,8 @@ struct ItemDetails: View {
                 .foregroundStyle(.muted)
                 .textSelection(.enabled)
                 .fixedSize(horizontal: false, vertical: true)
-            if paths.count > 1 {
+            // A build item's folders are listed with their sizes further down.
+            if paths.count > 1, !(row.shownResult.map(PartsList.listsFolders) ?? false) {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(self.showsAllPaths ? paths : Array(paths.prefix(Self.pathsShown)), id: \.self) { path in
                         Text(self.model.tilde(path))
@@ -156,104 +157,37 @@ struct ItemDetails: View {
     }
 }
 
-extension DerivedDataPart {
-    /// What a sentence calls it: a project by its folder, "the compilation cache".
-    func name(in breakdown: DerivedDataBreakdown) -> String {
+extension ItemPart {
+    /// What the inspector's list calls it: a project, or a build folder, by
+    /// the folder it belongs to.
+    func listName(in result: ItemResult) -> String {
+        switch self {
+        case .compilationCache: "Shared compilation cache"
+        case .moduleCache: "Shared module cache"
+        case .other: "Other"
+        case let .folder(path):
+            result.derivedData?.projects.first { $0.folder == path }.map(DerivedDataParts.displayName)
+                ?? URL(fileURLWithPath: path).deletingLastPathComponent().lastPathComponent
+        }
+    }
+
+    /// What a sentence calls it, clear out of context: "DerivedData for
+    /// Atlas", "the compilation cache", "kite-1/.build".
+    func sentenceName(in result: ItemResult) -> String {
         switch self {
         case .compilationCache: "the compilation cache"
         case .moduleCache: "the module cache"
-        case let .project(folder):
-            breakdown.projects.first { $0.folder == folder }.map(DerivedDataParts.displayName)
-                ?? URL(fileURLWithPath: folder).lastPathComponent
         case .other: "the rest of DerivedData"
+        case let .folder(path):
+            result.derivedData != nil
+                ? "DerivedData for \(self.listName(in: result))"
+                : "\(self.listName(in: result))/\(URL(fileURLWithPath: path).lastPathComponent)"
         }
     }
 }
 
-/// The DerivedData breakdown: shared caches, then projects with their last
-/// build. Each part can be ticked to clean on its own; the five largest
-/// projects show, and the rest open to show each.
-struct DerivedDataParts: View {
-    @Environment(AppModel.self) private var model
-    @Environment(\.colorScheme) private var colorScheme
-    let breakdown: DerivedDataBreakdown
-    let color: Color
-    /// Whether parts can be ticked: this scan's breakdown, not the last one's.
-    var selectable = false
-    /// Whether every project shows, rather than the five largest and the rest summed.
-    @State private var showsAllProjects = false
-
-    static let projectsShown = 5
-
-    struct Part: Identifiable {
-        let id: String
-        let name: String
-        let status: String
-        let gone: Bool
-        let kilobytes: Int64
-        /// The full workspace path, for a project.
-        var path: String?
-        /// What ticking it cleans; nil for the projects summed in one line.
-        var part: DerivedDataPart?
-    }
-
-    var parts: [Part] {
-        var parts: [Part] = []
-        if self.breakdown.compilationCacheKilobytes > 0 {
-            parts.append(Part(
-                id: "compilation",
-                name: "Shared compilation cache",
-                status: "",
-                gone: false,
-                kilobytes: self.breakdown.compilationCacheKilobytes,
-                part: .compilationCache))
-        }
-        if self.breakdown.moduleCacheKilobytes > 0 {
-            parts.append(Part(
-                id: "module",
-                name: "Shared module cache",
-                status: "",
-                gone: false,
-                kilobytes: self.breakdown.moduleCacheKilobytes,
-                part: .moduleCache))
-        }
-        let shown = self.showsAllProjects ? self.breakdown.projects[...] : self.breakdown.projects
-            .prefix(Self.projectsShown)
-        for project in shown {
-            let status = switch project.status {
-            case let .built(day): "built \(day)"
-            case .gone: "project gone"
-            }
-            parts.append(Part(
-                id: project.folder,
-                name: Self.displayName(project),
-                status: status,
-                gone: project.status == .gone,
-                kilobytes: project.kilobytes,
-                path: project.workspacePath,
-                part: .project(project.folder)))
-        }
-        let rest = self.breakdown.projects.dropFirst(shown.count)
-        if !rest.isEmpty {
-            parts.append(Part(
-                id: "rest",
-                name: rest.count == 1 ? "1 more project" : "\(rest.count) more projects",
-                status: "",
-                gone: false,
-                kilobytes: rest.reduce(0) { $0 + $1.kilobytes }))
-        }
-        if self.breakdown.otherKilobytes > 0 {
-            parts.append(Part(
-                id: "other",
-                name: "Other",
-                status: "",
-                gone: false,
-                kilobytes: self.breakdown.otherKilobytes,
-                part: .other))
-        }
-        return parts.sorted { $0.kilobytes > $1.kilobytes }
-    }
-
+/// How the inspector names DerivedData's projects.
+enum DerivedDataParts {
     /// The folder the project lives in, "atlas-2" for `.../atlas-2/Atlas.xcodeproj`:
     /// what tells apart copies of one project, and what you see in Finder.
     /// The project's own name when it sits at the top of the disk.
@@ -262,65 +196,200 @@ struct DerivedDataParts: View {
         let folder = project.name[..<slash]
         return folder.isEmpty ? String(project.name[project.name.index(after: slash)...]) : String(folder)
     }
+}
+
+/// An item's parts, largest first, each with a box to clean it on its own:
+/// DerivedData's shared caches, projects with their last build, and the
+/// rest; or a build item's folders, by the project each belongs to. Past
+/// the five largest projects or folders, the rest open to show each.
+struct PartsList: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.colorScheme) private var colorScheme
+    let result: ItemResult
+    let color: Color
+    /// Whether parts can be ticked: this scan's result, not the last one's.
+    var selectable = false
+    /// Whether every project or folder shows, rather than the five largest
+    /// and the rest summed.
+    @State private var showsAll = false
+
+    static let shown = 5
+
+    /// Whether the inspector lists the item's parts.
+    static func lists(_ result: ItemResult) -> Bool {
+        result.derivedData != nil || self.listsFolders(result)
+    }
+
+    /// Whether it lists a build item's folders, which the scan measured one by one.
+    static func listsFolders(_ result: ItemResult) -> Bool {
+        AppModel.cleanedByFolder.contains(result.item) && result.folderKilobytes != nil
+    }
+
+    struct Line: Identifiable {
+        let id: String
+        let name: String
+        var status = ""
+        var gone = false
+        /// A second line, the folder's path, for a build item's folder.
+        var detail: String?
+        let kilobytes: Int64
+        var help = ""
+        /// What ticking it cleans; nil for the ones summed in one line.
+        var part: ItemPart?
+    }
+
+    private var isDerivedData: Bool {
+        self.result.derivedData != nil
+    }
+
+    var lines: [Line] {
+        if let breakdown = result.derivedData { return self.lines(breakdown) }
+        let folders = self.result.paths
+            .map { (path: $0, kilobytes: self.result.folderKilobytes?[$0] ?? 0) }
+            .sorted { $0.kilobytes > $1.kilobytes }
+        let names = Self.folderNames(self.result.paths)
+        let shown = self.showsAll ? folders[...] : folders.prefix(Self.shown)
+        var lines = shown.map { folder in
+            Line(
+                id: folder.path,
+                name: names[folder.path] ?? folder.path,
+                detail: self.model.tilde(folder.path),
+                kilobytes: folder.kilobytes,
+                help: self.model.tilde(folder.path),
+                part: .folder(folder.path))
+        }
+        let rest = folders.dropFirst(shown.count)
+        if !rest.isEmpty {
+            lines.append(Line(
+                id: "rest",
+                name: rest.count == 1 ? "1 more folder" : "\(rest.count) more folders",
+                kilobytes: rest.reduce(0) { $0 + $1.kilobytes }))
+        }
+        return lines
+    }
+
+    private func lines(_ breakdown: DerivedDataBreakdown) -> [Line] {
+        var lines: [Line] = []
+        for part in [ItemPart.compilationCache, .moduleCache, .other] where breakdown.kilobytes(of: part) > 0 {
+            lines.append(Line(
+                id: part.listName(in: self.result),
+                name: part.listName(in: self.result),
+                kilobytes: breakdown.kilobytes(of: part),
+                part: part))
+        }
+        let shown = self.showsAll ? breakdown.projects[...] : breakdown.projects.prefix(Self.shown)
+        for project in shown {
+            let status = switch project.status {
+            case let .built(day): "built \(day)"
+            case .gone: "project gone"
+            }
+            lines.append(Line(
+                id: project.folder,
+                name: DerivedDataParts.displayName(project),
+                status: status,
+                gone: project.status == .gone,
+                kilobytes: project.kilobytes,
+                help: self.model.tilde(project.workspacePath),
+                part: .folder(project.folder)))
+        }
+        let rest = breakdown.projects.dropFirst(shown.count)
+        if !rest.isEmpty {
+            lines.append(Line(
+                id: "rest",
+                name: rest.count == 1 ? "1 more project" : "\(rest.count) more projects",
+                kilobytes: rest.reduce(0) { $0 + $1.kilobytes }))
+        }
+        return lines.sorted { $0.kilobytes > $1.kilobytes }
+    }
+
+    /// Each folder by the folder it sits in, "kite-1" for
+    /// `.../kite-1/.build`, and by the two above it where that name repeats.
+    static func folderNames(_ paths: [String]) -> [String: String] {
+        func parents(_ path: String, _ count: Int) -> String {
+            path.split(separator: "/").dropLast().suffix(count).joined(separator: "/")
+        }
+        var names = Dictionary(uniqueKeysWithValues: paths.map { ($0, parents($0, 1)) })
+        let repeated = Dictionary(grouping: names.values) { $0 }.filter { $0.value.count > 1 }
+        for path in paths where repeated[names[path] ?? ""] != nil {
+            names[path] = parents(path, 2)
+        }
+        return names
+    }
 
     /// Room for a checkbox and the space after it, which the bars start past.
     private static let checkboxWidth: CGFloat = 22
 
     var body: some View {
-        let parts = parts
-        let largest = Double(max(parts.first?.kilobytes ?? 1, 1))
+        let lines = lines
+        let largest = Double(max(lines.map(\.kilobytes).max() ?? 1, 1))
         VStack(alignment: .leading, spacing: 6) {
-            Eyebrow(text: "Inside")
-            if self.selectable, let clean = self.model.lastPartsClean {
+            Eyebrow(text: self.isDerivedData ? "Inside" : "Folders")
+            if self.selectable, let clean = self.model.lastPartsClean(of: self.result.item) {
                 self.lastClean(clean)
             }
-            ForEach(parts) { part in
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        if self.selectable { self.checkbox(part) }
-                        if part.part == nil {
-                            self.showAll(part)
-                        } else {
-                            Text(part.name)
-                                .lineLimit(1)
-                                .truncationMode(.tail)
-                                .help(part.path.map(self.model.tilde) ?? "")
-                        }
-                        Spacer(minLength: 4)
-                        Text(part.status)
-                            .font(.caption)
-                            .foregroundStyle(part.gone
-                                ? AnyShapeStyle(Palette.text(.orange, dark: self.colorScheme == .dark))
-                                : AnyShapeStyle(.muted))
-                            .lineLimit(1)
-                        Text(SizeText.of(kilobytes: part.kilobytes))
-                            .fontWeight(.semibold)
-                            .monospacedDigit()
-                            .frame(width: 60, alignment: .trailing)
-                    }
-                    .font(.callout)
-                    ThinBar(fraction: Double(part.kilobytes) / largest, color: self.color, height: 3)
-                        .padding(.leading, self.selectable ? Self.checkboxWidth : 0)
-                }
-                .padding(.vertical, 4)
+            ForEach(lines) { line in
+                self.line(line, largest: largest)
             }
-            if self.showsAllProjects {
-                Button("Show fewer projects") { self.toggleAllProjects() }
+            if self.showsAll {
+                Button(self.isDerivedData ? "Show fewer projects" : "Show fewer folders") { self.toggleAll() }
                     .buttonStyle(.link)
                     .font(.caption2)
             }
-            Text("Each part comes back as you build; projects you no longer build stay gone.")
-                .font(.caption)
-                .foregroundStyle(.muted)
+            if self.isDerivedData {
+                Text("Each part comes back as you build; projects you no longer build stay gone.")
+                    .font(.caption)
+                    .foregroundStyle(.muted)
+            }
         }
     }
 
+    private func line(_ line: Line, largest: Double) -> some View {
+        let indent = self.selectable ? Self.checkboxWidth : 0
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                if self.selectable { self.checkbox(line) }
+                if line.part == nil {
+                    self.showAll(line)
+                } else {
+                    Text(line.name)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .help(line.help)
+                }
+                Spacer(minLength: 4)
+                Text(line.status)
+                    .font(.caption)
+                    .foregroundStyle(line.gone
+                        ? AnyShapeStyle(Palette.text(.orange, dark: self.colorScheme == .dark))
+                        : AnyShapeStyle(.muted))
+                    .lineLimit(1)
+                Text(SizeText.of(kilobytes: line.kilobytes))
+                    .fontWeight(.semibold)
+                    .monospacedDigit()
+                    .frame(width: 60, alignment: .trailing)
+            }
+            .font(.callout)
+            if let detail = line.detail {
+                Text(detail)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.muted)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .padding(.leading, indent)
+            }
+            ThinBar(fraction: Double(line.kilobytes) / largest, color: self.color, height: 3)
+                .padding(.leading, indent)
+        }
+        .padding(.vertical, 4)
+    }
+
     @ViewBuilder
-    private func checkbox(_ part: Part) -> some View {
-        if let cleanable = part.part {
-            Toggle("Mark \(part.name) for cleaning", isOn: Binding(
-                get: { self.model.markedParts.contains(cleanable) },
-                set: { self.model.setMarked(cleanable, $0) }))
+    private func checkbox(_ line: Line) -> some View {
+        if let part = line.part {
+            let item = self.result.item
+            Toggle("Mark \(line.name) for cleaning", isOn: Binding(
+                get: { self.model.markedParts(of: item).contains(part) },
+                set: { self.model.setMarked(part, of: item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .disabled(self.model.isCleaning || self.model.isScanning)
@@ -331,20 +400,21 @@ struct DerivedDataParts: View {
     }
 
     /// "7 more projects ›", which opens to show each.
-    private func showAll(_ part: Part) -> some View {
-        Button { self.toggleAllProjects() } label: {
+    private func showAll(_ line: Line) -> some View {
+        Button { self.toggleAll() } label: {
             HStack(spacing: 4) {
-                Text(part.name).lineLimit(1)
+                Text(line.name).lineLimit(1)
                 Image(systemName: "chevron.right").font(.caption2.weight(.semibold)).foregroundStyle(.muted)
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Show each project, to clean it on its own")
+        .help(self
+            .isDerivedData ? "Show each project, to clean it on its own" : "Show each folder, to clean it on its own")
     }
 
-    private func toggleAllProjects() {
-        withAnimation(Motion.animation(.easeInOut(duration: 0.25))) { self.showsAllProjects.toggle() }
+    private func toggleAll() {
+        withAnimation(Motion.animation(.easeInOut(duration: 0.25))) { self.showsAll.toggle() }
     }
 
     /// "Moved 2 projects to the Trash, 25.2 GB. Put Back"
@@ -355,7 +425,7 @@ struct DerivedDataParts: View {
                 .canPutBack ? "Moved \(clean.summary) to the Trash, \(size)." : "Deleted \(clean.summary), \(size).")
                 .foregroundStyle(.muted)
             if clean.canPutBack {
-                Button("Put Back") { Task { await self.model.putBackParts() } }
+                Button("Put Back") { Task { await self.model.putBackParts(of: self.result.item) } }
                     .buttonStyle(.link)
                     .disabled(self.model.isCleaning)
             }
@@ -373,11 +443,13 @@ struct InspectorAction: View {
         switch self.row.state {
         case .waiting, .measuring:
             self.wide(Button("Measuring") {}.buttonStyle(.prominentAction).disabled(true))
-        case .measured where self.row.isLive && self.row.item == .derivedData && !self.model.markedParts.isEmpty:
-            let parts = "\(AppModel.summary(of: self.model.markedParts)), "
-                + SizeText.of(kilobytes: self.model.markedPartsKilobytes)
+        case .measured where self.row.isLive && !self.model.markedParts(of: self.row.item).isEmpty:
+            let item = self.row.item
+            let marked = self.model.markedParts(of: item)
+            let parts = "\(AppModel.summary(of: marked, in: item)), "
+                + SizeText.of(kilobytes: self.model.kilobytes(of: marked, in: item))
             self.wide(Button("Clean \(parts)") {
-                Task { await self.model.requestCleanParts() }
+                Task { await self.model.requestCleanParts(of: item) }
             }
             .buttonStyle(.prominentAction)
             .disabled(self.model.isScanning || self.model.isCleaning))

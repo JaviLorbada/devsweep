@@ -100,7 +100,8 @@ applications folders; `NO_COLOR` turns colors off.
 The app scans when it opens. Mark items, or click Clean on one, and press
 Clean. To keep most of DerivedData, tick single projects, or a shared cache,
 in the inspector and clean just those; a project can go while Xcode is open,
-after a question, since Xcode may have it open. ⌘1 and ⌘2 switch the chart between the ring and blocks, ⌥⌘I shows or
+after a question, since Xcode may have it open. The build folders list each
+folder with its size, to tick the same way. ⌘1 and ⌘2 switch the chart between the ring and blocks, ⌥⌘I shows or
 hides the inspector, and ⌘R scans again. In a window too narrow for the
 inspector beside the center, it floats over the center's trailing side
 instead. The sidebar's "Also worth a look" lists installed Xcodes and simulator

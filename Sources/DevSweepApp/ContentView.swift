@@ -203,7 +203,7 @@ struct ContentView: View {
         guard let pending = model.pendingClean else { return "" }
         let kilobytes = pending.parts.isEmpty
             ? pending.items.compactMap { self.model.rows[$0]?.kilobytes }.reduce(0, +)
-            : self.model.kilobytes(of: pending.parts)
+            : self.model.kilobytes(of: pending.parts, in: pending.items.first ?? .derivedData)
         let size = SizeText.of(kilobytes: kilobytes)
         return CleanPrompt.title(for: pending, size: size, moveToTrash: self.model.moveToTrash)
     }

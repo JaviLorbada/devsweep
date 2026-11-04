@@ -13,6 +13,8 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
     public var derivedData: DerivedDataBreakdown?
     /// False when a folder could not be read, so the size is a lower bound.
     public var sizeKnown: Bool
+    /// Each folder's size, by path, when the item measured them one by one.
+    public var folderKilobytes: [String: Int64]?
 
     public var id: Item {
         self.item
@@ -37,7 +39,8 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
         kilobytes: Int64,
         location: String,
         derivedData: DerivedDataBreakdown? = nil,
-        sizeKnown: Bool = true)
+        sizeKnown: Bool = true,
+        folderKilobytes: [String: Int64]? = nil)
     {
         self.item = item
         self.paths = paths
@@ -45,6 +48,7 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
         self.location = location
         self.derivedData = derivedData
         self.sizeKnown = sizeKnown
+        self.folderKilobytes = folderKilobytes
     }
 }
 
