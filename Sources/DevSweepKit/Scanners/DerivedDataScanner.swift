@@ -70,12 +70,25 @@ public struct DerivedDataScanner: Scanner {
             }
         }
 
-        // `sort -k1,1nr`: largest first, ties by the whole line in byte order.
-        result.projects = projects.sorted { a, b in
+        result.projects = self.sorted(projects)
+        return (result, measured.allSatisfy(\.readable))
+    }
+
+    /// `sort -k1,1nr`: largest first, ties by the whole line in byte order.
+    static func sorted(_ projects: [DerivedDataProject]) -> [DerivedDataProject] {
+        projects.sorted { a, b in
             if a.kilobytes != b.kilobytes { return a.kilobytes > b.kilobytes }
             return "\(a.name)\t\(a.statusText)".utf8.lexicographicallyPrecedes("\(b.name)\t\(b.statusText)".utf8)
         }
-        return (result, measured.allSatisfy(\.readable))
+    }
+
+    /// The entries of the folder that are neither a shared cache nor a
+    /// project, which the breakdown sums as other.
+    static func otherEntries(of folder: String, files: any FileSystemAccess) -> [String] {
+        files.childNames(folder)
+            .filter { !$0.hasPrefix("..") && $0 != "CompilationCache.noindex" && $0 != "ModuleCache.noindex" }
+            .map { "\(folder)/\($0)" }
+            .filter { self.project(at: $0, kilobytes: 0, files: files) == nil }
     }
 
     static func project(
