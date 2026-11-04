@@ -82,9 +82,10 @@ enum Palette {
 }
 
 /// The window's main actions, like Clean: the system's prominent glass on
-/// `Palette.action`, with a white label while it can be pressed. Set on the
-/// button, a white foreground never reached the label, which the glass drew
-/// light cyan.
+/// `Palette.action`, with a white label while it can be pressed in an active
+/// window. Set on the button, a white foreground never reached the label,
+/// which the glass drew light cyan. In an inactive window the glass turns
+/// light gray and draws its own darker label, which white would wash out.
 struct ProminentActionStyle: PrimitiveButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         ProminentActionButton(configuration: configuration)
@@ -93,11 +94,12 @@ struct ProminentActionStyle: PrimitiveButtonStyle {
 
 private struct ProminentActionButton: View {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.appearsActive) private var appearsActive
     let configuration: PrimitiveButtonStyleConfiguration
 
     var body: some View {
         Button(role: self.configuration.role) { self.configuration.trigger() } label: {
-            if self.isEnabled {
+            if self.isEnabled, self.appearsActive {
                 self.configuration.label.foregroundStyle(.white)
             } else {
                 self.configuration.label
