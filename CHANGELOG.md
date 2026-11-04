@@ -25,7 +25,8 @@ line under Unreleased as it lands.
   being cut off. While an item is deleted for good, its size counts down
   and its row shows how far it has got, and Scan Again waits until cleaning
   is done. The controls along the panels' top and bottom edges sit 16
-  points in from them.
+  points in from them, the hidden sidebar's toggle is a plain icon, and the
+  main buttons' labels are white on a deeper accent color.
 - DerivedData's projects and shared caches can be ticked in the inspector
   and cleaned on their own, with Put Back from the Trash. A project can go
   while Xcode is open, after a question; the shared caches ask to quit
