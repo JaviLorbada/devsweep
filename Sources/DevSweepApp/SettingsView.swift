@@ -108,8 +108,9 @@ private struct FolderSettings: View {
     }
 
     private var footer: String {
-        var text = "Searched for .build folders, Xcode build folders and Gradle build folders next to their projects. "
-            + "Changes apply from the next scan."
+        var text = "Searched for .build folders, Xcode build folders and Gradle build folders next to their projects, "
+            + "and for git repositories, whose worktrees show wherever they live. A folder where a tool keeps its "
+            + "worktrees works too. Changes apply from the next scan."
         if !(ProcessInfo.processInfo.environment["DEVSWEEP_PROJECT_DIRS"] ?? "").isEmpty {
             text += " DEVSWEEP_PROJECT_DIRS is set, so DevSweep searches those folders instead."
         }

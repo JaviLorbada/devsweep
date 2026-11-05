@@ -47,15 +47,21 @@ struct WorktreesContent: View {
                     EmptyExtrasRow(text: self.model.isLoadingExtras ? "Listing worktrees…" : "No worktrees found.")
                 }
             }
-            Text(
-                "Remove keeps the branch and runs only when there's nothing to lose: no changes waiting to be "
-                    + "committed, and every commit on a branch.")
+            Text(self.isEmpty
+                ? WorktreeWords.whereFound
+                : "Remove keeps the branch and runs only when there's nothing to lose: no changes waiting to be "
+                + "committed, and every commit on a branch.")
                 .font(.callout)
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 22)
         .padding(.vertical, 18)
+    }
+
+    /// Listed, and none found.
+    private var isEmpty: Bool {
+        !self.model.isLoadingExtras && (self.model.extras?.worktrees.isEmpty ?? false)
     }
 }
 
@@ -156,8 +162,7 @@ struct WorktreeInspector: View {
             ContentUnavailableView(
                 "No worktree",
                 systemImage: "arrow.triangle.branch",
-                description: Text(self.model
-                    .isLoadingExtras ? "Listing worktrees…" : "No worktrees in your project folders' repositories."))
+                description: Text(self.model.isLoadingExtras ? "Listing worktrees…" : WorktreeWords.whereFound))
         }
     }
 }
@@ -285,6 +290,10 @@ struct RemoveWorktreeSheet: View {
 }
 
 enum WorktreeWords {
+    /// Where worktrees are found, said where none were.
+    static let whereFound = "Worktrees show through their repositories in your project folders, wherever they "
+        + "live. If a tool keeps its worktrees in a folder of its own, add that folder in Settings > Folders."
+
     /// The screen's subtitle and the sidebar row's help: what can go, then what
     /// stays. "1.2 GB in 2 worktrees with nothing to lose. 3 more, 1.9 GB,
     /// keep work, so they stay."
@@ -294,7 +303,7 @@ enum WorktreeWords {
         let stays = kept.count == 1 ? "keeps work, so it stays" : "keep work, so they stay"
         switch (removable.isEmpty, kept.isEmpty) {
         case (true, true):
-            return "No worktrees in your project folders' repositories."
+            return "No worktrees found."
         case (true, false):
             return "\(self.size(kept)) in \(self.count(kept)) that \(stays)."
         case (false, true):
