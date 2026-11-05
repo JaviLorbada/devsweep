@@ -36,7 +36,7 @@ struct WorktreeScreenTests {
         #expect(WorktreeWords.summary([kept]) == "\(oneSize) in 1 worktree that keeps work, so it stays.")
         #expect(WorktreeWords.summary([removable, removable])
             == "\(SizeText.of(kilobytes: 2 * 623_000)) in 2 worktrees with nothing to lose.")
-        #expect(WorktreeWords.summary([]) == "No worktrees found.")
+        #expect(WorktreeWords.summary([]) == "Nothing to remove.")
     }
 
     @Test

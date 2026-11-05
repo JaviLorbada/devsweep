@@ -1,9 +1,10 @@
 import DevSweepKit
 import SwiftUI
 
-// The git worktrees of the repositories in the project folders. DevSweep
-// lists them all and removes one only when asked, with git's own
-// `worktree remove`, and only when nothing in it would be lost.
+// The git worktrees found through the project folders: those of the
+// repositories in them, and those in a folder of worktrees. DevSweep lists
+// them all and removes one only when asked, with git's own `worktree
+// remove`, and only when nothing in it would be lost.
 
 extension AppModel {
     /// What removing every worktree with nothing to lose would free. The
@@ -34,7 +35,7 @@ struct WorktreesContent: View {
         VStack(alignment: .leading, spacing: 14) {
             ExtrasCard(
                 title: "Worktrees",
-                note: "of the repositories in your project folders",
+                note: "found through your project folders",
                 rowCount: self.model.extras?.worktrees.count ?? 0)
             {
                 if let worktrees = model.extras?.worktrees, !worktrees.isEmpty {
@@ -162,7 +163,7 @@ struct WorktreeInspector: View {
             ContentUnavailableView(
                 "No worktree",
                 systemImage: "arrow.triangle.branch",
-                description: Text(self.model.isLoadingExtras ? "Listing worktrees…" : WorktreeWords.whereFound))
+                description: Text(self.model.isLoadingExtras ? "Listing worktrees…" : "No worktrees found."))
         }
     }
 }
@@ -290,20 +291,20 @@ struct RemoveWorktreeSheet: View {
 }
 
 enum WorktreeWords {
-    /// Where worktrees are found, said where none were.
+    /// Where worktrees are found, said under the list when none were.
     static let whereFound = "Worktrees show through their repositories in your project folders, wherever they "
         + "live. If a tool keeps its worktrees in a folder of its own, add that folder in Settings > Folders."
 
     /// The screen's subtitle and the sidebar row's help: what can go, then what
     /// stays. "1.2 GB in 2 worktrees with nothing to lose. 3 more, 1.9 GB,
-    /// keep work, so they stay."
+    /// keep work, so they stay." With none, the list itself says so.
     static func summary(_ worktrees: [GitWorktree]) -> String {
         let removable = worktrees.filter { $0.keptBecause == nil }
         let kept = worktrees.filter { $0.keptBecause != nil }
         let stays = kept.count == 1 ? "keeps work, so it stays" : "keep work, so they stay"
         switch (removable.isEmpty, kept.isEmpty) {
         case (true, true):
-            return "No worktrees found."
+            return "Nothing to remove."
         case (true, false):
             return "\(self.size(kept)) in \(self.count(kept)) that \(stays)."
         case (false, true):
