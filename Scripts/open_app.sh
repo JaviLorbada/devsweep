@@ -5,8 +5,9 @@
 # exited, since `open` would otherwise bring the running copy forward.
 # Asking it to quit is an Apple event, which macOS lets the terminal send
 # only with its Automation permission for DevSweep; without that, this says
-# so and opens nothing. Nor does it open a bundle built from another commit
-# than the checkout's, which would show old code; `make app` first.
+# so and opens nothing. Nor does it open a bundle built before a change to
+# what goes into it, which would show old code; `make app` first. A commit
+# that changes only docs leaves the bundle as good as new.
 #
 # Usage: make app && Scripts/open_app.sh
 
@@ -19,14 +20,25 @@ app="$root/build/$PRODUCT_NAME.app"
 
 [[ -d "$app" ]] || { echo "open_app.sh: there is no $app; run make app first" >&2; exit 1; }
 
-# Checked before anything is asked to quit. Outside a git checkout there is
-# nothing to compare with.
-commit="$(defaults read "$app/Contents/Info" DevSweepCommit 2>/dev/null || echo "an unknown commit")"
-if head="$(git -C "$root" rev-parse --verify -q HEAD)" \
-  && [[ "$(git -C "$root" rev-parse --verify -q "$commit^{commit}" || true)" != "$head" ]]; then
-  echo "Not opened: $app was built from $commit, and the checkout is at" \
-    "$(git -C "$root" rev-parse --short HEAD). Run make app first." >&2
-  exit 1
+# Checked before anything is asked to quit, against what Scripts/package_app.sh
+# puts in the bundle. Outside a git checkout there is nothing to compare with.
+commit="$(defaults read "$app/Contents/Info" DevSweepCommit 2>/dev/null || true)"
+inputs=(Sources Package.swift Package.resolved version.env docs/icon Scripts/package_app.sh)
+if git -C "$root" rev-parse --verify -q HEAD >/dev/null; then
+  head="$(git -C "$root" rev-parse --short HEAD)"
+  if [[ -z "$commit" ]]; then
+    echo "Not opened: $app doesn't say which commit it was built from. Run make app first." >&2
+    exit 1
+  fi
+  if ! git -C "$root" rev-parse --verify -q "$commit^{commit}" >/dev/null; then
+    echo "Not opened: $app was built from $commit, which this checkout doesn't have. Run make app first." >&2
+    exit 1
+  fi
+  if ! git -C "$root" diff --quiet "$commit" HEAD -- "${inputs[@]}"; then
+    echo "Not opened: $app was built from $commit, and the app has changed since, at $head." \
+      "Run make app first." >&2
+    exit 1
+  fi
 fi
 
 # The pid of a running DevSweep, whichever copy it is, or nothing.
@@ -58,5 +70,5 @@ if [[ -n "$pid" ]]; then
   fi
 fi
 
-echo "Opening $app, built from $commit."
+echo "Opening $app, built from ${commit:-an unknown commit}."
 open "$app"

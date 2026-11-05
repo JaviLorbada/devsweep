@@ -76,8 +76,10 @@ and all. `Scripts/open_app.sh` asks it to quit, waits for it to exit, then
 opens `build/DevSweep.app` and says which commit it was built from. Quitting
 it takes the terminal's Automation permission for DevSweep; when macOS
 refuses, the script says so and opens nothing. Nor does it open a bundle
-built from another commit than the checkout's: it says to run `make app`
-first, and leaves the running copy alone.
+built before a change to what goes into it (the sources, the package,
+`version.env`, the icon or the packaging script): it says to run
+`make app` first, and leaves the running copy alone. A commit that
+changes only docs doesn't count.
 
 ## Commits
 
