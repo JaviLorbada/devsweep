@@ -109,8 +109,10 @@ runtimes, and what Android Studio keeps: its installs, the SDK's system
 images, platforms and build tools, emulators, and Gradle's caches, flagging
 what looks unused. Under Git it lists the worktrees of the repositories in
 your project folders, wherever the worktrees are, with their size, branch and
-last commit, and removes one with nothing to lose when you ask. `devsweep`
-lists them too, with the command for each. Settings has the project folders, items to skip, when
+last commit, and removes one with nothing to lose when you ask. A folder where
+a tool keeps its worktrees can be a project folder too: each worktree in it
+leads back to its repository, wherever that is. `devsweep` lists them too,
+with the command for each. Settings has the project folders, items to skip, when
 something counts as unused, how cleaning starts out, whether to scan on
 opening, and whether to show the menu bar item. The menu bar item shows the
 icon's ring in one color and the free space, and keeps the app running after

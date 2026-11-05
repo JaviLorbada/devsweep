@@ -173,7 +173,8 @@ public enum Report {
             }
         }
         if worktrees.isEmpty {
-            text += "  None found in the project folders' repositories.\n"
+            text += "  None found. Worktrees show through their repositories in the project folders;\n"
+                + "  to add a folder where a tool keeps its worktrees, use --projects.\n"
         }
         text += "\n"
         return text

@@ -8,9 +8,10 @@ struct WorktreeFixture {
     let home: FakeHome
     let repository: String
 
-    init(_ home: FakeHome) {
+    /// The repository at `repository`, or at `App` in the project folder.
+    init(_ home: FakeHome, at repository: String? = nil) {
         self.home = home
-        self.repository = "\(home.projects)/App"
+        self.repository = repository ?? "\(home.projects)/App"
         home.write("\(self.repository)/.gitignore", "build/\n")
         home.write("\(self.repository)/README", "App\n")
         self.git(["-C", self.repository, "init", "-q", "-b", "main"])
@@ -169,6 +170,76 @@ struct WorktreeTests {
     }
 
     @Test
+    func `a project folder of worktrees leads to their repository, wherever it is`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        // Only the folder a tool keeps its worktrees in is a project folder.
+        let fixture = WorktreeFixture(home, at: home.path("Elsewhere/Tool"))
+        fixture.add(home.path(".tool/worktrees/ab12/Tool"), branch: nil)
+        fixture.add(home.path(".tool/worktrees/cd34/Tool"), branch: "fix")
+        let engine = try engine(home, tools, projects: [home.path(".tool/worktrees")])
+
+        let worktrees = await engine.extras().worktrees
+        #expect(Set(worktrees.map(\.name)) == ["ab12/Tool", "cd34/Tool"])
+        #expect(worktrees.allSatisfy { engine.policy.tilde($0.repository) == "~/Elsewhere/Tool" })
+        // Git is asked of the repository, once, not of each worktree.
+        #expect(tools.log.calls.filter { $0.hasSuffix(" worktree list --porcelain") }.count == 1)
+    }
+
+    @Test
+    func `a repository found in a project folder and through its worktrees is asked once`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        let fixture = WorktreeFixture(home)
+        fixture.add(home.path(".tool/worktrees/one"), branch: "one")
+        fixture.add(home.path(".tool/worktrees/two"), branch: "two")
+        let engine = try engine(home, tools, projects: [home.projects, home.path(".tool/worktrees")])
+
+        #expect(await engine.extras().worktrees.map(\.name).sorted() == ["one", "two"])
+        #expect(tools.log.calls.filter { $0.hasSuffix(" worktree list --porcelain") }.count == 1)
+    }
+
+    @Test
+    func `worktrees of a bare repository lead back to it`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        let fixture = WorktreeFixture(home, at: home.path("Elsewhere/Source"))
+        let bare = home.path("Elsewhere/App.git")
+        fixture.git(["clone", "-q", "--bare", fixture.repository, bare])
+        fixture.git(["-C", bare, "worktree", "add", "-q", "-b", "feature", home.path(".tool/worktrees/feature")])
+        let engine = try engine(home, tools, projects: [home.path(".tool/worktrees")])
+
+        let worktree = try #require(await engine.extras().worktrees.first)
+        #expect(worktree.name == "feature" && worktree.branch == "feature")
+        #expect(engine.policy.tilde(worktree.repository) == "~/Elsewhere/App.git")
+    }
+
+    @Test
+    func `a worktree whose repository is outside the home folder isn't listed`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        let fixture = WorktreeFixture(home, at: home.outside("Outside/App"))
+        fixture.add(home.path(".tool/worktrees/away"), branch: "away")
+
+        #expect(try await engine(home, tools, projects: [home.path(".tool/worktrees")]).extras().worktrees.isEmpty)
+        #expect(!tools.log.calls.contains { $0.contains(" worktree list") })
+    }
+
+    @Test
+    func `only a worktree's .git file leads to a repository`() throws {
+        let home = FakeHome()
+        // A relative gitdir, as git writes one with worktree.useRelativePaths.
+        home.mkdir(home.path("Repo/.git/worktrees/w"))
+        home.write(home.path("Repo/.git/worktrees/w/commondir"), "../..\n")
+        home.write(home.path("w/.git"), "gitdir: ../Repo/.git/worktrees/w\n")
+        let repository = try #require(FileSystem.physicalDirectory(home.path("Repo")))
+        #expect(WorktreeScanner.repository(ofWorktree: home.path("w")) == repository)
+        // A submodule's names a folder under modules.
+        home.mkdir(home.path("Repo/.git/modules/lib"))
+        home.write(home.path("Repo/lib/.git"), "gitdir: ../.git/modules/lib\n")
+        #expect(WorktreeScanner.repository(ofWorktree: home.path("Repo/lib")) == nil)
+        // A worktree whose repository is gone leads nowhere.
+        home.write(home.path("orphan/.git"), "gitdir: \(home.path("Gone/.git/worktrees/orphan"))\n")
+        #expect(WorktreeScanner.repository(ofWorktree: home.path("orphan")) == nil)
+    }
+
+    @Test
     func `a worktree named like its repository is told apart by its parent folder`() {
         func named(_ path: String) -> String {
             GitWorktree(
@@ -255,4 +326,13 @@ struct WorktreeTests {
         let json = Data(#"{"xcodes":[],"runtimes":[]}"#.utf8)
         #expect(try JSONDecoder().decode(Extras.self, from: json).worktrees.isEmpty)
     }
+}
+
+/// An engine whose project folders are `projects`, in place of the fake
+/// home's Workspace.
+private func engine(_ home: FakeHome, _ tools: FakeTools, projects: [String]) throws -> Engine {
+    var config = ScanConfig.fromEnvironment(home.environment)
+    config.environment = home.environment
+    config.projectDirectories = projects
+    return try Engine(config: config, tools: tools.tools, measurer: SizeMeasurer(progressInterval: 2))
 }

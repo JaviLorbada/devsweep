@@ -11,7 +11,8 @@ line under Unreleased as it lands.
   and safety rules; run under the script's name it prints the same output,
   byte for byte.
 - `devsweep` lists the git worktrees of the repositories in the project
-  folders, and the command that removes each one with nothing to lose.
+  folders, and of those a project folder of worktrees leads to, with the
+  command that removes each one with nothing to lose.
 - Deleting for good shares the work between four threads and removes each
   folder's files in the order APFS frees them fastest: about twice as fast
   as `FileManager` on a large DerivedData folder.
@@ -40,7 +41,9 @@ line under Unreleased as it lands.
   folders, wherever they live, with their size, branch and last commit. It
   removes one only when asked, with git, and only when nothing in it would
   be lost; the branch stays. The sidebar's size is what can go, and the
-  screen says how much stays because it holds work.
+  screen says how much stays because it holds work. A folder where a tool
+  keeps its worktrees can be a project folder too: each worktree in it
+  leads back to its repository, wherever that is.
 - Settings for project folders, items to skip, the unused threshold, how
   cleaning starts out and scanning on launch.
 - A menu bar item with the icon's ring and the free space, a daily scan while
