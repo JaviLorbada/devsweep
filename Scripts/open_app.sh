@@ -5,7 +5,8 @@
 # exited, since `open` would otherwise bring the running copy forward.
 # Asking it to quit is an Apple event, which macOS lets the terminal send
 # only with its Automation permission for DevSweep; without that, this says
-# so and opens nothing.
+# so and opens nothing. Nor does it open a bundle built from another commit
+# than the checkout's, which would show old code; `make app` first.
 #
 # Usage: make app && Scripts/open_app.sh
 
@@ -17,6 +18,16 @@ source "$root/version.env"
 app="$root/build/$PRODUCT_NAME.app"
 
 [[ -d "$app" ]] || { echo "open_app.sh: there is no $app; run make app first" >&2; exit 1; }
+
+# Checked before anything is asked to quit. Outside a git checkout there is
+# nothing to compare with.
+commit="$(defaults read "$app/Contents/Info" DevSweepCommit 2>/dev/null || echo "an unknown commit")"
+if head="$(git -C "$root" rev-parse --verify -q HEAD)" \
+  && [[ "$(git -C "$root" rev-parse --verify -q "$commit^{commit}" || true)" != "$head" ]]; then
+  echo "Not opened: $app was built from $commit, and the checkout is at" \
+    "$(git -C "$root" rev-parse --short HEAD). Run make app first." >&2
+  exit 1
+fi
 
 # The pid of a running DevSweep, whichever copy it is, or nothing.
 running() { lsappinfo info -only pid "$BUNDLE_ID" | sed -n 's/^"pid"=//p'; }
@@ -47,6 +58,5 @@ if [[ -n "$pid" ]]; then
   fi
 fi
 
-commit="$(defaults read "$app/Contents/Info" DevSweepCommit 2>/dev/null || echo "an unknown commit")"
 echo "Opening $app, built from $commit."
 open "$app"

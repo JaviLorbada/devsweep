@@ -75,7 +75,9 @@ make app && Scripts/open_app.sh
 and all. `Scripts/open_app.sh` asks it to quit, waits for it to exit, then
 opens `build/DevSweep.app` and says which commit it was built from. Quitting
 it takes the terminal's Automation permission for DevSweep; when macOS
-refuses, the script says so and opens nothing.
+refuses, the script says so and opens nothing. Nor does it open a bundle
+built from another commit than the checkout's: it says to run `make app`
+first, and leaves the running copy alone.
 
 ## Commits
 
