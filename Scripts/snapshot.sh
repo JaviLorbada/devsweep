@@ -26,7 +26,9 @@
 #   the content fits the window; SIDEBAR_TIMING=1 traces the sidebar's
 #   width as it hides, SIDEBAR_WIDTH=298 sets the sidebar that wide, and
 #   SIDEBAR=hidden or shown hides or shows it;
-#   CAPTURE_LOG=file keeps the app's trace.
+#   CAPTURE_LOG=file keeps the app's trace. WORKTREES=none makes no
+#   worktrees, and PROJECT_FOLDERS='("~/.agents/worktrees")' sets the
+#   project folders, ~/Developer otherwise, where the repository is.
 #   The debug build is build/debug/DevSweep.app, apart from the one you open.
 #   While you work in another app, macOS won't let the app activate itself,
 #   and its window would draw inactive; so once the scan is done the script
@@ -133,7 +135,7 @@ make_home() {
     blob "$home/Applications/$1/Contents/Developer/blob" 12
   done
 
-  make_worktrees "$home" "$ws/Atlas"
+  [[ "${WORKTREES:-}" == none ]] || make_worktrees "$home" "$ws/Atlas"
 }
 
 # make_worktrees <home> <repository>: makes the repository a git repository
@@ -160,7 +162,8 @@ make_worktrees() {
 
 # Today's default preferences, as launch arguments: they win over whatever
 # the Settings window saved, and nothing is written.
-defaults_args=(-scanOnLaunch YES -skippedItems "()" -staleDays 90 -moveToTrash YES -projectFolders '("~/Developer")')
+defaults_args=(-scanOnLaunch YES -skippedItems "()" -staleDays 90 -moveToTrash YES
+  -projectFolders "${PROJECT_FOLDERS:-(\"~/Developer\")}")
 
 stubs="$work/stubs"
 mkdir -p "$stubs"
