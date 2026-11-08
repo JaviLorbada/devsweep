@@ -34,8 +34,14 @@ else
   echo "ad hoc" > "$dist/signing.txt"
 fi
 
+# The tool's zip holds it with DevSweep's license and the notices for the
+# code it links; the app carries its license inside the bundle.
+stage="$dist/$CLI_NAME-$MARKETING_VERSION-macos"
+mkdir -p "$stage"
+cp "$cli" "$root/LICENSE" "$root/THIRD_PARTY_NOTICES.txt" "$stage/"
+
 # Without extended attributes: unzip would turn them into ._ files inside the
 # bundle, which breaks its signature. The stapled ticket is a file, and stays.
-(cd "$dist" && ditto -c -k --norsrc --noextattr "$CLI_NAME" "$CLI_NAME-$MARKETING_VERSION-macos.zip")
+(cd "$stage" && ditto -c -k --norsrc --noextattr . "$dist/$CLI_NAME-$MARKETING_VERSION-macos.zip")
 (cd "$dist" && ditto -c -k --norsrc --noextattr --keepParent "$PRODUCT_NAME.app" "$PRODUCT_NAME-$MARKETING_VERSION.zip")
 ls -1 "$dist"/*.zip

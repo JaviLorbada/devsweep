@@ -41,6 +41,8 @@ cp "$bin/DevSweepApp" "$app/Contents/MacOS/$PRODUCT_NAME"
 # The icon: docs/icon/AppIcon.icns, drawn by Scripts/make_icon.sh, or real
 # artwork in its place.
 cp "$root/docs/icon/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
+# Its license travels with it; the app links no third-party code.
+cp "$root/LICENSE" "$app/Contents/Resources/LICENSE"
 
 # Which build this is, so a bundle can say what it was built from: the
 # commit, whether the tree had uncommitted changes, and whether it is signed
