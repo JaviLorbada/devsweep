@@ -281,8 +281,9 @@ Arrows point the way calls go; state comes back up through Observation.
 follows a scan and a clean through them.
 
 In the code, each kind of piece has a folder under `Sources/DevSweepApp`
-(`App`, `Protocols`, `Models`, `ViewModels`, `Values`, `Views`), and the
-tests use the same folders. To read it, start at `App/AppCoordinator.swift`,
+(`App`, `Protocols`, `Models`, `ViewModels`, `Values`, `Views`, and `System`
+and `Debug` for the app's own ways into macOS and development builds), and
+the tests use the same folders. To read it, start at `App/AppCoordinator.swift`,
 where everything is built and wired, then pick a screen's view model and
 its test, which builds it with fakes.
 
