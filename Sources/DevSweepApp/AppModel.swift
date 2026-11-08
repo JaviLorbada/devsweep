@@ -102,15 +102,18 @@ final class AppModel {
     private var marksTouched = false
     private var scanTask: Task<Void, Never>?
     private let workspaceApps: WorkspaceRunningApps
+    private let quitter: any AppQuitting
 
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         store: (any ScanMemoryStore)? = nil,
         preferences: Preferences? = nil,
         notifier: NotificationPoster = UserNotificationPoster(),
-        dependencies: Dependencies? = nil)
+        dependencies: Dependencies? = nil,
+        quitter: (any AppQuitting)? = nil)
     {
         self.notifier = notifier
+        self.quitter = quitter ?? WorkspaceAppQuitter()
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
         let workspaceApps = WorkspaceRunningApps()
@@ -957,17 +960,11 @@ final class AppModel {
         self.isLoadingExtras = false
     }
 
-    /// Asks the apps to quit, as choosing Quit would, and waits up to 15 seconds.
+    /// Asks the apps to quit and waits for them.
     private func quit(_ apps: [DeveloperApp]) async -> Bool {
-        let running = apps
-            .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0.bundleIdentifier) }
-        running.forEach { $0.terminate() }
-        for _ in 0..<60 {
-            if running.allSatisfy(\.isTerminated) { break }
-            try? await Task.sleep(for: .milliseconds(250))
-        }
+        let quit = await self.quitter.quit(apps)
         await self.refreshRunningApps()
-        return running.allSatisfy(\.isTerminated)
+        return quit
     }
 
     // MARK: Finder
@@ -1111,33 +1108,6 @@ extension AppModel {
 
         var canPutBack: Bool {
             self.state == .cleaned && (self.outcome?.canPutBack ?? false)
-        }
-    }
-}
-
-/// Xcode and Simulator, asked of `NSRunningApplication`, with a callback when
-/// either launches or quits.
-final class WorkspaceRunningApps: RunningAppsChecking, @unchecked Sendable {
-    @MainActor var onChange: (() -> Void)?
-    private var observers: [NSObjectProtocol] = []
-
-    @MainActor
-    init() {
-        let center = NSWorkspace.shared.notificationCenter
-        for name in [NSWorkspace.didLaunchApplicationNotification, NSWorkspace.didTerminateApplicationNotification] {
-            self.observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
-                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
-                guard let id = app?.bundleIdentifier,
-                      DeveloperApp.allCases.contains(where: { $0.bundleIdentifier == id }) else { return }
-                MainActor.assumeIsolated { self?.onChange?() }
-            })
-        }
-    }
-
-    func isRunning(_ app: DeveloperApp) async -> Bool {
-        await MainActor.run {
-            NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleIdentifier)
-                .contains { !$0.isTerminated }
         }
     }
 }

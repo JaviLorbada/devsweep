@@ -2,6 +2,7 @@ import AppKit
 import DevSweepKit
 import Foundation
 import SwiftUI
+import Synchronization
 @testable import DevSweepApp
 
 /// A temp folder standing in for HOME, removed when the test lets go of it.
@@ -200,5 +201,61 @@ func must<T>(_ body: () throws -> T, file: StaticString = #file, line: UInt = #l
         return try body()
     } catch {
         preconditionFailure("setup failed: \(error)", file: file, line: line)
+    }
+}
+
+/// Xcode and Simulator as a test says they are: which run, and whether
+/// asking them to quit works. Quitting records what was asked.
+final class FakeDeveloperApps: RunningAppsChecking, AppQuitting, @unchecked Sendable {
+    private let state: Mutex<(running: Set<DeveloperApp>, quits: Bool, asked: [[DeveloperApp]])>
+
+    init(running: Set<DeveloperApp> = [], quits: Bool = true) {
+        self.state = Mutex((running, quits, []))
+    }
+
+    var asked: [[DeveloperApp]] {
+        self.state.withLock { $0.asked }
+    }
+
+    func isRunning(_ app: DeveloperApp) async -> Bool {
+        self.state.withLock { $0.running.contains(app) }
+    }
+
+    func quit(_ apps: [DeveloperApp]) async -> Bool {
+        self.state.withLock { state in
+            state.asked.append(apps)
+            if state.quits { state.running.subtract(apps) }
+            return state.quits
+        }
+    }
+}
+
+/// A model on a fake home whose Trash is a folder in the temp folder and
+/// whose Xcode and Simulator are `apps`, scanned once.
+@MainActor
+func scannedModel(
+    home: TemporaryHome,
+    apps: FakeDeveloperApps = FakeDeveloperApps(),
+    projectFolders: String = "") async -> AppModel
+{
+    var tools = Tools.unavailable
+    tools.trash = FolderTrash(folder: "\(home.root)/Trash")
+    tools.runningApps = apps
+    let model = AppModel(
+        environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": projectFolders],
+        store: InMemoryScanStore(),
+        preferences: Preferences(storage: InMemoryPreferencesStore()),
+        notifier: SilentNotificationPoster(),
+        dependencies: Dependencies(tools: tools),
+        quitter: apps)
+    await finishScan(model)
+    return model
+}
+
+/// Waits, up to about four seconds, for `condition`.
+@MainActor
+func waitUntil(_ condition: () -> Bool) async {
+    for _ in 0..<200 where !condition() {
+        try? await Task.sleep(for: .milliseconds(20))
     }
 }
