@@ -49,15 +49,18 @@ struct SidebarView: View {
             // Listed, never cleaned: each tool's group under its own heading.
             Section("Also worth a look") {
                 DisclosureGroup(isExpanded: self.$showsXcode) {
-                    self.row("Versions", kilobytes: model.xcodesKilobytes, screen: .xcodeVersions)
-                    self.row("Simulator runtimes", kilobytes: model.runtimesKilobytes, screen: .simulatorRuntimes)
+                    self.row("Versions", kilobytes: model.extras?.xcodesKilobytes, screen: .xcodeVersions)
+                    self.row(
+                        "Simulator runtimes",
+                        kilobytes: model.extras?.runtimesKilobytes,
+                        screen: .simulatorRuntimes)
                 } label: {
                     Label("Xcode", systemImage: "hammer")
                 }
                 DisclosureGroup(isExpanded: self.$showsAndroid) {
-                    self.row("Versions", kilobytes: model.androidStudiosKilobytes, screen: .androidStudios)
-                    self.row("SDK and emulators", kilobytes: model.androidSDKKilobytes, screen: .androidSDK)
-                    self.row("Gradle caches", kilobytes: model.gradleCachesKilobytes, screen: .gradleCaches)
+                    self.row("Versions", kilobytes: model.android?.studiosKilobytes, screen: .androidStudios)
+                    self.row("SDK and emulators", kilobytes: model.android?.sdkKilobytes, screen: .androidSDK)
+                    self.row("Gradle caches", kilobytes: model.android?.gradleCachesKilobytes, screen: .gradleCaches)
                 } label: {
                     Label("Android Studio", systemImage: "iphone.gen3")
                 }
@@ -65,7 +68,7 @@ struct SidebarView: View {
                     // What can go, as the caches show; the help says what stays.
                     self.row(
                         "Worktrees",
-                        kilobytes: model.removableWorktreesKilobytes,
+                        kilobytes: model.extras?.removableWorktreesKilobytes,
                         screen: .worktrees,
                         showsZero: false)
                         .help(model.extras.map { WorktreeWords.summary($0.worktrees) } ?? "Listing worktrees…")

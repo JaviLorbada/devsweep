@@ -152,10 +152,10 @@ struct ScanCapsule: View {
                     .lineLimit(1)
                     .frame(maxWidth: 150, alignment: .leading)
             }
-            ProgressView(value: self.model.scanProgress)
+            ProgressView(value: self.model.tally.progress)
                 .progressViewStyle(.linear)
                 .frame(width: 64)
-                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: self.model.scanProgress)
+                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: self.model.tally.progress)
         }
         .padding(.horizontal, 14)
         .frame(height: ChartStylePicker.height)
@@ -163,7 +163,7 @@ struct ScanCapsule: View {
         .help(self.capsuleText)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.capsuleText)
-        .accessibilityValue("\(Int(self.model.scanProgress * 100)) percent")
+        .accessibilityValue("\(Int(self.model.tally.progress * 100)) percent")
     }
 
     /// "Measuring DerivedData", "Measuring DerivedData and 2 more".

@@ -119,7 +119,7 @@ struct MenuBarPanel: View {
                 .accessibilityElement(children: .combine)
             }
             .foregroundStyle(Self.label)
-            Text(self.model.menuBarStatus)
+            Text(StatusText.menuBar(self.model.statusFacts))
                 .font(.caption)
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
@@ -137,18 +137,5 @@ struct MenuBarPanel: View {
         }
         .padding(16)
         .frame(width: 280)
-    }
-}
-
-extension AppModel {
-    /// "Last scanned 3 hours ago." under the totals, or what is happening.
-    var menuBarStatus: String {
-        if isScanning { return "Scanning, \(measuredCount) of \(scanOrder.count) items measured." }
-        if let lastScan {
-            return "Last scanned \(Self.relative(lastScan, to: now)). Scans again a day later while "
-                + "\(ProductInfo.name) runs."
-        }
-        if let previousScanDate { return "Last scanned \(Self.relative(previousScanDate, to: now))." }
-        return "Not scanned yet."
     }
 }

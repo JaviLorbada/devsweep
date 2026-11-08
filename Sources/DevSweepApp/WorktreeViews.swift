@@ -7,12 +7,6 @@ import SwiftUI
 // remove`, and only when nothing in it would be lost.
 
 extension AppModel {
-    /// What removing every worktree with nothing to lose would free. The
-    /// sidebar shows this, not the total, since the others stay.
-    var removableWorktreesKilobytes: Int64? {
-        self.extras.map { $0.worktrees.filter { $0.keptBecause == nil }.reduce(0) { $0 + $1.kilobytes } }
-    }
-
     /// The selected worktree, or the first with nothing to lose, or the first.
     var currentWorktree: GitWorktree? {
         let worktrees = self.extras?.worktrees ?? []

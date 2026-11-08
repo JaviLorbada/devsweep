@@ -424,175 +424,80 @@ final class AppModel {
 
     // MARK: Derived values
 
-    /// Measured items largest first, then the ones being measured, then the
-    /// rest; those two by what the last scan found, so rows keep their places.
+    /// The rows' order, totals and weights.
+    var tally: Tally {
+        Tally(order: self.scanOrder, rows: self.rows)
+    }
+
     var orderedRows: [Row] {
-        let all = self.scanOrder.compactMap { self.rows[$0] }
-        let byPrevious = { (a: Row, b: Row) in (a.previous?.kilobytes ?? 0) > (b.previous?.kilobytes ?? 0) }
-        let measured = all.filter(\.wasMeasured).sorted { $0.kilobytes > $1.kilobytes }
-        return measured + all.filter { $0.state == .measuring }.sorted(by: byPrevious)
-            + all.filter { $0.state == .waiting || $0.state == .notMeasured }.sorted(by: byPrevious)
+        self.tally.ordered
     }
 
     var liveRows: [Row] {
-        self.orderedRows.filter(\.isLive)
+        self.tally.live
     }
 
     var markedRows: [Row] {
-        self.liveRows.filter { self.marked.contains($0.item) }
+        self.tally.marked(self.marked)
     }
 
-    /// Rows whose size counts toward the totals on screen: measured with
-    /// something to reclaim, counting up, or still showing the last scan.
-    private var countedRows: [Row] {
-        self.orderedRows.filter { $0.isLive || $0.isCounting || $0.showsPrevious }
-    }
-
-    /// The total on screen: this scan's sizes where it has them, the running
-    /// counts, and the last scan's sizes for what it hasn't reached yet.
     var reclaimableKilobytes: Int64 {
-        self.countedRows.reduce(0) { $0 + $1.shownKilobytes }
+        self.tally.reclaimableKilobytes
     }
 
     var markedKilobytes: Int64 {
-        self.markedRows.reduce(0) { $0 + $1.kilobytes }
+        self.tally.markedKilobytes(self.marked)
     }
 
-    func kilobytes(of family: Family) -> Int64 {
-        self.countedRows.filter { $0.item.family == family }.reduce(0) { $0 + $1.shownKilobytes }
-    }
-
-    /// What each family takes of the legend's bar: the sum of its items'
-    /// shares, with small items drawn larger (`ChartScale`), as the ring's
-    /// inner circle draws it once the scan is done.
-    var familyChartShares: [Family: Double] {
-        let rows = self.countedRows
-        let shares = ChartScale.shares(rows.map { Double($0.shownKilobytes) })
-        return zip(rows, shares).reduce(into: [:]) { $0[$1.0.item.family, default: 0] += $1.1 }
-    }
-
-    /// The family's size once anything is known about it, nil before.
     func measuredKilobytes(of family: Family) -> Int64? {
-        let known = family.items.contains { item in
-            guard let row = rows[item] else { return false }
-            return row.wasMeasured || row.isCounting || row.showsPrevious
-        }
-        return known ? self.kilobytes(of: family) : nil
+        self.tally.measuredKilobytes(of: family)
     }
 
-    /// Whether everything shown for the family comes from the last scan.
     func familyShowsPrevious(_ family: Family) -> Bool {
-        let rows = family.items.compactMap { self.rows[$0] }
-        return rows.contains(where: \.showsPrevious) && !rows.contains { $0.wasMeasured || $0.isCounting }
+        self.tally.familyShowsPrevious(family)
     }
 
-    /// Whether the totals still lean on the last scan.
     var showsPrevious: Bool {
-        self.scanOrder.contains { self.rows[$0]?.showsPrevious ?? false }
+        self.tally.showsPrevious
     }
 
     var measuredCount: Int {
-        self.scanOrder.filter { self.rows[$0]?.wasMeasured ?? false }.count
+        self.tally.measuredCount
     }
 
     var measuringItems: [Item] {
-        self.scanOrder.filter { self.rows[$0]?.state == .measuring }
+        self.tally.measuringItems
     }
 
-    var currentItem: Item? {
-        self.measuringItems.first
-    }
-
-    var scanProgress: Double {
-        self.scanOrder.isEmpty ? 0 : Double(self.measuredCount) / Double(self.scanOrder.count)
-    }
-
-    /// The weight a ring segment gets: its size once measured, otherwise what
-    /// it took last time or the average so far, so the ring is whole from the start.
     func chartWeight(_ row: Row) -> Double {
-        switch row.state {
-        case .measured, .cleaning, .cleaned:
-            return Double(max(row.kilobytes, 0))
-        case .notMeasured:
-            return 0
-        case .measuring where row.progressBytes > 0:
-            return Double(row.progressBytes / 1024)
-        case .waiting, .measuring:
-            if let previous = row.previous { return Double(max(previous.kilobytes, 1)) }
-            let measured = self.scanOrder.compactMap { self.rows[$0] }.filter(\.wasMeasured)
-            let total = measured.reduce(0) { $0 + Double($1.kilobytes) }
-            return measured.isEmpty || total == 0 ? 1 : total / Double(measured.count)
-        }
+        self.tally.chartWeight(row)
+    }
+
+    /// What the status lines are written from.
+    var statusFacts: StatusText.Facts {
+        let tally = self.tally
+        return StatusText.Facts(
+            startupError: self.startupError,
+            isScanning: self.isScanning,
+            measured: tally.measuredCount,
+            items: tally.rows.count,
+            notMeasured: tally.notMeasuredCount,
+            showsPrevious: tally.showsPrevious,
+            lastScan: self.lastScan,
+            previousScanDate: self.previousScanDate,
+            now: self.now)
     }
 
     var statusLine: String {
-        if let startupError { return startupError }
-        if self.isScanning {
-            let progress = "Scanning, \(measuredCount) of \(scanOrder.count) items measured"
-            if let previousScanDate, showsPrevious {
-                return "Last scanned \(Self.relative(previousScanDate, to: self.now)). \(progress)."
-            }
-            // Full stops throughout: the build note can follow.
-            return "\(progress)."
-        }
-        guard let lastScan else {
-            return self.previousScanDate
-                .map { "Last scanned \(Self.relative($0, to: self.now))." } ?? "Not scanned yet."
-        }
-        let unmeasured = self.scanOrder.filter { self.rows[$0]?.state == .notMeasured }.count
-        let scanned = unmeasured > 0
-            ? "Stopped after \(measuredCount) of \(scanOrder.count) items."
-            : "Scanned \(Self.relative(lastScan, to: self.now)), \(self.scanOrder.count) items."
-        var line = "\(scanned) \(runningAppsSentence)"
-        if self.trashedThisSession > 0 {
-            line += " \(SizeText.of(kilobytes: self.trashedThisSession)) moved to Trash this session."
-        }
-        if self.deletedThisSession > 0 {
-            line += " \(SizeText.of(kilobytes: self.deletedThisSession)) deleted this session."
-        }
-        return line
-    }
-
-    /// "just now", "3 minutes ago", "yesterday".
-    static func relative(_ date: Date, to now: Date) -> String {
-        if now.timeIntervalSince(date) < 60 { return "just now" }
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        formatter.dateTimeStyle = .named
-        return formatter.localizedString(for: date, relativeTo: now)
+        StatusText.overview(
+            self.statusFacts,
+            runningApps: self.runningApps,
+            trashedKilobytes: self.trashedThisSession,
+            deletedKilobytes: self.deletedThisSession)
     }
 
     var runningAppsSentence: String {
-        switch (self.runningApps.contains(.xcode), self.runningApps.contains(.simulator)) {
-        case (false, false): "Xcode and Simulator are closed."
-        case (true, false): "Xcode is open."
-        case (false, true): "Simulator is open."
-        case (true, true): "Xcode and Simulator are open."
-        }
-    }
-
-    var xcodesKilobytes: Int64? {
-        self.extras.map { $0.xcodes.reduce(0) { $0 + $1.kilobytes } }
-    }
-
-    var androidStudiosKilobytes: Int64? {
-        self.android.map { self.total($0.studios) }
-    }
-
-    var androidSDKKilobytes: Int64? {
-        self.android.map { self.total($0.sdkEntries + $0.emulators) }
-    }
-
-    var gradleCachesKilobytes: Int64? {
-        self.android.map { self.total($0.gradleCaches) }
-    }
-
-    private func total(_ entries: [AndroidEntry]) -> Int64 {
-        entries.reduce(0) { $0 + $1.kilobytes }
-    }
-
-    var runtimesKilobytes: Int64? {
-        self.extras.map { $0.runtimes.reduce(0) { $0 + $1.kilobytes } }
+        StatusText.runningApps(self.runningApps)
     }
 
     func tilde(_ path: String) -> String {
@@ -716,7 +621,7 @@ final class AppModel {
     /// may have the project open.
     func needsConfirmation(_ items: [Item], parts: Set<ItemPart> = []) -> Bool {
         !self.moveToTrash || items.contains(where: \.cleanedByItsTool)
-            || (!parts.isEmpty && self.runningApps.contains(.xcode) && items.contains(where: Self.buildsInXcode))
+            || (!parts.isEmpty && self.runningApps.contains(.xcode) && items.contains(where: \.xcodeBuildsInto))
     }
 
     /// - Parameter afterAlert: an alert is closing, so give it a moment
@@ -881,33 +786,13 @@ final class AppModel {
         case .overview:
             // A development build says what it was built from, so an old
             // bundle can't pass for the latest.
-            return [self.statusLine, BuildIdentity.current.statusNote].compactMap(\.self).joined(separator: " ")
-        case .simulatorRuntimes:
-            guard let runtimes = extras?.runtimes else { return self.isLoadingExtras ? "Listing runtimes" : "" }
-            let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"
-            return "\(SizeText.of(kilobytes: self.runtimesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never "
-                + "removes these on its own."
-        case .xcodeVersions:
-            guard let xcodes = extras?.xcodes else { return self.isLoadingExtras ? "Listing Xcodes" : "" }
-            let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
-            return "\(SizeText.of(kilobytes: self.xcodesKilobytes ?? 0)) in \(count). \(ProductInfo.name) never "
-                + "removes these."
-        case .androidStudios:
-            guard let studios = android?.studios else { return self.isLoadingAndroid ? "Listing Android Studio" : "" }
-            let count = studios.count == 1 ? "1 install" : "\(studios.count) installs"
-            return "\(SizeText.of(kilobytes: self.androidStudiosKilobytes ?? 0)) in \(count). \(ProductInfo.name) "
-                + "never removes these."
-        case .androidSDK:
-            guard self.android != nil else { return self.isLoadingAndroid ? "Listing the SDK and emulators" : "" }
-            return "\(SizeText.of(kilobytes: self.androidSDKKilobytes ?? 0)) in the SDK and emulators. "
-                + "\(ProductInfo.name) never removes these."
-        case .gradleCaches:
-            guard self.android != nil else { return self.isLoadingAndroid ? "Listing Gradle's caches" : "" }
-            return "\(SizeText.of(kilobytes: self.gradleCachesKilobytes ?? 0)) in ~/.gradle. \(ProductInfo.name) "
-                + "never removes these."
-        case .worktrees:
-            guard let worktrees = extras?.worktrees else { return self.isLoadingExtras ? "Listing worktrees" : "" }
-            return WorktreeWords.summary(worktrees)
+            [self.statusLine, BuildIdentity.current.statusNote].compactMap(\.self).joined(separator: " ")
+        case .simulatorRuntimes: StatusText.runtimes(self.extras?.runtimes, isLoading: self.isLoadingExtras)
+        case .xcodeVersions: StatusText.xcodes(self.extras?.xcodes, isLoading: self.isLoadingExtras)
+        case .androidStudios: StatusText.androidStudios(self.android, isLoading: self.isLoadingAndroid)
+        case .androidSDK: StatusText.androidSDK(self.android, isLoading: self.isLoadingAndroid)
+        case .gradleCaches: StatusText.gradleCaches(self.android, isLoading: self.isLoadingAndroid)
+        case .worktrees: StatusText.worktrees(self.extras?.worktrees, isLoading: self.isLoadingExtras)
         }
     }
 
@@ -1018,100 +903,6 @@ extension AppModel {
     }
 }
 
-/// The rows, one per item, and what state each is in.
-extension AppModel {
-    enum RowState: Equatable {
-        case waiting
-        case measuring
-        case measured
-        /// The scan stopped before reaching it.
-        case notMeasured
-        case cleaning
-        /// Moved to the Trash or deleted; `outcome` says which.
-        case cleaned
-    }
-
-    struct Row: Identifiable {
-        let item: Item
-        var state: RowState = .waiting
-        var result: ItemResult?
-        var progressBytes: Int64 = 0
-        /// While deleting, how much is gone so far.
-        var removedBytes: Int64 = 0
-        /// While cleaning parts of it, their size; the whole otherwise.
-        var cleaningKilobytes: Int64?
-        var outcome: CleanOutcome?
-
-        /// What the last scan found, shown dimmed until this scan reaches the item.
-        var previous: ItemResult?
-
-        var id: Item {
-            self.item
-        }
-
-        var kilobytes: Int64 {
-            self.result?.kilobytes ?? self.progressBytes / 1024
-        }
-
-        /// While cleaning, what is still on disk, counting down as it goes.
-        var leftKilobytes: Int64 {
-            max(0, self.kilobytes - self.removedBytes / 1024)
-        }
-
-        /// How far deleting has got, once it has removed something; moving
-        /// to the Trash takes no time and has none.
-        var cleaningProgress: Double? {
-            let total = self.cleaningKilobytes ?? self.kilobytes
-            guard self.state == .cleaning, self.removedBytes > 0, total > 0 else { return nil }
-            return min(1, Double(self.removedBytes / 1024) / Double(total))
-        }
-
-        /// The size to show now: the new size once measured, the running count
-        /// while measuring, the last scan's size before that.
-        var shownKilobytes: Int64 {
-            switch self.state {
-            case .measured, .cleaning, .cleaned: self.result?.kilobytes ?? 0
-            case .measuring: self.progressBytes / 1024
-            case .waiting: self.previous.map { $0.isEmpty ? 0 : $0.kilobytes } ?? 0
-            case .notMeasured: 0
-            }
-        }
-
-        /// Showing the last scan's size, not this scan's.
-        var showsPrevious: Bool {
-            self.state == .waiting && self.previous != nil
-        }
-
-        /// Being measured and already counting.
-        var isCounting: Bool {
-            self.state == .measuring && self.progressBytes > 0
-        }
-
-        /// The result the inspector describes: this scan's, or the last one's.
-        var shownResult: ItemResult? {
-            self.result ?? self.previous
-        }
-
-        /// Measured, with something to reclaim.
-        var isLive: Bool {
-            self.state == .measured && !(self.result?.isEmpty ?? true)
-        }
-
-        var sizeKnown: Bool {
-            self.result?.sizeKnown ?? true
-        }
-
-        /// Measured at some point, whatever happened since.
-        var wasMeasured: Bool {
-            [.measured, .cleaning, .cleaned].contains(self.state)
-        }
-
-        var canPutBack: Bool {
-            self.state == .cleaned && (self.outcome?.canPutBack ?? false)
-        }
-    }
-}
-
 // MARK: Cleaning parts of an item
 
 extension AppModel {
@@ -1130,14 +921,14 @@ extension AppModel {
         }
     }
 
-    /// The items whose folders the inspector lists to tick one by one, as it
-    /// does DerivedData's parts.
-    static let cleanedByFolder: Set<Item> = [.swiftpmBuilds, .xcodeBuilds, .gradleBuilds]
-
-    /// Whether Xcode builds into it, so cleaning part of it while Xcode is
-    /// open asks first: Xcode may have that project open.
-    nonisolated static func buildsInXcode(_ item: Item) -> Bool {
-        item == .derivedData || item == .xcodeBuilds
+    /// The question about cleaning `parts` of `item`.
+    func partsQuestion(_ parts: Set<ItemPart>, of item: Item, stage: PendingClean.Stage) -> PendingClean {
+        CleanPrompt.partsQuestion(
+            parts,
+            of: item,
+            in: self.rows[item]?.result,
+            xcodeOpen: self.runningApps.contains(.xcode),
+            stage: stage)
     }
 
     func markedParts(of item: Item) -> Set<ItemPart> {
@@ -1159,56 +950,6 @@ extension AppModel {
     func kilobytes(of parts: Set<ItemPart>, in item: Item) -> Int64 {
         guard let result = self.rows[item]?.result else { return 0 }
         return parts.reduce(0) { $0 + result.kilobytes(of: $1) }
-    }
-
-    /// "1 project", "2 projects", "3 parts" once a cache or the rest of
-    /// DerivedData is among them; "2 folders" for an item's folders.
-    nonisolated static func summary(of parts: Set<ItemPart>, in item: Item) -> String {
-        let projects = parts.allSatisfy {
-            if case .folder = $0 {
-                true
-            } else {
-                false
-            }
-        }
-        let noun = item != .derivedData ? "folder" : projects ? "project" : "part"
-        return parts.count == 1 ? "1 \(noun)" : "\(parts.count) \(noun)s"
-    }
-
-    /// The question about cleaning `parts` of `item`, worded ahead: by name
-    /// up to three, by count past that, largest first.
-    func partsQuestion(_ parts: Set<ItemPart>, of item: Item, stage: PendingClean.Stage) -> PendingClean {
-        var question = PendingClean(items: [item], stage: stage, parts: parts)
-        guard let result = self.rows[item]?.result else { return question }
-        let sorted = parts.sorted { a, b in
-            let (sizeA, sizeB) = (result.kilobytes(of: a), result.kilobytes(of: b))
-            return sizeA != sizeB ? sizeA > sizeB : a.sentenceName(in: result) < b.sentenceName(in: result)
-        }
-        let projects = item == .derivedData && parts.allSatisfy {
-            if case .folder = $0 {
-                true
-            } else {
-                false
-            }
-        }
-        if projects {
-            let names = sorted.map { $0.listName(in: result) }
-            let which = names.count <= 3 ? CleanPrompt.names(names) : "\(names.count) projects"
-            question.partsSubject = "DerivedData for \(which)"
-        } else if parts.count <= 3 {
-            question.partsSubject = CleanPrompt.names(sorted.map { $0.sentenceName(in: result) })
-            question.partsPlural = parts.count > 1
-        } else {
-            // ".build folders", "build folders": what the item's folders are called.
-            let folders = result.paths.first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
-            question.partsSubject = item == .derivedData
-                ? "\(parts.count) parts of DerivedData" : "\(parts.count) \(folders) folders"
-            question.partsPlural = true
-        }
-        question.blockedPartNames = sorted.filter { $0.needsXcodeClosed(in: item) }.map { $0.sentenceName(in: result) }
-        question.xcodeOpen = Self.buildsInXcode(item) && self.runningApps.contains(.xcode)
-        question.xcodeName = parts.count == 1 ? sorted[0].listName(in: result) : ""
-        return question
     }
 
     /// Starts cleaning the ticked parts of `item`. Parts that need Xcode
@@ -1267,7 +1008,7 @@ extension AppModel {
                 outcome: outcome,
                 before: result,
                 kilobytes: freed,
-                summary: Self.summary(of: cleaned, in: item))
+                summary: CleanPrompt.partsSummary(cleaned, in: item))
         }
         self.isCleaning = false
         self.diskSpace = engine.diskSpace()

@@ -1,4 +1,5 @@
 import DevSweepKit
+import Foundation
 
 /// The words of the questions asked before cleaning.
 enum CleanPrompt {
@@ -60,6 +61,63 @@ enum CleanPrompt {
                 message += "builds them again either way."
             }
             return message
+        }
+    }
+
+    /// "1 project", "2 projects", "3 parts" once a cache or the rest of
+    /// DerivedData is among them; "2 folders" for an item's folders.
+    static func partsSummary(_ parts: Set<ItemPart>, in item: Item) -> String {
+        let noun = item != .derivedData ? "folder" : self.allProjects(parts) ? "project" : "part"
+        return parts.count == 1 ? "1 \(noun)" : "\(parts.count) \(noun)s"
+    }
+
+    /// The question about cleaning `parts` of `item`, worded ahead: by name
+    /// up to three, by count past that, largest first.
+    /// - Parameters:
+    ///   - result: what the scan found for the item; the question names
+    ///     nothing without it.
+    ///   - xcodeOpen: whether Xcode is open, which may have the project open.
+    static func partsQuestion(
+        _ parts: Set<ItemPart>,
+        of item: Item,
+        in result: ItemResult?,
+        xcodeOpen: Bool,
+        stage: AppModel.PendingClean.Stage) -> AppModel.PendingClean
+    {
+        var question = AppModel.PendingClean(items: [item], stage: stage, parts: parts)
+        guard let result else { return question }
+        let sorted = parts.sorted { a, b in
+            let (sizeA, sizeB) = (result.kilobytes(of: a), result.kilobytes(of: b))
+            return sizeA != sizeB ? sizeA > sizeB : a.sentenceName(in: result) < b.sentenceName(in: result)
+        }
+        if item == .derivedData, self.allProjects(parts) {
+            let names = sorted.map { $0.listName(in: result) }
+            let which = names.count <= 3 ? self.names(names) : "\(names.count) projects"
+            question.partsSubject = "DerivedData for \(which)"
+        } else if parts.count <= 3 {
+            question.partsSubject = self.names(sorted.map { $0.sentenceName(in: result) })
+            question.partsPlural = parts.count > 1
+        } else {
+            // ".build folders", "build folders": what the item's folders are called.
+            let folders = result.paths.first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
+            question.partsSubject = item == .derivedData
+                ? "\(parts.count) parts of DerivedData" : "\(parts.count) \(folders) folders"
+            question.partsPlural = true
+        }
+        question.blockedPartNames = sorted.filter { $0.needsXcodeClosed(in: item) }.map { $0.sentenceName(in: result) }
+        question.xcodeOpen = item.xcodeBuildsInto && xcodeOpen
+        question.xcodeName = parts.count == 1 ? sorted[0].listName(in: result) : ""
+        return question
+    }
+
+    /// Whether every part is a project's folder.
+    private static func allProjects(_ parts: Set<ItemPart>) -> Bool {
+        parts.allSatisfy {
+            if case .folder = $0 {
+                true
+            } else {
+                false
+            }
         }
     }
 

@@ -222,7 +222,7 @@ struct PartsList: View {
 
     /// Whether it lists a build item's folders, which the scan measured one by one.
     static func listsFolders(_ result: ItemResult) -> Bool {
-        AppModel.cleanedByFolder.contains(result.item) && result.folderKilobytes != nil
+        result.item.cleansByFolder && result.folderKilobytes != nil
     }
 
     struct Line: Identifiable {
@@ -453,7 +453,7 @@ struct InspectorAction: View {
         case .measured where self.row.isLive && !self.model.markedParts(of: self.row.item).isEmpty:
             let item = self.row.item
             let marked = self.model.markedParts(of: item)
-            let parts = "\(AppModel.summary(of: marked, in: item)), "
+            let parts = "\(CleanPrompt.partsSummary(marked, in: item)), "
                 + SizeText.of(kilobytes: self.model.kilobytes(of: marked, in: item))
             self.wide(Button("Clean \(parts)") {
                 Task { await self.model.requestCleanParts(of: item) }

@@ -209,7 +209,7 @@ struct FamilyLegend: View {
         let total = Double(max(model.reclaimableKilobytes, 1))
         VStack(alignment: .leading, spacing: 10) {
             GeometryReader { proxy in
-                let shares = self.model.familyChartShares
+                let shares = self.model.tally.familyChartShares
                 let live = Family.allCases.filter { (shares[$0] ?? 0) > 0 }
                 let gaps = CGFloat(max(live.count - 1, 0)) * 2
                 HStack(spacing: 2) {
@@ -228,7 +228,7 @@ struct FamilyLegend: View {
 
             VStack(spacing: 0) {
                 ForEach(Family.allCases) { family in
-                    let kilobytes = self.model.kilobytes(of: family)
+                    let kilobytes = self.model.tally.kilobytes(of: family)
                     let measured = self.model.measuredKilobytes(of: family) != nil
                     Button {
                         self.model.pick(family)

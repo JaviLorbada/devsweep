@@ -22,7 +22,7 @@ struct WorktreeScreenTests {
         model.screen = .worktrees
         // Two of the five have nothing to lose.
         let twoKilobytes: Int64 = 2 * 623_000
-        #expect(model.removableWorktreesKilobytes == twoKilobytes)
+        #expect(model.extras?.removableWorktreesKilobytes == twoKilobytes)
         let twoGo = SizeText.of(kilobytes: twoKilobytes)
         let threeStay = SizeText.of(kilobytes: 3 * 623_000)
         #expect(model.subtitle == "\(twoGo) in 2 worktrees with nothing to lose. 3 more, \(threeStay), keep work, "
@@ -45,7 +45,7 @@ struct WorktreeScreenTests {
         var extras = sampleExtras
         extras.worktrees = [sampleWorktrees[0], sampleWorktrees[3]]
         let model = makeModel(home: home, extras: extras)
-        #expect(model.removableWorktreesKilobytes == 0)
+        #expect(model.extras?.removableWorktreesKilobytes == 0)
     }
 
     @Test

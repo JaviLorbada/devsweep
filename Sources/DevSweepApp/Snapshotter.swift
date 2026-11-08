@@ -216,13 +216,15 @@ private struct SnapshotSidebar: View {
             self.row(highlighted: self.model.screen == .xcodeVersions) {
                 Text("Xcode versions")
                 Spacer()
-                Text(self.model.xcodesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted)
+                Text((self.model.extras?.xcodesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
+                    .foregroundStyle(.muted)
                     .monospacedDigit()
             }
             self.row(highlighted: self.model.screen == .simulatorRuntimes) {
                 Text("Simulator runtimes")
                 Spacer()
-                Text(self.model.runtimesKilobytes.map { SizeText.of(kilobytes: $0) } ?? "–").foregroundStyle(.muted)
+                Text((self.model.extras?.runtimesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
+                    .foregroundStyle(.muted)
                     .monospacedDigit()
             }
             Spacer()

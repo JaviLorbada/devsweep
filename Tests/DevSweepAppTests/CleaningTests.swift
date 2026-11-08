@@ -214,7 +214,7 @@ struct FolderCleaningTests {
         #expect(PartsList.folderNames(before.paths)[atlas] == "Atlas")
 
         model.setMarked(.folder(atlas), of: .swiftpmBuilds, true)
-        #expect(AppModel.summary(of: model.markedParts(of: .swiftpmBuilds), in: .swiftpmBuilds) == "1 folder")
+        #expect(CleanPrompt.partsSummary(model.markedParts(of: .swiftpmBuilds), in: .swiftpmBuilds) == "1 folder")
         await model.requestCleanParts(of: .swiftpmBuilds)
         for _ in 0..<200 where model.lastPartsClean(of: .swiftpmBuilds) == nil {
             try? await Task.sleep(for: .milliseconds(20))

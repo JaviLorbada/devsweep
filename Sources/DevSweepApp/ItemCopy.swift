@@ -57,6 +57,18 @@ extension Item {
     var cleanedByItsTool: Bool {
         self == .simulators || self == .homebrew
     }
+
+    /// Whether the inspector lists its folders to tick one by one, as it
+    /// does DerivedData's parts.
+    var cleansByFolder: Bool {
+        self == .swiftpmBuilds || self == .xcodeBuilds || self == .gradleBuilds
+    }
+
+    /// Whether Xcode builds into it, so cleaning part of it while Xcode is
+    /// open asks first: Xcode may have that project open.
+    var xcodeBuildsInto: Bool {
+        self == .derivedData || self == .xcodeBuilds
+    }
 }
 
 enum SizeText {
