@@ -7,25 +7,21 @@ import Testing
 struct WorktreesViewModelTests {
     @Test
     func `the inspector shows the first worktree with nothing to lose until one is chosen`() {
-        let home = TemporaryHome()
-        let app = makeApp(home: home, extras: sampleExtras)
-        app.window.screen = .worktrees
-        #expect(app.worktrees.current?.name == "readme-credits-readability-9b0801")
-        app.worktrees.select(sampleWorktrees[0])
-        #expect(app.worktrees.current?.name == "portfolio-copy-typography-ec440f")
+        let worktrees = WorktreesViewModel(scan: FakeListings(extras: sampleExtras))
+        #expect(worktrees.current?.name == "readme-credits-readability-9b0801")
+        worktrees.select(sampleWorktrees[0])
+        #expect(worktrees.current?.name == "portfolio-copy-typography-ec440f")
     }
 
     @Test
     func `the sidebar counts only what can go, and the subtitle says what stays`() {
-        let home = TemporaryHome()
-        let app = makeApp(home: home, extras: sampleExtras)
-        app.window.screen = .worktrees
+        let worktrees = WorktreesViewModel(scan: FakeListings(extras: sampleExtras))
         // Two of the five have nothing to lose.
         let twoKilobytes: Int64 = 2 * 623_000
-        #expect(app.scan.extras?.removableWorktreesKilobytes == twoKilobytes)
+        #expect(sampleExtras.removableWorktreesKilobytes == twoKilobytes)
         let twoGo = SizeText.of(kilobytes: twoKilobytes)
         let threeStay = SizeText.of(kilobytes: 3 * 623_000)
-        #expect(app.worktrees.subtitle
+        #expect(worktrees.subtitle
             == "\(twoGo) in 2 worktrees with nothing to lose. 3 more, \(threeStay), keep work, so they stay.")
 
         let oneSize = SizeText.of(kilobytes: 623_000)
@@ -41,11 +37,9 @@ struct WorktreesViewModelTests {
 
     @Test
     func `with nothing to remove the sidebar's size is zero`() {
-        let home = TemporaryHome()
         var extras = sampleExtras
         extras.worktrees = [sampleWorktrees[0], sampleWorktrees[3]]
-        let app = makeApp(home: home, extras: extras)
-        #expect(app.scan.extras?.removableWorktreesKilobytes == 0)
+        #expect(extras.removableWorktreesKilobytes == 0)
     }
 
     @Test
@@ -64,14 +58,28 @@ struct WorktreesViewModelTests {
 
     @Test
     func `a removal git refuses says why and keeps the sheet open`() async {
-        let home = TemporaryHome()
-        let app = makeApp(home: home, extras: sampleExtras)
+        let listings = FakeListings(extras: sampleExtras)
+        listings.removes = false
+        let worktrees = WorktreesViewModel(scan: listings)
         let worktree = sampleWorktrees[2]
-        app.worktrees.removal.ask(worktree)
-        // The app's tools have no git: the engine refuses before anything runs.
-        await app.worktrees.remove(worktree)
-        #expect(app.worktrees.removal.pending == worktree)
-        #expect(app.worktrees.removal.error?.hasPrefix("Git didn't remove it.") == true)
-        #expect(!app.worktrees.removal.isRemoving)
+        worktrees.askToRemove(worktree)
+        await worktrees.remove(worktree)
+        #expect(listings.askedToRemove == [worktree.path])
+        #expect(worktrees.removal.pending == worktree)
+        #expect(worktrees.removal.error?.hasPrefix("Git didn't remove it.") == true)
+        #expect(!worktrees.removal.isRemoving)
+    }
+
+    @Test
+    func `the command to run in Terminal names the worktree by its path`() throws {
+        let listings = FakeListings(extras: sampleExtras)
+        let worktrees = WorktreesViewModel(scan: listings)
+        let worktree = sampleWorktrees[2]
+        #expect(worktrees.removalCommand(for: worktree).isEmpty, "no home, no command")
+        let home = TemporaryHome()
+        let policy = try PathPolicy(home: home.path)
+        listings.policy = policy
+        #expect(worktrees.removalCommand(for: worktree) == worktree.removalCommand(policy: policy))
+        #expect(worktrees.removalCommand(for: worktree).contains(worktree.name))
     }
 }

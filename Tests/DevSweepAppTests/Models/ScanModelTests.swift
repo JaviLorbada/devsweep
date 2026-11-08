@@ -3,57 +3,111 @@ import Foundation
 import Testing
 @testable import DevSweepApp
 
+/// The overview's status line, from the scan's facts alone.
+@MainActor
+private func statusLine(_ scan: ScanModel) -> String {
+    StatusText.overview(scan.statusFacts, runningApps: [], trashedKilobytes: 0, deletedKilobytes: 0)
+}
+
 @MainActor
 @Suite("Scanning")
 struct ScanModelTests {
     @Test
     func `rows go largest first, then the one being measured, then the rest by the last scan's size`() {
         let home = TemporaryHome()
-        let app = makeApp(home: home)
-        app.showResults(sampleResults.filter { app.scan.scanOrder.contains($0.item) })
-        app.rewindScan(toMeasured: 3)
-        let order = app.scan.scanOrder
+        let scan = makeScan(home: home)
+        scan.showResults(sampleResults.filter { scan.scanOrder.contains($0.item) })
+        scan.rewindScan(toMeasured: 3)
+        let order = scan.scanOrder
         let size = { (item: Item) in sampleResults.first { $0.item == item }?.kilobytes ?? 0 }
 
         let measured = order.prefix(3).sorted { size($0) > size($1) }
         let waiting = order.dropFirst(4).sorted { size($0) > size($1) }
-        #expect(app.scan.tally.ordered.map(\.item) == measured + [order[3]] + waiting)
-        #expect(app.scan.tally.measuringItems == [order[3]])
-        #expect(app.scan.tally.measuredCount == 3)
-        #expect(app.scan.tally.showsPrevious)
+        #expect(scan.tally.ordered.map(\.item) == measured + [order[3]] + waiting)
+        #expect(scan.tally.measuringItems == [order[3]])
+        #expect(scan.tally.measuredCount == 3)
+        #expect(scan.tally.showsPrevious)
     }
 
     @Test
     func `the ring weighs each row by what is known of its size`() throws {
         let home = TemporaryHome()
-        let app = makeApp(home: home)
-        app.showResults(sampleResults.filter { app.scan.scanOrder.contains($0.item) })
-        app.rewindScan(toMeasured: 3)
-        let order = app.scan.scanOrder
-        let row = { (index: Int) in try #require(app.scan.rows[order[index]]) }
+        let scan = makeScan(home: home)
+        scan.showResults(sampleResults.filter { scan.scanOrder.contains($0.item) })
+        scan.rewindScan(toMeasured: 3)
+        let order = scan.scanOrder
+        let row = { (index: Int) in try #require(scan.rows[order[index]]) }
 
         // Measured: its size. Being measured: the count so far. Waiting: the last scan's size.
-        #expect(try app.scan.tally.chartWeight(row(0)) == Double(row(0).kilobytes))
-        #expect(try app.scan.tally.chartWeight(row(3)) == Double(row(3).progressBytes / 1024))
-        #expect(try app.scan.tally.chartWeight(row(5)) == Double(row(5).previous?.kilobytes ?? -1))
+        #expect(try scan.tally.chartWeight(row(0)) == Double(row(0).kilobytes))
+        #expect(try scan.tally.chartWeight(row(3)) == Double(row(3).progressBytes / 1024))
+        #expect(try scan.tally.chartWeight(row(5)) == Double(row(5).previous?.kilobytes ?? -1))
     }
 
     @Test
     func `a stopped scan says how far it got`() async {
         let home = TemporaryHome()
         writeFourItems(in: home)
-        let app = scanningApp(home: home)
-        app.scan.scan()
-        app.scan.stopScan()
-        await waitUntil { !app.scan.isScanTaskRunning }
-        #expect(!app.scan.isScanning)
-        let notMeasured = app.scan.scanOrder.filter { app.scan.rows[$0]?.state == .notMeasured }
+        let scan = makeScan(home: home)
+        scan.scan()
+        scan.stopScan()
+        await waitUntil { !scan.isScanTaskRunning }
+        #expect(!scan.isScanning)
+        let notMeasured = scan.scanOrder.filter { scan.rows[$0]?.state == .notMeasured }
+        #expect(scan.statusFacts.notMeasured == notMeasured.count)
         if notMeasured.isEmpty {
-            #expect(app.overview.statusLine.hasPrefix("Scanned just now"))
+            #expect(statusLine(scan).hasPrefix("Scanned just now"))
         } else {
-            #expect(app.overview.statusLine
-                .hasPrefix("Stopped after \(app.scan.tally.measuredCount) of \(app.scan.scanOrder.count) items."))
+            #expect(statusLine(scan)
+                .hasPrefix("Stopped after \(scan.tally.measuredCount) of \(scan.scanOrder.count) items."))
         }
+    }
+
+    @Test
+    func `a scan tells the coordinator it started, its items are measured, and it is all in`() async {
+        let home = TemporaryHome()
+        writeFourItems(in: home)
+        let scan = makeScan(home: home)
+        var heard: [String] = []
+        scan.onStart = { heard.append("start") }
+        scan.onItemsMeasured = { stopped in heard.append(stopped ? "stopped" : "measured") }
+        scan.onFinished = { heard.append("finished") }
+        await finishScan(scan)
+        await waitUntil { heard.count == 3 }
+        #expect(heard == ["start", "measured", "finished"])
+    }
+
+    @Test
+    func `a clean takes the rows, and a scan waits until it gives them back`() {
+        let home = TemporaryHome()
+        let scan = makeScan(home: home)
+        #expect(scan.beginCleaning())
+        #expect(!scan.beginCleaning(), "one clean at a time")
+        #expect(!scan.canScanOrStop)
+        scan.scan()
+        #expect(!scan.isScanning)
+
+        scan.endCleaning(warnings: ["Skipped Xcode builds: Xcode is open."])
+        #expect(scan.canScanOrStop)
+        #expect(scan.warnings == ["Skipped Xcode builds: Xcode is open."])
+        scan.scan()
+        #expect(scan.isScanning)
+        #expect(!scan.beginCleaning(), "no clean while scanning")
+        scan.stopScan()
+    }
+
+    @Test
+    func `the preferences apply from the next scan: skipped items leave the rows`() {
+        let home = TemporaryHome()
+        let preferences = Preferences(storage: InMemoryPreferencesStore())
+        let scan = makeScan(home: home, preferences: preferences)
+        #expect(scan.scanOrder.contains(.homebrew))
+        preferences.skippedItems = [.homebrew]
+        #expect(scan.scanOrder.contains(.homebrew), "not before the next scan")
+        scan.scan()
+        #expect(!scan.scanOrder.contains(.homebrew))
+        #expect(scan.engine?.config.skipped == [.homebrew])
+        scan.stopScan()
     }
 }
 
@@ -66,33 +120,32 @@ struct ScanMemoryTests {
         write(64, to: "\(home.path)/Library/Caches/org.swift.swiftpm")
         write(32, to: "\(home.path)/.npm/_cacache")
 
-        let first = scanningApp(home: home)
+        let first = makeScan(home: home, store: nil)
         await finishScan(first)
-        let total = first.scan.tally.reclaimableKilobytes
+        let total = first.tally.reclaimableKilobytes
         #expect(total >= 96)
         #expect(FileManager.default
             .fileExists(atPath: "\(home.path)/Library/Application Support/DevSweep/last-scan.json"))
 
-        let next = scanningApp(home: home)
-        #expect(next.overview.statusLine.hasPrefix("Last scanned"))
-        #expect(next.scan.tally.showsPrevious)
-        #expect(next.scan.tally.reclaimableKilobytes == total)
-        #expect(next.scan.rows[.swiftpmCache]?.showsPrevious == true)
-        #expect(next.scan.rows[.swiftpmCache]?.shownKilobytes == first.scan.rows[.swiftpmCache]?.kilobytes)
-        #expect(next.scan.tally.live.isEmpty, "nothing from the last scan can be cleaned")
+        let next = makeScan(home: home, store: nil)
+        #expect(statusLine(next).hasPrefix("Last scanned"))
+        #expect(next.tally.showsPrevious)
+        #expect(next.tally.reclaimableKilobytes == total)
+        #expect(next.rows[.swiftpmCache]?.showsPrevious == true)
+        #expect(next.rows[.swiftpmCache]?.shownKilobytes == first.rows[.swiftpmCache]?.kilobytes)
+        #expect(next.tally.live.isEmpty, "nothing from the last scan can be cleaned")
 
         await finishScan(next)
-        #expect(!next.scan.tally.showsPrevious)
-        #expect(next.scan.rows[.swiftpmCache]?.state == .measured)
-        #expect(next.overview.statusLine.hasPrefix("Scanned just now"))
+        #expect(!next.tally.showsPrevious)
+        #expect(next.rows[.swiftpmCache]?.state == .measured)
+        #expect(statusLine(next).hasPrefix("Scanned just now"))
     }
 
     @Test
     func `A scan of another home is not shown`() async throws {
         let home = TemporaryHome(), other = TemporaryHome()
         write(16, to: "\(other.path)/.npm/_cacache")
-        let otherApp = scanningApp(home: other)
-        await finishScan(otherApp)
+        await finishScan(makeScan(home: other, store: nil))
         let saved = "\(other.path)/Library/Application Support/DevSweep/last-scan.json"
         let copy = "\(home.path)/Library/Application Support/DevSweep/last-scan.json"
         try FileManager.default.createDirectory(
@@ -100,9 +153,9 @@ struct ScanMemoryTests {
             withIntermediateDirectories: true)
         try FileManager.default.copyItem(atPath: saved, toPath: copy)
 
-        let app = scanningApp(home: home)
-        #expect(!app.scan.tally.showsPrevious)
-        #expect(app.overview.statusLine == "Not scanned yet.")
+        let scan = makeScan(home: home, store: nil)
+        #expect(!scan.tally.showsPrevious)
+        #expect(statusLine(scan) == "Not scanned yet.")
     }
 
     @Test

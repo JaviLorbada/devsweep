@@ -7,11 +7,10 @@ import Testing
 struct CommandsTests {
     @Test
     func `the inspector item says what choosing it does, and the problem report is in title case`() {
-        let home = TemporaryHome()
-        let app = makeApp(home: home)
-        #expect(AppCommands.inspectorTitle(shown: app.window.inspectorShown) == "Hide Inspector")
-        app.window.toggleInspector()
-        #expect(AppCommands.inspectorTitle(shown: app.window.inspectorShown) == "Show Inspector")
+        let window = WindowViewModel()
+        #expect(AppCommands.inspectorTitle(shown: window.inspectorShown) == "Hide Inspector")
+        window.toggleInspector()
+        #expect(AppCommands.inspectorTitle(shown: window.inspectorShown) == "Show Inspector")
         #expect(AppCommands.reportProblemTitle == "Report a Problem")
         #expect(AppCommands.supportTitle == "Support DevSweep")
     }

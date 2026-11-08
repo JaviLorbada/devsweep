@@ -85,32 +85,4 @@ struct PreferencesTests {
         storage.set(0, forKey: Preferences.Key.staleDays)
         #expect(Preferences(storage: storage).staleDays == Preferences.staleDaysRange.lowerBound)
     }
-
-    @Test
-    func `apply from the next scan: skipped items leave the window`() {
-        let home = TemporaryHome()
-        let app = scanningApp(home: home)
-        #expect(app.scan.scanOrder.contains(.homebrew))
-        app.preferences.skippedItems = [.homebrew]
-        app.preferences.staleDays = 30
-        #expect(app.runtimes.staleDays == 30)
-        app.scan.scan()
-        #expect(!app.scan.scanOrder.contains(.homebrew))
-        #expect(app.scan.engine?.config.skipped == [.homebrew])
-        app.scan.stopScan()
-    }
-
-    @Test
-    func `cleaning starts out the way the preferences say`() {
-        let storage = InMemoryPreferencesStore()
-        storage.set(false, forKey: Preferences.Key.moveToTrash)
-        let home = TemporaryHome()
-        let app = AppCoordinator(
-            environment: ["HOME": home.path],
-            store: InMemoryScanStore(),
-            preferences: Preferences(storage: storage),
-            notifier: SilentNotificationPoster(),
-            dependencies: Dependencies(tools: .unavailable))
-        #expect(!app.cleaning.moveToTrash)
-    }
 }

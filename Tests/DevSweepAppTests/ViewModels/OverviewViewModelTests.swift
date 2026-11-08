@@ -6,24 +6,52 @@ import Testing
 @MainActor
 @Suite("Overview")
 struct OverviewViewModelTests {
-    @Test
-    func `a finished scan selects the biggest item when nothing is selected`() async {
-        let home = TemporaryHome()
-        writeFourItems(in: home)
-        let app = await scannedApp(home: home)
-        #expect(app.overview.selection == .derivedData)
+    let window = FakeNavigation(.worktrees)
+    /// DerivedData the biggest; SwiftPM's builds and cache, the cache bigger;
+    /// npm's cache with nothing in it.
+    let scan = FakeScanResults([
+        result(.derivedData, kilobytes: 256),
+        result(.swiftpmBuilds, kilobytes: 64),
+        result(.swiftpmCache, kilobytes: 192),
+        result(.npmCache, kilobytes: 0),
+    ])
+    let cleaning = FakeCleaningTotals()
+    let apps = FakeRunningApps()
+
+    var overview: OverviewViewModel {
+        OverviewViewModel(window: self.window, scan: self.scan, cleaning: self.cleaning, apps: self.apps)
     }
 
     @Test
-    func `picking a family shows the overview with its biggest item selected`() async {
-        let home = TemporaryHome()
-        writeFourItems(in: home)
-        let app = await scannedApp(home: home)
-        app.window.screen = .worktrees
-        app.overview.pick(.swiftPackages)
-        #expect(app.window.screen == .overview)
-        #expect(app.overview.selection == .swiftpmCache)
-        app.overview.pick(.npm)
-        #expect(app.overview.selection == .npmCache)
+    func `picking a family shows the overview with its biggest item selected`() {
+        let overview = self.overview
+        overview.pick(.swiftPackages)
+        #expect(self.window.screen == .overview)
+        #expect(overview.selection == .swiftpmCache)
+        // Nothing of npm's can be cleaned: its biggest row is still selected.
+        overview.pick(.npm)
+        #expect(overview.selection == .npmCache)
+    }
+
+    @Test
+    func `a scan's end selects the biggest item, only when nothing is selected`() {
+        let overview = self.overview
+        overview.selectFirstIfNone()
+        #expect(overview.selection == .derivedData)
+        overview.select(.swiftpmCache)
+        overview.selectFirstIfNone()
+        #expect(overview.selection == .swiftpmCache)
+    }
+
+    @Test
+    func `the status line says what the scan found, what is open, and what this session cleaned`() {
+        let overview = self.overview
+        #expect(overview.statusLine == "Not scanned yet.")
+        let now = Date()
+        self.scan.statusFacts = StatusText.Facts(measured: 4, items: 4, lastScan: now, now: now)
+        #expect(overview.statusLine.hasPrefix("Scanned just now, 4 items."))
+        self.cleaning.trashedThisSession = 1024
+        #expect(overview.statusLine.hasSuffix("\(SizeText.of(kilobytes: 1024)) moved to Trash this session."))
+        #expect(overview.subtitle.hasPrefix(overview.statusLine))
     }
 }

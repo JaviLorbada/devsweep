@@ -1,55 +1,47 @@
 import DevSweepKit
 import Foundation
-import Synchronization
 import Testing
 @testable import DevSweepApp
 
-/// Keeps what would have been posted.
-final class RecordingPoster: NotificationPoster {
-    let posted = Mutex<[String]>([])
-    func post(title: String, body: String) async { self.posted.withLock { $0.append(title) } }
-}
-
+/// The coordinator builds the real models and wires one's events to the
+/// others, so its tests build the whole app on a fake home and check that
+/// wiring. Each model's own behaviour is tested in its own file, with fakes.
 @MainActor
-@Suite("Daily scan and growth")
+@Suite("Coordinator")
 struct AppCoordinatorTests {
     @Test
-    func `A scan is due a day after the last one, and never before a first`() {
-        let last = Date(timeIntervalSince1970: 1_800_000_000)
-        #expect(!ScanSchedule.isDue(lastScan: nil, now: last))
-        #expect(!ScanSchedule.isDue(lastScan: last, now: last.addingTimeInterval(23 * 3600)))
-        #expect(ScanSchedule.isDue(lastScan: last, now: last.addingTimeInterval(24 * 3600)))
+    func `a finished scan ticks the three biggest and selects the biggest`() async {
+        let home = TemporaryHome()
+        writeFourItems(in: home)
+        let app = await scannedApp(home: home)
+        #expect(app.scan.tally.live.count == 4)
+        #expect(app.marks.marked == [.derivedData, .swiftpmCache, .toolCaches])
+        #expect(app.overview.selection == .derivedData)
     }
 
     @Test
-    func `DerivedData growth past the threshold since the last scan is worth a notification`() {
-        let gigabyte: Int64 = 1024 * 1024
-        #expect(GrowthCheck.derivedData(
-            previousKilobytes: nil,
-            currentKilobytes: 90 * gigabyte,
-            thresholdGigabytes: 20) == nil)
-        #expect(GrowthCheck.derivedData(
-            previousKilobytes: 40 * gigabyte,
-            currentKilobytes: 60 * gigabyte,
-            thresholdGigabytes: 20) == nil)
-        let alert = GrowthCheck.derivedData(
-            previousKilobytes: 40 * gigabyte,
-            currentKilobytes: 61 * gigabyte,
-            thresholdGigabytes: 20)
-        #expect(alert?.title == "DerivedData grew by \(SizeText.of(kilobytes: 21 * gigabyte))")
-        #expect(alert?.body.contains(SizeText.of(kilobytes: 40 * gigabyte)) == true)
-        #expect(GrowthCheck.derivedData(
-            previousKilobytes: 60 * gigabyte,
-            currentKilobytes: 10 * gigabyte,
-            thresholdGigabytes: 1) == nil)
+    func `a new scan starts with nothing ticked`() async {
+        let home = TemporaryHome()
+        writeFourItems(in: home)
+        let app = await scannedApp(home: home)
+        app.marks.markAll()
+        app.scan.scan()
+        #expect(app.marks.marked.isEmpty)
+        app.scan.stopScan()
     }
 
     @Test
-    func `the threshold is a preference, 20 GB unless changed`() {
+    func `cleaning starts out the way the preferences say`() {
         let storage = InMemoryPreferencesStore()
-        #expect(Preferences(storage: storage).derivedDataGrowthGigabytes == 20)
-        Preferences(storage: storage).derivedDataGrowthGigabytes = 35
-        #expect(Preferences(storage: storage).derivedDataGrowthGigabytes == 35)
+        storage.set(false, forKey: Preferences.Key.moveToTrash)
+        let home = TemporaryHome()
+        let app = AppCoordinator(
+            environment: ["HOME": home.path],
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: storage),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable))
+        #expect(!app.cleaning.moveToTrash)
     }
 
     @Test
@@ -58,7 +50,7 @@ struct AppCoordinatorTests {
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/App-abc")
         let poster = RecordingPoster()
         let app = scanningApp(home: home, notifier: poster)
-        await finishScan(app)
+        await finishScan(app.scan)
         #expect(!app.scan.isScanning)
 
         app.tick(now: Date().addingTimeInterval(3600))

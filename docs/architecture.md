@@ -286,7 +286,15 @@ against.
 - Swift Testing for the kit and the app, run in parallel: every test makes its
   own temp folder and fakes; nothing is shared between tests.
 - In the app, each model and view model has its own test file, named after
-  it; `Tally`, `StatusText` and `CleanPrompt` are checked without a model.
+  it, that builds it with fakes for the protocols it takes: an
+  `OverviewViewModel` gets a `FakeScanResults` with the rows the test needs,
+  a `CleaningModel` gets fake rows that never let a clean begin, so its
+  tests see what it asks without anything being cleaned. `Tally`,
+  `StatusText` and `CleanPrompt` are checked without a model.
+- Some behaviour only shows with the real pieces together, so a few tests
+  build the whole app on a fake home: the coordinator's wiring, the views'
+  layout, and, in `Flows`, a clean from the question to the folders gone and
+  back from the Trash.
 - The bats suite from the dotfiles repository, run against the binary: the
   acceptance test that the tool behaves as the bash script did.
 - `Scripts/compare.sh` runs the bash script and the binary side by side on

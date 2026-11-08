@@ -20,7 +20,7 @@
 - State is `private(set)`. Only what a view binds stays settable (the screen, the chart, the Trash toggle, an open sheet); everything else changes through a method named for what it does.
 - New state goes in the model that owns it. No model grows into the app: past SwiftLint's limits, it splits.
 - A new file goes in its kind's folder; a new screen gets a folder under `Views`, its view model goes in `ViewModels`, and its tests in the same folders under `Tests`.
-- Each model and view model has its own test file, named after it.
+- Each model and view model has its own test file, named after it, that builds it with fakes for the protocols it takes (`Tests/DevSweepAppTests/Support/Fakes.swift`). Only the coordinator's tests, the end-to-end tests in `Flows` and the view tests build the whole app.
 
 ## Build, test, lint
 - `make build`, `make test` (Swift Testing, in parallel), `make lint` (strict), `make format`.
@@ -40,7 +40,7 @@
 
 ## Tests
 - Swift Testing, with backticked sentence names: ``@Test func `skips folders git tracks`()``.
-- Every test makes its own temp folder and fakes what has side effects through `Dependencies` and the app's seams (`AppQuitting`, the preferences, scan memory and notification stores). Nothing shared, nothing `.serialized`; `swift test --parallel` must pass.
+- Every test makes its own temp folder and fakes what has side effects through `Dependencies` and the app's seams (`AppQuitting`, the preferences, scan memory and notification stores), and the other models through their protocols. Nothing shared, nothing `.serialized`; `swift test --parallel` must pass.
 - No stubs on `PATH` in Swift tests. They belong to the bats suite, which runs the built binary as a user would.
 - The bats suite is the acceptance test: 52 of 52, and `Scripts/compare.sh` identical.
 
