@@ -1,6 +1,6 @@
 # Homebrew cask template for the app. For a personal tap: copy it to
 # Casks/devsweep-app.rb in the tap and set version and sha256 to the release's
-# app zip (see docs/RELEASING.md). Named devsweep-app so it doesn't clash
+# app zip (see docs/releasing.md). Named devsweep-app so it doesn't clash
 # with the devsweep formula for the command line tool.
 cask "devsweep-app" do
   version "0.1.4"

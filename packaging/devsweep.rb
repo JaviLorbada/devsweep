@@ -1,6 +1,6 @@
 # Homebrew formula for the command line tool, built from source at a tag.
 # For a personal tap: copy it to Formula/devsweep.rb in the tap, and set url
-# and sha256 to the release's source tarball (see docs/RELEASING.md).
+# and sha256 to the release's source tarball (see docs/releasing.md).
 class Devsweep < Formula
   desc "Shows how much space developer caches take up, and cleans them"
   homepage "https://github.com/JaviLorbada/devsweep"

@@ -1,17 +1,30 @@
 # DevSweep
 
-A macOS app and a command line tool, `devsweep`, that show how much space
-developer caches take up (Xcode's DerivedData, old Device Support, SwiftPM,
-Homebrew, npm, Gradle and more) and reclaim it safely.
+See how much space developer caches take up on your Mac, and clean what you
+choose. A SwiftUI app and a command line tool, `devsweep`, for macOS 26 on
+Apple silicon.
 
-![The DevSweep window: a ring of what each cache holds, the items table and the inspector](docs/screenshot.png)
+[![CI](https://github.com/JaviLorbada/devsweep/actions/workflows/ci.yml/badge.svg)](https://github.com/JaviLorbada/devsweep/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/JaviLorbada/devsweep?include_prereleases&sort=semver)](https://github.com/JaviLorbada/devsweep/releases)
+![macOS 26 on Apple silicon](https://img.shields.io/badge/macOS-26_on_Apple_silicon-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-The command line tool is a Swift port of `devclean`, a bash script in
-[a dotfiles repository](https://github.com/JaviLorbada/dotfiles). That is the
-only thing the name devclean means here: the original script, its bats suite
-and the parity checks. Run under the script's name, the tool prints exactly
-what the script prints, byte for byte, which is how those checks run it. The app shows the same scan
-in a window and adds a Trash with Put Back, a menu bar item and a daily scan.
+![The DevSweep window: a ring of what each cache holds, the items to clean, and the inspector for DerivedData](docs/screenshot.png)
+
+## What it does
+
+- **Shows where the space went:** Xcode's DerivedData, old Device Support,
+  SwiftPM, Homebrew, npm, Gradle and more, as a ring or as blocks.
+- **Cleans what you mark**, to the Trash by default, with Put Back.
+- **Cleans part of an item:** tick single DerivedData projects or build
+  folders, and keep the rest.
+- **Points at the rest:** installed Xcodes, simulator runtimes, Android
+  Studio's SDK and emulators, and git worktrees, with what looks unused
+  flagged.
+- **Keeps an eye out:** a menu bar item with the free space, a daily scan,
+  and a notification when DerivedData has grown a lot.
+- **Works from the terminal too:** `devsweep` reports the same items and
+  cleans them with `--run`.
 
 ## Safety first
 
@@ -30,10 +43,10 @@ built to err on the side of keeping things.
 - **Never what git tracks.** Build folders are removed only when git provably
   tracks nothing in them. Any doubt keeps the folder.
 - **Not while Xcode runs.** Cleaning the Xcode items waits until Xcode and
-  Simulator have quit.
-- **Worktrees only with nothing to lose.** The app removes a git worktree only
-  when you ask, with git's own `git worktree remove`, and only when it has no
-  changes waiting to be committed and a branch holds every commit in it. The
+  Simulator have quit; DevSweep asks to quit them for you.
+- **Worktrees only with nothing to lose.** DevSweep removes a git worktree
+  only when you ask, with git's own `git worktree remove`, and only when it
+  has no uncommitted changes and a branch holds every commit in it. The
   branch stays.
 - **Never touched:** Xcode Archives (their dSYMs symbolicate crash reports),
   simulators that still work, simulator runtimes, installed Xcodes, Android
@@ -59,162 +72,129 @@ built to err on the side of keeping things.
 | `tool-caches` | CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox downloads | `~/Library/Caches` |
 
 Project folders default to `~/Developer`, `~/Development`, `~/dev`,
-`~/Documents/Workspace` and `~/Projects`.
+`~/Documents/Workspace` and `~/Projects`; Settings changes them.
 
 ## Install
 
-Releases are on the [releases page](https://github.com/JaviLorbada/devsweep/releases):
-`devsweep-<version>-macos.zip` holds the command line tool, `DevSweep-<version>.zip`
-the app. Both need macOS 26.
+DevSweep needs macOS 26 on a Mac with Apple silicon.
 
-Until releases are notarized (see below), macOS refuses to open the app the
-first time: Control-click it in Finder and choose Open, or allow it in System
-Settings > Privacy & Security. For the tool, after unzipping:
+Download it from the [releases page](https://github.com/JaviLorbada/devsweep/releases):
+`DevSweep-<version>.zip` holds the app, `devsweep-<version>-macos.zip` the
+command line tool.
+
+Releases aren't notarized yet, so macOS won't open the app the first time.
+Control-click it in Finder and choose Open, or allow it in System Settings >
+Privacy & Security. For the tool, after unzipping, run
 `xattr -d com.apple.quarantine devsweep`.
-
-A Homebrew tap is planned; `packaging/` has the formula and the cask.
 
 ### From source
 
 ```bash
 git clone https://github.com/JaviLorbada/devsweep.git && cd devsweep
-make app                       # build/DevSweep.app
-Scripts/install-cli.sh         # links the release devsweep into ~/.local/bin
+make app                       # builds build/DevSweep.app
+Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 ```
 
-`Scripts/install-cli.sh` links `devsweep` into `~/.local/bin`, and
-`--uninstall` takes the link out and puts back anything it replaced.
+## Using the app
 
-## Use
+- **Scan and clean.** DevSweep scans when it opens. Mark items and press
+  Clean, or click Clean on a single row.
+- **Keep part of an item.** Select DerivedData and tick single projects, or
+  a shared cache, in the inspector, then clean just those. Build folders
+  work the same way. A project can go while Xcode is open, after a question.
+- **Look at what it won't clean.** The sidebar's Also worth a look lists
+  installed Xcodes, simulator runtimes, Android Studio's files and git
+  worktrees, with their sizes, flagging what looks unused. A worktree can
+  be removed from there when nothing in it would be lost.
+- **Find worktrees.** DevSweep lists the worktrees of the repositories in
+  your project folders, wherever the worktrees are. If a tool keeps its
+  worktrees in a folder of its own, add that folder as a project folder.
+- **Settings** has your project folders, items to skip, when something
+  counts as unused, whether to clean to the Trash, scanning on opening, and
+  the menu bar item.
+- **The menu bar item** shows the free space and keeps DevSweep running after
+  you close the window, so it can scan once a day. Nothing starts it at
+  login.
+
+| Shortcut | |
+|---|---|
+| ⌘R | Scan again |
+| ⌘1, ⌘2 | Show the ring, or the blocks |
+| ⌥⌘I | Show or hide the inspector |
+
+## Using the command line
 
 ```bash
 devsweep                          # report only
-devsweep --run                    # delete the items in the report, after asking
+devsweep --run                    # clean the items in the report, after asking
 devsweep --skip homebrew,npm-cache --projects ~/Code:~/Work
 devsweep --help
 ```
 
 `DEVSWEEP_PROJECT_DIRS` and `DEVSWEEP_APPLICATIONS_DIRS` set the project and
-applications folders; `NO_COLOR` turns colors off.
+applications folders, and `NO_COLOR` turns colors off. The report also lists
+the git worktrees it found, with the command that removes each one with
+nothing to lose.
 
-The app scans when it opens. Mark items, or click Clean on one, and press
-Clean. To keep most of DerivedData, tick single projects, or a shared cache,
-in the inspector and clean just those; a project can go while Xcode is open,
-after a question, since Xcode may have it open. The build folders list each
-folder with its size, to tick the same way. ⌘1 and ⌘2 switch the chart between the ring and blocks, ⌥⌘I shows or
-hides the inspector, and ⌘R scans again. In a window too narrow for the
-inspector beside the center, it floats over the center's trailing side
-instead. The sidebar's "Also worth a look" lists installed Xcodes and simulator
-runtimes, and what Android Studio keeps: its installs, the SDK's system
-images, platforms and build tools, emulators, and Gradle's caches, flagging
-what looks unused. Under Git it lists the worktrees of the repositories in
-your project folders, wherever the worktrees are, with their size, branch and
-last commit, and removes one with nothing to lose when you ask. A folder where
-a tool keeps its worktrees can be a project folder too: each worktree in it
-leads back to its repository, wherever that is. `devsweep` lists them too,
-with the command for each. Settings has the project folders, items to skip, when
-something counts as unused, how cleaning starts out, whether to scan on
-opening, and whether to show the menu bar item. The menu bar item shows the
-icon's ring in one color and the free space, and keeps the app running after
-its window closes; while the app runs it scans once a day and says so when
-DerivedData has grown past a threshold. Nothing starts it at login.
+## Privacy
 
-## Build and test
+DevSweep makes no network connections and collects nothing. It reads
+folders in your home folder, and runs a few developer tools to find and
+clean what they own: `xcrun simctl`, `xcode-select`, `defaults` (to read
+where Xcode keeps DerivedData), `brew` and `git`, and the command line tool
+also `pgrep`, to see whether Xcode runs. It keeps its last scan in
+`~/Library/Application Support/DevSweep` and its settings in its
+preferences.
 
-macOS 26 and Xcode 26 or newer. The only package dependency is
-swift-argument-parser.
+## Questions
+
+**macOS asks whether DevSweep may access data from other apps.** That's the
+device install cache, which lives inside Apple's CoreDevice container.
+Allow it to measure and clean that cache, or skip "Device install cache" in
+Settings.
+
+**Why does it ask to quit Xcode?** Xcode writes to DerivedData and its
+caches while it runs, so those wait until Xcode and Simulator have quit.
+DevSweep asks them to quit for you, and Xcode asks to save your work first.
+
+**Why does an installed Xcode show 3.7 GB when Finder says 9 GB?** Xcode's
+files are stored compressed. DevSweep counts what removing them would free,
+the way `du` does.
+
+**Where does what I clean go?** To the Trash, unless you turned that off in
+Settings, and Put Back returns it until you empty the Trash. Caches come
+back as you build, resolve packages or download again.
+
+## Uninstalling
+
+1. Quit DevSweep, and move it to the Trash.
+2. Remove what it keeps: `~/Library/Application Support/DevSweep`, and its
+   settings with `defaults delete com.javilorbada.devsweep`.
+3. Remove the `devsweep` tool, or run `Scripts/install-cli.sh --uninstall`
+   if you linked it from a checkout.
+
+## For developers
 
 ```bash
 make build        # the kit, the tool and the app
 make test         # Swift Testing, in parallel
 make lint         # SwiftFormat and SwiftLint, strict
-make acceptance DOTFILES=../dotfiles   # parity with the bash script
 make app          # build/DevSweep.app
-make release      # zips of the tool and the app in dist/
 ```
 
-`AGENTS.md` has the rules for working on the code; `docs/DEVELOPMENT.md`,
-`docs/architecture.md`, `docs/packaging.md` and `docs/RELEASING.md` the rest.
-The app's original design and mockup are in [docs/design](docs/design/README.md).
+- [docs/development.md](docs/development.md): requirements, the three test
+  layers, checking the window from a script.
+- [docs/architecture.md](docs/architecture.md): how the kit and the app are
+  built.
+- [docs/parity.md](docs/parity.md): how the tool matches `devclean`, the bash
+  script it started as.
+- [docs/releasing.md](docs/releasing.md) and
+  [docs/packaging.md](docs/packaging.md): releases, signing, notarizing and
+  the app bundle.
+- [docs/design](docs/design/README.md): the app's original design.
+- [AGENTS.md](AGENTS.md): the rules for working on the code.
 
-## How parity with the script is tested
-
-Three layers, all in CI:
-
-1. **Swift Testing**: the kit and the app, each test on a fake home folder in
-   its own temp folder, with fake tools, Trash and clock.
-2. **The script's own bats suite**, copied unchanged from the dotfiles
-   repository and run against the Swift binary: 52 of 52 pass. This is the
-   acceptance test.
-3. **Side by side**: the bash script and the binary run against the same fake
-   home with the same stubs on `PATH`, and their output, exit status, tool
-   calls and the folders left after `--run` are compared. They are identical.
-
-## Notarizing a release
-
-Until this is set up, releases are signed ad hoc, not notarized, and the
-release notes say so. Everything is in place for the day it is:
-
-1. **Apple Developer Program** membership, for the team's Developer ID.
-2. **A Developer ID Application certificate**: create it in Xcode (Settings >
-   Accounts > Manage Certificates) or on developer.apple.com, then export it
-   from Keychain Access with its private key as a `.p12`, with a password.
-3. **An App Store Connect API key** for notarization: App Store Connect >
-   Users and Access > Integrations > App Store Connect API, a key with the
-   Developer role. Note its **Key ID** and the **Issuer ID** above the list,
-   and download the `AuthKey_<KeyID>.p8` file (it can be downloaded once).
-4. **GitHub secrets** on the repository (Settings > Secrets and variables >
-   Actions):
-
-   | Secret | Value |
-   |---|---|
-   | `MACOS_SIGNING_P12` | the `.p12`, base64: `base64 -i DeveloperID.p12 \| pbcopy` |
-   | `MACOS_SIGNING_P12_PASSWORD` | the `.p12`'s password |
-   | `ASC_KEY_ID` | the Key ID |
-   | `ASC_ISSUER_ID` | the Issuer ID |
-   | `ASC_PRIVATE_KEY_P8` | the text of the `.p8` file |
-
-With all five set, the release workflow signs both the app and the tool with
-the hardened runtime and a secure timestamp, notarizes them, staples the
-ticket to the app and checks it with `spctl`. Locally, the same happens with
-`make release` when `DEVELOPER_ID_APPLICATION` (the identity's full name, as
-`security find-identity -v -p codesigning` prints it), `ASC_KEY_ID`,
-`ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_P8` (the `.p8`'s path) are set. App
-Sandbox stays off, and no entitlements are needed: the app reads other
-tools' caches and runs simctl and brew.
-
-## How the tool matches the script
-
-The flags, environment variables, messages, exit codes and output are the
-script's. Arguments are read with the script's own rules first (left to
-right, the first unknown option fails, `--help` wins only if nothing before
-it failed, `--skip` and `--projects` take the next argument whatever it is),
-then handed to swift-argument-parser, which keeps the script's exact errors.
-
-The whole run, from preflight to "Done.", is `CommandLineSession` in the kit,
-writing to a `Terminal`; the binary gives it standard input and output and
-the tests a buffer, so the tests exercise the code the binary runs. Every
-tool is found through `PATH` when it runs and runs with `LC_ALL=C`. Sizes
-count allocated blocks the way `du -sk` does: every entry's `st_blocks`,
-hard-linked files once, symlinks never followed. That is why an installed
-Xcode shows about 3.7 GB, not the 9 GB Finder reports: its files are stored
-compressed, and 3.7 GB is what removing it frees.
-
-### Where it is stricter than the script
-
-- Device Support folder names containing a tab or newline broke the script's
-  rows; they are kept and never listed.
-- A DerivedData project name longer than 21 bytes is cut at a whole
-  character, never in the middle of one.
-- A runtime whose last-used date doesn't parse made the script abort; it is
-  now simply not flagged.
-- With `HOME` unset the script failed with "HOME: unbound variable"; the port
-  says "HOME must be your home folder."
-- A folder whose contents can't be read is reported with what could be
-  measured, as the script did, and flagged as unknown so the app doesn't
-  show zero.
-
-## How it's built
+### How it's built
 
 One Swift package: `DevSweepKit` scans, measures and cleans; the
 `devsweep` command line and the app sit on it. The app is MVVM on
@@ -287,24 +267,10 @@ the tests use the same folders. To read it, start at `App/AppCoordinator.swift`,
 where everything is built and wired, then pick a screen's view model and
 its test, which builds it with fakes.
 
-## The kit
-
-```swift
-let engine = try Engine(config: ScanConfig.fromEnvironment(environment),
-                        dependencies: .live(environment: environment))
-for await event in engine.scan() { ... }   // projectFolders, started, progress, warning,
-                                           // finished, done, extras, android
-let outcome = await engine.clean(result, mode: .trash)   // or .delete, with
-                                                         // { bytes in } for progress
-let restored = await engine.putBack(outcome)
-```
-
-Everything with a side effect comes through `Dependencies`: the tools, the
-file system and the clock. [docs/architecture.md](docs/architecture.md) describes the seams.
-
 ## Support
 
-To support DevSweep: [GitHub Sponsors](https://github.com/sponsors/JaviLorbada) or [Ko-fi](https://ko-fi.com/javilorbada).
+To support DevSweep: [GitHub Sponsors](https://github.com/sponsors/JaviLorbada)
+or [Ko-fi](https://ko-fi.com/javilorbada).
 
 ## License
 

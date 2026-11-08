@@ -36,6 +36,18 @@ walk can't be led out of the folder; directories are listed with
 `getattrlistbulk`, which gives each file's size for the progress as well.
 Whatever it can't remove, `FileManager` tries again and says why.
 
+In code, a scan and a clean read like this:
+
+```swift
+let engine = try Engine(config: ScanConfig.fromEnvironment(environment),
+                        dependencies: .live(environment: environment))
+for await event in engine.scan() { ... }   // projectFolders, started, progress, warning,
+                                           // finished, done, extras, android
+let outcome = await engine.clean(result, mode: .trash)   // or .delete, with
+                                                         // { bytes in } for progress
+let restored = await engine.putBack(outcome)
+```
+
 ## Seams
 
 Everything with a side effect sits behind a protocol, so tests run it fake.
