@@ -280,6 +280,12 @@ Arrows point the way calls go; state comes back up through Observation.
 [docs/architecture.md](docs/architecture.md) says what each type owns and
 follows a scan and a clean through them.
 
+In the code, each kind of piece has a folder under `Sources/DevSweepApp`
+(`App`, `Protocols`, `Models`, `ViewModels`, `Values`, `Views`), and the
+tests use the same folders. To read it, start at `App/AppCoordinator.swift`,
+where everything is built and wired, then pick a screen's view model and
+its test, which builds it with fakes.
+
 ## The kit
 
 ```swift
