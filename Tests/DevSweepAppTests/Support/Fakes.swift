@@ -1,7 +1,10 @@
-import DevSweepKit
 import Foundation
 import Synchronization
 @testable import DevSweepApp
+
+// The kit's clean results have no public initializers: only the kit makes
+// them. The fake cleaner makes them as the kit would.
+@testable import DevSweepKit
 
 // MARK: The models, as the protocols show them
 
@@ -47,42 +50,133 @@ final class FakeListings: Listings {
     }
 }
 
-/// The rows as a clean sees them, with no kit behind them. A clean can be
-/// asked for and answered, and `cleansBegun` counts the ones that went
-/// ahead, but none of them can take the rows, so nothing is cleaned. The
-/// flow tests clean for real, on a fake home.
+/// The scan's rows as a test sets them, changed the way `ScanModel` changes
+/// them, with a fake cleaner behind them. `cleansBegun` counts the cleans
+/// and put backs that took the rows; the cleaner never touches the disk.
+/// The flow tests clean for real, on a fake home.
 @MainActor
 final class FakeScanRows: ScanRows {
     var rows: [Item: ScanRow]
     var isScanning = false
-    var isCleaning = false
+    private(set) var isCleaning = false
     private(set) var cleansBegun = 0
+    private(set) var warnings: [String] = []
+    let cleaner: FakeCleaner
 
-    init(_ results: [ItemResult]) {
+    init(_ results: [ItemResult], cleaner: FakeCleaner = FakeCleaner()) {
         self.rows = measuredRows(results)
+        self.cleaner = cleaner
     }
 
-    var engine: Engine? {
-        nil
-    }
-
-    func beginCleaning() -> Bool {
+    func beginCleaning() -> (any Cleaner)? {
+        guard !self.isScanning, !self.isCleaning else { return nil }
+        self.isCleaning = true
         self.cleansBegun += 1
-        return false
+        return self.cleaner
     }
 
-    // A clean that can't take the rows never gets this far.
-    func endCleaning(warnings: [String]) {}
-    func diskChanged() {}
-    func startCleaning(_ item: Item, kilobytes: Int64?) {}
-    func cleaningProgress(_ item: Item, removedBytes: Int64) {}
-    func finishCleaning(_ item: Item, outcome: CleanOutcome?) {}
-    func finishCleaningParts(_ item: Item, left: ItemResult) {}
-    func putBack(_ item: Item) {}
-    func putBackParts(_ item: Item, whole: ItemResult) {}
+    func endCleaning(warnings: [String]) {
+        self.isCleaning = false
+        self.warnings += warnings
+    }
+
+    func startCleaning(_ item: Item, kilobytes: Int64?) {
+        self.rows[item]?.state = .cleaning
+        self.rows[item]?.cleaningKilobytes = kilobytes
+    }
+
+    func cleaningProgress(_ item: Item, removedBytes: Int64) {
+        self.rows[item]?.removedBytes = removedBytes
+    }
+
+    func finishCleaning(_ item: Item, outcome: CleanOutcome?) {
+        self.rows[item]?.removedBytes = 0
+        self.rows[item]?.state = outcome == nil ? .measured : .cleaned
+        self.rows[item]?.outcome = outcome
+    }
+
+    func finishCleaningParts(_ item: Item, left: ItemResult) {
+        self.rows[item]?.removedBytes = 0
+        self.rows[item]?.result = left
+        self.rows[item]?.state = .measured
+        self.rows[item]?.cleaningKilobytes = nil
+    }
+
+    func putBack(_ item: Item) {
+        self.rows[item]?.state = .measured
+        self.rows[item]?.outcome = nil
+    }
+
+    func putBackParts(_ item: Item, whole: ItemResult) {
+        self.rows[item]?.result = whole
+    }
 
     func tilde(_ path: String) -> String {
         path
+    }
+}
+
+/// Cleans without touching the disk: each folder it is asked for goes, to a
+/// made-up Trash or for good as asked, unless the test lists it in
+/// `failing`. Put Back brings back whatever went to the Trash. It records
+/// the items it cleaned and how many put backs it was asked for.
+final class FakeCleaner: Cleaner, @unchecked Sendable {
+    private let state = Mutex<(cleaned: [Item], putBacks: Int)>(([], 0))
+    private let failing: Set<String>
+
+    init(failing: Set<String> = []) {
+        self.failing = failing
+    }
+
+    var cleaned: [Item] {
+        self.state.withLock { $0.cleaned }
+    }
+
+    var putBacks: Int {
+        self.state.withLock { $0.putBacks }
+    }
+
+    func clean(_ result: ItemResult, mode: CleanMode, progress: (@Sendable (Int64) -> Void)?) async -> CleanOutcome {
+        self.state.withLock { $0.cleaned.append(result.item) }
+        progress?(result.kilobytes * 1024)
+        return self.removing(result.paths, of: result.item, mode: mode)
+    }
+
+    func clean(
+        _ parts: Set<ItemPart>,
+        of result: ItemResult,
+        mode: CleanMode,
+        progress: (@Sendable (Int64) -> Void)?) async -> PartsCleanOutcome
+    {
+        self.state.withLock { $0.cleaned.append(result.item) }
+        var paths: [ItemPart: [String]] = [:]
+        for part in parts {
+            switch part {
+            case let .folder(folder): paths[part] = [folder]
+            default: paths[part] = ["/fake/\(result.item.rawValue)/\(part)"]
+            }
+        }
+        return PartsCleanOutcome(
+            outcome: self.removing(paths.values.flatMap(\.self), of: result.item, mode: mode),
+            paths: paths)
+    }
+
+    func putBack(_ outcome: CleanOutcome) async -> PutBackOutcome {
+        self.state.withLock { $0.putBacks += 1 }
+        return PutBackOutcome(restored: outcome.removed.filter { $0.trashed != nil }.map(\.original), failed: [])
+    }
+
+    private func removing(_ folders: [String], of item: Item, mode: CleanMode) -> CleanOutcome {
+        var outcome = CleanOutcome(item: item, mode: mode)
+        for folder in folders {
+            if self.failing.contains(folder) {
+                outcome.failed.append(folder)
+                outcome.warnings.append("Couldn't remove \(folder).")
+            } else {
+                outcome.removed.append(.init(original: folder, trashed: mode == .trash ? "/Trash/\(folder)" : nil))
+            }
+        }
+        return outcome
     }
 }
 
@@ -109,7 +203,8 @@ final class FakeMarking: Marking {
 /// quitting when asked unless `quits` is false. Quitting records what was asked.
 @MainActor
 final class FakeRunningApps: RunningApps {
-    private(set) var running: Set<DeveloperApp>
+    /// Settable, so a test can open Xcode between a question and its answer.
+    var running: Set<DeveloperApp>
     private(set) var askedToQuit: [[DeveloperApp]] = []
     private let quits: Bool
 

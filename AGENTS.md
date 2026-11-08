@@ -13,7 +13,7 @@
 - `AppCoordinator` builds the dependencies and every model, and wires one model's events to the others. No view reads it; the scenes put its models in the environment with `environment(models:)`.
 - Shared models hold what several screens read: `ScanModel` (the rows, the scan, the listings, the last scan; only it changes the rows), `CleaningModel`, `MarksModel`, `RunningAppsModel`. Only they call the kit.
 - A view model per screen holds what that screen owns: `WindowViewModel`, `OverviewViewModel`, `XcodesViewModel`, `RuntimesViewModel`, `WorktreesViewModel`, `AndroidViewModel`. They call the shared models, never the kit.
-- Models and view models take each other through the protocols in `Protocols`, each named for what its user reads: `ScanResults`, `Listings`, `ScanRows`, `Marking`, `RunningApps`, `CleaningTotals`, `Navigation`. Only `AppCoordinator` names the classes. `Preferences` is passed as it is.
+- Models and view models take each other through the protocols in `Protocols`, each named for what its user reads: `ScanResults`, `Listings`, `ScanRows`, `Marking`, `RunningApps`, `CleaningTotals`, `Navigation`; and `Cleaner`, the kit's engine as a clean sees it, which only taking the rows hands out. Only `AppCoordinator` names the classes. `Preferences` is passed as it is.
 - No protocol for the coordinator, which nothing depends on, or for a view model as its views see it: views take the class from the environment.
 - Numbers and words are plain values, tested without a model: `Tally`, `StatusText`, `CleanPrompt`.
 - A view takes from the environment only the models it reads; rows, cells and ring segments take values.

@@ -193,6 +193,7 @@ struct InspectorAction: View {
                 Task { await self.cleaning.putBack(self.row.item) }
             }
             .buttonStyle(.glass)
+            .disabled(self.scan.isCleaning)
             .help("Move it from the Trash back where it was"))
         default:
             EmptyView()

@@ -378,12 +378,12 @@ extension ScanModel {
 /// The rows during a clean: what CleaningModel asks for, between
 /// `beginCleaning()` and `endCleaning(warnings:)`.
 extension ScanModel {
-    /// Takes the rows for a clean: false while scanning or cleaning, or with
-    /// no home to clean in.
-    func beginCleaning() -> Bool {
-        guard self.engine != nil, !self.isScanning, !self.isCleaning else { return false }
+    /// Takes the rows for a clean or a put back, and hands back the engine to
+    /// do it with: nil while scanning or cleaning, or with no home to clean in.
+    func beginCleaning() -> (any Cleaner)? {
+        guard let engine, !self.isScanning, !self.isCleaning else { return nil }
         self.isCleaning = true
-        return true
+        return engine
     }
 
     /// Gives the rows back after a clean, with the free space measured again
@@ -395,7 +395,7 @@ extension ScanModel {
     }
 
     /// Something was cleaned or put back: the free space and the kept results follow.
-    func diskChanged() {
+    private func diskChanged() {
         self.diskSpace = self.engine?.diskSpace() ?? self.diskSpace
         self.saveScan()
     }

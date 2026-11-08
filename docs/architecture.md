@@ -110,7 +110,7 @@ flowchart TB
 
   subgraph Kit["DevSweepKit"]
     Engine
-    Rules["Scanners · PathPolicy<br/>SizeMeasurer · Cleaner"]
+    Rules["Scanners · PathPolicy<br/>SizeMeasurer · cleaning"]
     Deps["Dependencies<br/>live, or fake in tests"]
   end
 
@@ -176,7 +176,8 @@ hands it fakes instead, so a view model's test needs no scan.
 |---|---|---|---|
 | `ScanResults` | The tally and the facts the status lines are written from. | `ScanModel` | `OverviewViewModel`, `MarksModel` |
 | `Listings` | The Xcodes, runtimes, worktrees and Android lists; removing a runtime or a worktree. | `ScanModel` | The Xcodes, runtimes, worktrees and Android view models |
-| `ScanRows` | The rows during a clean, and the lock that keeps a scan and a clean apart. | `ScanModel` | `CleaningModel` |
+| `ScanRows` | The rows as a clean changes them, and the lock that keeps a scan and a clean apart: taking it hands over the `Cleaner`. | `ScanModel` | `CleaningModel` |
+| `Cleaner` | Cleaning an item or some of its parts, and Put Back. | The kit's `Engine` | `CleaningModel`, only from `ScanRows.beginCleaning()` |
 | `Marking` | The ticked parts, and clearing what was cleaned. | `MarksModel` | `CleaningModel` |
 | `RunningApps` | Whether Xcode and Simulator are open, and quitting them. | `RunningAppsModel` | `CleaningModel`, `OverviewViewModel` |
 | `CleaningTotals` | What this session moved to the Trash and deleted. | `CleaningModel` | `OverviewViewModel` |
@@ -249,6 +250,7 @@ sequenceDiagram
   participant Cleaning as CleaningModel
   participant Apps as RunningAppsModel
   participant Scan as ScanModel
+  participant Marks as MarksModel
   participant Engine
   You->>Window: Clean the marked items
   Window->>Cleaning: requestClean(items)
@@ -265,11 +267,16 @@ sequenceDiagram
     Window->>Cleaning: confirmClean(pending)
   end
   Cleaning->>Scan: beginCleaning()
+  Scan-->>Cleaning: the Engine, as a Cleaner, or nil while a scan runs
   loop each item
+    opt the item needs Xcode closed
+      Cleaning->>Apps: refresh(), skipped if Xcode opened since
+    end
     Cleaning->>Engine: clean(result, mode)
     Engine-->>Cleaning: removed so far
     Cleaning->>Scan: cleaningProgress, the row counts down
     Cleaning->>Scan: finishCleaning(item, outcome)
+    Cleaning->>Marks: cleaned(item), no longer ticked
   end
   Cleaning->>Scan: endCleaning(warnings:), kept for the next launch
 ```

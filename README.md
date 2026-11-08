@@ -251,7 +251,7 @@ flowchart TB
 
   subgraph Kit["DevSweepKit"]
     Engine
-    Rules["Scanners · PathPolicy<br/>SizeMeasurer · Cleaner"]
+    Rules["Scanners · PathPolicy<br/>SizeMeasurer · cleaning"]
     Deps["Dependencies<br/>live, or fake in tests"]
   end
 

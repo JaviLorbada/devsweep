@@ -81,8 +81,8 @@ struct ScanModelTests {
     func `a clean takes the rows, and a scan waits until it gives them back`() {
         let home = TemporaryHome()
         let scan = makeScan(home: home)
-        #expect(scan.beginCleaning())
-        #expect(!scan.beginCleaning(), "one clean at a time")
+        #expect(scan.beginCleaning() != nil)
+        #expect(scan.beginCleaning() == nil, "one clean at a time")
         #expect(!scan.canScanOrStop)
         scan.scan()
         #expect(!scan.isScanning)
@@ -92,7 +92,7 @@ struct ScanModelTests {
         #expect(scan.warnings == ["Skipped Xcode builds: Xcode is open."])
         scan.scan()
         #expect(scan.isScanning)
-        #expect(!scan.beginCleaning(), "no clean while scanning")
+        #expect(scan.beginCleaning() == nil, "no clean while scanning")
         scan.stopScan()
     }
 

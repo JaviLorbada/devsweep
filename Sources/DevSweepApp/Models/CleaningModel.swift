@@ -166,7 +166,7 @@ final class CleaningModel: CleaningTotals {
     // MARK: Cleaning
 
     private func performClean(_ items: [Item]) async {
-        guard self.scan.beginCleaning(), let engine = self.scan.engine else { return }
+        guard let cleaner = self.scan.beginCleaning() else { return }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         var problems: [String] = []
 
@@ -181,7 +181,7 @@ final class CleaningModel: CleaningTotals {
                 }
             }
             self.scan.startCleaning(item, kilobytes: nil)
-            let outcome = await self.countingDown(item) { await engine.clean(result, mode: mode, progress: $0) }
+            let outcome = await self.countingDown(item) { await cleaner.clean(result, mode: mode, progress: $0) }
             problems += outcome.warnings
             let removedSomething = !outcome.removed.isEmpty || outcome.toolSucceeded == true
             self.scan.finishCleaning(item, outcome: removedSomething ? outcome : nil)
@@ -211,11 +211,11 @@ final class CleaningModel: CleaningTotals {
                 return
             }
         }
-        guard self.scan.beginCleaning(), let engine = self.scan.engine else { return }
+        guard let cleaner = self.scan.beginCleaning() else { return }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         self.scan.startCleaning(item, kilobytes: parts.reduce(0) { $0 + result.kilobytes(of: $1) })
         let outcome = await self.countingDown(item) {
-            await engine.clean(parts, of: result, mode: mode, progress: $0)
+            await cleaner.clean(parts, of: result, mode: mode, progress: $0)
         }
         let cleaned = outcome.cleaned
         let left = result.removing(cleaned)
@@ -265,32 +265,33 @@ final class CleaningModel: CleaningTotals {
 
     // MARK: Put Back
 
-    /// Moves what cleaning `item` put in the Trash back where it was.
+    /// Moves what cleaning `item` put in the Trash back where it was. It
+    /// takes the rows as a clean does, so it waits for none and none for it.
     func putBack(_ item: Item) async {
-        guard let engine = self.scan.engine, let row = self.scan.rows[item], row.canPutBack,
-              let outcome = row.outcome
+        guard let row = self.scan.rows[item], row.canPutBack, let outcome = row.outcome,
+              let cleaner = self.scan.beginCleaning()
         else { return }
-        let result = await engine.putBack(outcome)
+        let result = await cleaner.putBack(outcome)
         if !result.restored.isEmpty {
             self.scan.putBack(item)
             self.trashedThisSession = max(0, self.trashedThisSession - row.kilobytes)
         }
-        self.scan.diskChanged()
+        self.scan.endCleaning(warnings: [])
         self.reportPutBackFailures(result.failed)
     }
 
     /// Moves what the last parts clean of `item` put in the Trash back where it was.
     func putBackParts(of item: Item) async {
-        guard let engine = self.scan.engine, !self.isCleaning, let clean = self.partsCleans[item], clean.canPutBack,
-              let result = self.scan.rows[item]?.result
+        guard let clean = self.partsCleans[item], clean.canPutBack, let result = self.scan.rows[item]?.result,
+              let cleaner = self.scan.beginCleaning()
         else { return }
-        let putBack = await engine.putBack(clean.outcome.outcome)
+        let putBack = await cleaner.putBack(clean.outcome.outcome)
         let restored = clean.outcome.restored(by: putBack)
         let whole = result.restoring(restored, from: clean.before)
         self.scan.putBackParts(item, whole: whole)
         self.trashedThisSession = max(0, self.trashedThisSession - (whole.kilobytes - result.kilobytes))
         self.partsCleans[item] = nil
-        self.scan.diskChanged()
+        self.scan.endCleaning(warnings: [])
         self.reportPutBackFailures(putBack.failed)
     }
 

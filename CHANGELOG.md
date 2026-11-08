@@ -24,11 +24,11 @@ line under Unreleased as it lands.
   with Put Back. In a window too narrow for the inspector beside the
   center, the inspector floats over it, and the sidebar narrows rather than
   being cut off. While an item is deleted for good, its size counts down
-  and its row shows how far it has got, and Scan Again waits until cleaning
-  is done. The controls along the panels' top and bottom edges sit 16
-  points in from them, the hidden sidebar's toggle is a plain icon with the
-  title on its own line under it, and the main buttons' labels are white on
-  a deeper accent color.
+  and its row shows how far it has got, and Scan Again and Put Back wait
+  until cleaning is done. The controls along the panels' top and bottom
+  edges sit 16 points in from them, the hidden sidebar's toggle is a plain
+  icon with the title on its own line under it, and the main buttons'
+  labels are white on a deeper accent color.
 - DerivedData's projects and shared caches, and each SwiftPM, Xcode and
   Gradle build folder, can be ticked in the inspector and cleaned on their
   own, with Put Back from the Trash. A project can go while Xcode is open,

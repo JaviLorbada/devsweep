@@ -2,9 +2,9 @@ import DevSweepKit
 import Testing
 @testable import DevSweepApp
 
-/// What a clean asks, and when it goes ahead, with fakes for the rows, the
-/// marks and the running apps. The fake rows never let a clean begin, so
-/// nothing is cleaned here; the flow tests clean for real, on a fake home.
+/// A clean from the question to the totals, with fakes for the rows, the
+/// cleaner, the marks and the running apps: nothing touches the disk. The
+/// flow tests clean real folders on a fake home.
 @MainActor
 @Suite("Cleaning")
 struct CleaningModelTests {
@@ -19,8 +19,10 @@ struct CleaningModelTests {
         CleaningModel(scan: self.rows, marks: self.marks, apps: apps, moveToTrash: moveToTrash)
     }
 
+    // MARK: What it asks
+
     @Test
-    func `with Xcode open, DerivedData asks to quit it, and Quit and Clean goes ahead once it quits`() async throws {
+    func `with Xcode open, DerivedData asks to quit it, and Quit and Clean cleans once it quits`() async throws {
         let apps = FakeRunningApps([.xcode])
         let cleaning = self.cleaning(apps: apps)
         await cleaning.requestClean([.derivedData])
@@ -34,8 +36,9 @@ struct CleaningModelTests {
         await cleaning.quitAppsAndClean(pending)
         #expect(apps.askedToQuit == [[.xcode]])
         #expect(cleaning.pendingClean == nil)
-        await waitUntil { self.rows.cleansBegun == 1 }
-        #expect(self.rows.cleansBegun == 1)
+        await waitUntil { self.rows.rows[.derivedData]?.state == .cleaned }
+        #expect(self.rows.cleaner.cleaned == [.derivedData])
+        #expect(!self.rows.isCleaning)
     }
 
     @Test
@@ -47,15 +50,6 @@ struct CleaningModelTests {
         #expect(cleaning.notice?.title == "Xcode didn't quit")
         #expect(cleaning.pendingClean == nil)
         #expect(self.rows.cleansBegun == 0)
-    }
-
-    @Test
-    func `with nothing open, moving to the Trash goes ahead without a question`() async {
-        let cleaning = self.cleaning()
-        await cleaning.requestClean([.derivedData, .npmCache])
-        #expect(cleaning.pendingClean == nil)
-        await waitUntil { self.rows.cleansBegun == 1 }
-        #expect(self.rows.cleansBegun == 1)
     }
 
     @Test
@@ -75,8 +69,6 @@ struct CleaningModelTests {
             return
         }
         #expect(self.rows.cleansBegun == 0, "nothing goes before the answer")
-        await cleaning.confirmClean(pending)
-        #expect(self.rows.cleansBegun == 1)
     }
 
     @Test
@@ -105,14 +97,79 @@ struct CleaningModelTests {
         #expect(confirm.items == [.npmCache])
     }
 
+    // MARK: Cleaning
+
+    @Test
+    func `moving to the Trash cleans at once, counts for this session, and Put Back undoes it`() async {
+        let cleaning = self.cleaning()
+        await cleaning.requestClean([.npmCache])
+        #expect(cleaning.pendingClean == nil, "the Trash needs no question")
+        await waitUntil { self.rows.rows[.npmCache]?.state == .cleaned }
+        #expect(self.rows.rows[.npmCache]?.canPutBack == true)
+        #expect(cleaning.trashedThisSession == 16)
+        #expect(cleaning.deletedThisSession == 0)
+        #expect(self.marks.cleanedItems == [.npmCache])
+
+        await cleaning.putBack(.npmCache)
+        #expect(self.rows.cleaner.putBacks == 1)
+        #expect(self.rows.rows[.npmCache]?.state == .measured)
+        #expect(cleaning.trashedThisSession == 0)
+        #expect(self.rows.cleansBegun == 2, "Put Back takes the rows too")
+        #expect(!self.rows.isCleaning)
+    }
+
+    @Test
+    func `deleting for good counts as deleted, and can't be put back`() async throws {
+        let cleaning = self.cleaning(moveToTrash: false)
+        await cleaning.requestClean([.npmCache])
+        await waitUntil { cleaning.pendingClean != nil }
+        try await cleaning.confirmClean(#require(cleaning.pendingClean))
+        #expect(self.rows.rows[.npmCache]?.state == .cleaned)
+        #expect(self.rows.rows[.npmCache]?.canPutBack == false)
+        #expect(cleaning.deletedThisSession == 16)
+        #expect(cleaning.trashedThisSession == 0)
+    }
+
+    @Test
+    func `what can't be removed is left alone, and a notice says so`() async {
+        let rows = FakeScanRows(
+            [result(.npmCache, kilobytes: 16)],
+            cleaner: FakeCleaner(failing: ["/Users/someone/npm-cache"]))
+        let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps(), moveToTrash: true)
+        await cleaning.requestClean([.npmCache])
+        await waitUntil { cleaning.notice != nil }
+        #expect(cleaning.notice?.title == "Some things were left alone")
+        #expect(rows.rows[.npmCache]?.state == .measured)
+        #expect(cleaning.trashedThisSession == 0)
+        #expect(self.marks.cleanedItems.isEmpty)
+        #expect(rows.warnings == ["Couldn't remove /Users/someone/npm-cache."])
+    }
+
+    @Test
+    func `Xcode opened after the question: its items are skipped, the rest cleaned`() async throws {
+        let apps = FakeRunningApps()
+        let cleaning = self.cleaning(apps: apps, moveToTrash: false)
+        await cleaning.requestClean([.derivedData, .npmCache])
+        await waitUntil { cleaning.pendingClean != nil }
+        let confirm = try #require(cleaning.pendingClean)
+
+        apps.running = [.xcode]
+        await cleaning.confirmClean(confirm)
+        #expect(self.rows.cleaner.cleaned == [.npmCache])
+        #expect(self.rows.rows[.derivedData]?.state == .measured)
+        #expect(cleaning.notice?.message.hasPrefix("Skipped ") == true)
+        #expect(cleaning.notice?.message.hasSuffix("Xcode is open.") == true)
+    }
+
+    // MARK: Parts
+
     @Test
     func `parts that need Xcode closed ask to quit it; a project alone asks first while Xcode is open`() async throws {
         let derivedData = try #require(sampleResults.first { $0.item == .derivedData })
         let project = try #require(derivedData.derivedData?.projects.first).folder
         let rows = FakeScanRows([derivedData])
-        let marks = FakeMarking()
-        marks.parts[.derivedData] = [.compilationCache, .folder(project)]
-        let cleaning = CleaningModel(scan: rows, marks: marks, apps: FakeRunningApps([.xcode]), moveToTrash: true)
+        self.marks.parts[.derivedData] = [.compilationCache, .folder(project)]
+        let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps([.xcode]), moveToTrash: true)
 
         await cleaning.requestCleanParts(of: .derivedData)
         let quit = try #require(cleaning.pendingClean)
@@ -128,5 +185,29 @@ struct CleaningModelTests {
         #expect(confirm.parts == [.folder(project)])
         #expect(confirm.xcodeOpen)
         #expect(rows.cleansBegun == 0, "nothing goes before the answer")
+    }
+
+    @Test
+    func `a project cleaned on its own leaves the rest, says what went, and Put Back restores it`() async throws {
+        let before = try #require(sampleResults.first { $0.item == .derivedData })
+        let project = try #require(before.derivedData?.projects.first).folder
+        let rows = FakeScanRows([before])
+        self.marks.parts[.derivedData] = [.folder(project)]
+        let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps(), moveToTrash: true)
+
+        await cleaning.requestCleanParts(of: .derivedData)
+        await waitUntil { cleaning.lastPartsClean(of: .derivedData) != nil }
+        let clean = try #require(cleaning.lastPartsClean(of: .derivedData))
+        let projectKilobytes = before.kilobytes(of: .folder(project))
+        #expect(clean.summary == "1 project")
+        #expect(clean.kilobytes == projectKilobytes)
+        #expect(rows.rows[.derivedData]?.result?.kilobytes == before.kilobytes - projectKilobytes)
+        #expect(self.marks.markedParts(of: .derivedData).isEmpty)
+        #expect(cleaning.trashedThisSession == projectKilobytes)
+
+        await cleaning.putBackParts(of: .derivedData)
+        #expect(rows.rows[.derivedData]?.result == before)
+        #expect(cleaning.lastPartsClean(of: .derivedData) == nil)
+        #expect(cleaning.trashedThisSession == 0)
     }
 }
