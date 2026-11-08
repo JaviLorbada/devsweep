@@ -167,7 +167,7 @@ extension LayoutTests {
     func `the Android Studio screens fit the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
-        model.android = sampleAndroid
+        model.scan.showListings(extras: nil, android: sampleAndroid)
         for (screen, size) in [
             (AppModel.Screen.androidStudios, minimumSize(of: AndroidStudiosContent(), model: model)),
             (.androidSDK, minimumSize(of: AndroidSDKContent(), model: model)),
@@ -181,7 +181,7 @@ extension LayoutTests {
     func `the Android inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
-        model.android = sampleAndroid
+        model.scan.showListings(extras: nil, android: sampleAndroid)
         for screen in [AppModel.Screen.androidStudios, .androidSDK, .gradleCaches] {
             model.screen = screen
             let size = minimumSize(of: AndroidInspector(), model: model)

@@ -31,7 +31,7 @@ struct DevSweepApp: App {
     var body: some Scene {
         Window(ProductInfo.name, id: "main") {
             ContentView()
-                .environment(self.model)
+                .environment(models: self.model)
                 .containerBackground(Palette.backdrop, for: .window)
                 // A fixed ideal size: SwiftUI animates the window to the
                 // content's ideal size whenever an animated change alters it,
@@ -60,7 +60,7 @@ struct DevSweepApp: App {
 
         Settings {
             SettingsView()
-                .environment(self.model)
+                .environment(models: self.model)
         }
 
         MenuBarExtra(isInserted: Binding(
@@ -68,10 +68,10 @@ struct DevSweepApp: App {
             set: { self.model.preferences.showInMenuBar = $0 }))
         {
             MenuBarPanel()
-                .environment(self.model)
+                .environment(models: self.model)
         } label: {
             MenuBarLabel()
-                .environment(self.model)
+                .environment(models: self.model)
         }
         .menuBarExtraStyle(.window)
     }
@@ -126,11 +126,11 @@ struct AppCommands: Commands {
             Button("About \(ProductInfo.name)") { self.openWindow(id: "about") }
         }
         CommandGroup(replacing: .newItem) {
-            Button(self.model.isScanning ? "Stop Scan" : "Scan Again") {
-                self.model.isScanning ? self.model.stopScan() : self.model.scan()
+            Button(self.model.scan.isScanning ? "Stop Scan" : "Scan Again") {
+                self.model.scan.isScanning ? self.model.scan.stopScan() : self.model.scan.scan()
             }
             .keyboardShortcut("r")
-            .disabled(!self.model.canScanOrStop)
+            .disabled(!self.model.scan.canScanOrStop)
         }
         CommandGroup(before: .toolbar) {
             ForEach(AppModel.ChartStyle.allCases) { style in

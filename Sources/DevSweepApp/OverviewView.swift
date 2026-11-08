@@ -27,6 +27,7 @@ struct OverviewView: View {
 /// The chart card, the items and any notes from the scan.
 struct OverviewContent: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(spacing: 14) {
@@ -50,8 +51,8 @@ struct OverviewContent: View {
 
             ItemsCard()
 
-            if !self.model.warnings.isEmpty {
-                WarningsNote(warnings: self.model.warnings)
+            if !self.scan.warnings.isEmpty {
+                WarningsNote(warnings: self.scan.warnings)
             }
         }
         .padding(.horizontal, 22)
@@ -88,7 +89,9 @@ struct WarningsNote: View {
 
 /// The Trash toggle, what is marked, and the button that cleans it.
 struct OverviewFooter: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
+    @Environment(MarksModel.self) private var marks
+    @Environment(CleaningModel.self) private var cleaning
 
     var body: some View {
         GeometryReader { proxy in
@@ -99,32 +102,32 @@ struct OverviewFooter: View {
     }
 
     private func bar(wide: Bool) -> some View {
-        @Bindable var model = model
+        @Bindable var cleaning = self.cleaning
         return HStack(spacing: 14) {
-            Toggle(wide ? "Move to Trash, so anything can be put back" : "Move to Trash", isOn: $model.moveToTrash)
+            Toggle(wide ? "Move to Trash, so anything can be put back" : "Move to Trash", isOn: $cleaning.moveToTrash)
                 .toggleStyle(.checkbox)
                 .font(.callout)
                 .foregroundStyle(.muted)
                 .lineLimit(1)
                 .help("Off deletes for good, after asking")
             Spacer(minLength: 0)
-            Text(model.markedRows
+            Text(self.marks.markedRows
                 .isEmpty ? "Nothing marked" :
-                "\(model.markedRows.count) marked, \(SizeText.of(kilobytes: model.markedKilobytes))")
+                "\(self.marks.markedRows.count) marked, \(SizeText.of(kilobytes: self.marks.markedKilobytes))")
                 .font(.callout)
                 .monospacedDigit()
                 .foregroundStyle(.muted)
                 .lineLimit(1)
                 .contentTransition(.numericText())
-            Button(model.markedRows
-                .isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: model.markedKilobytes))")
+            Button(self.marks.markedRows
+                .isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: self.marks.markedKilobytes))")
             {
-                Task { await model.requestClean(model.markedRows.map(\.item)) }
+                Task { await cleaning.requestClean(self.marks.markedRows.map(\.item)) }
             }
             .buttonStyle(.prominentAction)
             .controlSize(.large)
             .keyboardShortcut(.defaultAction)
-            .disabled(model.markedRows.isEmpty || model.isScanning || model.isCleaning)
+            .disabled(self.marks.markedRows.isEmpty || self.scan.isScanning || self.scan.isCleaning)
             .layoutPriority(1)
         }
     }

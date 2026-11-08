@@ -4,6 +4,8 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
+    @Environment(CleaningModel.self) private var cleaning
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The window's width, which caps the sidebar's.
     @State private var windowWidth: CGFloat?
@@ -121,37 +123,44 @@ struct ContentView: View {
         .background(WindowWidthReader { self.windowWidth = $0 })
         .alert(
             self.pendingTitle,
-            isPresented: Binding(get: { model.pendingClean != nil }, set: { if !$0 { model.pendingClean = nil } }),
-            presenting: model.pendingClean)
+            isPresented: Binding(
+                get: { self.cleaning.pendingClean != nil },
+                set: { if !$0 { self.cleaning.dismissPendingClean() } }),
+            presenting: self.cleaning.pendingClean)
         { pending in
             switch pending.stage {
             case .quitApps:
-                Button("Quit and Clean") { Task { await model.quitAppsAndClean(pending) } }
+                Button("Quit and Clean") { Task { await self.cleaning.quitAppsAndClean(pending) } }
                 if pending.hasOthers {
-                    Button("Clean the Others") { model.cleanSkippingXcodeItems(pending) }
+                    Button("Clean the Others") { self.cleaning.cleanSkippingXcodeItems(pending) }
                 }
                 Button("Cancel", role: .cancel) {}
             case .confirm:
-                Button(model.moveToTrash ? "Clean" : "Delete", role: model.moveToTrash ? nil : .destructive) {
-                    Task { await model.confirmClean(pending) }
+                Button(
+                    self.cleaning.moveToTrash ? "Clean" : "Delete",
+                    role: self.cleaning.moveToTrash ? nil : .destructive)
+                {
+                    Task { await self.cleaning.confirmClean(pending) }
                 }
                 Button("Cancel", role: .cancel) {}
             }
         } message: { pending in
-            Text(CleanPrompt.message(for: pending, moveToTrash: model.moveToTrash))
+            Text(CleanPrompt.message(for: pending, moveToTrash: self.cleaning.moveToTrash))
         }
         .sheet(item: $model.runtimeToRemove) { runtime in
             RemoveRuntimeSheet(runtime: runtime)
-                .environment(model)
+                .environment(models: model)
         }
         .sheet(item: $model.worktreeToRemove) { worktree in
             RemoveWorktreeSheet(worktree: worktree)
-                .environment(model)
+                .environment(models: model)
         }
         .alert(
-            model.notice?.title ?? "",
-            isPresented: Binding(get: { model.notice != nil }, set: { if !$0 { model.notice = nil } }),
-            presenting: model.notice)
+            self.cleaning.notice?.title ?? "",
+            isPresented: Binding(
+                get: { self.cleaning.notice != nil },
+                set: { if !$0 { self.cleaning.dismissNotice() } }),
+            presenting: self.cleaning.notice)
         { _ in
             Button("OK") {}
         } message: { notice in
@@ -164,7 +173,7 @@ struct ContentView: View {
             #if DEBUG
             if DebugLaunch.isRequested { FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8)) }
             #endif
-            if model.preferences.scanOnLaunch { model.scan() }
+            if model.preferences.scanOnLaunch { self.scan.scan() }
             #if DEBUG
             await Snapshotter.runIfAsked(model)
             await DebugLaunch.run(model)
@@ -200,12 +209,12 @@ struct ContentView: View {
     }
 
     private var pendingTitle: String {
-        guard let pending = model.pendingClean else { return "" }
+        guard let pending = cleaning.pendingClean else { return "" }
         let kilobytes = pending.parts.isEmpty
-            ? pending.items.compactMap { self.model.rows[$0]?.kilobytes }.reduce(0, +)
-            : self.model.kilobytes(of: pending.parts, in: pending.items.first ?? .derivedData)
+            ? pending.items.compactMap { self.scan.rows[$0]?.kilobytes }.reduce(0, +)
+            : self.scan.kilobytes(of: pending.parts, in: pending.items.first ?? .derivedData)
         let size = SizeText.of(kilobytes: kilobytes)
-        return CleanPrompt.title(for: pending, size: size, moveToTrash: self.model.moveToTrash)
+        return CleanPrompt.title(for: pending, size: size, moveToTrash: self.cleaning.moveToTrash)
     }
 
     private var title: String {

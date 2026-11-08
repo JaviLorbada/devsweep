@@ -1,7 +1,7 @@
 import DevSweepKit
 
 /// The rows, one per item, and what state each is in.
-extension AppModel {
+extension ScanModel {
     enum RowState: Equatable {
         case waiting
         case measuring

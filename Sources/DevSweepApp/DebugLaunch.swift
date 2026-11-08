@@ -87,7 +87,7 @@ enum DebugLaunch {
             try? await Task.sleep(for: .milliseconds(500))
             self.trace(
                 "capturing; key window \(window.isKeyWindow), on screen \(window.occlusionState.contains(.visible)), "
-                    + "scan button enabled \(model.engine != nil)")
+                    + "scan button enabled \(model.scan.canScan)")
             let appName = NSApplication.shared.mainMenu?.items.first?.submenu?.title ?? "-"
             self
                 .trace(
@@ -155,7 +155,7 @@ enum DebugLaunch {
         self.trace("window \(Int(self.mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
         var lastWidth = self.mainWindow?.frame.width ?? 0
         let start = Date()
-        while model.isScanning || model.isLoadingExtras || model.isScanTaskRunning {
+        while model.scan.isScanning || model.scan.isLoadingExtras || model.scan.isScanTaskRunning {
             if Task.isCancelled {
                 self.trace("cancelled while waiting")
                 return false
@@ -168,7 +168,7 @@ enum DebugLaunch {
                     Date().timeIntervalSince(start),
                     lastWidth,
                     width,
-                    model.measuringItems.map(\.rawValue).joined(separator: ",")))
+                    model.scan.tally.measuringItems.map(\.rawValue).joined(separator: ",")))
                 lastWidth = width
             }
         }
@@ -215,7 +215,7 @@ enum DebugLaunch {
             self.trace("windows: \(visible.map { "\"\($0.title)\"" }.joined(separator: ", "))")
             self.trace(
                 "screen \(model.screen), chart \(model.chartStyle.rawValue), "
-                    + "inspector \(model.inspectorPlacement.rawValue), scanning \(model.isScanning)")
+                    + "inspector \(model.inspectorPlacement.rawValue), scanning \(model.scan.isScanning)")
         }
         if let clicks = environment["DEVSWEEP_CLICK"], !clicks.isEmpty, let window = mainWindow {
             for pair in clicks.split(separator: ";") {
@@ -227,7 +227,7 @@ enum DebugLaunch {
                 self.trace(
                     "inspector \(model.inspectorPlacement.rawValue) (wanted \(model.wantsInspector), "
                         + "room \(model.inspectorHasRoom)), window \(Int(window.frame.width)) wide, "
-                        + "scanning \(model.isScanning), chart \(model.chartStyle.rawValue)")
+                        + "scanning \(model.scan.isScanning), chart \(model.chartStyle.rawValue)")
             }
         }
         if environment["DEVSWEEP_SIDEBAR_TIMING"] == "1", let window = mainWindow {
@@ -528,7 +528,7 @@ enum DebugLaunch {
                 "window \(Int(window.frame.width))x\(Int(window.frame.height)) min "
                     + "\(Int(window.minSize.width))x\(Int(window.minSize.height))")
         lines.append("screen \(model.screen), inspector \(model.inspectorPlacement.rawValue)")
-        if let timing = model.scanTiming {
+        if let timing = model.scan.scanTiming {
             lines.append(String(
                 format: "scan: items measured after %.1fs, everything after %.1fs",
                 timing.items,

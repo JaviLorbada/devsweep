@@ -18,6 +18,7 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @Environment(AppModel.self) private var model
+    @Environment(CleaningModel.self) private var cleaning
 
     var body: some View {
         @Bindable var preferences = self.model.preferences
@@ -68,7 +69,7 @@ private struct GeneralSettings: View {
             }
         }
         .formStyle(.grouped)
-        .onChange(of: preferences.moveToTrash) { _, moveToTrash in self.model.moveToTrash = moveToTrash }
+        .onChange(of: preferences.moveToTrash) { _, moveToTrash in self.cleaning.moveToTrash = moveToTrash }
     }
 }
 
@@ -123,7 +124,7 @@ private struct FolderSettings: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
         panel.prompt = "Add"
-        let home = self.model.engine?.config.home ?? NSHomeDirectory()
+        let home = self.model.scan.home ?? NSHomeDirectory()
         panel.directoryURL = URL(fileURLWithPath: home)
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {

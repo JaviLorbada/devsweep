@@ -3,7 +3,7 @@ import Foundation
 
 /// The words of the questions asked before cleaning.
 enum CleanPrompt {
-    static func title(for pending: AppModel.PendingClean, size: String, moveToTrash: Bool) -> String {
+    static func title(for pending: CleaningModel.PendingClean, size: String, moveToTrash: Bool) -> String {
         switch pending.stage {
         case let .quitApps(apps):
             "Quit \(self.names(apps.map(\.rawValue)))?"
@@ -12,7 +12,7 @@ enum CleanPrompt {
         }
     }
 
-    static func message(for pending: AppModel.PendingClean, moveToTrash: Bool) -> String {
+    static func message(for pending: CleaningModel.PendingClean, moveToTrash: Bool) -> String {
         if !pending.parts.isEmpty { return self.partsMessage(for: pending, moveToTrash: moveToTrash) }
         switch pending.stage {
         case let .quitApps(apps):
@@ -36,7 +36,7 @@ enum CleanPrompt {
     }
 
     /// The words for parts of DerivedData: by name up to three, by count past that.
-    private static func partsMessage(for pending: AppModel.PendingClean, moveToTrash: Bool) -> String {
+    private static func partsMessage(for pending: CleaningModel.PendingClean, moveToTrash: Bool) -> String {
         switch pending.stage {
         case let .quitApps(apps):
             let verb = apps.count == 1 ? "is" : "are"
@@ -82,9 +82,9 @@ enum CleanPrompt {
         of item: Item,
         in result: ItemResult?,
         xcodeOpen: Bool,
-        stage: AppModel.PendingClean.Stage) -> AppModel.PendingClean
+        stage: CleaningModel.PendingClean.Stage) -> CleaningModel.PendingClean
     {
-        var question = AppModel.PendingClean(items: [item], stage: stage, parts: parts)
+        var question = CleaningModel.PendingClean(items: [item], stage: stage, parts: parts)
         guard let result else { return question }
         let sorted = parts.sorted { a, b in
             let (sizeA, sizeB) = (result.kilobytes(of: a), result.kilobytes(of: b))

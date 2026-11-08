@@ -13,23 +13,23 @@ struct CleaningModelTests {
         write(64, to: folder)
         let apps = FakeDeveloperApps(running: [.xcode])
         let model = await scannedModel(home: home, apps: apps)
-        let kilobytes = try #require(model.rows[.derivedData]?.kilobytes)
+        let kilobytes = try #require(model.scan.rows[.derivedData]?.kilobytes)
 
-        await model.requestClean([.derivedData])
-        let pending = try #require(model.pendingClean)
+        await model.cleaning.requestClean([.derivedData])
+        let pending = try #require(model.cleaning.pendingClean)
         guard case .quitApps([.xcode]) = pending.stage else {
             Issue.record("expected to be asked to quit Xcode")
             return
         }
         #expect(FileManager.default.fileExists(atPath: folder), "nothing goes before the answer")
 
-        await model.quitAppsAndClean(pending)
-        await waitUntil { model.rows[.derivedData]?.state == .cleaned }
+        await model.cleaning.quitAppsAndClean(pending)
+        await waitUntil { model.scan.rows[.derivedData]?.state == .cleaned }
         #expect(apps.asked == [[.xcode]])
-        #expect(model.rows[.derivedData]?.state == .cleaned)
+        #expect(model.scan.rows[.derivedData]?.state == .cleaned)
         #expect(!FileManager.default.fileExists(atPath: folder))
-        #expect(model.trashedThisSession == kilobytes)
-        #expect(!model.marked.contains(.derivedData))
+        #expect(model.cleaning.trashedThisSession == kilobytes)
+        #expect(!model.marks.marked.contains(.derivedData))
     }
 
     @Test
@@ -39,13 +39,13 @@ struct CleaningModelTests {
         write(64, to: folder)
         let model = await scannedModel(home: home, apps: FakeDeveloperApps(running: [.xcode], quits: false))
 
-        await model.requestClean([.derivedData])
-        let pending = try #require(model.pendingClean)
-        await model.quitAppsAndClean(pending)
+        await model.cleaning.requestClean([.derivedData])
+        let pending = try #require(model.cleaning.pendingClean)
+        await model.cleaning.quitAppsAndClean(pending)
 
-        #expect(model.notice?.title == "Xcode didn't quit")
-        #expect(model.pendingClean == nil)
-        #expect(model.rows[.derivedData]?.state == .measured)
+        #expect(model.cleaning.notice?.title == "Xcode didn't quit")
+        #expect(model.cleaning.pendingClean == nil)
+        #expect(model.scan.rows[.derivedData]?.state == .measured)
         #expect(FileManager.default.fileExists(atPath: folder))
     }
 
@@ -55,31 +55,31 @@ struct CleaningModelTests {
         let folder = "\(home.path)/.npm/_cacache"
         write(64, to: folder)
         let model = await scannedModel(home: home)
-        let kilobytes = try #require(model.rows[.npmCache]?.kilobytes)
+        let kilobytes = try #require(model.scan.rows[.npmCache]?.kilobytes)
 
-        await model.requestClean([.npmCache])
-        await waitUntil { model.rows[.npmCache]?.state == .cleaned }
-        #expect(model.pendingClean == nil, "the Trash needs no question")
+        await model.cleaning.requestClean([.npmCache])
+        await waitUntil { model.scan.rows[.npmCache]?.state == .cleaned }
+        #expect(model.cleaning.pendingClean == nil, "the Trash needs no question")
         #expect(!FileManager.default.fileExists(atPath: folder))
-        #expect(model.rows[.npmCache]?.canPutBack == true)
-        #expect(model.trashedThisSession == kilobytes)
+        #expect(model.scan.rows[.npmCache]?.canPutBack == true)
+        #expect(model.cleaning.trashedThisSession == kilobytes)
         #expect(model.statusLine.contains("moved to Trash this session"))
 
-        await model.putBack(.npmCache)
+        await model.cleaning.putBack(.npmCache)
         #expect(FileManager.default.fileExists(atPath: folder))
-        #expect(model.rows[.npmCache]?.state == .measured)
-        #expect(model.trashedThisSession == 0)
+        #expect(model.scan.rows[.npmCache]?.state == .measured)
+        #expect(model.cleaning.trashedThisSession == 0)
     }
 
     @Test
     func `deleting for good, and what simctl or brew removes, asks first`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
-        #expect(model.moveToTrash)
-        #expect(!model.needsConfirmation([.npmCache, .derivedData]))
-        #expect(model.needsConfirmation([.npmCache, .homebrew]))
-        #expect(model.needsConfirmation([.simulators]))
-        model.moveToTrash = false
-        #expect(model.needsConfirmation([.npmCache]))
+        #expect(model.cleaning.moveToTrash)
+        #expect(!model.cleaning.needsConfirmation([.npmCache, .derivedData]))
+        #expect(model.cleaning.needsConfirmation([.npmCache, .homebrew]))
+        #expect(model.cleaning.needsConfirmation([.simulators]))
+        model.cleaning.moveToTrash = false
+        #expect(model.cleaning.needsConfirmation([.npmCache]))
     }
 }

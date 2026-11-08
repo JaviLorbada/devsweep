@@ -44,33 +44,33 @@ struct CleaningTests {
             notifier: SilentNotificationPoster(),
             dependencies: Dependencies(tools: .unavailable, files: files))
         await finishScan(model)
-        #expect(model.canScanOrStop)
-        let kilobytes = try #require(model.rows[.npmCache]?.kilobytes)
+        #expect(model.scan.canScanOrStop)
+        let kilobytes = try #require(model.scan.rows[.npmCache]?.kilobytes)
 
-        model.moveToTrash = false
-        await model.requestClean([.npmCache])
-        for _ in 0..<100 where model.pendingClean == nil {
+        model.cleaning.moveToTrash = false
+        await model.cleaning.requestClean([.npmCache])
+        for _ in 0..<100 where model.cleaning.pendingClean == nil {
             try? await Task.sleep(for: .milliseconds(20))
         }
-        let pending = try #require(model.pendingClean)
-        let cleaning = Task { await model.confirmClean(pending) }
-        for _ in 0..<200 where (model.rows[.npmCache]?.removedBytes ?? 0) == 0 {
+        let pending = try #require(model.cleaning.pendingClean)
+        let cleaning = Task { await model.cleaning.confirmClean(pending) }
+        for _ in 0..<200 where (model.scan.rows[.npmCache]?.removedBytes ?? 0) == 0 {
             try? await Task.sleep(for: .milliseconds(20))
         }
 
-        #expect(model.isCleaning)
-        #expect(!model.canScanOrStop)
-        model.scan()
-        #expect(!model.isScanning, "a scan waits for the clean")
-        let row = try #require(model.rows[.npmCache])
+        #expect(model.scan.isCleaning)
+        #expect(!model.scan.canScanOrStop)
+        model.scan.scan()
+        #expect(!model.scan.isScanning, "a scan waits for the clean")
+        let row = try #require(model.scan.rows[.npmCache])
         #expect(row.leftKilobytes == kilobytes - 32)
         #expect(row.cleaningProgress == Double(32) / Double(kilobytes))
 
         files.letGo()
         await cleaning.value
-        #expect(model.canScanOrStop)
-        #expect(model.rows[.npmCache]?.state == .cleaned)
-        #expect(model.rows[.npmCache]?.cleaningProgress == nil)
+        #expect(model.scan.canScanOrStop)
+        #expect(model.scan.rows[.npmCache]?.state == .cleaned)
+        #expect(model.scan.rows[.npmCache]?.cleaningProgress == nil)
     }
 }
 
@@ -116,7 +116,7 @@ struct PartsCleaningTests {
     }
 
     func project(_ name: String, in model: AppModel) throws -> String {
-        try #require(model.rows[.derivedData]?.result?.derivedData?.projects.first {
+        try #require(model.scan.rows[.derivedData]?.result?.derivedData?.projects.first {
             $0.folder.hasSuffix("/\(name)-abc")
         }).folder
     }
@@ -126,34 +126,34 @@ struct PartsCleaningTests {
         let home = TemporaryHome()
         let model = await scanned(home)
         let atlas = try project("Atlas", in: model)
-        let before = try #require(model.rows[.derivedData]?.result)
+        let before = try #require(model.scan.rows[.derivedData]?.result)
         let atlasKilobytes = before.kilobytes(of: .folder(atlas))
-        #expect(model.moveToTrash)
+        #expect(model.cleaning.moveToTrash)
 
-        model.setMarked(.folder(atlas), of: .derivedData, true)
-        #expect(model.kilobytes(of: model.markedParts(of: .derivedData), in: .derivedData) == atlasKilobytes)
-        await model.requestCleanParts(of: .derivedData)
-        for _ in 0..<200 where model.lastPartsClean(of: .derivedData) == nil {
+        model.marks.setMarked(.folder(atlas), of: .derivedData, true)
+        #expect(model.scan.kilobytes(of: model.marks.markedParts(of: .derivedData), in: .derivedData) == atlasKilobytes)
+        await model.cleaning.requestCleanParts(of: .derivedData)
+        for _ in 0..<200 where model.cleaning.lastPartsClean(of: .derivedData) == nil {
             try? await Task.sleep(for: .milliseconds(20))
         }
 
-        let clean = try #require(model.lastPartsClean(of: .derivedData))
+        let clean = try #require(model.cleaning.lastPartsClean(of: .derivedData))
         #expect(clean.summary == "1 project")
         #expect(clean.canPutBack)
         #expect(!FileManager.default.fileExists(atPath: atlas))
         #expect(try FileManager.default.fileExists(atPath: self.project("Fieldwork", in: model)))
-        let left = try #require(model.rows[.derivedData]?.result)
+        let left = try #require(model.scan.rows[.derivedData]?.result)
         #expect(left.kilobytes == before.kilobytes - atlasKilobytes)
         #expect(left.derivedData?.projects.count == 1)
-        #expect(model.rows[.derivedData]?.state == .measured)
-        #expect(model.markedParts(of: .derivedData).isEmpty)
-        #expect(model.trashedThisSession == atlasKilobytes)
+        #expect(model.scan.rows[.derivedData]?.state == .measured)
+        #expect(model.marks.markedParts(of: .derivedData).isEmpty)
+        #expect(model.cleaning.trashedThisSession == atlasKilobytes)
 
-        await model.putBackParts(of: .derivedData)
+        await model.cleaning.putBackParts(of: .derivedData)
         #expect(FileManager.default.fileExists(atPath: atlas))
-        #expect(model.rows[.derivedData]?.result == before)
-        #expect(model.lastPartsClean(of: .derivedData) == nil)
-        #expect(model.trashedThisSession == 0)
+        #expect(model.scan.rows[.derivedData]?.result == before)
+        #expect(model.cleaning.lastPartsClean(of: .derivedData) == nil)
+        #expect(model.cleaning.trashedThisSession == 0)
     }
 
     @Test
@@ -162,10 +162,10 @@ struct PartsCleaningTests {
         let model = await scanned(home, runningApps: XcodeOpen())
         let atlas = try project("Atlas", in: model)
 
-        model.setMarked(.compilationCache, of: .derivedData, true)
-        model.setMarked(.folder(atlas), of: .derivedData, true)
-        await model.requestCleanParts(of: .derivedData)
-        let quit = try #require(model.pendingClean)
+        model.marks.setMarked(.compilationCache, of: .derivedData, true)
+        model.marks.setMarked(.folder(atlas), of: .derivedData, true)
+        await model.cleaning.requestCleanParts(of: .derivedData)
+        let quit = try #require(model.cleaning.pendingClean)
         guard case .quitApps([.xcode]) = quit.stage else {
             Issue.record("expected to be asked to quit Xcode")
             return
@@ -175,11 +175,11 @@ struct PartsCleaningTests {
             "The compilation cache can't be cleaned while Xcode is open."))
 
         // Clean the Others: the project, once asked again with Xcode open.
-        model.cleanSkippingXcodeItems(quit)
-        for _ in 0..<100 where model.pendingClean == nil {
+        model.cleaning.cleanSkippingXcodeItems(quit)
+        for _ in 0..<100 where model.cleaning.pendingClean == nil {
             try? await Task.sleep(for: .milliseconds(20))
         }
-        let confirm = try #require(model.pendingClean)
+        let confirm = try #require(model.cleaning.pendingClean)
         #expect(confirm.parts == [.folder(atlas)])
         #expect(CleanPrompt.message(for: confirm, moveToTrash: true)
             == "DerivedData for Atlas goes to the Trash, so it can be put back. Xcode is open: if Atlas is open in "
@@ -208,27 +208,27 @@ struct FolderCleaningTests {
             notifier: SilentNotificationPoster(),
             dependencies: Dependencies(tools: tools))
         await finishScan(model)
-        let before = try #require(model.rows[.swiftpmBuilds]?.result)
+        let before = try #require(model.scan.rows[.swiftpmBuilds]?.result)
         #expect(PartsList.listsFolders(before))
         let atlas = try #require(before.paths.first { $0.hasSuffix("/Atlas/.build") })
         #expect(PartsList.folderNames(before.paths)[atlas] == "Atlas")
 
-        model.setMarked(.folder(atlas), of: .swiftpmBuilds, true)
-        #expect(CleanPrompt.partsSummary(model.markedParts(of: .swiftpmBuilds), in: .swiftpmBuilds) == "1 folder")
-        await model.requestCleanParts(of: .swiftpmBuilds)
-        for _ in 0..<200 where model.lastPartsClean(of: .swiftpmBuilds) == nil {
+        model.marks.setMarked(.folder(atlas), of: .swiftpmBuilds, true)
+        #expect(CleanPrompt.partsSummary(model.marks.markedParts(of: .swiftpmBuilds), in: .swiftpmBuilds) == "1 folder")
+        await model.cleaning.requestCleanParts(of: .swiftpmBuilds)
+        for _ in 0..<200 where model.cleaning.lastPartsClean(of: .swiftpmBuilds) == nil {
             try? await Task.sleep(for: .milliseconds(20))
         }
 
         #expect(!FileManager.default.fileExists(atPath: atlas))
-        let left = try #require(model.rows[.swiftpmBuilds]?.result)
+        let left = try #require(model.scan.rows[.swiftpmBuilds]?.result)
         #expect(left.paths.count == 1)
         #expect(left.label == "SwiftPM .build folders (1)")
         #expect(left.kilobytes == before.kilobytes - before.kilobytes(of: .folder(atlas)))
 
-        await model.putBackParts(of: .swiftpmBuilds)
+        await model.cleaning.putBackParts(of: .swiftpmBuilds)
         #expect(FileManager.default.fileExists(atPath: atlas))
-        #expect(model.rows[.swiftpmBuilds]?.result == before)
+        #expect(model.scan.rows[.swiftpmBuilds]?.result == before)
     }
 
     @Test

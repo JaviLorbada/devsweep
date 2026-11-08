@@ -32,7 +32,7 @@ func makeModel(home: TemporaryHome, extras: Extras? = nil) -> AppModel {
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: SilentNotificationPoster(),
         dependencies: Dependencies(tools: .unavailable))
-    model.extras = extras
+    model.scan.showListings(extras: extras, android: nil)
     return model
 }
 
@@ -40,7 +40,7 @@ func makeModel(home: TemporaryHome, extras: Extras? = nil) -> AppModel {
 /// for when it decides how wide and tall they must be.
 @MainActor
 func minimumSize(of view: some View, model: AppModel) -> CGSize {
-    NSHostingController(rootView: view.environment(model)).sizeThatFits(in: .zero)
+    NSHostingController(rootView: view.environment(models: model)).sizeThatFits(in: .zero)
 }
 
 /// Extras like the ones on a machine with Xcode 27.2, a renamed older Xcode

@@ -16,8 +16,8 @@ func scanningModel(home: TemporaryHome, notifier: NotificationPoster = SilentNot
 
 @MainActor
 func finishScan(_ model: AppModel) async {
-    model.scan()
-    for _ in 0..<200 where model.isScanning || model.isLoadingExtras {
+    model.scan.scan()
+    for _ in 0..<200 where model.scan.isScanning || model.scan.isLoadingExtras {
         try? await Task.sleep(for: .milliseconds(50))
     }
 }
@@ -38,22 +38,22 @@ struct ScanMemoryTests {
 
         let first = scanningModel(home: home)
         await finishScan(first)
-        let total = first.reclaimableKilobytes
+        let total = first.scan.tally.reclaimableKilobytes
         #expect(total >= 96)
         #expect(FileManager.default
             .fileExists(atPath: "\(home.path)/Library/Application Support/DevSweep/last-scan.json"))
 
         let next = scanningModel(home: home)
         #expect(next.statusLine.hasPrefix("Last scanned"))
-        #expect(next.showsPrevious)
-        #expect(next.reclaimableKilobytes == total)
-        #expect(next.rows[.swiftpmCache]?.showsPrevious == true)
-        #expect(next.rows[.swiftpmCache]?.shownKilobytes == first.rows[.swiftpmCache]?.kilobytes)
-        #expect(next.liveRows.isEmpty, "nothing from the last scan can be cleaned")
+        #expect(next.scan.tally.showsPrevious)
+        #expect(next.scan.tally.reclaimableKilobytes == total)
+        #expect(next.scan.rows[.swiftpmCache]?.showsPrevious == true)
+        #expect(next.scan.rows[.swiftpmCache]?.shownKilobytes == first.scan.rows[.swiftpmCache]?.kilobytes)
+        #expect(next.scan.tally.live.isEmpty, "nothing from the last scan can be cleaned")
 
         await finishScan(next)
-        #expect(!next.showsPrevious)
-        #expect(next.rows[.swiftpmCache]?.state == .measured)
+        #expect(!next.scan.tally.showsPrevious)
+        #expect(next.scan.rows[.swiftpmCache]?.state == .measured)
         #expect(next.statusLine.hasPrefix("Scanned just now"))
     }
 
@@ -71,13 +71,13 @@ struct ScanMemoryTests {
         try FileManager.default.copyItem(atPath: saved, toPath: copy)
 
         let model = scanningModel(home: home)
-        #expect(!model.showsPrevious)
+        #expect(!model.scan.tally.showsPrevious)
         #expect(model.statusLine == "Not scanned yet.")
     }
 
     @Test
     func `while measuring, an item counts toward the totals`() {
-        var row = AppModel.Row(item: .derivedData)
+        var row = ScanModel.Row(item: .derivedData)
         row.state = .measuring
         row.progressBytes = 5 * 1024 * 1024
         #expect(row.isCounting)

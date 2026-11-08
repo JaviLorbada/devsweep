@@ -90,14 +90,14 @@ struct PreferencesTests {
     func `apply from the next scan: skipped items leave the window`() {
         let home = TemporaryHome()
         let model = scanningModel(home: home)
-        #expect(model.scanOrder.contains(.homebrew))
+        #expect(model.scan.scanOrder.contains(.homebrew))
         model.preferences.skippedItems = [.homebrew]
         model.preferences.staleDays = 30
         #expect(model.staleDays == 30)
-        model.scan()
-        #expect(!model.scanOrder.contains(.homebrew))
-        #expect(model.engine?.config.skipped == [.homebrew])
-        model.stopScan()
+        model.scan.scan()
+        #expect(!model.scan.scanOrder.contains(.homebrew))
+        #expect(model.scan.engine?.config.skipped == [.homebrew])
+        model.scan.stopScan()
     }
 
     @Test
@@ -111,6 +111,6 @@ struct PreferencesTests {
             preferences: Preferences(storage: storage),
             notifier: SilentNotificationPoster(),
             dependencies: Dependencies(tools: .unavailable))
-        #expect(!model.moveToTrash)
+        #expect(!model.cleaning.moveToTrash)
     }
 }

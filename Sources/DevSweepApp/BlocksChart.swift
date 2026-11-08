@@ -6,17 +6,18 @@ import SwiftUI
 /// beside it. Cells slide into place as items are measured and cleaned.
 struct BlocksChart: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
             VStack(alignment: .leading, spacing: 14) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(SizeText.of(kilobytes: self.model.reclaimableKilobytes))
+                    Text(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
                         .font(.largeTitle.weight(.bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
-                    Text(self.model
-                        .isScanning ? (self.model.showsPrevious ? "updating" : "found so far") : "reclaimable")
+                    Text(self.scan
+                        .isScanning ? (self.scan.tally.showsPrevious ? "updating" : "found so far") : "reclaimable")
                         .font(.callout)
                         .foregroundStyle(.muted)
                 }
@@ -29,7 +30,8 @@ struct BlocksChart: View {
                                 RoundedRectangle(cornerRadius: 2).fill(Palette.color(family)).frame(width: 8, height: 8)
                                 Text(family.name).lineLimit(1).truncationMode(.tail)
                                 Spacer(minLength: 4)
-                                Text(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
+                                Text(self.scan.tally.measuredKilobytes(of: family)
+                                    .map { SizeText.of(kilobytes: $0) } ?? "–")
                                     .foregroundStyle(.muted)
                                     .monospacedDigit()
                             }
@@ -106,10 +108,11 @@ struct BlocksChart: View {
 
 private struct TreemapCells: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     let size: CGSize
 
     var body: some View {
-        let rows = self.model.orderedRows
+        let rows = self.scan.tally.ordered
             .filter { $0.isLive || $0.isCounting || ($0.showsPrevious && $0.shownKilobytes > 0) }
         // Small items are drawn larger so they stay visible (`ChartScale`).
         let shares = ChartScale.shares(rows.map { Double($0.shownKilobytes) })
@@ -119,12 +122,12 @@ private struct TreemapCells: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(Palette.placeholder)
                     .overlay {
-                        Text(self.model.isScanning ? "Measuring…" : "Nothing to clean")
+                        Text(self.scan.isScanning ? "Measuring…" : "Nothing to clean")
                             .foregroundStyle(.muted)
                     }
             }
             ForEach(BlocksChart.drawnCells(cells), id: \.id) { cell in
-                if let row = model.rows[cell.id] {
+                if let row = scan.rows[cell.id] {
                     TreemapCell(row: row, frame: cell.frame, selected: self.model.selection == cell.id)
                 }
             }
@@ -136,7 +139,7 @@ private struct TreemapCells: View {
 
 private struct TreemapCell: View {
     @Environment(AppModel.self) private var model
-    let row: AppModel.Row
+    let row: ScanModel.Row
     let frame: CGRect
     let selected: Bool
 

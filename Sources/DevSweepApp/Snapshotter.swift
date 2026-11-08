@@ -27,7 +27,7 @@ enum Snapshotter {
         let dark = environment["DEVSWEEP_SNAPSHOT_APPEARANCE"] != "light"
         NSApplication.shared.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 
-        while model.isScanning || model.isLoadingExtras || model.isScanTaskRunning {
+        while model.scan.isScanning || model.scan.isLoadingExtras || model.scan.isScanTaskRunning {
             try? await Task.sleep(for: .milliseconds(200))
         }
         switch environment["DEVSWEEP_SNAPSHOT_SCREEN"] {
@@ -41,10 +41,12 @@ enum Snapshotter {
         case "cleaned", "putback":
             // The confirmed step directly: never the quit prompt, which would
             // ask the real Xcode to quit.
-            await model.confirmClean(AppModel.PendingClean(items: model.markedRows.map(\.item), stage: .confirm))
-            model.notice = nil
+            await model.cleaning.confirmClean(CleaningModel.PendingClean(
+                items: model.marks.markedRows.map(\.item),
+                stage: .confirm))
+            model.cleaning.dismissNotice()
             if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "putback" {
-                await model.putBack(.swiftpmCache)
+                await model.cleaning.putBack(.swiftpmCache)
                 model.selection = .swiftpmCache
             }
         default: break
@@ -66,7 +68,7 @@ enum Snapshotter {
         default: AnyView(SnapshotLayout(width: width))
         }
         let renderer = ImageRenderer(content: content
-            .environment(model)
+            .environment(models: model)
             .environment(\.colorScheme, dark ? .dark : .light))
         renderer.scale = 2
         if let image = renderer.cgImage {
@@ -81,6 +83,7 @@ enum Snapshotter {
 /// The window's three columns, drawn without the views AppKit backs.
 private struct SnapshotLayout: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     let width: CGFloat
 
     var body: some View {
@@ -137,7 +140,7 @@ private struct SnapshotLayout: View {
         Group {
             switch self.model.screen {
             case .overview:
-                if let item = model.selection, let row = model.rows[item] {
+                if let item = model.selection, let row = scan.rows[item] {
                     VStack(spacing: 0) {
                         ItemDetails(row: row)
                         Spacer(minLength: 0)
@@ -196,6 +199,7 @@ private struct SnapshotHeader: View {
 
 private struct SnapshotSidebar: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -208,7 +212,7 @@ private struct SnapshotSidebar: View {
                     Dot(color: Palette.color(family))
                     Text(family.name)
                     Spacer()
-                    Text(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
+                    Text(self.scan.tally.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
                         .foregroundStyle(.muted).monospacedDigit()
                 }
             }
@@ -216,14 +220,14 @@ private struct SnapshotSidebar: View {
             self.row(highlighted: self.model.screen == .xcodeVersions) {
                 Text("Xcode versions")
                 Spacer()
-                Text((self.model.extras?.xcodesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
+                Text((self.scan.extras?.xcodesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
                     .foregroundStyle(.muted)
                     .monospacedDigit()
             }
             self.row(highlighted: self.model.screen == .simulatorRuntimes) {
                 Text("Simulator runtimes")
                 Spacer()
-                Text((self.model.extras?.runtimesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
+                Text((self.scan.extras?.runtimesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
                     .foregroundStyle(.muted)
                     .monospacedDigit()
             }
@@ -256,9 +260,9 @@ extension AppModel {
     func select(snapshotID id: String) {
         if let item = Item(rawValue: id) {
             selection = item
-        } else if let xcode = extras?.xcodes.first(where: { ($0.path as NSString).lastPathComponent == id }) {
+        } else if let xcode = self.scan.extras?.xcodes.first(where: { ($0.path as NSString).lastPathComponent == id }) {
             selectedXcode = xcode.path
-        } else if let worktree = extras?.worktrees.first(where: { $0.name == id }) {
+        } else if let worktree = self.scan.extras?.worktrees.first(where: { $0.name == id }) {
             selectedWorktree = worktree.path
         } else {
             selectedRuntime = id

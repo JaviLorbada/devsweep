@@ -4,7 +4,8 @@ import SwiftUI
 /// The eleven items, largest first: mark, color, name, a proportional bar,
 /// size and what can be done with it.
 struct ItemsCard: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
+    @Environment(MarksModel.self) private var marks
 
     /// The bar is the first column to go when the center column narrows.
     static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
@@ -15,7 +16,7 @@ struct ItemsCard: View {
     /// Sized from the width it is given (its height is fixed by its rows), so
     /// its minimum never follows the width it last had.
     var body: some View {
-        let rows = self.model.orderedRows
+        let rows = self.scan.tally.ordered
         GeometryReader { proxy in
             self.table(rows: rows, showsBar: Self.showsBar(forWidth: proxy.size.width))
         }
@@ -25,7 +26,7 @@ struct ItemsCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func table(rows: [AppModel.Row], showsBar: Bool) -> some View {
+    private func table(rows: [ScanModel.Row], showsBar: Bool) -> some View {
         let largest = Double(max(rows.map(\.shownKilobytes).max() ?? 1, 1))
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
@@ -35,8 +36,8 @@ struct ItemsCard: View {
                     .foregroundStyle(.muted)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                Button("Mark all") { self.model.markAll() }
-                Button("Mark none") { self.model.markNone() }
+                Button("Mark all") { self.marks.markAll() }
+                Button("Mark none") { self.marks.markNone() }
             }
             .buttonStyle(.link)
             .font(.callout)
@@ -51,16 +52,17 @@ struct ItemsCard: View {
     }
 
     private var note: String {
-        let count = self.model.scanOrder.count
-        return self.model.isScanning ? "\(self.model.measuredCount) of \(count) measured, largest "
+        let count = self.scan.scanOrder.count
+        return self.scan.isScanning ? "\(self.scan.tally.measuredCount) of \(count) measured, largest "
             + "first" : "\(count), largest first"
     }
 }
 
 struct ItemRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(MarksModel.self) private var marks
     @Environment(\.appearsActive) private var appearsActive
-    let row: AppModel.Row
+    let row: ScanModel.Row
     let largest: Double
     var showsBar = true
 
@@ -71,8 +73,8 @@ struct ItemRow: View {
         let emphasized = selected && self.appearsActive
         HStack(spacing: 12) {
             Toggle("Mark \(self.row.item.name) for cleaning", isOn: Binding(
-                get: { self.model.marked.contains(self.row.item) && self.row.isLive },
-                set: { self.model.setMarked(self.row.item, $0) }))
+                get: { self.marks.marked.contains(self.row.item) && self.row.isLive },
+                set: { self.marks.setMarked(self.row.item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .disabled(!self.row.isLive)
@@ -173,7 +175,7 @@ struct ItemRow: View {
 
 enum RowWords {
     /// What VoiceOver says for a row with no size yet.
-    static func state(_ row: AppModel.Row) -> String {
+    static func state(_ row: ScanModel.Row) -> String {
         switch row.state {
         case .waiting: "waiting"
         case .measuring: "measuring"
@@ -186,7 +188,9 @@ enum RowWords {
 /// The trailing cell of a row: what can be done now, or what is happening.
 struct RowAction: View {
     @Environment(AppModel.self) private var model
-    let row: AppModel.Row
+    @Environment(ScanModel.self) private var scan
+    @Environment(CleaningModel.self) private var cleaning
+    let row: ScanModel.Row
 
     var body: some View {
         switch self.row.state {
@@ -210,11 +214,11 @@ struct RowAction: View {
             if self.row.isLive {
                 Button("Clean") {
                     self.model.selection = self.row.item
-                    Task { await self.model.requestClean([self.row.item]) }
+                    Task { await self.cleaning.requestClean([self.row.item]) }
                 }
                 .controlSize(.small)
                 .rowControl()
-                .disabled(self.model.isScanning || self.model.isCleaning)
+                .disabled(self.scan.isScanning || self.scan.isCleaning)
             }
         }
     }

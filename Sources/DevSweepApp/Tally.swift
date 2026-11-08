@@ -4,7 +4,7 @@ import DevSweepKit
 /// their order, the totals, each family's share and the ring's weights.
 /// A value, so it is checked without a model.
 struct Tally {
-    typealias Row = AppModel.Row
+    typealias Row = ScanModel.Row
 
     /// The rows in the order the scan measures them.
     let rows: [Row]

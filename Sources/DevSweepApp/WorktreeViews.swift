@@ -6,16 +6,6 @@ import SwiftUI
 // them all and removes one only when asked, with git's own `worktree
 // remove`, and only when nothing in it would be lost.
 
-extension AppModel {
-    /// The selected worktree, or the first with nothing to lose, or the first.
-    var currentWorktree: GitWorktree? {
-        let worktrees = self.extras?.worktrees ?? []
-        return worktrees.first { $0.path == self.selectedWorktree }
-            ?? worktrees.first { $0.keptBecause == nil }
-            ?? worktrees.first
-    }
-}
-
 struct WorktreesView: View {
     var body: some View {
         ScrollView { WorktreesContent() }
@@ -23,23 +13,23 @@ struct WorktreesView: View {
 }
 
 struct WorktreesContent: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ExtrasCard(
                 title: "Worktrees",
                 note: "found through your project folders",
-                rowCount: self.model.extras?.worktrees.count ?? 0)
+                rowCount: self.scan.extras?.worktrees.count ?? 0)
             {
-                if let worktrees = model.extras?.worktrees, !worktrees.isEmpty {
+                if let worktrees = scan.extras?.worktrees, !worktrees.isEmpty {
                     let largest = Double(worktrees.map(\.kilobytes).max() ?? 1)
                     ForEach(worktrees) { worktree in
                         Divider().opacity(0.6)
                         WorktreeRow(worktree: worktree, largest: largest)
                     }
                 } else {
-                    EmptyExtrasRow(text: self.model.isLoadingExtras ? "Listing worktrees…" : "No worktrees found.")
+                    EmptyExtrasRow(text: self.scan.isLoadingExtras ? "Listing worktrees…" : "No worktrees found.")
                 }
             }
             Text(self.isEmpty
@@ -56,7 +46,7 @@ struct WorktreesContent: View {
 
     /// Listed, and none found.
     private var isEmpty: Bool {
-        !self.model.isLoadingExtras && (self.model.extras?.worktrees.isEmpty ?? false)
+        !self.scan.isLoadingExtras && (self.scan.extras?.worktrees.isEmpty ?? false)
     }
 }
 
@@ -135,6 +125,7 @@ private struct WorktreeRow: View {
 
 struct WorktreeInspector: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         if let worktree = model.currentWorktree {
@@ -157,7 +148,7 @@ struct WorktreeInspector: View {
             ContentUnavailableView(
                 "No worktree",
                 systemImage: "arrow.triangle.branch",
-                description: Text(self.model.isLoadingExtras ? "Listing worktrees…" : "No worktrees found."))
+                description: Text(self.scan.isLoadingExtras ? "Listing worktrees…" : "No worktrees found."))
         }
     }
 }
@@ -165,6 +156,7 @@ struct WorktreeInspector: View {
 /// What the inspector says about one worktree.
 struct WorktreeDetails: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     let worktree: GitWorktree
 
     var body: some View {
@@ -185,22 +177,22 @@ struct WorktreeDetails: View {
             }
             Section("Repository") {
                 Text("\(self.worktree.repositoryName), " + (self.worktree.branch.map { "branch \($0)" } ?? "detached"))
-                Text(self.model.tilde(self.worktree.repository))
+                Text(self.scan.tilde(self.worktree.repository))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
             }
             Section("Where") {
-                Text(self.model.tilde(self.worktree.path))
+                Text(self.scan.tilde(self.worktree.path))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
-                Button("Reveal in Finder") { self.model.revealInFinder([self.worktree.path]) }
+                Button("Reveal in Finder") { Finder.reveal([self.worktree.path]) }
                     .buttonStyle(.link)
             }
             Section(kept == nil ? "What happens" : "Why it stays") {
                 Text(WorktreeWords.whatHappens(self.worktree))
             }
             Section("Runs") {
-                Text(self.model.engine.map { self.worktree.removalCommand(policy: $0.policy) } ?? "")
+                Text(self.model.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
             }
@@ -248,7 +240,7 @@ struct RemoveWorktreeSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Runs")
-                Text(self.model.engine.map { self.worktree.removalCommand(policy: $0.policy) } ?? "")
+                Text(self.model.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
                     .font(.callout.monospaced())
                     .textSelection(.enabled)
                     .padding(10)

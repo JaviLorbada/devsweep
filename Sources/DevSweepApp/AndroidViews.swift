@@ -23,14 +23,14 @@ struct GradleCachesView: View {
 }
 
 struct AndroidStudiosContent: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         AndroidScreen {
             AndroidCard(
                 title: "Android Studio",
                 note: "",
-                entries: self.model.android?.studios ?? [],
+                entries: self.scan.android?.studios ?? [],
                 empty: "No Android Studio found in the applications folders.")
         }
     }
@@ -38,9 +38,10 @@ struct AndroidStudiosContent: View {
 
 struct AndroidSDKContent: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        let android = self.model.android
+        let android = self.scan.android
         AndroidScreen {
             AndroidCard(
                 title: "Emulators",
@@ -72,14 +73,14 @@ struct AndroidSDKContent: View {
 }
 
 struct GradleCachesContent: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         AndroidScreen {
             AndroidCard(
                 title: "~/.gradle",
                 note: "shared by every Gradle project",
-                entries: self.model.android?.gradleCaches ?? [],
+                entries: self.scan.android?.gradleCaches ?? [],
                 empty: "No Gradle caches in ~/.gradle.")
         }
     }
@@ -102,7 +103,7 @@ private struct AndroidScreen<Cards: View>: View {
 }
 
 private struct AndroidCard: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     let title: String
     let note: String
     let entries: [AndroidEntry]
@@ -111,7 +112,7 @@ private struct AndroidCard: View {
     var body: some View {
         ExtrasCard(title: self.title, note: self.note, rowCount: self.entries.count) {
             if self.entries.isEmpty {
-                EmptyExtrasRow(text: self.model.isLoadingAndroid && self.model.android == nil ? "Listing…" : self.empty)
+                EmptyExtrasRow(text: self.scan.isLoadingAndroid && self.scan.android == nil ? "Listing…" : self.empty)
             } else {
                 let largest = Double(entries.map(\.kilobytes).max() ?? 1)
                 ForEach(self.entries) { entry in
@@ -167,12 +168,12 @@ private struct AndroidRow: View {
                 .frame(width: 64, alignment: .trailing)
             Group {
                 if self.columns == .compact {
-                    Button("Reveal in Finder", systemImage: "folder") { self.model.revealInFinder([self.entry.path]) }
+                    Button("Reveal in Finder", systemImage: "folder") { Finder.reveal([self.entry.path]) }
                         .labelStyle(.iconOnly)
                         .controlSize(.small)
                         .help("Reveal in Finder")
                 } else {
-                    Button("Reveal in Finder") { self.model.revealInFinder([self.entry.path]) }
+                    Button("Reveal in Finder") { Finder.reveal([self.entry.path]) }
                         .controlSize(.small)
                         .frame(width: 118)
                 }
@@ -198,6 +199,7 @@ private struct AndroidRow: View {
 
 struct AndroidInspector: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         if let entry = model.currentAndroidEntry {
@@ -207,7 +209,7 @@ struct AndroidInspector: View {
             }
             .scrollEdgeEffectStyle(.soft, for: .bottom)
             .safeAreaBar(edge: .bottom) {
-                Button("Reveal in Finder") { self.model.revealInFinder([entry.path]) }
+                Button("Reveal in Finder") { Finder.reveal([entry.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
@@ -217,7 +219,7 @@ struct AndroidInspector: View {
             ContentUnavailableView(
                 "Nothing here",
                 systemImage: "shippingbox",
-                description: Text(self.model
+                description: Text(self.scan
                     .isLoadingAndroid ? "Listing…" : "Android Studio keeps nothing here."))
         }
     }
@@ -226,6 +228,7 @@ struct AndroidInspector: View {
 /// What the inspector says about one Android entry.
 struct AndroidDetails: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     let entry: AndroidEntry
 
     var body: some View {
@@ -245,7 +248,7 @@ struct AndroidDetails: View {
                     .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
             self.section("Where") {
-                Text(self.model.tilde(self.entry.path))
+                Text(self.scan.tilde(self.entry.path))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
                 if !self.entry.detail.isEmpty, self.entry.kind != .gradleCache {

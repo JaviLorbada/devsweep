@@ -43,13 +43,13 @@ struct MenuBarTests {
     func `the panel's title row draws the volume name stronger than the free space, light and dark`() throws {
         let home = TemporaryHome()
         let model = makeModel(home: home)
-        #expect(model.diskSpace != nil)
+        #expect(model.scan.diskSpace != nil)
         for scheme in [ColorScheme.light, .dark] {
             // On a material, as the menu bar shows it, where the hierarchical
             // styles turn vibrant: in light, `.secondary` drew darker than `.primary`.
             let renderer = ImageRenderer(content: MenuBarPanel()
                 .background(.regularMaterial)
-                .environment(model)
+                .environment(models: model)
                 .environment(\.colorScheme, scheme))
             renderer.scale = 2
             let image = try NSBitmapImageRep(cgImage: #require(renderer.cgImage))
@@ -115,13 +115,13 @@ struct MenuBarTests {
         let poster = RecordingPoster()
         let model = scanningModel(home: home, notifier: poster)
         await finishScan(model)
-        #expect(!model.isScanning)
+        #expect(!model.scan.isScanning)
 
         model.tick(now: Date().addingTimeInterval(3600))
-        #expect(!model.isScanning)
+        #expect(!model.scan.isScanning)
         model.tick(now: Date().addingTimeInterval(25 * 3600))
-        #expect(model.isScanning)
-        model.stopScan()
+        #expect(model.scan.isScanning)
+        model.scan.stopScan()
         #expect(poster.posted.withLock { $0 }.isEmpty)
     }
 }

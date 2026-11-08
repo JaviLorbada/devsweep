@@ -5,19 +5,19 @@ import SwiftUI
 /// The menu bar item: the icon's ring as a glyph, then the boot volume's
 /// free space.
 struct MenuBarLabel: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         HStack(spacing: 4) {
             Image(nsImage: MenuBarGlyph.image)
                 .renderingMode(.template)
-            if let space = model.diskSpace {
+            if let space = scan.diskSpace {
                 Text(Self.title(space))
                     .monospacedDigit()
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(self.model.diskSpace
+        .accessibilityLabel(self.scan.diskSpace
             .map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "\(ProductInfo.name)")
     }
 
@@ -73,7 +73,7 @@ enum MenuBarGlyph {
 /// space black. So the text is in plain colors, the label color's values over
 /// the window's muted color, which keep that order in both appearances.
 struct MenuBarPanel: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     @Environment(\.openWindow) private var openWindow
 
     /// The system label color's values, as a plain color. The material makes
@@ -85,9 +85,9 @@ struct MenuBarPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(self.model.volumeName).font(.headline)
+                Text(self.scan.volumeName).font(.headline)
                 Spacer()
-                if let space = model.diskSpace {
+                if let space = scan.diskSpace {
                     Text("\(SizeText.of(kilobytes: space.availableKilobytes)) free")
                         .font(.callout)
                         .monospacedDigit()
@@ -101,7 +101,7 @@ struct MenuBarPanel: View {
                         Dot(color: Palette.color(family))
                         Text(family.name)
                         Spacer()
-                        Text(self.model.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
+                        Text(self.scan.tally.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) } ?? "–")
                             .monospacedDigit()
                             .foregroundStyle(.muted)
                     }
@@ -112,20 +112,20 @@ struct MenuBarPanel: View {
                 HStack {
                     Text("Reclaimable").fontWeight(.semibold)
                     Spacer()
-                    Text(SizeText.of(kilobytes: self.model.reclaimableKilobytes)).fontWeight(.semibold)
+                    Text(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes)).fontWeight(.semibold)
                         .monospacedDigit()
                 }
                 .font(.callout)
                 .accessibilityElement(children: .combine)
             }
             .foregroundStyle(Self.label)
-            Text(StatusText.menuBar(self.model.statusFacts))
+            Text(StatusText.menuBar(self.scan.statusFacts))
                 .font(.caption)
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Button(self.model.isScanning ? "Scanning…" : "Scan Now") { self.model.scan() }
-                    .disabled(self.model.isScanning || self.model.isCleaning || self.model.engine == nil)
+                Button(self.scan.isScanning ? "Scanning…" : "Scan Now") { self.scan.scan() }
+                    .disabled(self.scan.isScanning || self.scan.isCleaning || !self.scan.canScan)
                 Spacer()
                 Button("Open \(ProductInfo.name)") {
                     self.openWindow(id: "main")

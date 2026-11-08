@@ -19,8 +19,8 @@ struct MarksModelTests {
         let home = TemporaryHome()
         writeFourItems(in: home)
         let model = await scannedModel(home: home)
-        #expect(model.liveRows.count == 4)
-        #expect(model.marked == [.derivedData, .swiftpmCache, .toolCaches])
+        #expect(model.scan.tally.live.count == 4)
+        #expect(model.marks.marked == [.derivedData, .swiftpmCache, .toolCaches])
     }
 
     @Test
@@ -28,10 +28,10 @@ struct MarksModelTests {
         let home = TemporaryHome()
         writeFourItems(in: home)
         let model = scanningModel(home: home)
-        model.scan()
-        model.setMarked(.npmCache, true)
-        await waitUntil { !model.isScanning && !model.isLoadingExtras }
-        #expect(model.marked == [.npmCache])
+        model.scan.scan()
+        model.marks.setMarked(.npmCache, true)
+        await waitUntil { !model.scan.isScanning && !model.scan.isLoadingExtras }
+        #expect(model.marks.marked == [.npmCache])
     }
 
     @Test
@@ -39,12 +39,12 @@ struct MarksModelTests {
         let home = TemporaryHome()
         writeFourItems(in: home)
         let model = await scannedModel(home: home)
-        model.markAll()
-        #expect(model.marked == Set(model.liveRows.map(\.item)))
-        #expect(model.markedKilobytes == model.reclaimableKilobytes)
-        model.markNone()
-        #expect(model.marked.isEmpty)
-        #expect(model.markedRows.isEmpty)
+        model.marks.markAll()
+        #expect(model.marks.marked == Set(model.scan.tally.live.map(\.item)))
+        #expect(model.marks.markedKilobytes == model.scan.tally.reclaimableKilobytes)
+        model.marks.markNone()
+        #expect(model.marks.marked.isEmpty)
+        #expect(model.marks.markedRows.isEmpty)
     }
 
     @Test
@@ -52,9 +52,9 @@ struct MarksModelTests {
         let home = TemporaryHome()
         writeFourItems(in: home)
         let model = await scannedModel(home: home)
-        model.markAll()
-        model.scan()
-        #expect(model.marked.isEmpty)
-        model.stopScan()
+        model.marks.markAll()
+        model.scan.scan()
+        #expect(model.marks.marked.isEmpty)
+        model.scan.stopScan()
     }
 }

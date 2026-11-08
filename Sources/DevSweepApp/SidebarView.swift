@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     @State private var showsXcode = true
     @State private var showsAndroid = true
     @State private var showsGit = true
@@ -37,8 +38,8 @@ struct SidebarView: View {
                             Dot(color: Palette.color(family))
                             Text(family.name).lineLimit(1)
                             Spacer()
-                            SidebarSize(kilobytes: model.measuredKilobytes(of: family))
-                                .opacity(model.familyShowsPrevious(family) ? 0.5 : 1)
+                            SidebarSize(kilobytes: self.scan.tally.measuredKilobytes(of: family))
+                                .opacity(self.scan.tally.familyShowsPrevious(family) ? 0.5 : 1)
                         }
                         .contentShape(Rectangle())
                     }
@@ -49,18 +50,21 @@ struct SidebarView: View {
             // Listed, never cleaned: each tool's group under its own heading.
             Section("Also worth a look") {
                 DisclosureGroup(isExpanded: self.$showsXcode) {
-                    self.row("Versions", kilobytes: model.extras?.xcodesKilobytes, screen: .xcodeVersions)
+                    self.row("Versions", kilobytes: self.scan.extras?.xcodesKilobytes, screen: .xcodeVersions)
                     self.row(
                         "Simulator runtimes",
-                        kilobytes: model.extras?.runtimesKilobytes,
+                        kilobytes: self.scan.extras?.runtimesKilobytes,
                         screen: .simulatorRuntimes)
                 } label: {
                     Label("Xcode", systemImage: "hammer")
                 }
                 DisclosureGroup(isExpanded: self.$showsAndroid) {
-                    self.row("Versions", kilobytes: model.android?.studiosKilobytes, screen: .androidStudios)
-                    self.row("SDK and emulators", kilobytes: model.android?.sdkKilobytes, screen: .androidSDK)
-                    self.row("Gradle caches", kilobytes: model.android?.gradleCachesKilobytes, screen: .gradleCaches)
+                    self.row("Versions", kilobytes: self.scan.android?.studiosKilobytes, screen: .androidStudios)
+                    self.row("SDK and emulators", kilobytes: self.scan.android?.sdkKilobytes, screen: .androidSDK)
+                    self.row(
+                        "Gradle caches",
+                        kilobytes: self.scan.android?.gradleCachesKilobytes,
+                        screen: .gradleCaches)
                 } label: {
                     Label("Android Studio", systemImage: "iphone.gen3")
                 }
@@ -68,10 +72,10 @@ struct SidebarView: View {
                     // What can go, as the caches show; the help says what stays.
                     self.row(
                         "Worktrees",
-                        kilobytes: model.extras?.removableWorktreesKilobytes,
+                        kilobytes: self.scan.extras?.removableWorktreesKilobytes,
                         screen: .worktrees,
                         showsZero: false)
-                        .help(model.extras.map { WorktreeWords.summary($0.worktrees) } ?? "Listing worktrees…")
+                        .help(self.scan.extras.map { WorktreeWords.summary($0.worktrees) } ?? "Listing worktrees…")
                 } label: {
                     Label("Git", systemImage: "arrow.triangle.branch")
                 }
@@ -103,18 +107,18 @@ private struct SidebarSize: View {
 
 /// The boot volume: used, reclaimable, free.
 struct DiskMeter: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        let space = self.model.diskSpace
+        let space = self.scan.diskSpace
         let total = Double(max(space?.totalKilobytes ?? 1, 1))
         let free = Double(space?.availableKilobytes ?? 0)
-        let reclaimable = min(Double(model.reclaimableKilobytes), max(total - free, 0))
+        let reclaimable = min(Double(scan.tally.reclaimableKilobytes), max(total - free, 0))
         let usedOther = max(total - free - reclaimable, 0)
 
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text(self.model.volumeName).font(.callout.weight(.semibold))
+                Text(self.scan.volumeName).font(.callout.weight(.semibold))
                 Spacer()
                 if let space {
                     Text(
@@ -141,7 +145,7 @@ struct DiskMeter: View {
             .animation(Motion.animation(.easeInOut(duration: 0.4)), value: reclaimable)
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 2).fill(Palette.reclaimable).frame(width: 8, height: 8)
-                Text("\(SizeText.of(kilobytes: self.model.reclaimableKilobytes)) reclaimable")
+                Text("\(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes)) reclaimable")
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundStyle(.muted)

@@ -13,6 +13,7 @@ import SwiftUI
 /// their words instead of asking the column for more room.
 struct CenterHeader: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var titleSpace
     let title: String
@@ -77,7 +78,7 @@ struct CenterHeader: View {
                 Spacer(minLength: 0)
                 GlassEffectContainer(spacing: 10) {
                     HStack(spacing: 10) {
-                        if model.isScanning {
+                        if self.scan.isScanning {
                             // With the container's default transition, the capsule
                             // appearing when a scan starts stayed invisible and took
                             // no room.
@@ -87,14 +88,14 @@ struct CenterHeader: View {
                         if model.screen == .overview {
                             ChartStylePicker(selection: $model.chartStyle, showsText: fit.pickerText)
                         }
-                        Button(model.isScanning ? "Stop" : "Scan Again") {
-                            model.isScanning ? model.stopScan() : model.scan()
+                        Button(self.scan.isScanning ? "Stop" : "Scan Again") {
+                            self.scan.isScanning ? self.scan.stopScan() : self.scan.scan()
                         }
                         .buttonStyle(.glass)
                         .buttonBorderShape(.capsule)
                         .controlSize(.large)
-                        .disabled(!model.canScanOrStop)
-                        .help(model.isCleaning ? "Scan again once cleaning is done" : "")
+                        .disabled(!self.scan.canScanOrStop)
+                        .help(self.scan.isCleaning ? "Scan again once cleaning is done" : "")
                         if model.inspectorPlacement != .docked {
                             InspectorToggle()
                         }
@@ -140,7 +141,7 @@ struct InspectorToggle: View {
 
 /// "Measuring DerivedData" with a thin bar for how many items are done.
 struct ScanCapsule: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     var showsText = true
 
     var body: some View {
@@ -152,10 +153,10 @@ struct ScanCapsule: View {
                     .lineLimit(1)
                     .frame(maxWidth: 150, alignment: .leading)
             }
-            ProgressView(value: self.model.tally.progress)
+            ProgressView(value: self.scan.tally.progress)
                 .progressViewStyle(.linear)
                 .frame(width: 64)
-                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: self.model.tally.progress)
+                .animation(Motion.animation(.easeInOut(duration: 0.3)), value: self.scan.tally.progress)
         }
         .padding(.horizontal, 14)
         .frame(height: ChartStylePicker.height)
@@ -163,12 +164,12 @@ struct ScanCapsule: View {
         .help(self.capsuleText)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.capsuleText)
-        .accessibilityValue("\(Int(self.model.tally.progress * 100)) percent")
+        .accessibilityValue("\(Int(self.scan.tally.progress * 100)) percent")
     }
 
     /// "Measuring DerivedData", "Measuring DerivedData and 2 more".
     var capsuleText: String {
-        let measuring = self.model.measuringItems
+        let measuring = self.scan.tally.measuringItems
         guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
         return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and "
             + "\(measuring.count - 1) more"

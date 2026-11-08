@@ -5,9 +5,10 @@ import SwiftUI
 /// for DerivedData what is inside.
 struct ItemInspector: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        if let item = model.selection, let row = model.rows[item] {
+        if let item = model.selection, let row = scan.rows[item] {
             ScrollView {
                 // A fresh one per item, so a list expanded for one item
                 // starts short for the next.
@@ -30,9 +31,10 @@ struct ItemInspector: View {
 
 /// Everything the inspector says about one item.
 struct ItemDetails: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
+    @Environment(CleaningModel.self) private var cleaning
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let row: AppModel.Row
+    let row: ScanModel.Row
     /// Whether the Where list shows every path rather than the first few.
     @State private var showsAllPaths = false
 
@@ -52,7 +54,7 @@ struct ItemDetails: View {
             }
             // Shown empty too after its parts went, to say so and put them back.
             if let result = row.shownResult, row.wasMeasured || row.showsPrevious, PartsList.lists(result),
-               !result.isEmpty || self.model.lastPartsClean(of: item) != nil
+               !result.isEmpty || self.cleaning.lastPartsClean(of: item) != nil
             {
                 PartsList(
                     result: result,
@@ -66,7 +68,7 @@ struct ItemDetails: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func header(_ row: AppModel.Row) -> some View {
+    private func header(_ row: ScanModel.Row) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 7) {
                 Dot(color: Palette.color(row.item.family))
@@ -86,7 +88,7 @@ struct ItemDetails: View {
         }
     }
 
-    private func location(_ row: AppModel.Row) -> some View {
+    private func location(_ row: ScanModel.Row) -> some View {
         let paths = row.shownResult?.paths ?? []
         return VStack(alignment: .leading, spacing: 5) {
             Eyebrow(text: "Where")
@@ -99,12 +101,12 @@ struct ItemDetails: View {
             if paths.count > 1, !(row.shownResult.map(PartsList.listsFolders) ?? false) {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(self.showsAllPaths ? paths : Array(paths.prefix(Self.pathsShown)), id: \.self) { path in
-                        Text(self.model.tilde(path))
+                        Text(self.scan.tilde(path))
                             .font(.caption2.monospaced())
                             .foregroundStyle(.muted)
                             .lineLimit(1)
                             .truncationMode(.middle)
-                            .help(self.model.tilde(path))
+                            .help(self.scan.tilde(path))
                     }
                     if paths.count > Self.pathsShown {
                         Button(self.showsAllPaths ? "Show fewer" : "and \(paths.count - Self.pathsShown) more") {
@@ -120,14 +122,14 @@ struct ItemDetails: View {
                 }
             }
             if !paths.isEmpty {
-                Button("Reveal in Finder") { self.model.revealInFinder(paths) }
+                Button("Reveal in Finder") { Finder.reveal(paths) }
                     .buttonStyle(.link)
                     .font(.callout)
             }
         }
     }
 
-    private func heroSize(_ row: AppModel.Row) -> String {
+    private func heroSize(_ row: ScanModel.Row) -> String {
         switch row.state {
         case .waiting: row.showsPrevious ? SizeText.of(kilobytes: row.shownKilobytes) : "–"
         case .notMeasured: "–"
@@ -138,7 +140,7 @@ struct ItemDetails: View {
         }
     }
 
-    private func stateWord(_ row: AppModel.Row) -> String {
+    private func stateWord(_ row: ScanModel.Row) -> String {
         switch row.state {
         case .waiting: row.showsPrevious ? "last scan, waiting" : "waiting"
         case .measuring: "measuring"
@@ -203,7 +205,9 @@ enum DerivedDataParts {
 /// rest; or a build item's folders, by the project each belongs to. Past
 /// the five largest projects or folders, the rest open to show each.
 struct PartsList: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
+    @Environment(MarksModel.self) private var marks
+    @Environment(CleaningModel.self) private var cleaning
     @Environment(\.colorScheme) private var colorScheme
     let result: ItemResult
     let color: Color
@@ -253,9 +257,9 @@ struct PartsList: View {
             Line(
                 id: folder.path,
                 name: names[folder.path] ?? folder.path,
-                detail: self.model.tilde(folder.path),
+                detail: self.scan.tilde(folder.path),
                 kilobytes: folder.kilobytes,
-                help: self.model.tilde(folder.path),
+                help: self.scan.tilde(folder.path),
                 part: .folder(folder.path))
         }
         let rest = folders.dropFirst(shown.count)
@@ -289,7 +293,7 @@ struct PartsList: View {
                 status: status,
                 gone: project.status == .gone,
                 kilobytes: project.kilobytes,
-                help: self.model.tilde(project.workspacePath),
+                help: self.scan.tilde(project.workspacePath),
                 part: .folder(project.folder)))
         }
         let rest = breakdown.projects.dropFirst(shown.count)
@@ -331,7 +335,7 @@ struct PartsList: View {
         let largest = Double(max(lines.map(\.kilobytes).max() ?? 1, 1))
         VStack(alignment: .leading, spacing: 6) {
             Eyebrow(text: self.isDerivedData ? "Inside" : "Folders")
-            if self.selectable, let clean = self.model.lastPartsClean(of: self.result.item) {
+            if self.selectable, let clean = self.cleaning.lastPartsClean(of: self.result.item) {
                 self.lastClean(clean)
             }
             ForEach(lines) { line in
@@ -395,11 +399,11 @@ struct PartsList: View {
         if let part = line.part {
             let item = self.result.item
             Toggle("Mark \(line.name) for cleaning", isOn: Binding(
-                get: { self.model.markedParts(of: item).contains(part) },
-                set: { self.model.setMarked(part, of: item, $0) }))
+                get: { self.marks.markedParts(of: item).contains(part) },
+                set: { self.marks.setMarked(part, of: item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
-                .disabled(self.model.isCleaning || self.model.isScanning)
+                .disabled(self.scan.isCleaning || self.scan.isScanning)
                 .frame(width: Self.checkboxWidth - 8, alignment: .leading)
         } else {
             Color.clear.frame(width: Self.checkboxWidth - 8)
@@ -425,16 +429,16 @@ struct PartsList: View {
     }
 
     /// "Moved 2 projects to the Trash, 25.2 GB. Put Back"
-    private func lastClean(_ clean: AppModel.PartsClean) -> some View {
+    private func lastClean(_ clean: CleaningModel.PartsClean) -> some View {
         let size = SizeText.of(kilobytes: clean.kilobytes)
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(clean
                 .canPutBack ? "Moved \(clean.summary) to the Trash, \(size)." : "Deleted \(clean.summary), \(size).")
                 .foregroundStyle(.muted)
             if clean.canPutBack {
-                Button("Put Back") { Task { await self.model.putBackParts(of: self.result.item) } }
+                Button("Put Back") { Task { await self.cleaning.putBackParts(of: self.result.item) } }
                     .buttonStyle(.link)
-                    .disabled(self.model.isCleaning)
+                    .disabled(self.scan.isCleaning)
             }
         }
         .font(.caption)
@@ -443,34 +447,36 @@ struct PartsList: View {
 
 /// The inspector's bottom button: Clean, Put back, or a disabled Measuring.
 struct InspectorAction: View {
-    @Environment(AppModel.self) private var model
-    let row: AppModel.Row
+    @Environment(ScanModel.self) private var scan
+    @Environment(MarksModel.self) private var marks
+    @Environment(CleaningModel.self) private var cleaning
+    let row: ScanModel.Row
 
     var body: some View {
         switch self.row.state {
         case .waiting, .measuring:
             self.wide(Button("Measuring") {}.buttonStyle(.prominentAction).disabled(true))
-        case .measured where self.row.isLive && !self.model.markedParts(of: self.row.item).isEmpty:
+        case .measured where self.row.isLive && !self.marks.markedParts(of: self.row.item).isEmpty:
             let item = self.row.item
-            let marked = self.model.markedParts(of: item)
+            let marked = self.marks.markedParts(of: item)
             let parts = "\(CleanPrompt.partsSummary(marked, in: item)), "
-                + SizeText.of(kilobytes: self.model.kilobytes(of: marked, in: item))
+                + SizeText.of(kilobytes: self.scan.kilobytes(of: marked, in: item))
             self.wide(Button("Clean \(parts)") {
-                Task { await self.model.requestCleanParts(of: item) }
+                Task { await self.cleaning.requestCleanParts(of: item) }
             }
             .buttonStyle(.prominentAction)
-            .disabled(self.model.isScanning || self.model.isCleaning))
+            .disabled(self.scan.isScanning || self.scan.isCleaning))
         case .measured where self.row.isLive:
             self.wide(Button("Clean \(self.row.item.shortName)") {
-                Task { await self.model.requestClean([self.row.item]) }
+                Task { await self.cleaning.requestClean([self.row.item]) }
             }
             .buttonStyle(.prominentAction)
-            .disabled(self.model.isScanning || self.model.isCleaning))
+            .disabled(self.scan.isScanning || self.scan.isCleaning))
         case .cleaning:
             self.wide(Button("Cleaning") {}.buttonStyle(.glass).disabled(true))
         case .cleaned where self.row.canPutBack:
             self.wide(Button("Put Back") {
-                Task { await self.model.putBack(self.row.item) }
+                Task { await self.cleaning.putBack(self.row.item) }
             }
             .buttonStyle(.glass)
             .help("Move it from the Trash back where it was"))

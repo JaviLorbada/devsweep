@@ -10,7 +10,7 @@ struct AndroidViewModelTests {
     func `the SDK screen lists emulators, then system images, platforms, build tools and the rest`() {
         let home = TemporaryHome()
         let model = makeModel(home: home)
-        model.android = sampleAndroid
+        model.scan.showListings(extras: nil, android: sampleAndroid)
         model.screen = .androidSDK
         let android = sampleAndroid
         #expect(model.androidEntries == android.emulators + android.systemImages + android.platforms
@@ -28,7 +28,7 @@ struct AndroidViewModelTests {
         var android = sampleAndroid
         // An emulator used today comes first; the system image unused since 2025 is flagged.
         android.emulators[0].lastUsed = Date()
-        model.android = android
+        model.scan.showListings(extras: nil, android: android)
         model.screen = .androidSDK
         #expect(model.currentAndroidEntry == android.systemImages[0])
         model.selectedAndroidEntry = android.platforms[0].path

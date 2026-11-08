@@ -20,22 +20,23 @@ struct XcodeVersionsView: View {
 /// Runtimes, then the installed Xcodes, as on the Extras board.
 struct RuntimesContent: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ExtrasCard(
                 title: "Runtimes",
                 note: "flagged after \(self.model.staleDays) days unused or with no simulators",
-                rowCount: self.model.extras?.runtimes.count ?? 0)
+                rowCount: self.scan.extras?.runtimes.count ?? 0)
             {
-                if let runtimes = model.extras?.runtimes, !runtimes.isEmpty {
+                if let runtimes = scan.extras?.runtimes, !runtimes.isEmpty {
                     let largest = Double(runtimes.map(\.kilobytes).max() ?? 1)
                     ForEach(runtimes) { runtime in
                         Divider().opacity(0.6)
                         RuntimeRow(runtime: runtime, largest: largest)
                     }
                 } else {
-                    EmptyExtrasRow(text: self.model
+                    EmptyExtrasRow(text: self.scan
                         .isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found.")
                 }
             }
@@ -67,17 +68,17 @@ private struct ArchivesNote: View {
 }
 
 private struct XcodesCard: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        let xcodes = self.model.extras?.xcodes ?? []
+        let xcodes = self.scan.extras?.xcodes ?? []
         ExtrasCard(
             title: "Xcode versions",
             note: xcodes.count > 1 ? "each keeps its own compilation cache in DerivedData" : "",
             rowCount: xcodes.count)
         {
             if xcodes.isEmpty {
-                EmptyExtrasRow(text: self.model
+                EmptyExtrasRow(text: self.scan
                     .isLoadingExtras ? "Listing Xcodes…" : "No Xcode found in the applications folders.")
             } else {
                 let largest = Double(xcodes.map(\.kilobytes).max() ?? 1)
@@ -241,6 +242,7 @@ private struct RuntimeRow: View {
 
 private struct XcodeRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     @Environment(\.extrasColumns) private var columns
     let xcode: InstalledXcode
     let largest: Double
@@ -255,7 +257,7 @@ private struct XcodeRow: View {
                 Text(self.xcode.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
                 if self.xcode.isSelected { Badge(text: "selected", color: .accentColor).layoutPriority(2) }
                 if self.columns != .compact {
-                    Text(self.model.tilde(self.xcode.path))
+                    Text(self.scan.tilde(self.xcode.path))
                         .font(.caption.monospaced())
                         .foregroundStyle(.muted)
                         .lineLimit(1)
@@ -282,12 +284,12 @@ private struct XcodeRow: View {
                 .frame(width: 64, alignment: .trailing)
             Group {
                 if self.columns == .compact {
-                    Button("Reveal in Finder", systemImage: "folder") { self.model.revealInFinder([self.xcode.path]) }
+                    Button("Reveal in Finder", systemImage: "folder") { Finder.reveal([self.xcode.path]) }
                         .labelStyle(.iconOnly)
                         .controlSize(.small)
                         .help("Reveal in Finder")
                 } else {
-                    Button("Reveal in Finder") { self.model.revealInFinder([self.xcode.path]) }
+                    Button("Reveal in Finder") { Finder.reveal([self.xcode.path]) }
                         .controlSize(.small)
                         .frame(width: 118)
                 }
@@ -312,6 +314,7 @@ private struct XcodeRow: View {
 
 struct RuntimeInspector: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         if let runtime = model.currentRuntime {
@@ -332,7 +335,7 @@ struct RuntimeInspector: View {
             ContentUnavailableView(
                 "No runtime",
                 systemImage: "iphone",
-                description: Text(self.model
+                description: Text(self.scan
                     .isLoadingExtras ? "Listing runtimes…" : "No simulator runtimes found."))
         }
     }
@@ -400,17 +403,18 @@ struct RuntimeDetails: View {
 
 struct XcodeInspector: View {
     @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
 
     var body: some View {
         if let xcode = model.currentXcode {
             // Scrolls, so the column never asks the window for the height of
             // its text: at a small width that would be thousands of points.
             ScrollView {
-                XcodeDetails(xcode: xcode, installedCount: self.model.extras?.xcodes.count ?? 0)
+                XcodeDetails(xcode: xcode, installedCount: self.scan.extras?.xcodes.count ?? 0)
             }
             .scrollEdgeEffectStyle(.soft, for: .bottom)
             .safeAreaBar(edge: .bottom) {
-                Button("Reveal in Finder") { self.model.revealInFinder([xcode.path]) }
+                Button("Reveal in Finder") { Finder.reveal([xcode.path]) }
                     .buttonStyle(.glass)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
@@ -420,7 +424,7 @@ struct XcodeInspector: View {
             ContentUnavailableView(
                 "No Xcode",
                 systemImage: "hammer",
-                description: Text(self.model
+                description: Text(self.scan
                     .isLoadingExtras ? "Listing Xcodes…" :
                     "No Xcode found in the applications folders."))
         }
@@ -429,7 +433,7 @@ struct XcodeInspector: View {
 
 /// What the inspector says about one Xcode.
 struct XcodeDetails: View {
-    @Environment(AppModel.self) private var model
+    @Environment(ScanModel.self) private var scan
     let xcode: InstalledXcode
     let installedCount: Int
 
@@ -450,7 +454,7 @@ struct XcodeDetails: View {
             }
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Where")
-                Text(self.model.tilde(self.xcode.path))
+                Text(self.scan.tilde(self.xcode.path))
                     .font(.caption.monospaced())
                     .foregroundStyle(.muted)
                     .textSelection(.enabled)
