@@ -13,12 +13,22 @@ on:
         type: boolean
         default: true
 
-permissions:
-  contents: write
+# Nothing by default; the job asks for what it needs.
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: macos-26
+    timeout-minutes: 60
+    # The signing secrets live in this environment, so only this job can
+    # read them.
+    environment: release
+    permissions:
+      contents: write # Publishes the release.
     env:
       DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
       MACOS_SIGNING_P12: ${{ secrets.MACOS_SIGNING_P12 }}
@@ -27,7 +37,9 @@ jobs:
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_PRIVATE_KEY_P8: ${{ secrets.ASC_PRIVATE_KEY_P8 }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Version
         id: version
@@ -57,7 +69,7 @@ jobs:
         run: Scripts/release_notes.sh "${{ steps.version.outputs.version }}" > dist/notes.md
 
       - name: Keep the build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ steps.version.outputs.version }}
           path: |

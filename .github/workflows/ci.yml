@@ -5,16 +5,25 @@ on:
     branches: [main]
   pull_request:
 
+# Read only: CI checks the code and publishes nothing.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Actions are pinned to a commit, with the release it is in a comment, so a
+# moved tag can't change what runs.
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: SwiftFormat
         run: docker run --rm -v "$PWD:/work" -w /work ghcr.io/nicklockwood/swiftformat:0.64.0 Sources Tests --lint
       - name: SwiftLint
@@ -24,23 +33,32 @@ jobs:
     name: Build and test
     # The newest GitHub-hosted image with a released Xcode 26 or later.
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - run: xcodebuild -version && swift --version
-      - run: swift build
-      - run: swift test --parallel
+      - name: Test, with warnings as errors
+        run: swift test --parallel -Xswiftc -warnings-as-errors
+      - name: Release build, as a release ships it
+        run: swift build -c release -Xswiftc -warnings-as-errors
 
   acceptance:
     name: Parity with the bash script
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: The bash script and its bats suite, at a pinned commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: JaviLorbada/dotfiles
           ref: ce495ec4fc15b57086f30b7dbb60cf43c5c5f0a9
           path: dotfiles
+          persist-credentials: false
       - run: brew install bats-core
       - name: The bats suite against the Swift binary
         run: Scripts/bats.sh "$PWD/dotfiles"

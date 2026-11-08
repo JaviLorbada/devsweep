@@ -29,6 +29,10 @@ brew install bats-core swiftformat swiftlint
 `make acceptance DOTFILES=<dotfiles>` runs layers 2 and 3. CI runs all three
 against the dotfiles commit pinned in `.github/workflows/ci.yml`.
 
+CI also builds with warnings as errors, in debug and in release, and
+CodeQL scans the Swift code on each push and weekly. Every Action is
+pinned to a commit, with its release in a comment.
+
 ## Lint and format
 
 `make format` rewrites `Sources` and `Tests` with `.swiftformat`; `make lint`
