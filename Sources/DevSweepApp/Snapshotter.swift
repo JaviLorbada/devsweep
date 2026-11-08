@@ -21,41 +21,41 @@ import SwiftUI
 /// window. System controls that AppKit draws come out as placeholders.
 enum Snapshotter {
     @MainActor
-    static func runIfAsked(_ model: AppModel) async {
+    static func runIfAsked(_ app: AppCoordinator) async {
         let environment = ProcessInfo.processInfo.environment
         guard let output = environment["DEVSWEEP_SNAPSHOT"] else { return }
         let dark = environment["DEVSWEEP_SNAPSHOT_APPEARANCE"] != "light"
         NSApplication.shared.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 
-        while model.scan.isScanning || model.scan.isLoadingExtras || model.scan.isScanTaskRunning {
+        while app.scan.isScanning || app.scan.isLoadingExtras || app.scan.isScanTaskRunning {
             try? await Task.sleep(for: .milliseconds(200))
         }
         switch environment["DEVSWEEP_SNAPSHOT_SCREEN"] {
-        case "blocks": model.window.chartStyle = .blocks
-        case "runtimes": model.window.screen = .simulatorRuntimes
+        case "blocks": app.window.chartStyle = .blocks
+        case "runtimes": app.window.screen = .simulatorRuntimes
         case "remove-runtime":
             // Shows the sheet only; nothing here presses Remove.
-            model.window.screen = .simulatorRuntimes
-        case "xcodes": model.window.screen = .xcodeVersions
-        case "scanning": model.rewindScan(toMeasured: 5)
+            app.window.screen = .simulatorRuntimes
+        case "xcodes": app.window.screen = .xcodeVersions
+        case "scanning": app.rewindScan(toMeasured: 5)
         case "cleaned", "putback":
             // The confirmed step directly: never the quit prompt, which would
             // ask the real Xcode to quit.
-            await model.cleaning.confirmClean(CleaningModel.PendingClean(
-                items: model.marks.markedRows.map(\.item),
+            await app.cleaning.confirmClean(CleaningModel.PendingClean(
+                items: app.marks.markedRows.map(\.item),
                 stage: .confirm))
-            model.cleaning.dismissNotice()
+            app.cleaning.dismissNotice()
             if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "putback" {
-                await model.cleaning.putBack(.swiftpmCache)
-                model.overview.selection = .swiftpmCache
+                await app.cleaning.putBack(.swiftpmCache)
+                app.overview.selection = .swiftpmCache
             }
         default: break
         }
         if let id = environment["DEVSWEEP_SNAPSHOT_SELECT"], !id.isEmpty {
-            model.select(snapshotID: id)
+            app.select(snapshotID: id)
         }
         if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "remove-runtime",
-           let runtime = model.runtimes.current { model.runtimes.removal.ask(runtime) }
+           let runtime = app.runtimes.current { app.runtimes.removal.ask(runtime) }
         try? await Task.sleep(for: .milliseconds(600))
 
         let width = environment["DEVSWEEP_SNAPSHOT_WIDTH"].flatMap(Double.init) ?? 1280
@@ -67,7 +67,7 @@ enum Snapshotter {
         default: AnyView(SnapshotLayout(width: width))
         }
         let renderer = ImageRenderer(content: content
-            .environment(models: model)
+            .environment(models: app)
             .environment(\.colorScheme, dark ? .dark : .light))
         renderer.scale = 2
         if let image = renderer.cgImage {
@@ -267,7 +267,7 @@ private struct SnapshotSidebar: View {
     }
 }
 
-extension AppModel {
+extension AppCoordinator {
     /// Selects an item, an Xcode by its folder's name, or a runtime by id,
     /// for snapshots.
     func select(snapshotID id: String) {

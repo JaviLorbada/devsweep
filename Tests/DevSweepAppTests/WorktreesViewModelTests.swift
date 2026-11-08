@@ -4,28 +4,28 @@ import Testing
 
 @MainActor
 @Suite("Worktrees screen")
-struct WorktreeScreenTests {
+struct WorktreesViewModelTests {
     @Test
     func `the inspector shows the first worktree with nothing to lose until one is chosen`() {
         let home = TemporaryHome()
-        let model = makeModel(home: home, extras: sampleExtras)
-        model.window.screen = .worktrees
-        #expect(model.worktrees.current?.name == "readme-credits-readability-9b0801")
-        model.worktrees.select(sampleWorktrees[0])
-        #expect(model.worktrees.current?.name == "portfolio-copy-typography-ec440f")
+        let app = makeApp(home: home, extras: sampleExtras)
+        app.window.screen = .worktrees
+        #expect(app.worktrees.current?.name == "readme-credits-readability-9b0801")
+        app.worktrees.select(sampleWorktrees[0])
+        #expect(app.worktrees.current?.name == "portfolio-copy-typography-ec440f")
     }
 
     @Test
     func `the sidebar counts only what can go, and the subtitle says what stays`() {
         let home = TemporaryHome()
-        let model = makeModel(home: home, extras: sampleExtras)
-        model.window.screen = .worktrees
+        let app = makeApp(home: home, extras: sampleExtras)
+        app.window.screen = .worktrees
         // Two of the five have nothing to lose.
         let twoKilobytes: Int64 = 2 * 623_000
-        #expect(model.scan.extras?.removableWorktreesKilobytes == twoKilobytes)
+        #expect(app.scan.extras?.removableWorktreesKilobytes == twoKilobytes)
         let twoGo = SizeText.of(kilobytes: twoKilobytes)
         let threeStay = SizeText.of(kilobytes: 3 * 623_000)
-        #expect(model.worktrees.subtitle
+        #expect(app.worktrees.subtitle
             == "\(twoGo) in 2 worktrees with nothing to lose. 3 more, \(threeStay), keep work, so they stay.")
 
         let oneSize = SizeText.of(kilobytes: 623_000)
@@ -44,8 +44,8 @@ struct WorktreeScreenTests {
         let home = TemporaryHome()
         var extras = sampleExtras
         extras.worktrees = [sampleWorktrees[0], sampleWorktrees[3]]
-        let model = makeModel(home: home, extras: extras)
-        #expect(model.scan.extras?.removableWorktreesKilobytes == 0)
+        let app = makeApp(home: home, extras: extras)
+        #expect(app.scan.extras?.removableWorktreesKilobytes == 0)
     }
 
     @Test
@@ -65,13 +65,13 @@ struct WorktreeScreenTests {
     @Test
     func `a removal git refuses says why and keeps the sheet open`() async {
         let home = TemporaryHome()
-        let model = makeModel(home: home, extras: sampleExtras)
+        let app = makeApp(home: home, extras: sampleExtras)
         let worktree = sampleWorktrees[2]
-        model.worktrees.removal.ask(worktree)
-        // The model's tools have no git: the engine refuses before anything runs.
-        await model.worktrees.remove(worktree)
-        #expect(model.worktrees.removal.pending == worktree)
-        #expect(model.worktrees.removal.error?.hasPrefix("Git didn't remove it.") == true)
-        #expect(!model.worktrees.removal.isRemoving)
+        app.worktrees.removal.ask(worktree)
+        // The app's tools have no git: the engine refuses before anything runs.
+        await app.worktrees.remove(worktree)
+        #expect(app.worktrees.removal.pending == worktree)
+        #expect(app.worktrees.removal.error?.hasPrefix("Git didn't remove it.") == true)
+        #expect(!app.worktrees.removal.isRemoving)
     }
 }

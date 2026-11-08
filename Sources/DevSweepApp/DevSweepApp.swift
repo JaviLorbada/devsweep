@@ -5,7 +5,7 @@ import SwiftUI
 @main
 struct DevSweepApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
-    @State private var model = AppModel(notifier: Self.notifier)
+    @State private var app = AppCoordinator(notifier: Self.notifier)
 
     /// Development runs, with or without a fake home, never ask to notify.
     private static var notifier: NotificationPoster {
@@ -31,8 +31,8 @@ struct DevSweepApp: App {
     var body: some Scene {
         Window(ProductInfo.name, id: "main") {
             ContentView()
-                .environment(models: self.model)
-                .task { await self.model.windowAppeared() }
+                .environment(models: self.app)
+                .task { await self.app.windowAppeared() }
                 .containerBackground(Palette.backdrop, for: .window)
                 // A fixed ideal size: SwiftUI animates the window to the
                 // content's ideal size whenever an animated change alters it,
@@ -48,7 +48,7 @@ struct DevSweepApp: App {
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
-        .commands { AppCommands(model: self.model) }
+        .commands { AppCommands(scan: self.app.scan, window: self.app.window) }
 
         Window("About \(ProductInfo.name)", id: "about") {
             AboutView()
@@ -61,18 +61,18 @@ struct DevSweepApp: App {
 
         Settings {
             SettingsView()
-                .environment(models: self.model)
+                .environment(models: self.app)
         }
 
         MenuBarExtra(isInserted: Binding(
-            get: { self.model.preferences.showInMenuBar },
-            set: { self.model.preferences.showInMenuBar = $0 }))
+            get: { self.app.preferences.showInMenuBar },
+            set: { self.app.preferences.showInMenuBar = $0 }))
         {
             MenuBarPanel()
-                .environment(models: self.model)
+                .environment(models: self.app)
         } label: {
             MenuBarLabel()
-                .environment(models: self.model)
+                .environment(models: self.app)
         }
         .menuBarExtraStyle(.window)
     }
@@ -107,7 +107,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 /// Template items that would do nothing, such as New Window and a Help book
 /// there is none of, are replaced; the Edit menu stays for text fields.
 struct AppCommands: Commands {
-    let model: AppModel
+    let scan: ScanModel
+    let window: WindowViewModel
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openURL) private var openURL
 
@@ -127,21 +128,21 @@ struct AppCommands: Commands {
             Button("About \(ProductInfo.name)") { self.openWindow(id: "about") }
         }
         CommandGroup(replacing: .newItem) {
-            Button(self.model.scan.isScanning ? "Stop Scan" : "Scan Again") {
-                self.model.scan.isScanning ? self.model.scan.stopScan() : self.model.scan.scan()
+            Button(self.scan.isScanning ? "Stop Scan" : "Scan Again") {
+                self.scan.isScanning ? self.scan.stopScan() : self.scan.scan()
             }
             .keyboardShortcut("r")
-            .disabled(!self.model.scan.canScanOrStop)
+            .disabled(!self.scan.canScanOrStop)
         }
         CommandGroup(before: .toolbar) {
             ForEach(WindowViewModel.ChartStyle.allCases) { style in
                 Toggle(style.rawValue, isOn: Binding(
-                    get: { self.model.window.screen == .overview && self.model.window.chartStyle == style },
-                    set: { if $0 { self.model.window.showChart(style) } }))
+                    get: { self.window.screen == .overview && self.window.chartStyle == style },
+                    set: { if $0 { self.window.showChart(style) } }))
                     .keyboardShortcut(style == .ring ? "1" : "2")
             }
             Divider()
-            Button(Self.inspectorTitle(shown: self.model.window.inspectorShown)) { self.model.window.toggleInspector() }
+            Button(Self.inspectorTitle(shown: self.window.inspectorShown)) { self.window.toggleInspector() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
         }
         CommandGroup(replacing: .help) {

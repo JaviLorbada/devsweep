@@ -23,24 +23,24 @@ final class TemporaryHome: @unchecked Sendable {
     }
 }
 
-/// A model on an empty fake home, never scanned, holding the given extras.
+/// An app on an empty fake home, never scanned, holding the given extras.
 @MainActor
-func makeModel(home: TemporaryHome, extras: Extras? = nil) -> AppModel {
-    let model = AppModel(
+func makeApp(home: TemporaryHome, extras: Extras? = nil) -> AppCoordinator {
+    let app = AppCoordinator(
         environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": ""],
         store: InMemoryScanStore(),
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: SilentNotificationPoster(),
         dependencies: Dependencies(tools: .unavailable))
-    model.scan.showListings(extras: extras, android: nil)
-    return model
+    app.scan.showListings(extras: extras, android: nil)
+    return app
 }
 
 /// The smallest size a view accepts: what AppKit asks the window's columns
 /// for when it decides how wide and tall they must be.
 @MainActor
-func minimumSize(of view: some View, model: AppModel) -> CGSize {
-    NSHostingController(rootView: view.environment(models: model)).sizeThatFits(in: .zero)
+func minimumSize(of view: some View, app: AppCoordinator) -> CGSize {
+    NSHostingController(rootView: view.environment(models: app)).sizeThatFits(in: .zero)
 }
 
 /// Extras like the ones on a machine with Xcode 27.2, a renamed older Xcode
@@ -230,26 +230,26 @@ final class FakeDeveloperApps: RunningAppsChecking, AppQuitting, @unchecked Send
     }
 }
 
-/// A model on a fake home whose Trash is a folder in the temp folder and
+/// An app on a fake home whose Trash is a folder in the temp folder and
 /// whose Xcode and Simulator are `apps`, scanned once.
 @MainActor
-func scannedModel(
+func scannedApp(
     home: TemporaryHome,
     apps: FakeDeveloperApps = FakeDeveloperApps(),
-    projectFolders: String = "") async -> AppModel
+    projectFolders: String = "") async -> AppCoordinator
 {
     var tools = Tools.unavailable
     tools.trash = FolderTrash(folder: "\(home.root)/Trash")
     tools.runningApps = apps
-    let model = AppModel(
+    let app = AppCoordinator(
         environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": projectFolders],
         store: InMemoryScanStore(),
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: SilentNotificationPoster(),
         dependencies: Dependencies(tools: tools),
         quitter: apps)
-    await finishScan(model)
-    return model
+    await finishScan(app)
+    return app
 }
 
 /// Waits, up to about four seconds, for `condition`.
@@ -258,4 +258,28 @@ func waitUntil(_ condition: () -> Bool) async {
     for _ in 0..<200 where !condition() {
         try? await Task.sleep(for: .milliseconds(20))
     }
+}
+
+/// An app on a temp home with none of the tools, so nothing outside the
+/// temp folder runs; its last scan is kept in the temp home's own file.
+@MainActor
+func scanningApp(home: TemporaryHome, notifier: NotificationPoster = SilentNotificationPoster()) -> AppCoordinator {
+    AppCoordinator(
+        environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": ""],
+        preferences: Preferences(storage: InMemoryPreferencesStore()),
+        notifier: notifier,
+        dependencies: Dependencies(tools: .unavailable))
+}
+
+@MainActor
+func finishScan(_ app: AppCoordinator) async {
+    app.scan.scan()
+    for _ in 0..<200 where app.scan.isScanning || app.scan.isLoadingExtras {
+        try? await Task.sleep(for: .milliseconds(50))
+    }
+}
+
+func write(_ kilobytes: Int, to folder: String) {
+    must { try FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true) }
+    FileManager.default.createFile(atPath: "\(folder)/blob", contents: Data(count: kilobytes * 1024))
 }

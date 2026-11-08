@@ -11,17 +11,17 @@ struct XcodesViewModelTests {
         let home = TemporaryHome()
         var extras = sampleExtras
         extras.xcodes.reverse()
-        let model = makeModel(home: home, extras: extras)
-        #expect(model.xcodes.current?.isSelected == true)
-        model.xcodes.select(extras.xcodes[0])
-        #expect(model.xcodes.current == extras.xcodes[0])
+        let app = makeApp(home: home, extras: extras)
+        #expect(app.xcodes.current?.isSelected == true)
+        app.xcodes.select(extras.xcodes[0])
+        #expect(app.xcodes.current == extras.xcodes[0])
 
         extras.xcodes = extras.xcodes.map { xcode in
             var xcode = xcode
             xcode.isSelected = false
             return xcode
         }
-        let other = makeModel(home: home, extras: extras)
+        let other = makeApp(home: home, extras: extras)
         #expect(other.xcodes.current == extras.xcodes[0])
     }
 }

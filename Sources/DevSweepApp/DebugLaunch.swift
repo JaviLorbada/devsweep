@@ -65,12 +65,12 @@ enum DebugLaunch {
     }
 
     @MainActor
-    static func run(_ model: AppModel) async {
+    static func run(_ app: AppCoordinator) async {
         let environment = ProcessInfo.processInfo.environment
         guard self.isRequested else { return }
         await self.setUpWindow(environment)
-        guard await self.waitForScan(model) else { return }
-        await self.applyScreen(model, environment)
+        guard await self.waitForScan(app) else { return }
+        await self.applyScreen(app, environment)
         await self.resizeInTurn(environment)
         if let tab = environment["DEVSWEEP_SETTINGS"], !tab.isEmpty {
             await self.captureSettings(tab: tab, to: environment["DEVSWEEP_CAPTURE"])
@@ -87,7 +87,7 @@ enum DebugLaunch {
             try? await Task.sleep(for: .milliseconds(500))
             self.trace(
                 "capturing; key window \(window.isKeyWindow), on screen \(window.occlusionState.contains(.visible)), "
-                    + "scan button enabled \(model.scan.canScan)")
+                    + "scan button enabled \(app.scan.canScan)")
             let appName = NSApplication.shared.mainMenu?.items.first?.submenu?.title ?? "-"
             self
                 .trace(
@@ -97,7 +97,7 @@ enum DebugLaunch {
         }
         self.trace("probing")
         guard let output = environment["DEVSWEEP_PROBE"], !output.isEmpty else { return }
-        try? self.probe(model).write(toFile: output, atomically: true, encoding: .utf8)
+        try? self.probe(app).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
     }
 
@@ -151,11 +151,11 @@ enum DebugLaunch {
     /// Waits for the whole scan, tracing any change of width meanwhile.
     /// False when cancelled.
     @MainActor
-    private static func waitForScan(_ model: AppModel) async -> Bool {
+    private static func waitForScan(_ app: AppCoordinator) async -> Bool {
         self.trace("window \(Int(self.mainWindow?.frame.width ?? 0)) wide; waiting for the scan")
         var lastWidth = self.mainWindow?.frame.width ?? 0
         let start = Date()
-        while model.scan.isScanning || model.scan.isLoadingExtras || model.scan.isScanTaskRunning {
+        while app.scan.isScanning || app.scan.isLoadingExtras || app.scan.isScanTaskRunning {
             if Task.isCancelled {
                 self.trace("cancelled while waiting")
                 return false
@@ -168,7 +168,7 @@ enum DebugLaunch {
                     Date().timeIntervalSince(start),
                     lastWidth,
                     width,
-                    model.scan.tally.measuringItems.map(\.rawValue).joined(separator: ",")))
+                    app.scan.tally.measuringItems.map(\.rawValue).joined(separator: ",")))
                 lastWidth = width
             }
         }
@@ -188,18 +188,18 @@ enum DebugLaunch {
 
     /// The screen, the selection and a press, as clicks would make them.
     @MainActor
-    private static func applyScreen(_ model: AppModel, _ environment: [String: String]) async {
+    private static func applyScreen(_ app: AppCoordinator, _ environment: [String: String]) async {
         self.trace("scan done; switching to \(environment["DEVSWEEP_SCREEN"] ?? "-")")
         switch environment["DEVSWEEP_SCREEN"] {
-        case let name? where self.screens[name] != nil: model.window.screen = self.screens[name] ?? .overview
-        case "blocks": model.window.chartStyle = .blocks
-        case "scanning": model.rewindScan(toMeasured: 5)
+        case let name? where self.screens[name] != nil: app.window.screen = self.screens[name] ?? .overview
+        case "blocks": app.window.chartStyle = .blocks
+        case "scanning": app.rewindScan(toMeasured: 5)
         default: break
         }
-        if let id = environment["DEVSWEEP_SELECT"], !id.isEmpty { model.select(snapshotID: id) }
+        if let id = environment["DEVSWEEP_SELECT"], !id.isEmpty { app.select(snapshotID: id) }
         switch environment["DEVSWEEP_CHART"] {
-        case "blocks": model.window.chartStyle = .blocks
-        case "ring": model.window.chartStyle = .ring
+        case "blocks": app.window.chartStyle = .blocks
+        case "ring": app.window.chartStyle = .ring
         default: break
         }
         if let label = environment["DEVSWEEP_PRESS"], !label.isEmpty, let window = mainWindow {
@@ -214,8 +214,8 @@ enum DebugLaunch {
             self.opened = visible.first { !before.contains(ObjectIdentifier($0)) && $0.contentView != nil }
             self.trace("windows: \(visible.map { "\"\($0.title)\"" }.joined(separator: ", "))")
             self.trace(
-                "screen \(model.window.screen), chart \(model.window.chartStyle.rawValue), "
-                    + "inspector \(model.window.inspectorPlacement.rawValue), scanning \(model.scan.isScanning)")
+                "screen \(app.window.screen), chart \(app.window.chartStyle.rawValue), "
+                    + "inspector \(app.window.inspectorPlacement.rawValue), scanning \(app.scan.isScanning)")
         }
         if let clicks = environment["DEVSWEEP_CLICK"], !clicks.isEmpty, let window = mainWindow {
             for pair in clicks.split(separator: ";") {
@@ -225,9 +225,9 @@ enum DebugLaunch {
                 self.trace(self.click(at: CGPoint(x: numbers[0], y: numbers[1]), in: window))
                 try? await Task.sleep(for: .seconds(1))
                 self.trace(
-                    "inspector \(model.window.inspectorPlacement.rawValue) (wanted \(model.window.wantsInspector), "
-                        + "room \(model.window.inspectorHasRoom)), window \(Int(window.frame.width)) wide, "
-                        + "scanning \(model.scan.isScanning), chart \(model.window.chartStyle.rawValue)")
+                    "inspector \(app.window.inspectorPlacement.rawValue) (wanted \(app.window.wantsInspector), "
+                        + "room \(app.window.inspectorHasRoom)), window \(Int(window.frame.width)) wide, "
+                        + "scanning \(app.scan.isScanning), chart \(app.window.chartStyle.rawValue)")
             }
         }
         if environment["DEVSWEEP_SIDEBAR_TIMING"] == "1", let window = mainWindow {
@@ -519,7 +519,7 @@ enum DebugLaunch {
     /// the window, each column's width or collapsed state, and every scroll
     /// view whose content is wider than the view showing it.
     @MainActor
-    private static func probe(_ model: AppModel) -> String {
+    private static func probe(_ app: AppCoordinator) -> String {
         guard let window = mainWindow, let content = window.contentView else { return "no window\n" }
         var lines: [String] = []
         let size = content.bounds.size
@@ -527,8 +527,8 @@ enum DebugLaunch {
             .append(
                 "window \(Int(window.frame.width))x\(Int(window.frame.height)) min "
                     + "\(Int(window.minSize.width))x\(Int(window.minSize.height))")
-        lines.append("screen \(model.window.screen), inspector \(model.window.inspectorPlacement.rawValue)")
-        if let timing = model.scan.scanTiming {
+        lines.append("screen \(app.window.screen), inspector \(app.window.inspectorPlacement.rawValue)")
+        if let timing = app.scan.scanTiming {
             lines.append(String(
                 format: "scan: items measured after %.1fs, everything after %.1fs",
                 timing.items,

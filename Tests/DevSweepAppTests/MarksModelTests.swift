@@ -18,43 +18,43 @@ struct MarksModelTests {
     func `the three biggest start ticked once a scan is done`() async {
         let home = TemporaryHome()
         writeFourItems(in: home)
-        let model = await scannedModel(home: home)
-        #expect(model.scan.tally.live.count == 4)
-        #expect(model.marks.marked == [.derivedData, .swiftpmCache, .toolCaches])
+        let app = await scannedApp(home: home)
+        #expect(app.scan.tally.live.count == 4)
+        #expect(app.marks.marked == [.derivedData, .swiftpmCache, .toolCaches])
     }
 
     @Test
     func `marks changed during a scan are kept when it ends`() async {
         let home = TemporaryHome()
         writeFourItems(in: home)
-        let model = scanningModel(home: home)
-        model.scan.scan()
-        model.marks.setMarked(.npmCache, true)
-        await waitUntil { !model.scan.isScanning && !model.scan.isLoadingExtras }
-        #expect(model.marks.marked == [.npmCache])
+        let app = scanningApp(home: home)
+        app.scan.scan()
+        app.marks.setMarked(.npmCache, true)
+        await waitUntil { !app.scan.isScanning && !app.scan.isLoadingExtras }
+        #expect(app.marks.marked == [.npmCache])
     }
 
     @Test
     func `Mark All ticks everything with something to clean, and Mark None nothing`() async {
         let home = TemporaryHome()
         writeFourItems(in: home)
-        let model = await scannedModel(home: home)
-        model.marks.markAll()
-        #expect(model.marks.marked == Set(model.scan.tally.live.map(\.item)))
-        #expect(model.marks.markedKilobytes == model.scan.tally.reclaimableKilobytes)
-        model.marks.markNone()
-        #expect(model.marks.marked.isEmpty)
-        #expect(model.marks.markedRows.isEmpty)
+        let app = await scannedApp(home: home)
+        app.marks.markAll()
+        #expect(app.marks.marked == Set(app.scan.tally.live.map(\.item)))
+        #expect(app.marks.markedKilobytes == app.scan.tally.reclaimableKilobytes)
+        app.marks.markNone()
+        #expect(app.marks.marked.isEmpty)
+        #expect(app.marks.markedRows.isEmpty)
     }
 
     @Test
     func `a new scan starts with nothing ticked`() async {
         let home = TemporaryHome()
         writeFourItems(in: home)
-        let model = await scannedModel(home: home)
-        model.marks.markAll()
-        model.scan.scan()
-        #expect(model.marks.marked.isEmpty)
-        model.scan.stopScan()
+        let app = await scannedApp(home: home)
+        app.marks.markAll()
+        app.scan.scan()
+        #expect(app.marks.marked.isEmpty)
+        app.scan.stopScan()
     }
 }

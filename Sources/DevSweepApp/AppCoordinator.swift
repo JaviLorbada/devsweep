@@ -1,14 +1,21 @@
 import AppKit
 import DevSweepKit
-import Observation
 import SwiftUI
 
-/// Builds the shared models and the view models, and wires them together.
+/// The top of the app: builds the dependencies, the shared models and the
+/// view models, and wires what one model's events set off in the others.
+///
+/// - A scan starting clears the marks and the last parts cleans.
+/// - A scan's items all measured tick the biggest and, unless it was
+///   stopped, select the first.
+/// - A scan finished checks DerivedData's growth and may notify.
+/// - Every half minute: the clock, the free space, and the daily scan.
+///
+/// Views never see it; the scenes put its models in the environment with
+/// `environment(models:)`.
 @MainActor
-@Observable
-final class AppModel {
+final class AppCoordinator {
     let preferences: Preferences
-    let notifier: NotificationPoster
     let scan: ScanModel
     let marks: MarksModel
     let runningApps: RunningAppsModel
@@ -19,7 +26,13 @@ final class AppModel {
     let runtimes: RuntimesViewModel
     let worktrees: WorktreesViewModel
     let android: AndroidViewModel
+    private let notifier: NotificationPoster
 
+    /// Everything is live unless a test says otherwise.
+    /// - Parameters:
+    ///   - store: where the last scan is kept; the home's own file when nil.
+    ///   - dependencies: the kit's side effects; `Dependencies.live` when nil.
+    ///   - quitter: quits Xcode and Simulator; as choosing Quit would when nil.
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         store: (any ScanMemoryStore)? = nil,
@@ -28,9 +41,9 @@ final class AppModel {
         dependencies: Dependencies? = nil,
         quitter: (any AppQuitting)? = nil)
     {
-        self.notifier = notifier
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
+        self.notifier = notifier
         let workspaceApps = WorkspaceRunningApps()
         // Opened from Finder, the app gets launchd's short PATH, without
         // Homebrew, so Homebrew's usual places go after it. A PATH given on
@@ -51,6 +64,7 @@ final class AppModel {
         #endif
         let dependencies = dependencies ?? live
 
+        // The shared models, each on the ones it needs.
         let scan = ScanModel(
             environment: environment,
             store: store,
@@ -60,15 +74,17 @@ final class AppModel {
         let runningApps = RunningAppsModel(
             checker: dependencies.tools.runningApps,
             quitter: quitter ?? WorkspaceAppQuitter())
-        self.scan = scan
-        self.marks = marks
-        self.runningApps = runningApps
         let cleaning = CleaningModel(
             scan: scan,
             marks: marks,
             apps: runningApps,
             moveToTrash: preferences.moveToTrash)
+        self.scan = scan
+        self.marks = marks
+        self.runningApps = runningApps
         self.cleaning = cleaning
+
+        // The view models, on the shared models.
         let window = WindowViewModel()
         self.window = window
         self.overview = OverviewViewModel(window: window, scan: scan, cleaning: cleaning, apps: runningApps)
@@ -161,20 +177,11 @@ final class AppModel {
     #endif
 }
 
-/// Opens Finder on paths, selected.
-enum Finder {
-    static func reveal(_ paths: [String]) {
-        let urls = paths.filter { FileManager.default.fileExists(atPath: $0) }.map { URL(fileURLWithPath: $0) }
-        guard !urls.isEmpty else { return }
-        NSWorkspace.shared.activateFileViewerSelecting(urls)
-    }
-}
-
 extension View {
-    /// Puts the app's models in the environment, for a scene, a sheet or a test.
-    func environment(models app: AppModel) -> some View {
-        self.environment(app)
-            .environment(app.preferences)
+    /// Puts the app's models in the environment, for a scene or a test.
+    /// Each view then takes only the ones it reads.
+    func environment(models app: AppCoordinator) -> some View {
+        self.environment(app.preferences)
             .environment(app.scan)
             .environment(app.marks)
             .environment(app.runningApps)
