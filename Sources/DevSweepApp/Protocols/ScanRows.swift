@@ -1,14 +1,14 @@
 import DevSweepKit
 
-/// The rows during a clean: the lock that keeps a scan and a clean apart,
-/// and each row as it is cleaned or put back. A clean takes the rows with
+/// The scan's rows as a clean changes them: the lock that keeps a scan and a
+/// clean apart, and each row as it is cleaned or put back. A clean takes the rows with
 /// `beginCleaning()` and gives them back with `endCleaning(warnings:)`.
 ///
 /// `ScanModel` conforms, and only it changes the rows. `CleaningModel`
 /// takes it.
 @MainActor
-protocol CleaningRows: AnyObject {
-    var rows: [Item: ScanModel.Row] { get }
+protocol ScanRows: AnyObject {
+    var rows: [Item: ScanRow] { get }
     var isScanning: Bool { get }
     var isCleaning: Bool { get }
     /// The kit, for the home scanned, which cleans and puts back; nil

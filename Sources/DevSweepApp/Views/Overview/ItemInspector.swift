@@ -34,7 +34,7 @@ struct ItemDetails: View {
     @Environment(ScanModel.self) private var scan
     @Environment(CleaningModel.self) private var cleaning
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    let row: ScanModel.Row
+    let row: ScanRow
     /// Whether the Where list shows every path rather than the first few.
     @State private var showsAllPaths = false
 
@@ -68,7 +68,7 @@ struct ItemDetails: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func header(_ row: ScanModel.Row) -> some View {
+    private func header(_ row: ScanRow) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 7) {
                 Dot(color: Palette.color(row.item.family))
@@ -88,7 +88,7 @@ struct ItemDetails: View {
         }
     }
 
-    private func location(_ row: ScanModel.Row) -> some View {
+    private func location(_ row: ScanRow) -> some View {
         let paths = row.shownResult?.paths ?? []
         return VStack(alignment: .leading, spacing: 5) {
             Eyebrow(text: "Where")
@@ -129,7 +129,7 @@ struct ItemDetails: View {
         }
     }
 
-    private func heroSize(_ row: ScanModel.Row) -> String {
+    private func heroSize(_ row: ScanRow) -> String {
         switch row.state {
         case .waiting: row.showsPrevious ? SizeText.of(kilobytes: row.shownKilobytes) : "–"
         case .notMeasured: "–"
@@ -140,7 +140,7 @@ struct ItemDetails: View {
         }
     }
 
-    private func stateWord(_ row: ScanModel.Row) -> String {
+    private func stateWord(_ row: ScanRow) -> String {
         switch row.state {
         case .waiting: row.showsPrevious ? "last scan, waiting" : "waiting"
         case .measuring: "measuring"
@@ -164,7 +164,7 @@ struct InspectorAction: View {
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
     @Environment(CleaningModel.self) private var cleaning
-    let row: ScanModel.Row
+    let row: ScanRow
 
     var body: some View {
         switch self.row.state {

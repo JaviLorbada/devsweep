@@ -26,7 +26,7 @@ struct ItemsCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func table(rows: [ScanModel.Row], showsBar: Bool) -> some View {
+    private func table(rows: [ScanRow], showsBar: Bool) -> some View {
         let largest = Double(max(rows.map(\.shownKilobytes).max() ?? 1, 1))
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
@@ -62,7 +62,7 @@ struct ItemRow: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(MarksModel.self) private var marks
     @Environment(\.appearsActive) private var appearsActive
-    let row: ScanModel.Row
+    let row: ScanRow
     let largest: Double
     var showsBar = true
 
@@ -175,7 +175,7 @@ struct ItemRow: View {
 
 enum RowWords {
     /// What VoiceOver says for a row with no size yet.
-    static func state(_ row: ScanModel.Row) -> String {
+    static func state(_ row: ScanRow) -> String {
         switch row.state {
         case .waiting: "waiting"
         case .measuring: "measuring"
@@ -190,7 +190,7 @@ struct RowAction: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     @Environment(CleaningModel.self) private var cleaning
-    let row: ScanModel.Row
+    let row: ScanRow
 
     var body: some View {
         switch self.row.state {

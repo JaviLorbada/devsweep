@@ -5,8 +5,8 @@ import Testing
 
 /// A row for `item` in `state`: measured at `kilobytes`, or with that much
 /// from the last scan when it hasn't been measured.
-func row(_ item: Item, _ state: ScanModel.RowState, kilobytes: Int64, previous: Int64? = nil) -> ScanModel.Row {
-    var row = ScanModel.Row(item: item)
+func row(_ item: Item, _ state: ScanRow.State, kilobytes: Int64, previous: Int64? = nil) -> ScanRow {
+    var row = ScanRow(item: item)
     row.state = state
     let result = { (kilobytes: Int64) in
         ItemResult(item: item, paths: kilobytes > 0 ? ["/\(item.rawValue)"] : [], kilobytes: kilobytes, location: "")
@@ -20,7 +20,7 @@ func row(_ item: Item, _ state: ScanModel.RowState, kilobytes: Int64, previous: 
     return row
 }
 
-func tally(_ rows: [ScanModel.Row]) -> Tally {
+func tally(_ rows: [ScanRow]) -> Tally {
     Tally(order: rows.map(\.item), rows: Dictionary(uniqueKeysWithValues: rows.map { ($0.item, $0) }))
 }
 

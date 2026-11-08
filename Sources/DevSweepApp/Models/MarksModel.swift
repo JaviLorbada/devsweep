@@ -19,7 +19,7 @@ final class MarksModel: Marking {
     }
 
     /// The ticked rows that can be cleaned, largest first.
-    var markedRows: [ScanModel.Row] {
+    var markedRows: [ScanRow] {
         self.scan.tally.marked(self.marked)
     }
 

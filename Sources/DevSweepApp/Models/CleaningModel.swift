@@ -23,11 +23,11 @@ final class CleaningModel: CleaningTotals {
     /// Each item's last parts clean, which the inspector reports and can put
     /// back from the Trash.
     private(set) var partsCleans: [Item: PartsClean] = [:]
-    private let scan: any CleaningRows
+    private let scan: any ScanRows
     private let marks: any Marking
     private let apps: any RunningApps
 
-    init(scan: any CleaningRows, marks: any Marking, apps: any RunningApps, moveToTrash: Bool) {
+    init(scan: any ScanRows, marks: any Marking, apps: any RunningApps, moveToTrash: Bool) {
         self.scan = scan
         self.marks = marks
         self.apps = apps

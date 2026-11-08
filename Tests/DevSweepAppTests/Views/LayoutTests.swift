@@ -169,7 +169,7 @@ extension LayoutTests {
         let app = makeApp(home: home)
         app.scan.showListings(extras: nil, android: sampleAndroid)
         for (screen, size) in [
-            (WindowViewModel.Screen.androidStudios, minimumSize(of: AndroidStudiosContent(), app: app)),
+            (Screen.androidStudios, minimumSize(of: AndroidStudiosContent(), app: app)),
             (.androidSDK, minimumSize(of: AndroidSDKContent(), app: app)),
             (.gradleCaches, minimumSize(of: GradleCachesContent(), app: app)),
         ] {
@@ -182,7 +182,7 @@ extension LayoutTests {
         let home = TemporaryHome()
         let app = makeApp(home: home)
         app.scan.showListings(extras: nil, android: sampleAndroid)
-        for screen in [WindowViewModel.Screen.androidStudios, .androidSDK, .gradleCaches] {
+        for screen in [Screen.androidStudios, .androidSDK, .gradleCaches] {
             app.window.screen = screen
             let size = minimumSize(of: AndroidInspector(), app: app)
             #expect(size.height <= WindowLayout.minimumHeight, "\(screen) needs \(size.height) points")

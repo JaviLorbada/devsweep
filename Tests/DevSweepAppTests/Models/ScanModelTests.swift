@@ -160,7 +160,7 @@ struct ScanMemoryTests {
 
     @Test
     func `while measuring, an item counts toward the totals`() {
-        var row = ScanModel.Row(item: .derivedData)
+        var row = ScanRow(item: .derivedData)
         row.state = .measuring
         row.progressBytes = 5 * 1024 * 1024
         #expect(row.isCounting)

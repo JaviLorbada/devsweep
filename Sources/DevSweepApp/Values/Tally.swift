@@ -4,33 +4,31 @@ import DevSweepKit
 /// their order, the totals, each family's share and the ring's weights.
 /// A value, so it is checked without a model.
 struct Tally {
-    typealias Row = ScanModel.Row
-
     /// The rows in the order the scan measures them.
-    let rows: [Row]
-    private let byItem: [Item: Row]
+    let rows: [ScanRow]
+    private let byItem: [Item: ScanRow]
 
-    init(order: [Item], rows: [Item: Row]) {
+    init(order: [Item], rows: [Item: ScanRow]) {
         self.rows = order.compactMap { rows[$0] }
         self.byItem = rows
     }
 
     /// Measured items largest first, then the ones being measured, then the
     /// rest; those two by what the last scan found, so rows keep their places.
-    var ordered: [Row] {
-        let byPrevious = { (a: Row, b: Row) in (a.previous?.kilobytes ?? 0) > (b.previous?.kilobytes ?? 0) }
+    var ordered: [ScanRow] {
+        let byPrevious = { (a: ScanRow, b: ScanRow) in (a.previous?.kilobytes ?? 0) > (b.previous?.kilobytes ?? 0) }
         let measured = self.rows.filter(\.wasMeasured).sorted { $0.kilobytes > $1.kilobytes }
         return measured + self.rows.filter { $0.state == .measuring }.sorted(by: byPrevious)
             + self.rows.filter { $0.state == .waiting || $0.state == .notMeasured }.sorted(by: byPrevious)
     }
 
     /// Measured, with something to clean, largest first.
-    var live: [Row] {
+    var live: [ScanRow] {
         self.ordered.filter(\.isLive)
     }
 
     /// The live rows among `marked`, largest first.
-    func marked(_ marked: Set<Item>) -> [Row] {
+    func marked(_ marked: Set<Item>) -> [ScanRow] {
         self.live.filter { marked.contains($0.item) }
     }
 
@@ -40,7 +38,7 @@ struct Tally {
 
     /// Rows whose size counts toward the totals on screen: measured with
     /// something to reclaim, counting up, or still showing the last scan.
-    private var counted: [Row] {
+    private var counted: [ScanRow] {
         self.ordered.filter { $0.isLive || $0.isCounting || $0.showsPrevious }
     }
 
@@ -103,7 +101,7 @@ struct Tally {
 
     /// The weight a ring segment gets: its size once measured, otherwise what
     /// it took last time or the average so far, so the ring is whole from the start.
-    func chartWeight(_ row: Row) -> Double {
+    func chartWeight(_ row: ScanRow) -> Double {
         switch row.state {
         case .measured, .cleaning, .cleaned:
             return Double(max(row.kilobytes, 0))

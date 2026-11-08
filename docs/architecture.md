@@ -176,7 +176,7 @@ hands it fakes instead, so a view model's test needs no scan.
 |---|---|---|---|
 | `ScanResults` | The tally and the facts the status lines are written from. | `ScanModel` | `OverviewViewModel`, `MarksModel` |
 | `Listings` | The Xcodes, runtimes, worktrees and Android lists; removing a runtime or a worktree. | `ScanModel` | The Xcodes, runtimes, worktrees and Android view models |
-| `CleaningRows` | The rows during a clean, and the lock that keeps a scan and a clean apart. | `ScanModel` | `CleaningModel` |
+| `ScanRows` | The rows during a clean, and the lock that keeps a scan and a clean apart. | `ScanModel` | `CleaningModel` |
 | `Marking` | The ticked parts, and clearing what was cleaned. | `MarksModel` | `CleaningModel` |
 | `RunningApps` | Whether Xcode and Simulator are open, and quitting them. | `RunningAppsModel` | `CleaningModel`, `OverviewViewModel` |
 | `CleaningTotals` | What this session moved to the Trash and deleted. | `CleaningModel` | `OverviewViewModel` |

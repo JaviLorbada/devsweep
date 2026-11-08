@@ -12,7 +12,7 @@ struct SidebarView: View {
     private func row(
         _ title: String,
         kilobytes: Int64?,
-        screen: WindowViewModel.Screen,
+        screen: Screen,
         showsZero: Bool = true) -> some View
     {
         HStack {
@@ -28,7 +28,7 @@ struct SidebarView: View {
         @Bindable var window = self.window
         List(selection: $window.screen.optional) {
             Label("Overview", systemImage: "chart.pie")
-                .tag(WindowViewModel.Screen.overview)
+                .tag(Screen.overview)
 
             Section("Caches") {
                 ForEach(Family.allCases) { family in
@@ -157,9 +157,9 @@ struct DiskMeter: View {
     }
 }
 
-extension WindowViewModel.Screen {
+extension Screen {
     /// Lets a non-optional selection drive a List, which wants an optional one.
-    var optional: WindowViewModel.Screen? {
+    var optional: Screen? {
         get { self }
         set { if let newValue { self = newValue } }
     }

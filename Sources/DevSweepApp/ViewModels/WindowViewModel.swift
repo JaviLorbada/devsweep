@@ -1,21 +1,22 @@
 import CoreGraphics
 import Observation
 
+/// The screens the sidebar lists, one on show at a time.
+enum Screen: Hashable {
+    case overview
+    case xcodeVersions
+    case simulatorRuntimes
+    case androidStudios
+    case androidSDK
+    case gradleCaches
+    case worktrees
+}
+
 /// The window's own state: the screen on show, Ring or Blocks, and whether
 /// and where the inspector shows.
 @MainActor
 @Observable
 final class WindowViewModel: Navigation {
-    enum Screen: Hashable {
-        case overview
-        case xcodeVersions
-        case simulatorRuntimes
-        case androidStudios
-        case androidSDK
-        case gradleCaches
-        case worktrees
-    }
-
     enum ChartStyle: String, CaseIterable, Identifiable {
         case ring = "Ring"
         case blocks = "Blocks"

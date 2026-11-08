@@ -139,7 +139,7 @@ private struct TreemapCells: View {
 
 private struct TreemapCell: View {
     @Environment(OverviewViewModel.self) private var overview
-    let row: ScanModel.Row
+    let row: ScanRow
     let frame: CGRect
     let selected: Bool
 

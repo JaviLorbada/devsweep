@@ -167,7 +167,7 @@ extension Tally {
 }
 
 /// `results` as rows, every one measured.
-func measuredRows(_ results: [ItemResult]) -> [Item: ScanModel.Row] {
+func measuredRows(_ results: [ItemResult]) -> [Item: ScanRow] {
     Dictionary(uniqueKeysWithValues: results
-        .map { ($0.item, ScanModel.Row(item: $0.item, state: .measured, result: $0)) })
+        .map { ($0.item, ScanRow(item: $0.item, state: .measured, result: $0)) })
 }

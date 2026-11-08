@@ -52,8 +52,8 @@ final class FakeListings: Listings {
 /// ahead, but none of them can take the rows, so nothing is cleaned. The
 /// flow tests clean for real, on a fake home.
 @MainActor
-final class FakeCleaningRows: CleaningRows {
-    var rows: [Item: ScanModel.Row]
+final class FakeScanRows: ScanRows {
+    var rows: [Item: ScanRow]
     var isScanning = false
     var isCleaning = false
     private(set) var cleansBegun = 0
@@ -137,13 +137,13 @@ final class FakeCleaningTotals: CleaningTotals {
 /// The screen on show, as a test sets it.
 @MainActor
 final class FakeNavigation: Navigation {
-    var screen: WindowViewModel.Screen
+    var screen: Screen
 
-    init(_ screen: WindowViewModel.Screen = .overview) {
+    init(_ screen: Screen = .overview) {
         self.screen = screen
     }
 
-    func show(_ screen: WindowViewModel.Screen) {
+    func show(_ screen: Screen) {
         self.screen = screen
     }
 }

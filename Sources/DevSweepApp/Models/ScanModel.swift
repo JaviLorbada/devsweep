@@ -11,14 +11,14 @@ import SwiftUI
 /// a clean never run at once.
 @MainActor
 @Observable
-final class ScanModel: ScanResults, Listings, CleaningRows {
+final class ScanModel: ScanResults, Listings, ScanRows {
     let volumeName: String
     let preferences: Preferences
     /// Rebuilt from the preferences when a scan starts. The shared models
     /// call it; views ask this model instead.
     private(set) var engine: Engine?
     private(set) var startupError: String?
-    private(set) var rows: [Item: Row] = [:]
+    private(set) var rows: [Item: ScanRow] = [:]
     private(set) var scanOrder: [Item] = []
     private(set) var isScanning = false
     /// A clean is running; no scan starts until it ends.
@@ -79,7 +79,7 @@ final class ScanModel: ScanResults, Listings, CleaningRows {
         self.store = store ?? engine.map { ScanStore.standard(home: $0.config.home) }
         self.volumeName = (try? URL(fileURLWithPath: "/").resourceValues(forKeys: [.volumeLocalizedNameKey]))?
             .volumeLocalizedName ?? "Macintosh HD"
-        self.rows = Dictionary(uniqueKeysWithValues: (engine?.items ?? []).map { ($0, Row(item: $0)) })
+        self.rows = Dictionary(uniqueKeysWithValues: (engine?.items ?? []).map { ($0, ScanRow(item: $0)) })
         self.scanOrder = engine?.items ?? []
         self.diskSpace = engine?.diskSpace()
         self.restorePreviousScan()
@@ -115,7 +115,7 @@ final class ScanModel: ScanResults, Listings, CleaningRows {
         guard let engine else { return }
         // What was on screen becomes the dimmed "last scan" until replaced.
         self.rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in
-            var row = Row(item: item)
+            var row = ScanRow(item: item)
             row.previous = self.rows[item]?.result ?? self.rows[item]?.previous
             return (item, row)
         })

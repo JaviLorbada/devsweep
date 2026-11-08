@@ -176,7 +176,7 @@ enum DebugLaunch {
     }
 
     /// `DEVSWEEP_SCREEN`'s names for the screens.
-    static let screens: [String: WindowViewModel.Screen] = [
+    static let screens: [String: Screen] = [
         "overview": .overview,
         "xcodes": .xcodeVersions,
         "runtimes": .simulatorRuntimes,

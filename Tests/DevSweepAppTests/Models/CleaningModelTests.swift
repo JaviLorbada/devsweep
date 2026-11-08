@@ -8,7 +8,7 @@ import Testing
 @MainActor
 @Suite("Cleaning")
 struct CleaningModelTests {
-    let rows = FakeCleaningRows([
+    let rows = FakeScanRows([
         result(.derivedData, kilobytes: 64),
         result(.npmCache, kilobytes: 16),
         result(.homebrew, kilobytes: 0),
@@ -109,7 +109,7 @@ struct CleaningModelTests {
     func `parts that need Xcode closed ask to quit it; a project alone asks first while Xcode is open`() async throws {
         let derivedData = try #require(sampleResults.first { $0.item == .derivedData })
         let project = try #require(derivedData.derivedData?.projects.first).folder
-        let rows = FakeCleaningRows([derivedData])
+        let rows = FakeScanRows([derivedData])
         let marks = FakeMarking()
         marks.parts[.derivedData] = [.compilationCache, .folder(project)]
         let cleaning = CleaningModel(scan: rows, marks: marks, apps: FakeRunningApps([.xcode]), moveToTrash: true)

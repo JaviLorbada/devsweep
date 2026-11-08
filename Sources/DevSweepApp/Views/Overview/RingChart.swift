@@ -139,7 +139,7 @@ struct RingChart: View {
         }
     }
 
-    private func color(for row: ScanModel.Row) -> Color {
+    private func color(for row: ScanRow) -> Color {
         switch row.state {
         case .measuring where row.isCounting:
             return Palette.color(row.item).opacity(0.6)

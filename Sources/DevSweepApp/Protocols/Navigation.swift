@@ -4,6 +4,6 @@
 /// family is picked; `AndroidViewModel` reads which Android screen shows.
 @MainActor
 protocol Navigation: AnyObject {
-    var screen: WindowViewModel.Screen { get }
-    func show(_ screen: WindowViewModel.Screen)
+    var screen: Screen { get }
+    func show(_ screen: Screen)
 }
