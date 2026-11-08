@@ -29,7 +29,7 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   is signed for release. `defaults read <bundle>/Contents/Info DevSweepCommit`
   reads it from outside.
 - **The icon** is `docs/icon/AppIcon.icns`. `Scripts/make_icon.sh` draws it
-  from `AppIconView` in `Sources/DevSweepApp/AppIcon.swift`, a ring in the five
+  from `AppIconView` in `Sources/DevSweepApp/Views/Style/AppIcon.swift`, a ring in the five
   family colors on a dark rounded square: it writes the PNGs an iconset holds,
   `icon_16x16.png` up to `icon_512x512@2x.png`, to `docs/icon` and builds the
   `.icns` from them with `iconutil`. It is a placeholder; real artwork goes in

@@ -54,7 +54,7 @@ hues below 3:1 on white acceptable.
 | npm | `#C98500` | `#EDA100` | npm cache |
 | Other tools | `#D55181` | `#E87BA4` | Tool caches, Gradle build folders |
 
-The per-item steps are in `Sources/DevSweepApp/Palette.swift`.
+The per-item steps are in `Sources/DevSweepApp/Views/Style/Palette.swift`.
 
 ## The scan
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Draws the app icon from AppIconView (Sources/DevSweepApp/AppIcon.swift) into
+# Draws the app icon from AppIconView (Sources/DevSweepApp/Views/Style/AppIcon.swift) into
 # docs/icon: the PNGs an iconset holds, icon_16x16.png up to
 # icon_512x512@2x.png, and AppIcon.icns built from them with iconutil, which
 # Scripts/package_app.sh puts in the bundle. For real artwork, put its PNGs

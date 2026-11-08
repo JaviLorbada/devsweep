@@ -165,6 +165,20 @@ chart, the Trash toggle, an open sheet); everything else changes through a
 method named for what it does: `select(_:)`, `askToRemove(_:)`,
 `requestClean(_:)`.
 
+### Folders
+
+The app's folders follow those kinds, and its tests use the same ones.
+
+| Folder | What's in it |
+|---|---|
+| `App` | `DevSweepApp` (the scenes and the menus), `AppCoordinator`, the daily scan and the growth check. |
+| `Models` | The shared models and `Preferences`. |
+| `ViewModels` | A view model per screen, and `Removal`. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, the items' words. |
+| `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
+| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder. |
+| `Debug` | Development builds only: the debug launch and the screenshots. |
+
 ### A scan
 
 ```mermaid

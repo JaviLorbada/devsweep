@@ -60,7 +60,7 @@ inactive.
 The variables (`DEVSWEEP_CAPTURE`, `DEVSWEEP_SCREEN`, `DEVSWEEP_SELECT`,
 `DEVSWEEP_PRESS`, `DEVSWEEP_CHART`, `DEVSWEEP_SCROLL`, `DEVSWEEP_ACTIVE`,
 `DEVSWEEP_SETTINGS`, `DEVSWEEP_MENU`, `DEVSWEEP_PROBE` and others) are
-documented at the top of `Sources/DevSweepApp/DebugLaunch.swift`.
+documented at the top of `Sources/DevSweepApp/Debug/DebugLaunch.swift`.
 `DEVSWEEP_PROBE` writes whether every column fits the window, read from the
 view hierarchy, which is how the window was checked at 900, 1100, 1280 and
 1400 points wide.

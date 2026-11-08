@@ -3,8 +3,8 @@
 ## Layout
 - `Sources/DevSweepKit`: scanning, measuring, the path policy, cleaning and the report. No AppKit except where a macOS API needs it.
 - `Sources/devsweep`: the command line tool. Run under the original script's name, `devclean`, its output is the bash script's, byte for byte.
-- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item, with its models and view models.
-- `Tests/DevSweepKitTests`, `Tests/DevSweepAppTests`: Swift Testing. Fixtures in `Tests/DevSweepKitTests/Fixtures`.
+- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item. A folder per kind of piece: `App`, `Models`, `ViewModels`, `Values`, `Views` (a folder per screen), `System`, `Debug`.
+- `Tests/DevSweepKitTests`, `Tests/DevSweepAppTests`: Swift Testing. The app's tests use the app's folders. Fixtures in `Tests/DevSweepKitTests/Fixtures`.
 - `Scripts`: packaging, lint, release, the parity checks and the debug captures.
 - `docs`: architecture, development, packaging, releasing, the original design.
 
@@ -17,6 +17,7 @@
 - A view takes from the environment only the models it reads; rows, cells and ring segments take values.
 - State is `private(set)`. Only what a view binds stays settable (the screen, the chart, the Trash toggle, an open sheet); everything else changes through a method named for what it does.
 - New state goes in the model that owns it. No model grows into the app: past SwiftLint's limits, it splits.
+- A new file goes in its kind's folder; a new screen gets a folder under `Views`, its view model goes in `ViewModels`, and its tests in the same folders under `Tests`.
 - Each model and view model has its own test file, named after it.
 
 ## Build, test, lint
