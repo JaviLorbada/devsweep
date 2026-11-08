@@ -214,6 +214,70 @@ compressed, and 3.7 GB is what removing it frees.
   measured, as the script did, and flagged as unknown so the app doesn't
   show zero.
 
+## How it's built
+
+One Swift package: `DevSweepKit` scans, measures and cleans; the
+`devsweep` command line and the app sit on it. The app is MVVM on
+Observation: a view model per screen, four shared models underneath, plain
+values for the numbers and the words, and a coordinator that builds them.
+
+```mermaid
+flowchart TB
+  subgraph Views["Views · SwiftUI"]
+    direction LR
+    Screens["Overview · Xcodes · Runtimes<br/>Worktrees · Android"]
+    Chrome["Sidebar · header · inspector<br/>menu bar · Settings"]
+  end
+
+  subgraph ViewModels["View models · one per screen"]
+    direction LR
+    WindowVM[WindowViewModel]
+    OverviewVM[OverviewViewModel]
+    XcodesVM[XcodesViewModel]
+    RuntimesVM[RuntimesViewModel]
+    WorktreesVM[WorktreesViewModel]
+    AndroidVM[AndroidViewModel]
+  end
+
+  subgraph Models["Shared models · one source of truth"]
+    direction LR
+    Scan[ScanModel]
+    Cleaning[CleaningModel]
+    Marks[MarksModel]
+    Apps[RunningAppsModel]
+  end
+
+  subgraph Kit["DevSweepKit"]
+    Engine
+    Rules["Scanners · PathPolicy<br/>SizeMeasurer · Cleaner"]
+    Deps["Dependencies<br/>live, or fake in tests"]
+  end
+
+  Coordinator["AppCoordinator<br/>builds the models and wires them"]
+  Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
+  Seams["App seams<br/>preferences · last scan · notifications · quitting"]
+  CLI["devsweep<br/>command line"]
+  Mac[("macOS<br/>files · Trash · simctl · brew · git")]
+
+  Views -->|"read state, call methods"| ViewModels
+  Views -->|"read state, call methods"| Models
+  ViewModels --> Models
+  ViewModels -.-> Values
+  Models -.-> Values
+  Models -->|"async calls, scan events back"| Engine
+  Models --> Seams
+  CLI --> Engine
+  Engine --> Rules
+  Rules --> Deps
+  Deps --> Mac
+  Coordinator -.->|creates| ViewModels
+  Coordinator -.->|creates| Models
+```
+
+Arrows point the way calls go; state comes back up through Observation.
+[docs/architecture.md](docs/architecture.md) says what each type owns and
+follows a scan and a clean through them.
+
 ## The kit
 
 ```swift
@@ -227,7 +291,7 @@ let restored = await engine.putBack(outcome)
 ```
 
 Everything with a side effect comes through `Dependencies`: the tools, the
-file system and the clock. `docs/architecture.md` describes the seams.
+file system and the clock. [docs/architecture.md](docs/architecture.md) describes the seams.
 
 ## Support
 

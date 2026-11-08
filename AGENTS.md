@@ -9,7 +9,7 @@
 - `docs`: architecture, development, packaging, releasing, the original design.
 
 ## App architecture
-- `docs/ARCHITECTURE.md` draws it. Its diagrams change in the same commit as the code they draw.
+- `docs/architecture.md` draws it, and the README shows its first diagram. The diagrams change in the same commit as the code they draw.
 - `AppCoordinator` builds the dependencies and every model, and wires one model's events to the others. No view reads it; the scenes put its models in the environment with `environment(models:)`.
 - Shared models hold what several screens read: `ScanModel` (the rows, the scan, the listings, the last scan; only it changes the rows), `CleaningModel`, `MarksModel`, `RunningAppsModel`. Only they call the kit.
 - A view model per screen holds what that screen owns: `WindowViewModel`, `OverviewViewModel`, `XcodesViewModel`, `RuntimesViewModel`, `WorktreesViewModel`, `AndroidViewModel`. They call the shared models, never the kit.

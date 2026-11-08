@@ -37,6 +37,7 @@ line under Unreleased as it lands.
   show each.
 - Lists, without cleaning, installed Xcodes, simulator runtimes and what
   Android Studio keeps: its installs, the SDK, emulators and Gradle's caches.
+  Each of the three Android screens keeps its own selection.
 - A Worktrees screen for the git worktrees of the repositories in the project
   folders, wherever they live, with their size, branch and last commit. It
   removes one only when asked, with git, and only when nothing in it would
