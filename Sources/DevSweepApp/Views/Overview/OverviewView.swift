@@ -17,7 +17,7 @@ struct OverviewView: View {
                 .padding(.top, 12)
                 .padding(.bottom, WindowLayout.controlInset)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                    self.window.overviewFooterHeight = height
+                    self.window.overviewFooterMeasured(height)
                 }
         }
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.window.chartStyle)

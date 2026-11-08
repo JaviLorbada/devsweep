@@ -110,7 +110,7 @@ struct ContentView: View {
             .background(Palette.backdrop)
             .ignoresSafeArea(.container, edges: .top)
             .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width in
-                self.updateInspectorRoom(forDetailWidth: width)
+                self.detailWidthChanged(width)
             }
             .navigationTitle(self.title)
             .navigationSubtitle(self.subtitle)
@@ -180,19 +180,13 @@ struct ContentView: View {
         #endif
     }
 
-    /// Floats the inspector over the center when the detail area can't hold
-    /// the center at its minimum beside it, and docks it again with some
-    /// room to spare. The detail area's width doesn't depend on where the
-    /// inspector is, so this can't feed back on itself, and it is set right
-    /// away: no AppKit column collapses.
-    private func updateInspectorRoom(forDetailWidth width: CGFloat) {
-        let hasRoom = self.window.inspectorHasRoom
-            ? width >= WindowLayout.inspectorHideBelow
-            : width >= WindowLayout.inspectorShowFrom
-        guard hasRoom != self.window.inspectorHasRoom else { return }
+    /// Tells the window's model how wide the detail area is, which docks or
+    /// floats the inspector. It moves at once, without animating, so no
+    /// AppKit column collapses on the way.
+    private func detailWidthChanged(_ width: CGFloat) {
         var transaction = Transaction()
         transaction.disablesAnimations = true
-        withTransaction(transaction) { self.window.inspectorHasRoom = hasRoom }
+        withTransaction(transaction) { self.window.detailWidthChanged(width) }
     }
 
     /// The inspector for the screen showing, docked or floating.

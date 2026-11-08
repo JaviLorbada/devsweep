@@ -43,11 +43,11 @@ final class WindowViewModel: Navigation {
     /// center or over it (`inspectorPlacement`).
     private(set) var wantsInspector = true
     /// Whether the detail area has room for the inspector beside the center
-    /// at its minimum; the window sets it as it resizes.
-    var inspectorHasRoom = true
+    /// at its minimum: `detailWidthChanged(_:)` keeps it.
+    private(set) var inspectorHasRoom = true
     /// The height of the overview's footer, which a floating inspector stays
-    /// above so the footer's buttons stay in reach; the overview sets it.
-    var overviewFooterHeight: CGFloat = 0
+    /// above so the footer's buttons stay in reach.
+    private(set) var overviewFooterHeight: CGFloat = 0
 
     var inspectorPlacement: InspectorPlacement {
         guard self.wantsInspector else { return .hidden }
@@ -63,6 +63,23 @@ final class WindowViewModel: Navigation {
     /// window keeps its size.
     func toggleInspector() {
         self.wantsInspector.toggle()
+    }
+
+    /// The detail area is now `width` wide. The inspector floats over the
+    /// center once the area can't hold the center at its minimum beside it,
+    /// and docks again only with some room to spare, so it doesn't flicker
+    /// at the edge. The area's width doesn't depend on where the inspector
+    /// is, so this can't feed back on itself.
+    func detailWidthChanged(_ width: CGFloat) {
+        let hasRoom = self.inspectorHasRoom
+            ? width >= WindowLayout.inspectorHideBelow
+            : width >= WindowLayout.inspectorShowFrom
+        if hasRoom != self.inspectorHasRoom { self.inspectorHasRoom = hasRoom }
+    }
+
+    /// The overview measured its footer.
+    func overviewFooterMeasured(_ height: CGFloat) {
+        self.overviewFooterHeight = height
     }
 
     /// Shows `screen`, as the sidebar does.
