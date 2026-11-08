@@ -158,7 +158,7 @@ cells and ring segments take plain values.
 | `Tally` | Row order, totals, each family's share, the ring's weights. | `ScanModel`, the charts, the sidebar |
 | `StatusText` | The status lines, the subtitles' words, "3 minutes ago". | The view models, the menu bar |
 | `CleanPrompt` | The questions' words, by name up to three and by count past that. | `CleaningModel`, the window's alerts |
-| `AppCoordinator` | Builds everything; wires a scan's start and end to the marks, the selection and the growth check; the half-minute tick and the daily scan. | The app's scenes and menus |
+| `AppCoordinator` | Builds everything; wires a scan's start and end to the marks, the selection and the growth check; the half-minute tick and the daily scan, which waits while a clean runs or waits on an answer. | The app's scenes and menus |
 
 State is `private(set)`. What a view binds stays settable (the screen, the
 chart, the Trash toggle, an open sheet); everything else changes through a

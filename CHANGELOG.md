@@ -25,7 +25,9 @@ line under Unreleased as it lands.
   center, the inspector floats over it, and the sidebar narrows rather than
   being cut off. While an item is deleted for good, its size counts down
   and its row shows how far it has got, and Scan Again and Put Back wait
-  until cleaning is done. The controls along the panels' top and bottom
+  until cleaning is done. The daily scan waits, too, while a clean's
+  question is open; a scan started before the answer leaves nothing
+  cleaned, and the window says so. The controls along the panels' top and bottom
   edges sit 16 points in from them, the hidden sidebar's toggle is a plain
   icon with the title on its own line under it, and the main buttons'
   labels are white on a deeper accent color.

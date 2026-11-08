@@ -162,6 +162,20 @@ struct CleaningModelTests {
         #expect(cleaning.notice?.message.hasSuffix("Xcode is open.") == true)
     }
 
+    @Test
+    func `a scan that starts before the answer leaves nothing cleaned, and a notice says so`() async throws {
+        let cleaning = self.cleaning(moveToTrash: false)
+        await cleaning.requestClean([.npmCache])
+        await waitUntil { cleaning.pendingClean != nil }
+        let confirm = try #require(cleaning.pendingClean)
+
+        self.rows.isScanning = true
+        await cleaning.confirmClean(confirm)
+        #expect(cleaning.notice?.title == "Nothing was cleaned")
+        #expect(self.rows.cleaner.cleaned.isEmpty)
+        #expect(self.rows.rows[.npmCache]?.state == .measured)
+    }
+
     // MARK: Parts
 
     @Test

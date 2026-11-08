@@ -174,7 +174,7 @@ final class CleaningModel: CleaningTotals {
     // MARK: Cleaning
 
     private func performClean(_ items: [Item]) async {
-        guard let cleaner = self.scan.beginCleaning() else { return }
+        guard let cleaner = self.scan.beginCleaning() else { return self.reportRowsTaken() }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         var problems: [String] = []
 
@@ -210,7 +210,8 @@ final class CleaningModel: CleaningTotals {
     }
 
     private func performClean(_ parts: Set<ItemPart>, of item: Item) async {
-        guard !self.isCleaning, let row = self.scan.rows[item], row.isLive, let result = row.result else { return }
+        guard !self.scan.isScanning, !self.isCleaning else { return self.reportRowsTaken() }
+        guard let row = self.scan.rows[item], row.isLive, let result = row.result else { return }
         // Xcode may have been opened since the question was asked.
         if parts.contains(where: { $0.needsXcodeClosed(in: item) }) {
             await self.apps.refresh()
@@ -219,7 +220,7 @@ final class CleaningModel: CleaningTotals {
                 return
             }
         }
-        guard let cleaner = self.scan.beginCleaning() else { return }
+        guard let cleaner = self.scan.beginCleaning() else { return self.reportRowsTaken() }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         self.scan.startCleaning(item, kilobytes: parts.reduce(0) { $0 + result.kilobytes(of: $1) })
         let outcome = await self.countingDown(item) {
@@ -264,6 +265,14 @@ final class CleaningModel: CleaningTotals {
         reporter.finish()
         counter.cancel()
         return outcome
+    }
+
+    /// A scan, or another clean, took the rows between the question and the
+    /// answer, so nothing was cleaned: said, not silently dropped.
+    private func reportRowsTaken() {
+        self.notice = Notice(
+            title: "Nothing was cleaned",
+            message: "A scan started before you answered. Clean again once it's done.")
     }
 
     private func report(_ problems: [String]) {

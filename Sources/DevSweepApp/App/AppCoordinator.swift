@@ -140,11 +140,12 @@ final class AppCoordinator {
     }
 
     /// Every half minute: the clock for "3 minutes ago", the free space for
-    /// the menu bar, and a scan once the last one is a day old.
+    /// the menu bar, and a scan once the last one is a day old. Not while a
+    /// clean runs or waits on an answer: the scan would take its rows.
     func tick(now: Date) {
         self.scan.tick(now: now)
         if ScanSchedule.isDue(lastScan: self.scan.lastScan, now: now), !self.scan.isScanning,
-           !self.scan.isCleaning
+           !self.scan.isCleaning, self.cleaning.pendingClean == nil
         {
             self.scan.scan()
         }

@@ -45,6 +45,23 @@ struct AppCoordinatorTests {
     }
 
     @Test
+    func `the daily scan waits while a clean's question is open`() async {
+        let home = TemporaryHome()
+        write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/Atlas-abc")
+        let app = await scannedApp(home: home, apps: FakeDeveloperApps(running: [.xcode]))
+        await app.cleaning.requestClean([.derivedData])
+        #expect(app.cleaning.pendingClean != nil)
+
+        let tomorrow = Date().addingTimeInterval(25 * 3600)
+        app.tick(now: tomorrow)
+        #expect(!app.scan.isScanning)
+        app.cleaning.dismissPendingClean()
+        app.tick(now: tomorrow)
+        #expect(app.scan.isScanning)
+        app.scan.stopScan()
+    }
+
+    @Test
     func `A tick a day after the last scan starts the next one, and a small change posts nothing`() async {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/App-abc")
