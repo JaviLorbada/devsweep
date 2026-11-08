@@ -194,7 +194,7 @@ make app          # build/DevSweep.app
 - [docs/releasing.md](docs/releasing.md) and
   [docs/packaging.md](docs/packaging.md): releases, signing, notarizing and
   the app bundle.
-- [docs/design](docs/design/README.md): the app's original design.
+- [docs/design.md](docs/design.md): how the app uses color and motion.
 - [AGENTS.md](AGENTS.md): the rules for working on the code.
 
 ### How it's built
