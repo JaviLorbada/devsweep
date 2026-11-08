@@ -26,7 +26,9 @@
 #   the content fits the window; SIDEBAR_TIMING=1 traces the sidebar's
 #   width as it hides, SIDEBAR_WIDTH=298 sets the sidebar that wide, and
 #   SIDEBAR=hidden or shown hides or shows it;
-#   CAPTURE_LOG=file keeps the app's trace. WORKTREES=none makes no
+#   CAPTURE_LOG=file keeps the app's trace. RELEASE_LOOK=1 leaves out the
+#   development build's "Built from" note, as a release build does, for the
+#   README's screenshots. WORKTREES=none makes no
 #   worktrees, and PROJECT_FOLDERS='("~/.agents/worktrees")' sets the
 #   project folders, ~/Developer otherwise, where the repository is.
 #   The debug build is build/debug/DevSweep.app, apart from the one you open.
@@ -51,6 +53,15 @@ bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Conten
 # paths the scan finds under it and the window shows them with a ~.
 work="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$work"' EXIT
+
+# A copy marked as signed for release, which drops the status line's
+# "Built from" note; the build in build/debug stays as it is.
+if [[ -n "${RELEASE_LOOK:-}" ]]; then
+  ditto "$app" "$work/DevSweep.app"
+  app="$work/DevSweep.app"
+  /usr/libexec/PlistBuddy -c 'Set :DevSweepReleaseSigned true' "$app/Contents/Info.plist"
+  codesign --force --sign - "$app" 2>/dev/null
+fi
 
 blob() { mkdir -p "$(dirname "$1")"; dd if=/dev/zero of="$1" bs=1048576 count="$2" 2>/dev/null; }
 plist() { mkdir -p "$(dirname "$1")"; printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict>%s</dict></plist>\n' "$2" > "$1"; }
@@ -245,7 +256,9 @@ for screen in "${screens[@]}"; do
     kill -0 "$pid" 2>/dev/null || break
     if [[ -z "$activated" && "$log" != /dev/null ]] && grep -q "scan done" "$log" 2>/dev/null \
       && [[ -n "$(lsappinfo info -only pid "$bundle_id")" ]]; then
-      open -b "$bundle_id"
+      # By path: the bundle id would open the build Launch Services knows,
+      # which with RELEASE_LOOK is not the copy running.
+      open -a "$app"
       activated=1
     fi
     sleep 0.5
