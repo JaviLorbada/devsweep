@@ -3,8 +3,9 @@ import Foundation
 
 /// The words of the questions asked before cleaning.
 enum CleanPrompt {
-    static func title(for pending: CleaningModel.PendingClean, size: String, moveToTrash: Bool) -> String {
-        switch pending.stage {
+    static func title(for pending: CleaningModel.PendingClean, moveToTrash: Bool) -> String {
+        let size = SizeText.of(kilobytes: pending.kilobytes)
+        return switch pending.stage {
         case let .quitApps(apps):
             "Quit \(self.names(apps.map(\.rawValue)))?"
         case .confirm:
@@ -86,6 +87,7 @@ enum CleanPrompt {
     {
         var question = CleaningModel.PendingClean(items: [item], stage: stage, parts: parts)
         guard let result else { return question }
+        question.kilobytes = parts.reduce(0) { $0 + result.kilobytes(of: $1) }
         let sorted = parts.sorted { a, b in
             let (sizeA, sizeB) = (result.kilobytes(of: a), result.kilobytes(of: b))
             return sizeA != sizeB ? sizeA > sizeB : a.sentenceName(in: result) < b.sentenceName(in: result)

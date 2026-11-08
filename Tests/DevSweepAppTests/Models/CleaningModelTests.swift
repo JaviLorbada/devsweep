@@ -68,6 +68,7 @@ struct CleaningModelTests {
             Issue.record("expected to be asked to confirm")
             return
         }
+        #expect(CleanPrompt.title(for: pending, moveToTrash: false) == "Delete \(SizeText.of(kilobytes: 16)) for good?")
         #expect(self.rows.cleansBegun == 0, "nothing goes before the answer")
     }
 
@@ -183,6 +184,7 @@ struct CleaningModelTests {
         await waitUntil { cleaning.pendingClean != nil }
         let confirm = try #require(cleaning.pendingClean)
         #expect(confirm.parts == [.folder(project)])
+        #expect(confirm.kilobytes == derivedData.kilobytes(of: .folder(project)), "the project's size, not the item's")
         #expect(confirm.xcodeOpen)
         #expect(rows.cleansBegun == 0, "nothing goes before the answer")
     }

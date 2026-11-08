@@ -67,7 +67,7 @@ final class CleaningModel: CleaningTotals {
         await self.apps.refresh()
         let open = self.apps.open
         if items.contains(where: \.needsXcodeClosed), !open.isEmpty {
-            self.pendingClean = PendingClean(items: items, stage: .quitApps(open))
+            self.pendingClean = PendingClean(items: items, stage: .quitApps(open), kilobytes: self.kilobytes(of: items))
         } else {
             self.confirmOrClean(items)
         }
@@ -143,7 +143,10 @@ final class CleaningModel: CleaningTotals {
                 if let item = items.first, !parts.isEmpty {
                     self.pendingClean = self.partsQuestion(parts, of: item, stage: .confirm)
                 } else {
-                    self.pendingClean = PendingClean(items: items, stage: .confirm)
+                    self.pendingClean = PendingClean(
+                        items: items,
+                        stage: .confirm,
+                        kilobytes: self.kilobytes(of: items))
                 }
             }
         } else if let item = items.first, !parts.isEmpty {
@@ -151,6 +154,11 @@ final class CleaningModel: CleaningTotals {
         } else {
             Task { await self.performClean(items) }
         }
+    }
+
+    /// What cleaning `items` whole would take.
+    private func kilobytes(of items: [Item]) -> Int64 {
+        items.compactMap { self.scan.rows[$0]?.kilobytes }.reduce(0, +)
     }
 
     /// The question about cleaning `parts` of `item`.
@@ -317,6 +325,9 @@ extension CleaningModel {
         let id = UUID()
         let items: [Item]
         let stage: Stage
+        /// What the clean would take, as the scan measured it: the items, or
+        /// just the parts.
+        var kilobytes: Int64 = 0
         /// Parts of the item to clean instead of the whole of it.
         var parts: Set<ItemPart> = []
         /// What the question calls those parts: "DerivedData for Atlas",

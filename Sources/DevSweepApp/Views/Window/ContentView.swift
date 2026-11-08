@@ -202,12 +202,7 @@ struct ContentView: View {
     }
 
     private var pendingTitle: String {
-        guard let pending = cleaning.pendingClean else { return "" }
-        let kilobytes = pending.parts.isEmpty
-            ? pending.items.compactMap { self.scan.rows[$0]?.kilobytes }.reduce(0, +)
-            : self.scan.kilobytes(of: pending.parts, in: pending.items.first ?? .derivedData)
-        let size = SizeText.of(kilobytes: kilobytes)
-        return CleanPrompt.title(for: pending, size: size, moveToTrash: self.cleaning.moveToTrash)
+        self.cleaning.pendingClean.map { CleanPrompt.title(for: $0, moveToTrash: self.cleaning.moveToTrash) } ?? ""
     }
 
     /// What the screen showing says under its title.
