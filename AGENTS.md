@@ -6,7 +6,7 @@
 - `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item. A folder per kind of piece: `App`, `Protocols`, `Models`, `ViewModels`, `Values`, `Views` (a folder per screen), `System`, `Debug`.
 - `Tests/DevSweepKitTests`, `Tests/DevSweepAppTests`: Swift Testing. The app's tests use the app's folders. Fixtures in `Tests/DevSweepKitTests/Fixtures`.
 - `Scripts`: packaging, lint, release, the parity checks and the debug captures.
-- `docs`: architecture, development, packaging, releasing, the original design.
+- `docs`: architecture, design, development, packaging, parity with the bash script, releasing.
 
 ## App architecture
 - `docs/architecture.md` draws it, and the README shows its first diagram. The diagrams change in the same commit as the code they draw.
