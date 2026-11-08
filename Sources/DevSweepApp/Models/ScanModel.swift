@@ -11,7 +11,7 @@ import SwiftUI
 /// a clean never run at once.
 @MainActor
 @Observable
-final class ScanModel {
+final class ScanModel: ScanResults, Listings, CleaningRows {
     let volumeName: String
     let preferences: Preferences
     /// Rebuilt from the preferences when a scan starts. The shared models

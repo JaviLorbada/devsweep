@@ -8,11 +8,11 @@ import Observation
 final class AndroidViewModel {
     /// The entry selected on each screen, by path.
     private(set) var selectedPaths: [WindowViewModel.Screen: String] = [:]
-    private let window: WindowViewModel
-    private let scan: ScanModel
+    private let window: any Navigation
+    private let scan: any Listings
     private let preferences: Preferences
 
-    init(window: WindowViewModel, scan: ScanModel, preferences: Preferences) {
+    init(window: any Navigation, scan: any Listings, preferences: Preferences) {
         self.window = window
         self.scan = scan
         self.preferences = preferences

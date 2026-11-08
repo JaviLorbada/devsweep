@@ -114,7 +114,7 @@ flowchart TB
     Deps["Dependencies<br/>live, or fake in tests"]
   end
 
-  Coordinator["AppCoordinator<br/>builds the models and wires them"]
+  Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
   Seams["App seams<br/>preferences · last scan · notifications · quitting"]
   CLI["devsweep<br/>command line"]
@@ -122,7 +122,7 @@ flowchart TB
 
   Views -->|"read state, call methods"| ViewModels
   Views -->|"read state, call methods"| Models
-  ViewModels --> Models
+  ViewModels -->|"through protocols"| Models
   ViewModels -.-> Values
   Models -.-> Values
   Models -->|"async calls, scan events back"| Engine
@@ -165,6 +165,39 @@ chart, the Trash toggle, an open sheet); everything else changes through a
 method named for what it does: `select(_:)`, `askToRemove(_:)`,
 `requestClean(_:)`.
 
+### Protocols
+
+The models and view models take each other through protocols, each named
+for what its user reads and no more. `AppCoordinator` is the one place that
+names the classes: it builds each model and hands it the real ones. A test
+hands it fakes instead, so a view model's test needs no scan.
+
+| Protocol | What it gives | Who conforms | Who takes it |
+|---|---|---|---|
+| `ScanResults` | The tally and the facts the status lines are written from. | `ScanModel` | `OverviewViewModel`, `MarksModel` |
+| `Listings` | The Xcodes, runtimes, worktrees and Android lists; removing a runtime or a worktree. | `ScanModel` | The Xcodes, runtimes, worktrees and Android view models |
+| `CleaningRows` | The rows during a clean, and the lock that keeps a scan and a clean apart. | `ScanModel` | `CleaningModel` |
+| `Marking` | The ticked parts, and clearing what was cleaned. | `MarksModel` | `CleaningModel` |
+| `RunningApps` | Whether Xcode and Simulator are open, and quitting them. | `RunningAppsModel` | `CleaningModel`, `OverviewViewModel` |
+| `CleaningTotals` | What this session moved to the Trash and deleted. | `CleaningModel` | `OverviewViewModel` |
+| `Navigation` | The screen on show, and showing another. | `WindowViewModel` | `OverviewViewModel`, `AndroidViewModel` |
+
+Three things have no protocol, on purpose:
+
+- **`AppCoordinator`.** Nothing depends on it: it calls the models and sets
+  their hooks (`scan.onStart`), and nothing calls back into it. Its tests
+  build it on a fake home and check that wiring.
+- **The view models, as views see them.** A view takes its view model's
+  class from the environment, as SwiftUI's `@Environment(Type.self)` needs.
+  The layout tests and the screenshots cover the views.
+- **`Preferences`.** It is settings, already behind `PreferencesStore`, and
+  a test builds it on an in-memory store in one line.
+
+Below the models, the kit's own protocols fake the world: the disk,
+processes, simctl, brew, git, the Trash and the clock, in `Dependencies`;
+the app adds quitting apps, notifications, the preferences store and the
+last scan's file.
+
 ### Folders
 
 The app's folders follow those kinds, and its tests use the same ones.
@@ -172,6 +205,7 @@ The app's folders follow those kinds, and its tests use the same ones.
 | Folder | What's in it |
 |---|---|
 | `App` | `DevSweepApp` (the scenes and the menus), `AppCoordinator`, the daily scan and the growth check. |
+| `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
 | `Values` | `Tally`, `StatusText`, `CleanPrompt`, the items' words. |

@@ -8,12 +8,12 @@ import Observation
 final class OverviewViewModel {
     /// The item the inspector shows; the chart and the list select it.
     private(set) var selection: Item?
-    private let window: WindowViewModel
-    private let scan: ScanModel
-    private let cleaning: CleaningModel
-    private let apps: RunningAppsModel
+    private let window: any Navigation
+    private let scan: any ScanResults
+    private let cleaning: any CleaningTotals
+    private let apps: any RunningApps
 
-    init(window: WindowViewModel, scan: ScanModel, cleaning: CleaningModel, apps: RunningAppsModel) {
+    init(window: any Navigation, scan: any ScanResults, cleaning: any CleaningTotals, apps: any RunningApps) {
         self.window = window
         self.scan = scan
         self.cleaning = cleaning
@@ -26,7 +26,7 @@ final class OverviewViewModel {
 
     /// Selects the biggest item of a family, on the overview.
     func pick(_ family: Family) {
-        self.window.screen = .overview
+        self.window.show(.overview)
         let tally = self.scan.tally
         if let biggest = tally.live.first(where: { $0.item.family == family }) ?? tally.ordered
             .first(where: { $0.item.family == family })

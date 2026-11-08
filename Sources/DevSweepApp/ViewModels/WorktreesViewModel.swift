@@ -9,9 +9,9 @@ final class WorktreesViewModel {
     /// The worktree selected, by its path.
     private(set) var selectedPath: String?
     let removal = Removal<GitWorktree>()
-    private let scan: ScanModel
+    private let scan: any Listings
 
-    init(scan: ScanModel) {
+    init(scan: any Listings) {
         self.scan = scan
     }
 

@@ -8,9 +8,9 @@ import Observation
 final class XcodesViewModel {
     /// The Xcode selected, by its path.
     private(set) var selectedPath: String?
-    private let scan: ScanModel
+    private let scan: any Listings
 
-    init(scan: ScanModel) {
+    init(scan: any Listings) {
         self.scan = scan
     }
 

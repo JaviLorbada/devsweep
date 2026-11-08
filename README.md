@@ -220,6 +220,8 @@ One Swift package: `DevSweepKit` scans, measures and cleans; the
 `devsweep` command line and the app sit on it. The app is MVVM on
 Observation: a view model per screen, four shared models underneath, plain
 values for the numbers and the words, and a coordinator that builds them.
+The models take each other through small protocols, so each one is tested
+with fakes in place of the others.
 
 ```mermaid
 flowchart TB
@@ -253,7 +255,7 @@ flowchart TB
     Deps["Dependencies<br/>live, or fake in tests"]
   end
 
-  Coordinator["AppCoordinator<br/>builds the models and wires them"]
+  Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
   Seams["App seams<br/>preferences · last scan · notifications · quitting"]
   CLI["devsweep<br/>command line"]
@@ -261,7 +263,7 @@ flowchart TB
 
   Views -->|"read state, call methods"| ViewModels
   Views -->|"read state, call methods"| Models
-  ViewModels --> Models
+  ViewModels -->|"through protocols"| Models
   ViewModels -.-> Values
   Models -.-> Values
   Models -->|"async calls, scan events back"| Engine

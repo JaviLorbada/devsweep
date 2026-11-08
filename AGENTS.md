@@ -3,7 +3,7 @@
 ## Layout
 - `Sources/DevSweepKit`: scanning, measuring, the path policy, cleaning and the report. No AppKit except where a macOS API needs it.
 - `Sources/devsweep`: the command line tool. Run under the original script's name, `devclean`, its output is the bash script's, byte for byte.
-- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item. A folder per kind of piece: `App`, `Models`, `ViewModels`, `Values`, `Views` (a folder per screen), `System`, `Debug`.
+- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item. A folder per kind of piece: `App`, `Protocols`, `Models`, `ViewModels`, `Values`, `Views` (a folder per screen), `System`, `Debug`.
 - `Tests/DevSweepKitTests`, `Tests/DevSweepAppTests`: Swift Testing. The app's tests use the app's folders. Fixtures in `Tests/DevSweepKitTests/Fixtures`.
 - `Scripts`: packaging, lint, release, the parity checks and the debug captures.
 - `docs`: architecture, development, packaging, releasing, the original design.
@@ -13,6 +13,8 @@
 - `AppCoordinator` builds the dependencies and every model, and wires one model's events to the others. No view reads it; the scenes put its models in the environment with `environment(models:)`.
 - Shared models hold what several screens read: `ScanModel` (the rows, the scan, the listings, the last scan; only it changes the rows), `CleaningModel`, `MarksModel`, `RunningAppsModel`. Only they call the kit.
 - A view model per screen holds what that screen owns: `WindowViewModel`, `OverviewViewModel`, `XcodesViewModel`, `RuntimesViewModel`, `WorktreesViewModel`, `AndroidViewModel`. They call the shared models, never the kit.
+- Models and view models take each other through the protocols in `Protocols`, each named for what its user reads: `ScanResults`, `Listings`, `CleaningRows`, `Marking`, `RunningApps`, `CleaningTotals`, `Navigation`. Only `AppCoordinator` names the classes. `Preferences` is passed as it is.
+- No protocol for the coordinator, which nothing depends on, or for a view model as its views see it: views take the class from the environment.
 - Numbers and words are plain values, tested without a model: `Tally`, `StatusText`, `CleanPrompt`.
 - A view takes from the environment only the models it reads; rows, cells and ring segments take values.
 - State is `private(set)`. Only what a view binds stays settable (the screen, the chart, the Trash toggle, an open sheet); everything else changes through a method named for what it does.

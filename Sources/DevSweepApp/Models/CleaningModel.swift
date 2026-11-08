@@ -9,7 +9,7 @@ import SwiftUI
 /// It keeps what this session cleaned and the notices that follow.
 @MainActor
 @Observable
-final class CleaningModel {
+final class CleaningModel: CleaningTotals {
     /// Clean by moving to the Trash, so anything can be put back; off
     /// deletes for good. Starts as the preferences say; the overview's
     /// toggle changes it for this session.
@@ -23,11 +23,11 @@ final class CleaningModel {
     /// Each item's last parts clean, which the inspector reports and can put
     /// back from the Trash.
     private(set) var partsCleans: [Item: PartsClean] = [:]
-    private let scan: ScanModel
-    private let marks: MarksModel
-    private let apps: RunningAppsModel
+    private let scan: any CleaningRows
+    private let marks: any Marking
+    private let apps: any RunningApps
 
-    init(scan: ScanModel, marks: MarksModel, apps: RunningAppsModel, moveToTrash: Bool) {
+    init(scan: any CleaningRows, marks: any Marking, apps: any RunningApps, moveToTrash: Bool) {
         self.scan = scan
         self.marks = marks
         self.apps = apps
@@ -180,7 +180,7 @@ final class CleaningModel {
                     continue
                 }
             }
-            self.scan.startCleaning(item)
+            self.scan.startCleaning(item, kilobytes: nil)
             let outcome = await self.countingDown(item) { await engine.clean(result, mode: mode, progress: $0) }
             problems += outcome.warnings
             let removedSomething = !outcome.removed.isEmpty || outcome.toolSucceeded == true

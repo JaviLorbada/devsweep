@@ -5,7 +5,7 @@ import Observation
 /// that needs them closed.
 @MainActor
 @Observable
-final class RunningAppsModel {
+final class RunningAppsModel: RunningApps {
     private(set) var running: Set<DeveloperApp> = []
     private let checker: any RunningAppsChecking
     private let quitter: any AppQuitting
@@ -16,16 +16,6 @@ final class RunningAppsModel {
     init(checker: any RunningAppsChecking, quitter: any AppQuitting) {
         self.checker = checker
         self.quitter = quitter
-    }
-
-    /// The open ones, in a fixed order: what a clean asks to quit.
-    var open: [DeveloperApp] {
-        DeveloperApp.allCases.filter(self.running.contains)
-    }
-
-    /// "Xcode is open."
-    var sentence: String {
-        StatusText.runningApps(self.running)
     }
 
     func refresh() async {

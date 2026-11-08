@@ -5,16 +5,16 @@ import Observation
 /// in its inspector. The three biggest start ticked once a scan is done.
 @MainActor
 @Observable
-final class MarksModel {
+final class MarksModel: Marking {
     private(set) var marked: Set<Item> = []
     /// Parts of items ticked in the inspector, cleaned on their own.
     private(set) var partMarks: [Item: Set<ItemPart>] = [:]
     /// Whether the marks were changed since the scan started, so the
     /// defaults leave them alone.
     private var touched = false
-    private let scan: ScanModel
+    private let scan: any ScanResults
 
-    init(scan: ScanModel) {
+    init(scan: any ScanResults) {
         self.scan = scan
     }
 

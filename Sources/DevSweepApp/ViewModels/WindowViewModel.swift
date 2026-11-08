@@ -5,7 +5,7 @@ import Observation
 /// and where the inspector shows.
 @MainActor
 @Observable
-final class WindowViewModel {
+final class WindowViewModel: Navigation {
     enum Screen: Hashable {
         case overview
         case xcodeVersions
@@ -64,9 +64,14 @@ final class WindowViewModel {
         self.wantsInspector.toggle()
     }
 
+    /// Shows `screen`, as the sidebar does.
+    func show(_ screen: Screen) {
+        self.screen = screen
+    }
+
     /// Shows the overview with `style`, as the View menu's Ring and Blocks do.
     func showChart(_ style: ChartStyle) {
-        self.screen = .overview
+        self.show(.overview)
         self.chartStyle = style
     }
 }

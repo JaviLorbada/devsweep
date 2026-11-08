@@ -9,10 +9,10 @@ final class RuntimesViewModel {
     /// The runtime selected, by its simctl id.
     private(set) var selectedID: String?
     let removal = Removal<SimulatorRuntime>()
-    private let scan: ScanModel
+    private let scan: any Listings
     private let preferences: Preferences
 
-    init(scan: ScanModel, preferences: Preferences) {
+    init(scan: any Listings, preferences: Preferences) {
         self.scan = scan
         self.preferences = preferences
     }

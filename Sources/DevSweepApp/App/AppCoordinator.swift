@@ -11,6 +11,8 @@ import SwiftUI
 /// - A scan finished checks DerivedData's growth and may notify.
 /// - Every half minute: the clock, the free space, and the daily scan.
 ///
+/// It is the one place that names the models' classes: they take each other
+/// through the protocols in `Protocols`, and it hands each the real one.
 /// Views never see it; the scenes put its models in the environment with
 /// `environment(models:)`.
 @MainActor
