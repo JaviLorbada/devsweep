@@ -7,7 +7,7 @@ import Observation
 @Observable
 final class OverviewViewModel {
     /// The item the inspector shows; the chart and the list select it.
-    var selection: Item?
+    private(set) var selection: Item?
     private let window: WindowViewModel
     private let scan: ScanModel
     private let cleaning: CleaningModel
@@ -18,6 +18,10 @@ final class OverviewViewModel {
         self.scan = scan
         self.cleaning = cleaning
         self.apps = apps
+    }
+
+    func select(_ item: Item?) {
+        self.selection = item
     }
 
     /// Selects the biggest item of a family, on the overview.

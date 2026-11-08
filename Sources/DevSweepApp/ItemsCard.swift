@@ -82,7 +82,7 @@ struct ItemRow: View {
             Dot(color: emphasized ? .white : Palette.color(self.row.item))
 
             Button {
-                self.overview.selection = self.row.item
+                self.overview.select(self.row.item)
             } label: {
                 HStack(spacing: 0) {
                     // The family shows whole or not at all: cut down beside a
@@ -129,7 +129,7 @@ struct ItemRow: View {
         .frame(height: 32)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { self.overview.selection = self.row.item }
+        .onTapGesture { self.overview.select(self.row.item) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "\(self.row.result?.label ?? self.row.item.name), "
@@ -213,7 +213,7 @@ struct RowAction: View {
         case .measured:
             if self.row.isLive {
                 Button("Clean") {
-                    self.overview.selection = self.row.item
+                    self.overview.select(self.row.item)
                     Task { await self.cleaning.requestClean([self.row.item]) }
                 }
                 .controlSize(.small)

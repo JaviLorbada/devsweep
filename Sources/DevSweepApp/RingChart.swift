@@ -73,7 +73,7 @@ struct RingChart: View {
                 Rectangle()
                     .accessibilityLabel("\(item.name), \(row.map { SizeText.of(kilobytes: $0.shownKilobytes) } ?? "")")
                     .accessibilityAddTraits(self.overview.selection == item ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityAction { self.overview.selection = item }
+                    .accessibilityAction { self.overview.select(item) }
             }
         }
     }
@@ -86,7 +86,7 @@ struct RingChart: View {
 
     private func select(_ id: String) {
         if let item = Item(rawValue: id) {
-            self.overview.selection = item
+            self.overview.select(item)
         } else if let family = Family(rawValue: id) {
             self.overview.pick(family)
         }

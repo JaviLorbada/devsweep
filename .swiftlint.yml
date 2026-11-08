@@ -89,14 +89,16 @@ function_body_length:
   warning: 150
   error: 300
 
+# SwiftLint's own defaults for a file and a type: one past them is doing
+# more than one job, and splits.
 file_length:
-  warning: 1500
-  error: 2500
+  warning: 400
+  error: 1000
   ignore_comment_only_lines: true
 
 type_body_length:
-  warning: 800
-  error: 1200
+  warning: 250
+  error: 350
 
 cyclomatic_complexity:
   warning: 20

@@ -103,65 +103,6 @@ final class ScanModel {
         }
     }
 
-    // MARK: What the screens read
-
-    /// The rows' order, totals and weights.
-    var tally: Tally {
-        Tally(order: self.scanOrder, rows: self.rows)
-    }
-
-    /// What the status lines are written from.
-    var statusFacts: StatusText.Facts {
-        let tally = self.tally
-        return StatusText.Facts(
-            startupError: self.startupError,
-            isScanning: self.isScanning,
-            measured: tally.measuredCount,
-            items: tally.rows.count,
-            notMeasured: tally.notMeasuredCount,
-            showsPrevious: tally.showsPrevious,
-            lastScan: self.lastScan,
-            previousScanDate: self.previousScanDate,
-            now: self.now)
-    }
-
-    /// Whether there is a home to scan.
-    var canScan: Bool {
-        self.engine != nil
-    }
-
-    /// Whether Scan Again, or Stop, can be used: not while cleaning, which
-    /// `scan()` waits out by doing nothing.
-    var canScanOrStop: Bool {
-        self.engine != nil && !self.isCleaning
-    }
-
-    /// Whether a scan's task is still winding down, even after `isScanning` turned false.
-    var isScanTaskRunning: Bool {
-        self.scanTask != nil
-    }
-
-    /// The home folder scanned.
-    var home: String? {
-        self.engine?.config.home
-    }
-
-    /// The path rule, which writes paths the way the window shows them.
-    var policy: PathPolicy? {
-        self.engine?.policy
-    }
-
-    /// `path` with the home folder as `~`.
-    func tilde(_ path: String) -> String {
-        self.engine?.policy.tilde(path) ?? path
-    }
-
-    /// What `parts` of `item` take, as this scan measured them.
-    func kilobytes(of parts: Set<ItemPart>, in item: Item) -> Int64 {
-        guard let result = self.rows[item]?.result else { return 0 }
-        return parts.reduce(0) { $0 + result.kilobytes(of: $1) }
-    }
-
     // MARK: Scanning
 
     func scan() {
@@ -331,9 +272,72 @@ final class ScanModel {
         self.diskSpace = self.engine?.diskSpace()
         self.onItemsMeasured?(true)
     }
+}
 
-    // MARK: The last scan, for the next launch
+// MARK: What the screens read
 
+extension ScanModel {
+    /// The rows' order, totals and weights.
+    var tally: Tally {
+        Tally(order: self.scanOrder, rows: self.rows)
+    }
+
+    /// What the status lines are written from.
+    var statusFacts: StatusText.Facts {
+        let tally = self.tally
+        return StatusText.Facts(
+            startupError: self.startupError,
+            isScanning: self.isScanning,
+            measured: tally.measuredCount,
+            items: tally.rows.count,
+            notMeasured: tally.notMeasuredCount,
+            showsPrevious: tally.showsPrevious,
+            lastScan: self.lastScan,
+            previousScanDate: self.previousScanDate,
+            now: self.now)
+    }
+
+    /// Whether there is a home to scan.
+    var canScan: Bool {
+        self.engine != nil
+    }
+
+    /// Whether Scan Again, or Stop, can be used: not while cleaning, which
+    /// `scan()` waits out by doing nothing.
+    var canScanOrStop: Bool {
+        self.engine != nil && !self.isCleaning
+    }
+
+    /// Whether a scan's task is still winding down, even after `isScanning` turned false.
+    var isScanTaskRunning: Bool {
+        self.scanTask != nil
+    }
+
+    /// The home folder scanned.
+    var home: String? {
+        self.engine?.config.home
+    }
+
+    /// The path rule, which writes paths the way the window shows them.
+    var policy: PathPolicy? {
+        self.engine?.policy
+    }
+
+    /// `path` with the home folder as `~`.
+    func tilde(_ path: String) -> String {
+        self.engine?.policy.tilde(path) ?? path
+    }
+
+    /// What `parts` of `item` take, as this scan measured them.
+    func kilobytes(of parts: Set<ItemPart>, in item: Item) -> Int64 {
+        guard let result = self.rows[item]?.result else { return 0 }
+        return parts.reduce(0) { $0 + result.kilobytes(of: $1) }
+    }
+}
+
+// MARK: The last scan, for the next launch
+
+extension ScanModel {
     /// Shows the last launch's scan of this home, dimmed, until this one replaces it.
     private func restorePreviousScan() {
         guard let engine, let saved = store?.load(home: engine.policy.homeReal) else { return }
@@ -367,9 +371,13 @@ final class ScanModel {
             android: self.android)
         try? store.save(scan)
     }
+}
 
-    // MARK: Cleaning
+// MARK: Cleaning
 
+/// The rows during a clean: what CleaningModel asks for, between
+/// `beginCleaning()` and `endCleaning(warnings:)`.
+extension ScanModel {
     /// Takes the rows for a clean: false while scanning or cleaning, or with
     /// no home to clean in.
     func beginCleaning() -> Bool {
@@ -444,10 +452,12 @@ final class ScanModel {
             self.rows[item]?.result = whole
         }
     }
+}
 
-    // MARK: Without scanning, for tests and screenshots
+// MARK: Without scanning, for tests and screenshots
 
-    #if DEBUG
+#if DEBUG
+extension ScanModel {
     /// Shows results as if a scan had just measured them.
     func showResults(_ results: [ItemResult]) {
         for result in results {
@@ -475,5 +485,5 @@ final class ScanModel {
         }
         self.isScanning = true
     }
-    #endif
 }
+#endif

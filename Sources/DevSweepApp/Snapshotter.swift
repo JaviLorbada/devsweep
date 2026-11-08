@@ -47,7 +47,7 @@ enum Snapshotter {
             app.cleaning.dismissNotice()
             if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "putback" {
                 await app.cleaning.putBack(.swiftpmCache)
-                app.overview.selection = .swiftpmCache
+                app.overview.select(.swiftpmCache)
             }
         default: break
         }
@@ -272,7 +272,7 @@ extension AppCoordinator {
     /// for snapshots.
     func select(snapshotID id: String) {
         if let item = Item(rawValue: id) {
-            self.overview.selection = item
+            self.overview.select(item)
         } else if let xcode = self.scan.extras?.xcodes
             .first(where: { ($0.path as NSString).lastPathComponent == id })
         {

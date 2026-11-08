@@ -148,7 +148,7 @@ private struct TreemapCell: View {
         let size = SizeText.of(kilobytes: self.row.shownKilobytes)
         let label = BlocksChart.label(for: self.frame.size, name: self.row.item.shortName, sizeText: size)
         Button {
-            self.overview.selection = self.row.item
+            self.overview.select(self.row.item)
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 if label != nil {

@@ -166,7 +166,7 @@ final class AppCoordinator {
     /// Shows results as if a scan had just measured them.
     func showResults(_ results: [ItemResult]) {
         self.scan.showResults(results)
-        self.overview.selection = self.scan.tally.ordered.first?.item
+        self.overview.select(self.scan.tally.ordered.first?.item)
     }
 
     /// Puts the window back to the moment `measured` items were done.

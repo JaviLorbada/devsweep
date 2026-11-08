@@ -72,7 +72,7 @@ extension LayoutTests {
         let home = TemporaryHome()
         let app = makeApp(home: home)
         app.showResults(sampleResults)
-        app.overview.selection = .derivedData
+        app.overview.select(.derivedData)
         let size = minimumSize(of: ItemInspector(), app: app)
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }

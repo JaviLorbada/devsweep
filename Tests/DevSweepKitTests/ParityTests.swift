@@ -5,6 +5,10 @@ import Testing
 // One test per test in the bash script's test/devclean.bats, in the same order
 // and with the same names, run through the same command line session the
 // binary runs, against a fake home with fake tools.
+//
+// It stays one file, longer than the linter allows elsewhere, so it reads
+// against the bats file test for test.
+// swiftlint:disable file_length
 
 @Suite("Options")
 struct OptionsTests {

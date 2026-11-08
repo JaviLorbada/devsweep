@@ -3,10 +3,21 @@
 ## Layout
 - `Sources/DevSweepKit`: scanning, measuring, the path policy, cleaning and the report. No AppKit except where a macOS API needs it.
 - `Sources/devsweep`: the command line tool. Run under the original script's name, `devclean`, its output is the bash script's, byte for byte.
-- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item.
+- `Sources/DevSweepApp`: the SwiftUI app: the window, Settings and the menu bar item, with its models and view models.
 - `Tests/DevSweepKitTests`, `Tests/DevSweepAppTests`: Swift Testing. Fixtures in `Tests/DevSweepKitTests/Fixtures`.
 - `Scripts`: packaging, lint, release, the parity checks and the debug captures.
 - `docs`: architecture, development, packaging, releasing, the original design.
+
+## App architecture
+- `docs/ARCHITECTURE.md` draws it. Its diagrams change in the same commit as the code they draw.
+- `AppCoordinator` builds the dependencies and every model, and wires one model's events to the others. No view reads it; the scenes put its models in the environment with `environment(models:)`.
+- Shared models hold what several screens read: `ScanModel` (the rows, the scan, the listings, the last scan; only it changes the rows), `CleaningModel`, `MarksModel`, `RunningAppsModel`. Only they call the kit.
+- A view model per screen holds what that screen owns: `WindowViewModel`, `OverviewViewModel`, `XcodesViewModel`, `RuntimesViewModel`, `WorktreesViewModel`, `AndroidViewModel`. They call the shared models, never the kit.
+- Numbers and words are plain values, tested without a model: `Tally`, `StatusText`, `CleanPrompt`.
+- A view takes from the environment only the models it reads; rows, cells and ring segments take values.
+- State is `private(set)`. Only what a view binds stays settable (the screen, the chart, the Trash toggle, an open sheet); everything else changes through a method named for what it does.
+- New state goes in the model that owns it. No model grows into the app: past SwiftLint's limits, it splits.
+- Each model and view model has its own test file, named after it.
 
 ## Build, test, lint
 - `make build`, `make test` (Swift Testing, in parallel), `make lint` (strict), `make format`.
@@ -26,7 +37,7 @@
 
 ## Tests
 - Swift Testing, with backticked sentence names: ``@Test func `skips folders git tracks`()``.
-- Every test makes its own temp folder and fakes what has side effects through `Dependencies`. Nothing shared, nothing `.serialized`; `swift test --parallel` must pass.
+- Every test makes its own temp folder and fakes what has side effects through `Dependencies` and the app's seams (`AppQuitting`, the preferences, scan memory and notification stores). Nothing shared, nothing `.serialized`; `swift test --parallel` must pass.
 - No stubs on `PATH` in Swift tests. They belong to the bats suite, which runs the built binary as a user would.
 - The bats suite is the acceptance test: 52 of 52, and `Scripts/compare.sh` identical.
 
