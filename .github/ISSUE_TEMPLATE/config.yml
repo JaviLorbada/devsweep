@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: DevSweep deleted, or would delete, something it shouldn't
+    url: https://github.com/JaviLorbada/devsweep/security/advisories/new
+    about: Please report it privately, so it can be fixed before anyone else runs into it.

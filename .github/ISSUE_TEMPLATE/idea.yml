@@ -1,0 +1,16 @@
+name: Idea
+description: Something DevSweep could do.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What you want to do, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: How DevSweep could help. Rough is fine.
