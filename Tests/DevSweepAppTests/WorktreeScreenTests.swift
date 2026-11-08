@@ -9,24 +9,24 @@ struct WorktreeScreenTests {
     func `the inspector shows the first worktree with nothing to lose until one is chosen`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .worktrees
-        #expect(model.currentWorktree?.name == "readme-credits-readability-9b0801")
-        model.selectedWorktree = sampleWorktrees[0].path
-        #expect(model.currentWorktree?.name == "portfolio-copy-typography-ec440f")
+        model.window.screen = .worktrees
+        #expect(model.worktrees.current?.name == "readme-credits-readability-9b0801")
+        model.worktrees.select(sampleWorktrees[0])
+        #expect(model.worktrees.current?.name == "portfolio-copy-typography-ec440f")
     }
 
     @Test
     func `the sidebar counts only what can go, and the subtitle says what stays`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .worktrees
+        model.window.screen = .worktrees
         // Two of the five have nothing to lose.
         let twoKilobytes: Int64 = 2 * 623_000
         #expect(model.scan.extras?.removableWorktreesKilobytes == twoKilobytes)
         let twoGo = SizeText.of(kilobytes: twoKilobytes)
         let threeStay = SizeText.of(kilobytes: 3 * 623_000)
-        #expect(model.subtitle == "\(twoGo) in 2 worktrees with nothing to lose. 3 more, \(threeStay), keep work, "
-            + "so they stay.")
+        #expect(model.worktrees.subtitle
+            == "\(twoGo) in 2 worktrees with nothing to lose. 3 more, \(threeStay), keep work, so they stay.")
 
         let oneSize = SizeText.of(kilobytes: 623_000)
         let kept = sampleWorktrees[0]
@@ -67,11 +67,11 @@ struct WorktreeScreenTests {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         let worktree = sampleWorktrees[2]
-        model.worktreeToRemove = worktree
+        model.worktrees.removal.ask(worktree)
         // The model's tools have no git: the engine refuses before anything runs.
-        await model.removeWorktree(worktree)
-        #expect(model.worktreeToRemove == worktree)
-        #expect(model.worktreeRemovalError?.hasPrefix("Git didn't remove it.") == true)
-        #expect(!model.isRemovingWorktree)
+        await model.worktrees.remove(worktree)
+        #expect(model.worktrees.removal.pending == worktree)
+        #expect(model.worktrees.removal.error?.hasPrefix("Git didn't remove it.") == true)
+        #expect(!model.worktrees.removal.isRemoving)
     }
 }

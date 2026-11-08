@@ -44,7 +44,7 @@ struct ScanMemoryTests {
             .fileExists(atPath: "\(home.path)/Library/Application Support/DevSweep/last-scan.json"))
 
         let next = scanningModel(home: home)
-        #expect(next.statusLine.hasPrefix("Last scanned"))
+        #expect(next.overview.statusLine.hasPrefix("Last scanned"))
         #expect(next.scan.tally.showsPrevious)
         #expect(next.scan.tally.reclaimableKilobytes == total)
         #expect(next.scan.rows[.swiftpmCache]?.showsPrevious == true)
@@ -54,7 +54,7 @@ struct ScanMemoryTests {
         await finishScan(next)
         #expect(!next.scan.tally.showsPrevious)
         #expect(next.scan.rows[.swiftpmCache]?.state == .measured)
-        #expect(next.statusLine.hasPrefix("Scanned just now"))
+        #expect(next.overview.statusLine.hasPrefix("Scanned just now"))
     }
 
     @Test
@@ -72,7 +72,7 @@ struct ScanMemoryTests {
 
         let model = scanningModel(home: home)
         #expect(!model.scan.tally.showsPrevious)
-        #expect(model.statusLine == "Not scanned yet.")
+        #expect(model.overview.statusLine == "Not scanned yet.")
     }
 
     @Test

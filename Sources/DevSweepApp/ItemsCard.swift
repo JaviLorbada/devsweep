@@ -59,7 +59,7 @@ struct ItemsCard: View {
 }
 
 struct ItemRow: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(MarksModel.self) private var marks
     @Environment(\.appearsActive) private var appearsActive
     let row: ScanModel.Row
@@ -67,7 +67,7 @@ struct ItemRow: View {
     var showsBar = true
 
     var body: some View {
-        let selected = self.model.selection == self.row.item
+        let selected = self.overview.selection == self.row.item
         // On the selection color, marks turn white like a table's icons, or a
         // dark blue item would vanish on it.
         let emphasized = selected && self.appearsActive
@@ -82,7 +82,7 @@ struct ItemRow: View {
             Dot(color: emphasized ? .white : Palette.color(self.row.item))
 
             Button {
-                self.model.selection = self.row.item
+                self.overview.selection = self.row.item
             } label: {
                 HStack(spacing: 0) {
                     // The family shows whole or not at all: cut down beside a
@@ -129,7 +129,7 @@ struct ItemRow: View {
         .frame(height: 32)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { self.model.selection = self.row.item }
+        .onTapGesture { self.overview.selection = self.row.item }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "\(self.row.result?.label ?? self.row.item.name), "
@@ -187,7 +187,7 @@ enum RowWords {
 
 /// The trailing cell of a row: what can be done now, or what is happening.
 struct RowAction: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     @Environment(CleaningModel.self) private var cleaning
     let row: ScanModel.Row
@@ -213,7 +213,7 @@ struct RowAction: View {
         case .measured:
             if self.row.isLive {
                 Button("Clean") {
-                    self.model.selection = self.row.item
+                    self.overview.selection = self.row.item
                     Task { await self.cleaning.requestClean([self.row.item]) }
                 }
                 .controlSize(.small)

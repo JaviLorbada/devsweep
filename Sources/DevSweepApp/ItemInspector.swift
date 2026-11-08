@@ -4,11 +4,11 @@ import SwiftUI
 /// The selected item: what it is, where it lives, what cleaning it does, and
 /// for DerivedData what is inside.
 struct ItemInspector: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        if let item = model.selection, let row = scan.rows[item] {
+        if let item = overview.selection, let row = scan.rows[item] {
             ScrollView {
                 // A fresh one per item, so a list expanded for one item
                 // starts short for the next.

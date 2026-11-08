@@ -31,12 +31,12 @@ enum Snapshotter {
             try? await Task.sleep(for: .milliseconds(200))
         }
         switch environment["DEVSWEEP_SNAPSHOT_SCREEN"] {
-        case "blocks": model.chartStyle = .blocks
-        case "runtimes": model.screen = .simulatorRuntimes
+        case "blocks": model.window.chartStyle = .blocks
+        case "runtimes": model.window.screen = .simulatorRuntimes
         case "remove-runtime":
             // Shows the sheet only; nothing here presses Remove.
-            model.screen = .simulatorRuntimes
-        case "xcodes": model.screen = .xcodeVersions
+            model.window.screen = .simulatorRuntimes
+        case "xcodes": model.window.screen = .xcodeVersions
         case "scanning": model.rewindScan(toMeasured: 5)
         case "cleaned", "putback":
             // The confirmed step directly: never the quit prompt, which would
@@ -47,16 +47,15 @@ enum Snapshotter {
             model.cleaning.dismissNotice()
             if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "putback" {
                 await model.cleaning.putBack(.swiftpmCache)
-                model.selection = .swiftpmCache
+                model.overview.selection = .swiftpmCache
             }
         default: break
         }
         if let id = environment["DEVSWEEP_SNAPSHOT_SELECT"], !id.isEmpty {
             model.select(snapshotID: id)
         }
-        if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "remove-runtime" {
-            model.runtimeToRemove = model.currentRuntime
-        }
+        if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "remove-runtime",
+           let runtime = model.runtimes.current { model.runtimes.removal.ask(runtime) }
         try? await Task.sleep(for: .milliseconds(600))
 
         let width = environment["DEVSWEEP_SNAPSHOT_WIDTH"].flatMap(Double.init) ?? 1280
@@ -82,7 +81,9 @@ enum Snapshotter {
 
 /// The window's three columns, drawn without the views AppKit backs.
 private struct SnapshotLayout: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(OverviewViewModel.self) private var overview
+    @Environment(RuntimesViewModel.self) private var runtimes
     @Environment(ScanModel.self) private var scan
     let width: CGFloat
 
@@ -96,7 +97,7 @@ private struct SnapshotLayout: View {
             Divider()
             VStack(spacing: 0) {
                 SnapshotHeader()
-                switch self.model.screen {
+                switch self.window.screen {
                 case .overview:
                     OverviewContent()
                     Spacer(minLength: 0)
@@ -125,7 +126,7 @@ private struct SnapshotLayout: View {
         .frame(width: self.width, height: 860)
         .background(Color(nsColor: .windowBackgroundColor))
         .overlay {
-            if let runtime = model.runtimeToRemove {
+            if let runtime = runtimes.removal.pending {
                 ZStack {
                     Color.black.opacity(0.35)
                     RemoveRuntimeSheet(runtime: runtime)
@@ -138,9 +139,9 @@ private struct SnapshotLayout: View {
 
     private var inspector: some View {
         Group {
-            switch self.model.screen {
+            switch self.window.screen {
             case .overview:
-                if let item = model.selection, let row = scan.rows[item] {
+                if let item = overview.selection, let row = scan.rows[item] {
                     VStack(spacing: 0) {
                         ItemDetails(row: row)
                         Spacer(minLength: 0)
@@ -160,26 +161,38 @@ private struct SnapshotLayout: View {
 }
 
 private struct SnapshotHeader: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(OverviewViewModel.self) private var overview
+    @Environment(XcodesViewModel.self) private var xcodes
+    @Environment(RuntimesViewModel.self) private var runtimes
+
+    /// What the screen drawn says under its title.
+    private var subtitle: String {
+        switch self.window.screen {
+        case .xcodeVersions: self.xcodes.subtitle
+        case .simulatorRuntimes: self.runtimes.subtitle
+        default: self.overview.subtitle
+        }
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(self.model.screen == .overview ? "Overview" : self.model
+                Text(self.window.screen == .overview ? "Overview" : self.window
                     .screen == .xcodeVersions ? "Xcode versions" : "Simulator runtimes")
                     .font(.title2.weight(.semibold))
-                Text(self.model.subtitle).font(.callout).foregroundStyle(.muted)
+                Text(self.subtitle).font(.callout).foregroundStyle(.muted)
             }
             Spacer()
-            if self.model.screen == .overview {
+            if self.window.screen == .overview {
                 HStack(spacing: 0) {
-                    ForEach(AppModel.ChartStyle.allCases) { style in
+                    ForEach(WindowViewModel.ChartStyle.allCases) { style in
                         Text(style.rawValue)
-                            .font(.callout.weight(style == self.model.chartStyle ? .semibold : .regular))
+                            .font(.callout.weight(style == self.window.chartStyle ? .semibold : .regular))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 4)
                             .background(
-                                style == self.model.chartStyle ? Color.primary.opacity(0.14) : .clear,
+                                style == self.window.chartStyle ? Color.primary.opacity(0.14) : .clear,
                                 in: RoundedRectangle(cornerRadius: 6))
                     }
                 }
@@ -198,12 +211,12 @@ private struct SnapshotHeader: View {
 }
 
 private struct SnapshotSidebar: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            self.row(highlighted: self.model.screen == .overview) {
+            self.row(highlighted: self.window.screen == .overview) {
                 Label("Overview", systemImage: "chart.pie").fontWeight(.medium)
             }
             self.heading("Caches")
@@ -217,14 +230,14 @@ private struct SnapshotSidebar: View {
                 }
             }
             self.heading("Also worth a look")
-            self.row(highlighted: self.model.screen == .xcodeVersions) {
+            self.row(highlighted: self.window.screen == .xcodeVersions) {
                 Text("Xcode versions")
                 Spacer()
                 Text((self.scan.extras?.xcodesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
                     .foregroundStyle(.muted)
                     .monospacedDigit()
             }
-            self.row(highlighted: self.model.screen == .simulatorRuntimes) {
+            self.row(highlighted: self.window.screen == .simulatorRuntimes) {
                 Text("Simulator runtimes")
                 Spacer()
                 Text((self.scan.extras?.runtimesKilobytes).map { SizeText.of(kilobytes: $0) } ?? "–")
@@ -259,13 +272,15 @@ extension AppModel {
     /// for snapshots.
     func select(snapshotID id: String) {
         if let item = Item(rawValue: id) {
-            selection = item
-        } else if let xcode = self.scan.extras?.xcodes.first(where: { ($0.path as NSString).lastPathComponent == id }) {
-            selectedXcode = xcode.path
+            self.overview.selection = item
+        } else if let xcode = self.scan.extras?.xcodes
+            .first(where: { ($0.path as NSString).lastPathComponent == id })
+        {
+            self.xcodes.select(xcode)
         } else if let worktree = self.scan.extras?.worktrees.first(where: { $0.name == id }) {
-            selectedWorktree = worktree.path
+            self.worktrees.select(worktree)
         } else {
-            selectedRuntime = id
+            if let runtime = self.runtimes.runtimes.first(where: { $0.id == id }) { self.runtimes.select(runtime) }
         }
     }
 }

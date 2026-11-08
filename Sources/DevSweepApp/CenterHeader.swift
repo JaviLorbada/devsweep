@@ -12,11 +12,12 @@ import SwiftUI
 /// Sized from the width it is given, like the footer, so the controls drop
 /// their words instead of asking the column for more room.
 struct CenterHeader: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
     @Environment(ScanModel.self) private var scan
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Namespace private var titleSpace
     let title: String
+    let subtitle: String
     /// Whether the sidebar is hidden, leaving the window's own controls over
     /// the header's leading corner.
     var sidebarHidden = false
@@ -71,7 +72,7 @@ struct CenterHeader: View {
     }
 
     private func row(fit: Fit, inset: CGFloat) -> some View {
-        @Bindable var model = model
+        @Bindable var window = self.window
         return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
                 if !self.sidebarHidden { self.titleText }
@@ -85,8 +86,8 @@ struct CenterHeader: View {
                             ScanCapsule(showsText: fit.capsuleText)
                                 .glassEffectTransition(.identity)
                         }
-                        if model.screen == .overview {
-                            ChartStylePicker(selection: $model.chartStyle, showsText: fit.pickerText)
+                        if window.screen == .overview {
+                            ChartStylePicker(selection: $window.chartStyle, showsText: fit.pickerText)
                         }
                         Button(self.scan.isScanning ? "Stop" : "Scan Again") {
                             self.scan.isScanning ? self.scan.stopScan() : self.scan.scan()
@@ -96,7 +97,7 @@ struct CenterHeader: View {
                         .controlSize(.large)
                         .disabled(!self.scan.canScanOrStop)
                         .help(self.scan.isCleaning ? "Scan again once cleaning is done" : "")
-                        if model.inspectorPlacement != .docked {
+                        if window.inspectorPlacement != .docked {
                             InspectorToggle()
                         }
                     }
@@ -109,7 +110,7 @@ struct CenterHeader: View {
                 self.titleText
                     .frame(height: Self.titleLineHeight, alignment: .bottom)
             }
-            Text(model.subtitle)
+            Text(self.subtitle)
                 .font(.callout)
                 .foregroundStyle(.muted)
                 .lineLimit(1)
@@ -126,11 +127,11 @@ struct CenterHeader: View {
 /// Scan Again, while it floats or is hidden. The window has no toolbar strip
 /// to put it in.
 struct InspectorToggle: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
 
     var body: some View {
-        let title = AppCommands.inspectorTitle(shown: self.model.inspectorShown)
-        Button(title, systemImage: "sidebar.trailing") { self.model.toggleInspector() }
+        let title = AppCommands.inspectorTitle(shown: self.window.inspectorShown)
+        Button(title, systemImage: "sidebar.trailing") { self.window.toggleInspector() }
             .labelStyle(.iconOnly)
             .buttonStyle(.glass)
             .buttonBorderShape(.capsule)
@@ -181,12 +182,12 @@ struct ScanCapsule: View {
 /// system control has no glass. Click a segment to choose it, or drag the
 /// thumb and let go nearer the other.
 struct ChartStylePicker: View {
-    @Binding var selection: AppModel.ChartStyle
+    @Binding var selection: WindowViewModel.ChartStyle
     var showsText = true
     @Namespace private var glass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Each segment's frame in the track, where the thumb goes.
-    @State private var segmentFrames: [AppModel.ChartStyle: CGRect] = [:]
+    @State private var segmentFrames: [WindowViewModel.ChartStyle: CGRect] = [:]
     /// Where the thumb's center is while it is dragged.
     @State private var dragX: CGFloat?
 
@@ -196,7 +197,7 @@ struct ChartStylePicker: View {
     var body: some View {
         GlassEffectContainer {
             HStack(spacing: 0) {
-                ForEach(AppModel.ChartStyle.allCases) { style in
+                ForEach(WindowViewModel.ChartStyle.allCases) { style in
                     self.segment(style, selected: style == self.selection)
                         .onGeometryChange(for: CGRect.self) { $0.frame(in: .named(Self.track)) } action: { frame in
                             self.segmentFrames[style] = frame
@@ -215,7 +216,7 @@ struct ChartStylePicker: View {
         .accessibilityLabel("Chart")
     }
 
-    private func segment(_ style: AppModel.ChartStyle, selected: Bool) -> some View {
+    private func segment(_ style: WindowViewModel.ChartStyle, selected: Bool) -> some View {
         Button {
             withAnimation(self.reduceMotion ? nil : .snappy(duration: 0.25)) { self.selection = style }
         } label: {
@@ -263,7 +264,7 @@ struct ChartStylePicker: View {
     }
 
     /// The segment whose middle is closest to `x`.
-    private func nearest(to x: CGFloat) -> AppModel.ChartStyle? {
+    private func nearest(to x: CGFloat) -> WindowViewModel.ChartStyle? {
         self.segmentFrames.min { abs($0.value.midX - x) < abs($1.value.midX - x) }?.key
     }
 
@@ -281,7 +282,7 @@ struct ChartStylePicker: View {
     }
 }
 
-extension AppModel.ChartStyle {
+extension WindowViewModel.ChartStyle {
     var systemImage: String {
         switch self {
         case .ring: "chart.pie"

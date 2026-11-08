@@ -12,9 +12,9 @@ struct XcodesViewModelTests {
         var extras = sampleExtras
         extras.xcodes.reverse()
         let model = makeModel(home: home, extras: extras)
-        #expect(model.currentXcode?.isSelected == true)
-        model.selectedXcode = extras.xcodes[0].path
-        #expect(model.currentXcode == extras.xcodes[0])
+        #expect(model.xcodes.current?.isSelected == true)
+        model.xcodes.select(extras.xcodes[0])
+        #expect(model.xcodes.current == extras.xcodes[0])
 
         extras.xcodes = extras.xcodes.map { xcode in
             var xcode = xcode
@@ -22,6 +22,6 @@ struct XcodesViewModelTests {
             return xcode
         }
         let other = makeModel(home: home, extras: extras)
-        #expect(other.currentXcode == extras.xcodes[0])
+        #expect(other.xcodes.current == extras.xcodes[0])
     }
 }

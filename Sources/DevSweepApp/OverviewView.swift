@@ -2,7 +2,7 @@ import DevSweepKit
 import SwiftUI
 
 struct OverviewView: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
 
     var body: some View {
         // The footer is a bar the items scroll under, softened by the scroll
@@ -17,23 +17,23 @@ struct OverviewView: View {
                 .padding(.top, 12)
                 .padding(.bottom, WindowLayout.controlInset)
                 .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
-                    self.model.overviewFooterHeight = height
+                    self.window.overviewFooterHeight = height
                 }
         }
-        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.model.chartStyle)
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.window.chartStyle)
     }
 }
 
 /// The chart card, the items and any notes from the scan.
 struct OverviewContent: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Group {
-                    switch self.model.chartStyle {
+                    switch self.window.chartStyle {
                     case .ring: RingChart()
                     case .blocks: BlocksChart()
                     }

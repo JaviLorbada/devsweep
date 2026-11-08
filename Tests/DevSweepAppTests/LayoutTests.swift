@@ -16,7 +16,7 @@ struct LayoutTests {
     func `the Xcode versions screen fits the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .xcodeVersions
+        model.window.screen = .xcodeVersions
         let size = minimumSize(of: XcodesContent(), model: model)
         #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
     }
@@ -25,7 +25,7 @@ struct LayoutTests {
     func `the Xcode inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .xcodeVersions
+        model.window.screen = .xcodeVersions
         let size = minimumSize(of: XcodeInspector(), model: model)
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
@@ -36,7 +36,7 @@ extension LayoutTests {
     func `the Simulator runtimes screen fits the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .simulatorRuntimes
+        model.window.screen = .simulatorRuntimes
         let size = minimumSize(of: RuntimesContent(), model: model)
         #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
     }
@@ -45,8 +45,8 @@ extension LayoutTests {
     func `the runtime inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .simulatorRuntimes
-        model.selectedRuntime = sampleExtras.runtimes[1].id
+        model.window.screen = .simulatorRuntimes
+        model.runtimes.select(sampleExtras.runtimes[1])
         let size = minimumSize(of: RuntimeInspector(), model: model)
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
@@ -58,8 +58,8 @@ extension LayoutTests {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
         model.showResults(sampleResults)
-        for style in AppModel.ChartStyle.allCases {
-            model.chartStyle = style
+        for style in WindowViewModel.ChartStyle.allCases {
+            model.window.chartStyle = style
             let size = minimumSize(of: OverviewContent(), model: model)
             #expect(size.width <= WindowLayout.centerMinimumWidth, "\(style.rawValue) needs \(size.width) points")
         }
@@ -72,7 +72,7 @@ extension LayoutTests {
         let home = TemporaryHome()
         let model = makeModel(home: home)
         model.showResults(sampleResults)
-        model.selection = .derivedData
+        model.overview.selection = .derivedData
         let size = minimumSize(of: ItemInspector(), model: model)
         #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
     }
@@ -146,7 +146,7 @@ extension LayoutTests {
     func `the worktrees screen fits the narrowest center column`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .worktrees
+        model.window.screen = .worktrees
         let size = minimumSize(of: WorktreesContent(), model: model)
         #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
     }
@@ -155,9 +155,9 @@ extension LayoutTests {
     func `the worktree inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let model = makeModel(home: home, extras: sampleExtras)
-        model.screen = .worktrees
+        model.window.screen = .worktrees
         for worktree in sampleWorktrees {
-            model.selectedWorktree = worktree.path
+            model.worktrees.select(worktree)
             let size = minimumSize(of: WorktreeInspector(), model: model)
             #expect(size.height <= WindowLayout.minimumHeight, "\(worktree.name) needs \(size.height) points")
         }
@@ -169,7 +169,7 @@ extension LayoutTests {
         let model = makeModel(home: home)
         model.scan.showListings(extras: nil, android: sampleAndroid)
         for (screen, size) in [
-            (AppModel.Screen.androidStudios, minimumSize(of: AndroidStudiosContent(), model: model)),
+            (WindowViewModel.Screen.androidStudios, minimumSize(of: AndroidStudiosContent(), model: model)),
             (.androidSDK, minimumSize(of: AndroidSDKContent(), model: model)),
             (.gradleCaches, minimumSize(of: GradleCachesContent(), model: model)),
         ] {
@@ -182,8 +182,8 @@ extension LayoutTests {
         let home = TemporaryHome()
         let model = makeModel(home: home)
         model.scan.showListings(extras: nil, android: sampleAndroid)
-        for screen in [AppModel.Screen.androidStudios, .androidSDK, .gradleCaches] {
-            model.screen = screen
+        for screen in [WindowViewModel.Screen.androidStudios, .androidSDK, .gradleCaches] {
+            model.window.screen = screen
             let size = minimumSize(of: AndroidInspector(), model: model)
             #expect(size.height <= WindowLayout.minimumHeight, "\(screen) needs \(size.height) points")
         }

@@ -63,7 +63,7 @@ struct CleaningModelTests {
         #expect(!FileManager.default.fileExists(atPath: folder))
         #expect(model.scan.rows[.npmCache]?.canPutBack == true)
         #expect(model.cleaning.trashedThisSession == kilobytes)
-        #expect(model.statusLine.contains("moved to Trash this session"))
+        #expect(model.overview.statusLine.contains("moved to Trash this session"))
 
         await model.cleaning.putBack(.npmCache)
         #expect(FileManager.default.fileExists(atPath: folder))

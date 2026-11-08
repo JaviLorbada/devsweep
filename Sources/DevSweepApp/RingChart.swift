@@ -6,7 +6,7 @@ import SwiftUI
 /// reclaimable total in the hole. Unmeasured items are drawn in a faint tone
 /// so the ring is whole from the start and fills in.
 struct RingChart: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
 
     /// The ring's diameter: 240 points when there is room, down to 150 in
@@ -54,7 +54,7 @@ struct RingChart: View {
             .accessibilityValue(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
             .accessibilityChildren { self.segmentElements }
             .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.scan.tally.reclaimableKilobytes)
-            .animation(Motion.animation(.easeInOut(duration: 0.25)), value: self.model.selection)
+            .animation(Motion.animation(.easeInOut(duration: 0.25)), value: self.overview.selection)
 
             FamilyLegend(showsShare: width - diameter > 260)
                 .frame(maxWidth: .infinity)
@@ -67,13 +67,13 @@ struct RingChart: View {
             Rectangle()
                 .accessibilityLabel(self.familyLabel(family))
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction { self.model.pick(family) }
+                .accessibilityAction { self.overview.pick(family) }
             ForEach(family.items.filter { self.scan.rows[$0] != nil }) { item in
                 let row = self.scan.rows[item]
                 Rectangle()
                     .accessibilityLabel("\(item.name), \(row.map { SizeText.of(kilobytes: $0.shownKilobytes) } ?? "")")
-                    .accessibilityAddTraits(self.model.selection == item ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityAction { self.model.selection = item }
+                    .accessibilityAddTraits(self.overview.selection == item ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { self.overview.selection = item }
             }
         }
     }
@@ -86,14 +86,14 @@ struct RingChart: View {
 
     private func select(_ id: String) {
         if let item = Item(rawValue: id) {
-            self.model.selection = item
+            self.overview.selection = item
         } else if let family = Family(rawValue: id) {
-            self.model.pick(family)
+            self.overview.pick(family)
         }
     }
 
     private var selectedFamily: Family? {
-        self.model.selection?.family
+        self.overview.selection?.family
     }
 
     /// Each item's share of the ring, from its chart weight scaled so small
@@ -150,7 +150,7 @@ struct RingChart: View {
         case .cleaning, .cleaned:
             return Palette.cleaned
         case .measured:
-            if self.model.selection == nil || self.model.selection == row.item { return Palette.color(row.item) }
+            if self.overview.selection == nil || self.overview.selection == row.item { return Palette.color(row.item) }
             return Palette.color(row.item).opacity(0.42)
         }
     }
@@ -203,7 +203,7 @@ struct Ring: View {
 /// The bar draws the families as the ring does, with small ones larger
 /// (`ChartScale`); the percentages and sizes are exact.
 struct FamilyLegend: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     var showsShare = true
 
@@ -233,7 +233,7 @@ struct FamilyLegend: View {
                     let kilobytes = self.scan.tally.kilobytes(of: family)
                     let measured = self.scan.tally.measuredKilobytes(of: family) != nil
                     Button {
-                        self.model.pick(family)
+                        self.overview.pick(family)
                     } label: {
                         HStack(spacing: 10) {
                             RoundedRectangle(cornerRadius: 3).fill(Palette.color(family)).frame(width: 10, height: 10)

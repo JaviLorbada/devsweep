@@ -11,7 +11,7 @@ struct OverviewViewModelTests {
         let home = TemporaryHome()
         writeFourItems(in: home)
         let model = await scannedModel(home: home)
-        #expect(model.selection == .derivedData)
+        #expect(model.overview.selection == .derivedData)
     }
 
     @Test
@@ -19,11 +19,11 @@ struct OverviewViewModelTests {
         let home = TemporaryHome()
         writeFourItems(in: home)
         let model = await scannedModel(home: home)
-        model.screen = .worktrees
-        model.pick(.swiftPackages)
-        #expect(model.screen == .overview)
-        #expect(model.selection == .swiftpmCache)
-        model.pick(.npm)
-        #expect(model.selection == .npmCache)
+        model.window.screen = .worktrees
+        model.overview.pick(.swiftPackages)
+        #expect(model.window.screen == .overview)
+        #expect(model.overview.selection == .swiftpmCache)
+        model.overview.pick(.npm)
+        #expect(model.overview.selection == .npmCache)
     }
 }

@@ -19,14 +19,14 @@ struct XcodeVersionsView: View {
 
 /// Runtimes, then the installed Xcodes, as on the Extras board.
 struct RuntimesContent: View {
-    @Environment(AppModel.self) private var model
+    @Environment(RuntimesViewModel.self) private var runtimes
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             ExtrasCard(
                 title: "Runtimes",
-                note: "flagged after \(self.model.staleDays) days unused or with no simulators",
+                note: "flagged after \(self.runtimes.staleDays) days unused or with no simulators",
                 rowCount: self.scan.extras?.runtimes.count ?? 0)
             {
                 if let runtimes = scan.extras?.runtimes, !runtimes.isEmpty {
@@ -161,14 +161,15 @@ struct EmptyExtrasRow: View {
 }
 
 private struct RuntimeRow: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(RuntimesViewModel.self) private var runtimes
     @Environment(\.extrasColumns) private var columns
     let runtime: SimulatorRuntime
     let largest: Double
 
     var body: some View {
-        let reason = self.runtime.flagReason(staleDays: self.model.staleDays)
-        let selected = self.model.screen == .simulatorRuntimes && self.model.currentRuntime?.id == self.runtime.id
+        let reason = self.runtime.flagReason(staleDays: self.runtimes.staleDays)
+        let selected = self.window.screen == .simulatorRuntimes && self.runtimes.current?.id == self.runtime.id
         let tint: Color = reason == nil ? .secondary.opacity(0.6) : .orange
         HStack(spacing: 12) {
             Dot(color: tint)
@@ -177,7 +178,7 @@ private struct RuntimeRow: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(self.runtime.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
                 if let reason {
-                    Badge(text: RuntimeWords.badge(self.runtime, staleDays: self.model.staleDays), color: .orange)
+                    Badge(text: RuntimeWords.badge(self.runtime, staleDays: self.runtimes.staleDays), color: .orange)
                         .help(reason)
                 } else {
                     Text(self.runtime.simulatorCount == 1 ? "1 simulator" : "\(self.runtime.simulatorCount) simulators")
@@ -209,15 +210,13 @@ private struct RuntimeRow: View {
                     Color.clear
                 } else if self.columns == .compact {
                     Button("Remove Runtime", systemImage: "trash") {
-                        self.model.selectedRuntime = self.runtime.id
-                        self.model.runtimeToRemove = self.runtime
+                        self.runtimes.askToRemove(self.runtime)
                     }
                     .labelStyle(.iconOnly)
                     .help("Remove Runtime")
                 } else {
                     Button("Remove Runtime") {
-                        self.model.selectedRuntime = self.runtime.id
-                        self.model.runtimeToRemove = self.runtime
+                        self.runtimes.askToRemove(self.runtime)
                     }
                 }
             }
@@ -229,26 +228,27 @@ private struct RuntimeRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { self.model.selectedRuntime = self.runtime.id }
+        .onTapGesture { self.runtimes.select(self.runtime) }
         .focusable()
-        .onKeyPress(.space) { self.model.selectedRuntime = self.runtime.id; return .handled }
+        .onKeyPress(.space) { self.runtimes.select(self.runtime); return .handled }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "\(self.runtime.title), \(SizeText.of(kilobytes: self.runtime.kilobytes))\(reason.map { ", \($0)" } ?? "")")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.model.selectedRuntime = self.runtime.id }
+        .accessibilityAction(named: "Select") { self.runtimes.select(self.runtime) }
     }
 }
 
 private struct XcodeRow: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(XcodesViewModel.self) private var xcodes
     @Environment(ScanModel.self) private var scan
     @Environment(\.extrasColumns) private var columns
     let xcode: InstalledXcode
     let largest: Double
 
     var body: some View {
-        let selected = self.model.screen == .xcodeVersions && self.model.currentXcode?.path == self.xcode.path
+        let selected = self.window.screen == .xcodeVersions && self.xcodes.current?.path == self.xcode.path
         HStack(spacing: 12) {
             Dot(color: .secondary.opacity(0.6))
             // Everything here can shrink: the path gives way first, then the
@@ -300,24 +300,24 @@ private struct XcodeRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { self.model.selectedXcode = self.xcode.path }
+        .onTapGesture { self.xcodes.select(self.xcode) }
         .focusable()
-        .onKeyPress(.space) { self.model.selectedXcode = self.xcode.path; return .handled }
+        .onKeyPress(.space) { self.xcodes.select(self.xcode); return .handled }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(self.xcode.title), \(SizeText.of(kilobytes: self.xcode.kilobytes))")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.model.selectedXcode = self.xcode.path }
+        .accessibilityAction(named: "Select") { self.xcodes.select(self.xcode) }
     }
 }
 
 // MARK: Inspectors
 
 struct RuntimeInspector: View {
-    @Environment(AppModel.self) private var model
+    @Environment(RuntimesViewModel.self) private var runtimes
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        if let runtime = model.currentRuntime {
+        if let runtime = runtimes.current {
             // Scrolls, so the column never asks the window for the height of
             // its text: at a small width that would be thousands of points.
             ScrollView {
@@ -325,7 +325,7 @@ struct RuntimeInspector: View {
             }
             .scrollEdgeEffectStyle(.soft, for: .bottom)
             .safeAreaBar(edge: .bottom) {
-                Button("Remove Runtime") { self.model.runtimeToRemove = runtime }
+                Button("Remove Runtime") { self.runtimes.removal.ask(runtime) }
                     .buttonStyle(.prominentAction)
                     .controlSize(.large)
                     .frame(maxWidth: .infinity)
@@ -343,11 +343,11 @@ struct RuntimeInspector: View {
 
 /// What the inspector says about one runtime.
 struct RuntimeDetails: View {
-    @Environment(AppModel.self) private var model
+    @Environment(RuntimesViewModel.self) private var runtimes
     let runtime: SimulatorRuntime
 
     var body: some View {
-        let reason = self.runtime.flagReason(staleDays: self.model.staleDays)
+        let reason = self.runtime.flagReason(staleDays: self.runtimes.staleDays)
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
                 Dot(color: reason == nil ? .secondary.opacity(0.6) : .orange)
@@ -363,7 +363,7 @@ struct RuntimeDetails: View {
                     .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
             Section(reason == nil ? "Usage" : "Why it is flagged") {
-                Text(RuntimeWords.usage(self.runtime, staleDays: self.model.staleDays))
+                Text(RuntimeWords.usage(self.runtime, staleDays: self.runtimes.staleDays))
             }
             Section("What happens") {
                 Text(RuntimeWords.whatHappens(self.runtime))
@@ -402,11 +402,11 @@ struct RuntimeDetails: View {
 }
 
 struct XcodeInspector: View {
-    @Environment(AppModel.self) private var model
+    @Environment(XcodesViewModel.self) private var xcodes
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        if let xcode = model.currentXcode {
+        if let xcode = xcodes.current {
             // Scrolls, so the column never asks the window for the height of
             // its text: at a small width that would be thousands of points.
             ScrollView {
@@ -482,7 +482,7 @@ struct XcodeDetails: View {
 
 /// The confirmation before removing a runtime, showing the exact command.
 struct RemoveRuntimeSheet: View {
-    @Environment(AppModel.self) private var model
+    @Environment(RuntimesViewModel.self) private var runtimes
     @Environment(\.dismiss) private var dismiss
     let runtime: SimulatorRuntime
 
@@ -504,32 +504,32 @@ struct RemoveRuntimeSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
             }
-            if let error = model.runtimeRemovalError {
+            if let error = runtimes.removal.error {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                if self.model.isRemovingRuntime {
+                if self.runtimes.removal.isRemoving {
                     ProgressView().controlSize(.small)
                     Text("Removing…").foregroundStyle(.muted)
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) {
-                    self.model.runtimeRemovalError = nil
+                    self.runtimes.removal.clearError()
                     self.dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
                 Button("Remove Runtime", role: .destructive) {
-                    Task { await self.model.removeRuntime(self.runtime) }
+                    Task { await self.runtimes.remove(self.runtime) }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(self.model.isRemovingRuntime)
+                .disabled(self.runtimes.removal.isRemoving)
             }
         }
         .padding(20)
         .frame(width: 460)
-        .interactiveDismissDisabled(self.model.isRemovingRuntime)
+        .interactiveDismissDisabled(self.runtimes.removal.isRemoving)
     }
 }
 

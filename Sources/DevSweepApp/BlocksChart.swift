@@ -5,7 +5,7 @@ import SwiftUI
 /// The live items as a squarified treemap, with the total and the families
 /// beside it. Cells slide into place as items are measured and cleaned.
 struct BlocksChart: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
@@ -24,7 +24,7 @@ struct BlocksChart: View {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Family.allCases) { family in
                         Button {
-                            self.model.pick(family)
+                            self.overview.pick(family)
                         } label: {
                             HStack(spacing: 8) {
                                 RoundedRectangle(cornerRadius: 2).fill(Palette.color(family)).frame(width: 8, height: 8)
@@ -107,7 +107,7 @@ struct BlocksChart: View {
 }
 
 private struct TreemapCells: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     let size: CGSize
 
@@ -128,7 +128,7 @@ private struct TreemapCells: View {
             }
             ForEach(BlocksChart.drawnCells(cells), id: \.id) { cell in
                 if let row = scan.rows[cell.id] {
-                    TreemapCell(row: row, frame: cell.frame, selected: self.model.selection == cell.id)
+                    TreemapCell(row: row, frame: cell.frame, selected: self.overview.selection == cell.id)
                 }
             }
         }
@@ -138,7 +138,7 @@ private struct TreemapCells: View {
 }
 
 private struct TreemapCell: View {
-    @Environment(AppModel.self) private var model
+    @Environment(OverviewViewModel.self) private var overview
     let row: ScanModel.Row
     let frame: CGRect
     let selected: Bool
@@ -148,7 +148,7 @@ private struct TreemapCell: View {
         let size = SizeText.of(kilobytes: self.row.shownKilobytes)
         let label = BlocksChart.label(for: self.frame.size, name: self.row.item.shortName, sizeText: size)
         Button {
-            self.model.selection = self.row.item
+            self.overview.selection = self.row.item
         } label: {
             VStack(alignment: .leading, spacing: 0) {
                 if label != nil {

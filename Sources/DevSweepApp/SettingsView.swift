@@ -17,11 +17,11 @@ struct SettingsView: View {
 }
 
 private struct GeneralSettings: View {
-    @Environment(AppModel.self) private var model
+    @Environment(Preferences.self) private var preferences
     @Environment(CleaningModel.self) private var cleaning
 
     var body: some View {
-        @Bindable var preferences = self.model.preferences
+        @Bindable var preferences = self.preferences
         Form {
             Section {
                 Toggle("Scan when \(ProductInfo.name) opens", isOn: $preferences.scanOnLaunch)
@@ -74,11 +74,12 @@ private struct GeneralSettings: View {
 }
 
 private struct FolderSettings: View {
-    @Environment(AppModel.self) private var model
+    @Environment(Preferences.self) private var preferences
+    @Environment(ScanModel.self) private var scan
     @State private var selection: Set<String> = []
 
     var body: some View {
-        let preferences = self.model.preferences
+        let preferences = self.preferences
         Form {
             Section {
                 List(selection: self.$selection) {
@@ -124,20 +125,20 @@ private struct FolderSettings: View {
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = true
         panel.prompt = "Add"
-        let home = self.model.scan.home ?? NSHomeDirectory()
+        let home = self.scan.home ?? NSHomeDirectory()
         panel.directoryURL = URL(fileURLWithPath: home)
         guard panel.runModal() == .OK else { return }
         for url in panel.urls {
-            self.model.preferences.addProjectFolder(url.path(percentEncoded: false).removingTrailingSlash, home: home)
+            self.preferences.addProjectFolder(url.path(percentEncoded: false).removingTrailingSlash, home: home)
         }
     }
 }
 
 private struct ItemSettings: View {
-    @Environment(AppModel.self) private var model
+    @Environment(Preferences.self) private var preferences
 
     var body: some View {
-        let preferences = self.model.preferences
+        let preferences = self.preferences
         Form {
             ForEach(Family.allCases) { family in
                 Section(family.name) {

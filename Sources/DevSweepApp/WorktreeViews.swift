@@ -51,14 +51,15 @@ struct WorktreesContent: View {
 }
 
 private struct WorktreeRow: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(WorktreesViewModel.self) private var worktrees
     @Environment(\.extrasColumns) private var columns
     let worktree: GitWorktree
     let largest: Double
 
     var body: some View {
         let kept = self.worktree.keptBecause
-        let selected = self.model.screen == .worktrees && self.model.currentWorktree?.id == self.worktree.id
+        let selected = self.window.screen == .worktrees && self.worktrees.current?.id == self.worktree.id
         let tint: Color = kept == nil ? .orange : .secondary.opacity(0.6)
         HStack(spacing: 12) {
             Dot(color: tint)
@@ -107,35 +108,34 @@ private struct WorktreeRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { self.model.selectedWorktree = self.worktree.id }
+        .onTapGesture { self.worktrees.select(self.worktree) }
         .focusable()
-        .onKeyPress(.space) { self.model.selectedWorktree = self.worktree.id; return .handled }
+        .onKeyPress(.space) { self.worktrees.select(self.worktree); return .handled }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "\(self.worktree.name), \(SizeText.of(kilobytes: self.worktree.kilobytes))\(kept.map { ", \($0)" } ?? "")")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.model.selectedWorktree = self.worktree.id }
+        .accessibilityAction(named: "Select") { self.worktrees.select(self.worktree) }
     }
 
     private func askToRemove() {
-        self.model.selectedWorktree = self.worktree.id
-        self.model.worktreeToRemove = self.worktree
+        self.worktrees.askToRemove(self.worktree)
     }
 }
 
 struct WorktreeInspector: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WorktreesViewModel.self) private var worktrees
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        if let worktree = model.currentWorktree {
+        if let worktree = worktrees.current {
             // Scrolls, so the column never asks the window for the height of its text.
             ScrollView {
                 WorktreeDetails(worktree: worktree)
             }
             .scrollEdgeEffectStyle(.soft, for: .bottom)
             .safeAreaBar(edge: .bottom) {
-                Button("Remove Worktree") { self.model.worktreeToRemove = worktree }
+                Button("Remove Worktree") { self.worktrees.removal.ask(worktree) }
                     .buttonStyle(.prominentAction)
                     .controlSize(.large)
                     .disabled(worktree.keptBecause != nil)
@@ -155,7 +155,6 @@ struct WorktreeInspector: View {
 
 /// What the inspector says about one worktree.
 struct WorktreeDetails: View {
-    @Environment(AppModel.self) private var model
     @Environment(ScanModel.self) private var scan
     let worktree: GitWorktree
 
@@ -192,7 +191,7 @@ struct WorktreeDetails: View {
                 Text(WorktreeWords.whatHappens(self.worktree))
             }
             Section("Runs") {
-                Text(self.model.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
+                Text(self.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
             }
@@ -225,7 +224,8 @@ struct WorktreeDetails: View {
 }
 
 struct RemoveWorktreeSheet: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WorktreesViewModel.self) private var worktrees
+    @Environment(ScanModel.self) private var scan
     @Environment(\.dismiss) private var dismiss
     let worktree: GitWorktree
 
@@ -240,39 +240,39 @@ struct RemoveWorktreeSheet: View {
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 5) {
                 Eyebrow(text: "Runs")
-                Text(self.model.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
+                Text(self.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
                     .font(.callout.monospaced())
                     .textSelection(.enabled)
                     .padding(10)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
             }
-            if let error = model.worktreeRemovalError {
+            if let error = worktrees.removal.error {
                 Label(error, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                if self.model.isRemovingWorktree {
+                if self.worktrees.removal.isRemoving {
                     ProgressView().controlSize(.small)
                     Text("Removing…").foregroundStyle(.muted)
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) {
-                    self.model.worktreeRemovalError = nil
+                    self.worktrees.removal.clearError()
                     self.dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
                 Button("Remove Worktree", role: .destructive) {
-                    Task { await self.model.removeWorktree(self.worktree) }
+                    Task { await self.worktrees.remove(self.worktree) }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(self.model.isRemovingWorktree)
+                .disabled(self.worktrees.removal.isRemoving)
             }
         }
         .padding(20)
         .frame(width: 460)
-        .interactiveDismissDisabled(self.model.isRemovingWorktree)
+        .interactiveDismissDisabled(self.worktrees.removal.isRemoving)
     }
 }
 

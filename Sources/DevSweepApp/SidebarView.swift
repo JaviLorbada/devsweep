@@ -2,7 +2,8 @@ import DevSweepKit
 import SwiftUI
 
 struct SidebarView: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     @State private var showsXcode = true
     @State private var showsAndroid = true
@@ -11,7 +12,7 @@ struct SidebarView: View {
     private func row(
         _ title: String,
         kilobytes: Int64?,
-        screen: AppModel.Screen,
+        screen: WindowViewModel.Screen,
         showsZero: Bool = true) -> some View
     {
         HStack {
@@ -24,15 +25,15 @@ struct SidebarView: View {
     }
 
     var body: some View {
-        @Bindable var model = model
-        List(selection: $model.screen.optional) {
+        @Bindable var window = self.window
+        List(selection: $window.screen.optional) {
             Label("Overview", systemImage: "chart.pie")
-                .tag(AppModel.Screen.overview)
+                .tag(WindowViewModel.Screen.overview)
 
             Section("Caches") {
                 ForEach(Family.allCases) { family in
                     Button {
-                        model.pick(family)
+                        self.overview.pick(family)
                     } label: {
                         HStack(spacing: 9) {
                             Dot(color: Palette.color(family))
@@ -156,9 +157,9 @@ struct DiskMeter: View {
     }
 }
 
-extension AppModel.Screen {
+extension WindowViewModel.Screen {
     /// Lets a non-optional selection drive a List, which wants an optional one.
-    var optional: AppModel.Screen? {
+    var optional: WindowViewModel.Screen? {
         get { self }
         set { if let newValue { self = newValue } }
     }

@@ -11,14 +11,14 @@ struct AndroidViewModelTests {
         let home = TemporaryHome()
         let model = makeModel(home: home)
         model.scan.showListings(extras: nil, android: sampleAndroid)
-        model.screen = .androidSDK
+        model.window.screen = .androidSDK
         let android = sampleAndroid
-        #expect(model.androidEntries == android.emulators + android.systemImages + android.platforms
+        #expect(model.android.entries == android.emulators + android.systemImages + android.platforms
             + android.buildTools + android.otherSDKParts)
-        model.screen = .androidStudios
-        #expect(model.androidEntries == android.studios)
-        model.screen = .gradleCaches
-        #expect(model.androidEntries == android.gradleCaches)
+        model.window.screen = .androidStudios
+        #expect(model.android.entries == android.studios)
+        model.window.screen = .gradleCaches
+        #expect(model.android.entries == android.gradleCaches)
     }
 
     @Test
@@ -29,11 +29,24 @@ struct AndroidViewModelTests {
         // An emulator used today comes first; the system image unused since 2025 is flagged.
         android.emulators[0].lastUsed = Date()
         model.scan.showListings(extras: nil, android: android)
-        model.screen = .androidSDK
-        #expect(model.currentAndroidEntry == android.systemImages[0])
-        model.selectedAndroidEntry = android.platforms[0].path
-        #expect(model.currentAndroidEntry == android.platforms[0])
-        model.screen = .androidStudios
-        #expect(model.currentAndroidEntry == android.studios[0])
+        model.window.screen = .androidSDK
+        #expect(model.android.current == android.systemImages[0])
+        model.android.select(android.platforms[0])
+        #expect(model.android.current == android.platforms[0])
+        model.window.screen = .androidStudios
+        #expect(model.android.current == android.studios[0])
+    }
+
+    @Test
+    func `each Android screen keeps its own selection`() {
+        let home = TemporaryHome()
+        let model = makeModel(home: home)
+        model.scan.showListings(extras: nil, android: sampleAndroid)
+        model.window.screen = .androidSDK
+        model.android.select(sampleAndroid.platforms[0])
+        model.window.screen = .gradleCaches
+        #expect(model.android.current == sampleAndroid.gradleCaches[0])
+        model.window.screen = .androidSDK
+        #expect(model.android.current == sampleAndroid.platforms[0])
     }
 }

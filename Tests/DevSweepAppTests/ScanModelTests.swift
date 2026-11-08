@@ -49,9 +49,9 @@ struct ScanModelTests {
         #expect(!model.scan.isScanning)
         let notMeasured = model.scan.scanOrder.filter { model.scan.rows[$0]?.state == .notMeasured }
         if notMeasured.isEmpty {
-            #expect(model.statusLine.hasPrefix("Scanned just now"))
+            #expect(model.overview.statusLine.hasPrefix("Scanned just now"))
         } else {
-            #expect(model.statusLine
+            #expect(model.overview.statusLine
                 .hasPrefix("Stopped after \(model.scan.tally.measuredCount) of \(model.scan.scanOrder.count) items."))
         }
     }

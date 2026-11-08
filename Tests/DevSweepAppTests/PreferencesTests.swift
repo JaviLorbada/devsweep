@@ -93,7 +93,7 @@ struct PreferencesTests {
         #expect(model.scan.scanOrder.contains(.homebrew))
         model.preferences.skippedItems = [.homebrew]
         model.preferences.staleDays = 30
-        #expect(model.staleDays == 30)
+        #expect(model.runtimes.staleDays == 30)
         model.scan.scan()
         #expect(!model.scan.scanOrder.contains(.homebrew))
         #expect(model.scan.engine?.config.skipped == [.homebrew])

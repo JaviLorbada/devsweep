@@ -32,6 +32,7 @@ struct DevSweepApp: App {
         Window(ProductInfo.name, id: "main") {
             ContentView()
                 .environment(models: self.model)
+                .task { await self.model.windowAppeared() }
                 .containerBackground(Palette.backdrop, for: .window)
                 // A fixed ideal size: SwiftUI animates the window to the
                 // content's ideal size whenever an animated change alters it,
@@ -133,14 +134,14 @@ struct AppCommands: Commands {
             .disabled(!self.model.scan.canScanOrStop)
         }
         CommandGroup(before: .toolbar) {
-            ForEach(AppModel.ChartStyle.allCases) { style in
+            ForEach(WindowViewModel.ChartStyle.allCases) { style in
                 Toggle(style.rawValue, isOn: Binding(
-                    get: { self.model.screen == .overview && self.model.chartStyle == style },
-                    set: { if $0 { self.model.showChart(style) } }))
+                    get: { self.model.window.screen == .overview && self.model.window.chartStyle == style },
+                    set: { if $0 { self.model.window.showChart(style) } }))
                     .keyboardShortcut(style == .ring ? "1" : "2")
             }
             Divider()
-            Button(Self.inspectorTitle(shown: self.model.inspectorShown)) { self.model.toggleInspector() }
+            Button(Self.inspectorTitle(shown: self.model.window.inspectorShown)) { self.model.window.toggleInspector() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
         }
         CommandGroup(replacing: .help) {

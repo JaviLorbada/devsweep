@@ -3,7 +3,12 @@ import DevSweepKit
 import SwiftUI
 
 struct ContentView: View {
-    @Environment(AppModel.self) private var model
+    @Environment(WindowViewModel.self) private var window
+    @Environment(OverviewViewModel.self) private var overview
+    @Environment(XcodesViewModel.self) private var xcodes
+    @Environment(RuntimesViewModel.self) private var runtimes
+    @Environment(WorktreesViewModel.self) private var worktrees
+    @Environment(AndroidViewModel.self) private var android
     @Environment(ScanModel.self) private var scan
     @Environment(CleaningModel.self) private var cleaning
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -16,7 +21,8 @@ struct ContentView: View {
     @State private var sidebarHidden = false
 
     var body: some View {
-        @Bindable var model = model
+        @Bindable var runtimeRemoval = self.runtimes.removal
+        @Bindable var worktreeRemoval = self.worktrees.removal
         NavigationSplitView {
             SidebarView()
                 // While the sidebar is hidden, the system's toggle sat in a
@@ -37,7 +43,7 @@ struct ContentView: View {
                 // The header is a bar over the screen's scroll view: content
                 // scrolls under it, softened by the scroll edge effect.
                 Group {
-                    switch model.screen {
+                    switch self.window.screen {
                     case .overview: OverviewView()
                     case .xcodeVersions: XcodeVersionsView()
                     case .simulatorRuntimes: SimulatorRuntimesView()
@@ -49,11 +55,11 @@ struct ContentView: View {
                 }
                 .scrollEdgeEffectStyle(.soft, for: .top)
                 .safeAreaBar(edge: .top) {
-                    CenterHeader(title: self.title, sidebarHidden: self.sidebarHidden)
+                    CenterHeader(title: self.title, subtitle: self.subtitle, sidebarHidden: self.sidebarHidden)
                 }
                 .frame(minWidth: WindowLayout.centerMinimumWidth, maxWidth: .infinity, maxHeight: .infinity)
                 .panel()
-                if model.inspectorPlacement == .docked {
+                if self.window.inspectorPlacement == .docked {
                     self.inspector
                         .frame(width: WindowLayout.inspectorWidth)
                         .frame(maxHeight: .infinity)
@@ -74,7 +80,7 @@ struct ContentView: View {
             // footer, so their controls stay in reach. Its toggle stays in the
             // header.
             .overlay(alignment: .topTrailing) {
-                if model.inspectorPlacement == .floating {
+                if self.window.inspectorPlacement == .floating {
                     self.inspector
                         .frame(width: WindowLayout.inspectorWidth)
                         .frame(maxHeight: .infinity)
@@ -83,7 +89,7 @@ struct ContentView: View {
                         .padding(.top, CenterHeader.height(sidebarHidden: self.sidebarHidden))
                         .padding(
                             .bottom,
-                            (model.screen == .overview ? model.overviewFooterHeight : 0) + WindowLayout.gap)
+                            (self.window.screen == .overview ? self.window.overviewFooterHeight : 0) + WindowLayout.gap)
                         .padding(.trailing, WindowLayout.gap)
                         .transition(InspectorMotion.transition(reduceMotion: self.reduceMotion))
                 }
@@ -95,7 +101,9 @@ struct ContentView: View {
             }
             // Only showing or hiding it by choice moves anything; when the
             // window gets too narrow for it beside the center, it floats at once.
-            .animation(InspectorMotion.layoutAnimation(reduceMotion: self.reduceMotion), value: model.wantsInspector)
+            .animation(
+                InspectorMotion.layoutAnimation(reduceMotion: self.reduceMotion),
+                value: self.window.wantsInspector)
             // No title bar strip above the panels: they start at the window's
             // top, level with the sidebar, the traffic lights in its corner.
             .padding(WindowLayout.gap)
@@ -105,7 +113,7 @@ struct ContentView: View {
                 self.updateInspectorRoom(forDetailWidth: width)
             }
             .navigationTitle(self.title)
-            .navigationSubtitle(model.subtitle)
+            .navigationSubtitle(self.subtitle)
             // The title and status are in the center panel's header, and
             // the inspector's toggle in its panel's corner or that header.
             .toolbar(removing: .title)
@@ -147,13 +155,14 @@ struct ContentView: View {
         } message: { pending in
             Text(CleanPrompt.message(for: pending, moveToTrash: self.cleaning.moveToTrash))
         }
-        .sheet(item: $model.runtimeToRemove) { runtime in
+        .sheet(item: $runtimeRemoval.pending) { runtime in
             RemoveRuntimeSheet(runtime: runtime)
-                .environment(models: model)
+                .environment(self.runtimes)
         }
-        .sheet(item: $model.worktreeToRemove) { worktree in
+        .sheet(item: $worktreeRemoval.pending) { worktree in
             RemoveWorktreeSheet(worktree: worktree)
-                .environment(models: model)
+                .environment(self.worktrees)
+                .environment(self.scan)
         }
         .alert(
             self.cleaning.notice?.title ?? "",
@@ -169,16 +178,6 @@ struct ContentView: View {
         #if DEBUG
         .transformEnvironment(\.appearsActive) { if DebugLaunch.drawsActive { $0 = true } }
         #endif
-        .task {
-            #if DEBUG
-            if DebugLaunch.isRequested { FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8)) }
-            #endif
-            if model.preferences.scanOnLaunch { self.scan.scan() }
-            #if DEBUG
-            await Snapshotter.runIfAsked(model)
-            await DebugLaunch.run(model)
-            #endif
-        }
     }
 
     /// Floats the inspector over the center when the detail area can't hold
@@ -187,19 +186,19 @@ struct ContentView: View {
     /// inspector is, so this can't feed back on itself, and it is set right
     /// away: no AppKit column collapses.
     private func updateInspectorRoom(forDetailWidth width: CGFloat) {
-        let hasRoom = self.model.inspectorHasRoom
+        let hasRoom = self.window.inspectorHasRoom
             ? width >= WindowLayout.inspectorHideBelow
             : width >= WindowLayout.inspectorShowFrom
-        guard hasRoom != self.model.inspectorHasRoom else { return }
+        guard hasRoom != self.window.inspectorHasRoom else { return }
         var transaction = Transaction()
         transaction.disablesAnimations = true
-        withTransaction(transaction) { self.model.inspectorHasRoom = hasRoom }
+        withTransaction(transaction) { self.window.inspectorHasRoom = hasRoom }
     }
 
     /// The inspector for the screen showing, docked or floating.
     @ViewBuilder
     private var inspector: some View {
-        switch self.model.screen {
+        switch self.window.screen {
         case .overview: ItemInspector()
         case .xcodeVersions: XcodeInspector()
         case .simulatorRuntimes: RuntimeInspector()
@@ -217,8 +216,19 @@ struct ContentView: View {
         return CleanPrompt.title(for: pending, size: size, moveToTrash: self.cleaning.moveToTrash)
     }
 
+    /// What the screen showing says under its title.
+    private var subtitle: String {
+        switch self.window.screen {
+        case .overview: self.overview.subtitle
+        case .xcodeVersions: self.xcodes.subtitle
+        case .simulatorRuntimes: self.runtimes.subtitle
+        case .androidStudios, .androidSDK, .gradleCaches: self.android.subtitle
+        case .worktrees: self.worktrees.subtitle
+        }
+    }
+
     private var title: String {
-        switch self.model.screen {
+        switch self.window.screen {
         case .overview: "Overview"
         case .xcodeVersions: "Xcode versions"
         case .simulatorRuntimes: "Simulator runtimes"

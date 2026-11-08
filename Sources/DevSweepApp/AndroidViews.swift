@@ -37,7 +37,7 @@ struct AndroidStudiosContent: View {
 }
 
 struct AndroidSDKContent: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AndroidViewModel.self) private var android
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
@@ -45,12 +45,12 @@ struct AndroidSDKContent: View {
         AndroidScreen {
             AndroidCard(
                 title: "Emulators",
-                note: "flagged after \(self.model.staleDays) days unchanged",
+                note: "flagged after \(self.android.staleDays) days unchanged",
                 entries: android?.emulators ?? [],
                 empty: "No emulators in ~/.android/avd.")
             AndroidCard(
                 title: "System images",
-                note: "flagged after \(self.model.staleDays) days without an emulator run",
+                note: "flagged after \(self.android.staleDays) days without an emulator run",
                 entries: android?.systemImages ?? [],
                 empty: "No system images in the SDK.")
             AndroidCard(
@@ -125,14 +125,14 @@ private struct AndroidCard: View {
 }
 
 private struct AndroidRow: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AndroidViewModel.self) private var android
     @Environment(\.extrasColumns) private var columns
     let entry: AndroidEntry
     let largest: Double
 
     var body: some View {
-        let flagged = self.entry.flagReason(staleDays: self.model.staleDays) != nil
-        let selected = self.model.currentAndroidEntry?.path == self.entry.path
+        let flagged = self.entry.flagReason(staleDays: self.android.staleDays) != nil
+        let selected = self.android.current?.path == self.entry.path
         let tint: Color = flagged ? .orange : .secondary.opacity(0.6)
         HStack(spacing: 12) {
             Dot(color: tint)
@@ -184,25 +184,25 @@ private struct AndroidRow: View {
         .frame(height: 40)
         .tableRowSelection(selected)
         .contentShape(Rectangle())
-        .onTapGesture { self.model.selectedAndroidEntry = self.entry.path }
+        .onTapGesture { self.android.select(self.entry) }
         .focusable()
-        .onKeyPress(.space) { self.model.selectedAndroidEntry = self.entry.path; return .handled }
+        .onKeyPress(.space) { self.android.select(self.entry); return .handled }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             "\(self.entry.title), \(SizeText.of(kilobytes: self.entry.kilobytes))\(flagged ? ", looks unused" : "")")
         .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.model.selectedAndroidEntry = self.entry.path }
+        .accessibilityAction(named: "Select") { self.android.select(self.entry) }
     }
 }
 
 // MARK: Inspector
 
 struct AndroidInspector: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AndroidViewModel.self) private var android
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
-        if let entry = model.currentAndroidEntry {
+        if let entry = android.current {
             // Scrolls, so the column never asks the window for the height of its text.
             ScrollView {
                 AndroidDetails(entry: entry)
@@ -227,12 +227,12 @@ struct AndroidInspector: View {
 
 /// What the inspector says about one Android entry.
 struct AndroidDetails: View {
-    @Environment(AppModel.self) private var model
+    @Environment(AndroidViewModel.self) private var android
     @Environment(ScanModel.self) private var scan
     let entry: AndroidEntry
 
     var body: some View {
-        let reason = self.entry.flagReason(staleDays: self.model.staleDays)
+        let reason = self.entry.flagReason(staleDays: self.android.staleDays)
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
                 Dot(color: reason == nil ? .secondary.opacity(0.6) : .orange)
@@ -255,7 +255,7 @@ struct AndroidDetails: View {
                     Text(self.entry.detail)
                 }
             }
-            if let usage = AndroidWords.usage(entry, staleDays: model.staleDays) {
+            if let usage = AndroidWords.usage(entry, staleDays: android.staleDays) {
                 self.section(reason == nil ? "Usage" : "Why it is flagged") { Text(usage) }
             }
             self.section("To remove it") { Text(AndroidWords.removal(self.entry.kind)) }
