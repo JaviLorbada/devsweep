@@ -58,6 +58,9 @@ built to err on the side of keeping things.
   files are listed with their sizes, and how to remove them yourself.
 - It never runs as root.
 
+If DevSweep ever deletes, or would delete, something it shouldn't, please
+report it privately, as [SECURITY.md](SECURITY.md) describes.
+
 ## What it cleans
 
 | Item | What | Where |
@@ -195,7 +198,8 @@ make app          # build/DevSweep.app
   [docs/packaging.md](docs/packaging.md): releases, signing, notarizing and
   the app bundle.
 - [docs/design.md](docs/design.md): how the app uses color and motion.
-- [AGENTS.md](AGENTS.md): the rules for working on the code.
+- [AGENTS.md](AGENTS.md): the rules for working on the code, and
+  [CONTRIBUTING.md](CONTRIBUTING.md): issues and pull requests.
 
 ### How it's built
 
