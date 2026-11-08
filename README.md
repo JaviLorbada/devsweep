@@ -9,7 +9,10 @@ Apple silicon.
 ![macOS 26 on Apple silicon](https://img.shields.io/badge/macOS-26_on_Apple_silicon-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-![The DevSweep window: a ring of what each cache holds, the items to clean, and the inspector for DerivedData](docs/screenshot.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/screenshot-dark.png">
+  <img alt="The DevSweep window: a ring of what each cache holds, the items to clean, and the inspector for DerivedData" src="docs/screenshot-light.png">
+</picture>
 
 ## What it does
 
