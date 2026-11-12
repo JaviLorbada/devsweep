@@ -23,7 +23,9 @@ concurrency:
 jobs:
   release:
     runs-on: xcode-27
-    timeout-minutes: 60
+    # Apple's notary service can take hours on a new account's first
+    # submissions; the build waits for it.
+    timeout-minutes: 300
     # The signing secrets live in this environment, so only this job can
     # read them.
     environment: release
