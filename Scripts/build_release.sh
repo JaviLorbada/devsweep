@@ -27,7 +27,8 @@ app="$("$root/Scripts/package_app.sh" release)"
 cp -R "$app" "$dist/"
 
 # Signed and notarized when the credentials are there; ad hoc otherwise.
-if [[ -n "${DEVELOPER_ID_APPLICATION:-}" && -n "${ASC_KEY_ID:-}" && -n "${ASC_ISSUER_ID:-}" && -n "${ASC_PRIVATE_KEY_P8:-}" ]]; then
+if [[ -n "${DEVELOPER_ID_APPLICATION:-}" && ( -n "${NOTARY_KEYCHAIN_PROFILE:-}" \
+  || ( -n "${ASC_KEY_ID:-}" && -n "${ASC_ISSUER_ID:-}" && -n "${ASC_PRIVATE_KEY_P8:-}" ) ) ]]; then
   "$root/Scripts/sign-and-notarize.sh" "$dist/$PRODUCT_NAME.app" "$cli" >&2
   echo "notarized" > "$dist/signing.txt"
 else

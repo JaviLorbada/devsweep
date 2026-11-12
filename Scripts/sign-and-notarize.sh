@@ -8,7 +8,10 @@
 #
 # Reads, from the environment:
 #   DEVELOPER_ID_APPLICATION  the identity in the keychain, "Developer ID Application: Name (TEAMID)"
-#   ASC_KEY_ID                the App Store Connect API key's id
+# and, to notarize, either a profile notarytool keeps in the keychain:
+#   NOTARY_KEYCHAIN_PROFILE   its name, from `xcrun notarytool store-credentials`
+# or an App Store Connect API key, as CI has it:
+#   ASC_KEY_ID                the key's id
 #   ASC_ISSUER_ID             its issuer id
 #   ASC_PRIVATE_KEY_P8        the key: a path to AuthKey_<id>.p8, or the file's text
 # With any of them missing it says which and exits 3 without changing anything.
@@ -23,7 +26,9 @@ if [[ ! -d "$app" || ! -f "$cli" ]]; then
 fi
 
 missing=()
-for name in DEVELOPER_ID_APPLICATION ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY_P8; do
+names=(DEVELOPER_ID_APPLICATION)
+[[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" ]] || names+=(ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY_P8)
+for name in "${names[@]}"; do
   [[ -n "${!name:-}" ]] || missing+=("$name")
 done
 if (( ${#missing[@]} > 0 )); then
@@ -38,10 +43,15 @@ fi
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-key="$ASC_PRIVATE_KEY_P8"
-if [[ ! -f "$key" ]]; then
-  printf '%s\n' "$ASC_PRIVATE_KEY_P8" > "$work/key.p8"
-  key="$work/key.p8"
+if [[ -n "${NOTARY_KEYCHAIN_PROFILE:-}" ]]; then
+  credentials=(--keychain-profile "$NOTARY_KEYCHAIN_PROFILE")
+else
+  key="$ASC_PRIVATE_KEY_P8"
+  if [[ ! -f "$key" ]]; then
+    printf '%s\n' "$ASC_PRIVATE_KEY_P8" > "$work/key.p8"
+    key="$work/key.p8"
+  fi
+  credentials=(--key "$key" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID")
 fi
 
 echo "Signing $cli and $app"
@@ -60,13 +70,11 @@ ditto -c -k --norsrc --noextattr "$work/cli" "$work/cli.zip"
 notarize() {
   local zip="$1" result
   echo "Notarizing $(basename "$zip")"
-  xcrun notarytool submit "$zip" --key "$key" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" \
-    --wait --output-format json > "$work/result.json"
+  xcrun notarytool submit "$zip" "${credentials[@]}" --wait --output-format json > "$work/result.json"
   result="$(plutil -extract status raw -o - "$work/result.json")"
   if [[ "$result" != "Accepted" ]]; then
     echo "sign-and-notarize.sh: notarization of $(basename "$zip") came back $result" >&2
-    xcrun notarytool log "$(plutil -extract id raw -o - "$work/result.json")" \
-      --key "$key" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" >&2 || true
+    xcrun notarytool log "$(plutil -extract id raw -o - "$work/result.json")" "${credentials[@]}" >&2 || true
     exit 1
   fi
 }

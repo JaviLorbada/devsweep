@@ -38,9 +38,11 @@ the signing secrets are set, and publishes a GitHub release with notes from
 
 ## Locally
 
-`make release` builds the same zips into `dist/`. With `DEVELOPER_ID_APPLICATION`,
-`ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_P8` in the environment it
-signs and notarizes them too; see [Notarizing](#notarizing).
+`make release` builds the same zips into `dist/`. With `DEVELOPER_ID_APPLICATION`
+in the environment, and either `NOTARY_KEYCHAIN_PROFILE` (a profile saved with
+`xcrun notarytool store-credentials`) or `ASC_KEY_ID`, `ASC_ISSUER_ID` and
+`ASC_PRIVATE_KEY_P8`, it signs and notarizes them too; see
+[Notarizing](#notarizing).
 
 ## Signing
 
