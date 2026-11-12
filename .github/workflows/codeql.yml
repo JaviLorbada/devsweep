@@ -26,6 +26,10 @@ jobs:
           persist-credentials: false
       - name: Xcode 27.2
         run: sudo xcode-select -s /Applications/Xcode_27.2.app
+      # CodeQL's Swift tracer builds the package manifest for Intel, and this
+      # image comes without Rosetta to run it.
+      - name: Rosetta
+        run: arch -x86_64 /usr/bin/true 2>/dev/null || sudo softwareupdate --install-rosetta --agree-to-license
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: swift
