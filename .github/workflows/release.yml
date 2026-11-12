@@ -60,7 +60,14 @@ jobs:
         id: signing
         run: |
           if [[ -n "$MACOS_SIGNING_P12" && -n "$MACOS_SIGNING_P12_PASSWORD" && -n "$ASC_KEY_ID" && -n "$ASC_ISSUER_ID" && -n "$ASC_PRIVATE_KEY_P8" ]]; then
-            echo "identity=$(Scripts/setup_keychain.sh)" >> "$GITHUB_OUTPUT"
+            # With the secrets set, a certificate that won't import stops the
+            # release rather than shipping an ad hoc build.
+            identity="$(Scripts/setup_keychain.sh)"
+            if [[ -z "$identity" ]]; then
+              echo "::error title=Not signed::The signing secrets are set, but no Developer ID identity came out of the certificate."
+              exit 1
+            fi
+            echo "identity=$identity" >> "$GITHUB_OUTPUT"
           else
             echo "::notice title=Not signed::The signing secrets are not set, so this build is signed ad hoc and not notarized. The release notes say so."
           fi

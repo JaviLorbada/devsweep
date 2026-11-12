@@ -28,7 +28,8 @@ printf '%s' "$MACOS_SIGNING_P12" | base64 --decode > "$certificate"
 security create-keychain -p "$password" "$keychain"
 security set-keychain-settings -lut 21600 "$keychain"
 security unlock-keychain -p "$password" "$keychain"
-security import "$certificate" -k "$keychain" -P "$MACOS_SIGNING_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+# The format is named: the temp file has no .p12 extension to go by.
+security import "$certificate" -f pkcs12 -k "$keychain" -P "$MACOS_SIGNING_P12_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
 security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" > /dev/null
 # shellcheck disable=SC2046
 security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
