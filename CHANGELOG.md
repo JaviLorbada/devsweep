@@ -18,6 +18,8 @@ gets a line under Unreleased as it lands.
   starts before you answer anyway, nothing is cleaned and the window says so.
 
 ### Code
+- Building DevSweep needs Xcode 27 or newer; CI and releases build with
+  Xcode 27.2.
 - The app is split into a view model per screen, four shared models, plain
   values for the numbers and wording, and a coordinator that builds them.
   [docs/architecture.md](docs/architecture.md) draws it.

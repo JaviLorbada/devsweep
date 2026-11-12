@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   release:
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
     # The signing secrets live in this environment, so only this job can
     # read them.
@@ -40,6 +40,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Xcode 27.2
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
 
       - name: Version
         id: version
