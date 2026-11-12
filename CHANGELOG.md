@@ -6,23 +6,43 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
-### App and command line
+## 0.5.0
+
+The first public release. DevSweep shows how much space developer caches
+take up on your Mac, from Xcode's DerivedData and old Device Support to
+simulators, SwiftPM, Homebrew, npm and Gradle, and cleans what you choose:
+to the Trash by default, so anything can be put back. It's a window, a menu
+bar item and a command line tool, `devsweep`.
+
+### Highlights
+- See where the space went, as a ring or as blocks, and clean what you mark,
+  with Put Back.
+- Clean part of an item: tick single DerivedData projects or build folders
+  in the inspector, and keep the rest.
+- See what DevSweep won't clean for you: installed Xcodes, simulator
+  runtimes, Android Studio's files and git worktrees, with their sizes and
+  what looks unused. A worktree can be removed when nothing in it would be
+  lost.
+- A menu bar item with the free space, a daily scan, and a notification when
+  DerivedData grows past a threshold.
+- `devsweep` reports the same items in the terminal, and cleans them with
+  `--run`.
+
+### Since 0.1.4
 - Cleaning tool caches keeps Playwright MCP's logged-in browser profiles,
   which older versions kept in Playwright's cache folder; only the browsers
   go.
-
-### App
 - Each of the three Android screens keeps its own selection.
 - Put Back waits while a clean is running.
 - The daily scan waits while a clean is asking you something. If a scan
   starts before you answer anyway, nothing is cleaned and the window says so.
 
-### Code
-- Building DevSweep needs Xcode 27 or newer; CI and releases build with
-  Xcode 27.2.
+### For developers
 - The app is split into a view model per screen, four shared models, plain
   values for the numbers and wording, and a coordinator that builds them.
   [docs/architecture.md](docs/architecture.md) draws it.
+- Building DevSweep needs Xcode 27 or newer; CI and releases build with
+  Xcode 27.2.
 
 ## 0.1.4
 
