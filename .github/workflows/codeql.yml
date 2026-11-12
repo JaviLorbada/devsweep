@@ -26,17 +26,15 @@ jobs:
           persist-credentials: false
       - name: Xcode 27.2
         run: sudo xcode-select -s /Applications/Xcode_27.2.app
-      # SwiftPM builds and runs a small program to read Package.swift, which
-      # fails with "Bad CPU type" under CodeQL's tracer on this image. Read
-      # once before CodeQL watches, the manifests come from SwiftPM's cache.
-      - name: Read the package before CodeQL watches
-        run: swift package resolve && swift package dump-package > /dev/null
       - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: swift
           build-mode: manual
+      # SwiftPM runs the program that reads Package.swift inside
+      # /usr/bin/sandbox-exec, which macOS 27 won't start with CodeQL's tracer
+      # injected ("Bad CPU type"). Without the sandbox it runs directly.
       - name: Build what CodeQL reads
-        run: swift build
+        run: swift build --disable-sandbox
       - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: /language:swift
