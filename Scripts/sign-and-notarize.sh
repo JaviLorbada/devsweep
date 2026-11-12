@@ -28,7 +28,7 @@ for name in DEVELOPER_ID_APPLICATION ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY_P8
 done
 if (( ${#missing[@]} > 0 )); then
   echo "sign-and-notarize.sh: not signing; missing ${missing[*]}." >&2
-  echo "See \"Notarizing a release\" in README.md for what each one is." >&2
+  echo "See \"Notarizing\" in docs/releasing.md for what each one is." >&2
   exit 3
 fi
 if ! security find-identity -v -p codesigning | grep -qF "$DEVELOPER_ID_APPLICATION"; then
