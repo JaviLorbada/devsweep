@@ -4,9 +4,20 @@ public struct FixedFoldersScanner: Scanner {
     /// Paths relative to the home folder.
     let relativePaths: [String]
     let describe: @Sendable (PathPolicy) -> String
+    /// Folders, by relative path, that may hold something of the user's
+    /// beside the cache: the name prefix of what stays inside. When one is
+    /// there, the folder's other children go one by one instead of the
+    /// folder; when none is, the whole folder goes, as the bash script does.
+    var keptInside: [String: String] = [:]
 
     public func collect(in context: ScanContext) async -> [String] {
-        context.existing(self.relativePaths.map { "\(context.home)/\($0)" })
+        context.existing(self.relativePaths.flatMap { relative -> [String] in
+            let path = "\(context.home)/\(relative)"
+            guard let kept = self.keptInside[relative] else { return [path] }
+            let names = context.files.childNames(path)
+            guard names.contains(where: { $0.hasPrefix(kept) }) else { return [path] }
+            return names.filter { !$0.hasPrefix(kept) }.map { "\(path)/\($0)" }
+        })
     }
 
     public func location(in context: ScanContext) async -> String {
@@ -43,5 +54,8 @@ public struct FixedFoldersScanner: Scanner {
         ],
         describe: {
             "CocoaPods, Carthage, Sourcery, Playwright, JetBrains Toolbox in \($0.tilde("\($0.home)/Library/Caches"))"
-        })
+        },
+        // Playwright MCP kept each logged-in browser profile in an mcp-*
+        // folder here: they stay, and only the browsers go.
+        keptInside: ["Library/Caches/ms-playwright": "mcp-"])
 }

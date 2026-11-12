@@ -33,6 +33,31 @@ struct CleanTests {
     }
 
     @Test
+    func `Playwright MCP's browser profiles stay, and only the browsers go`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        home.fill(home.path("Library/Caches/ms-playwright/chromium-1243"))
+        home.fill(home.path("Library/Caches/ms-playwright/ffmpeg-1011"))
+        home.fill(home.path("Library/Caches/ms-playwright/mcp-chrome-profile"))
+        let engine = try engine(home, tools)
+        let result = try await scanned(.toolCaches, engine)
+        #expect(result.paths.map { ($0 as NSString).lastPathComponent }.sorted() == ["chromium-1243", "ffmpeg-1011"])
+
+        let outcome = await engine.clean(result, mode: .delete)
+        #expect(outcome.removed.count == 2)
+        #expect(home.isFile(home.path("Library/Caches/ms-playwright/mcp-chrome-profile/file")))
+        #expect(!home.exists(home.path("Library/Caches/ms-playwright/chromium-1243")))
+    }
+
+    @Test
+    func `without a Playwright MCP profile the whole Playwright folder goes, as the script's does`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        home.fill(home.path("Library/Caches/ms-playwright/chromium-1243"))
+        let engine = try engine(home, tools)
+        let result = try await scanned(.toolCaches, engine)
+        #expect(result.paths.map { ($0 as NSString).lastPathComponent } == ["ms-playwright"])
+    }
+
+    @Test
     func `put back never replaces something that took the folder's place`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.fill(home.path(".npm/_cacache"))

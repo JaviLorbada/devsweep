@@ -75,7 +75,7 @@ report it privately, as [SECURITY.md](SECURITY.md) describes.
 | `gradle-builds` | `build` folders next to a Gradle build file | your project folders |
 | `npm-cache` | npm's download cache | `~/.npm/_cacache`, `~/.npm/_npx` |
 | `homebrew` | Old versions and downloads | removed by `brew cleanup` |
-| `tool-caches` | CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox downloads | `~/Library/Caches` |
+| `tool-caches` | CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox downloads; Playwright MCP's browser profiles stay | `~/Library/Caches` |
 
 Project folders default to `~/Developer`, `~/Development`, `~/dev`,
 `~/Documents/Workspace` and `~/Projects`; Settings changes them.

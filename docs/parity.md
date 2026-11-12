@@ -52,3 +52,7 @@ files are stored compressed, and 3.7 GB is what removing it frees.
 - A folder whose contents can't be read is reported with what could be
   measured, as the script did, and flagged as unknown so the app doesn't
   show zero.
+- Playwright MCP kept each logged-in browser profile in an `mcp-*` folder
+  inside `~/Library/Caches/ms-playwright`, which the script removes whole.
+  When one is there, the port removes only the other folders, the browsers,
+  and the profiles stay.

@@ -6,6 +6,11 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+### App and command line
+- Cleaning tool caches keeps Playwright MCP's logged-in browser profiles,
+  which older versions kept in Playwright's cache folder; only the browsers
+  go.
+
 ### App
 - Each of the three Android screens keeps its own selection.
 - Put Back waits while a clean is running.
