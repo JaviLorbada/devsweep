@@ -31,13 +31,16 @@ jobs:
 
   test:
     name: Build and test
-    # The newest GitHub-hosted image with a released Xcode 26 or later.
-    runs-on: macos-26
+    # GitHub's Xcode 27 image, with Xcode 27.2 picked by path, so a new
+    # default on the image can't change what builds DevSweep.
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Xcode 27.2
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
       - run: xcodebuild -version && swift --version
       - name: Test, with warnings as errors
         run: swift test --parallel -Xswiftc -warnings-as-errors
@@ -46,7 +49,7 @@ jobs:
 
   acceptance:
     name: Parity with the bash script
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,6 +62,8 @@ jobs:
           ref: ce495ec4fc15b57086f30b7dbb60cf43c5c5f0a9
           path: dotfiles
           persist-credentials: false
+      - name: Xcode 27.2
+        run: sudo xcode-select -s /Applications/Xcode_27.2.app
       - run: brew install bats-core
       - name: The bats suite against the Swift binary
         run: Scripts/bats.sh "$PWD/dotfiles"

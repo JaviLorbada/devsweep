@@ -2,7 +2,7 @@
 
 ## Requirements
 
-macOS 26 and Xcode 26 or newer (Swift 6.2). For the acceptance suite, also
+macOS 26 and Xcode 27 or newer (Swift 6.4). For the acceptance suite, also
 [bats-core](https://github.com/bats-core/bats-core) and a checkout of the
 [dotfiles repository](https://github.com/JaviLorbada/dotfiles) that holds
 the original bash script and its tests. For lint, SwiftFormat and SwiftLint:
