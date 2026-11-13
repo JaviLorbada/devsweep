@@ -3,8 +3,9 @@
 # Draws the app icon from AppIconView (Sources/DevSweepApp/Views/Style/AppIcon.swift) into
 # docs/icon: the PNGs an iconset holds, icon_16x16.png up to
 # icon_512x512@2x.png, and AppIcon.icns built from them with iconutil, which
-# Scripts/package_app.sh puts in the bundle. For real artwork, put its PNGs
-# and .icns there instead and leave this script be.
+# Scripts/package_app.sh puts in the bundle. A development build's icon, with
+# a DEV band, goes to docs/icon/development/AppIcon.icns. For real artwork,
+# put its PNGs and .icns there instead and leave this script be.
 #
 # Usage: Scripts/make_icon.sh
 
@@ -25,3 +26,10 @@ iconutil -c icns "$iconset" -o "$work/AppIcon.icns"
 cp "$iconset"/icon_*.png "$root/docs/icon/"
 cp "$work/AppIcon.icns" "$root/docs/icon/AppIcon.icns"
 echo "$root/docs/icon/AppIcon.icns"
+
+# The development build's icon, with its DEV band: only the .icns.
+rm -f "$iconset"/*
+DEVSWEEP_ICON="$iconset" DEVSWEEP_ICON_DEVELOPMENT=1 "$bin/DevSweepApp"
+mkdir -p "$root/docs/icon/development"
+iconutil -c icns "$iconset" -o "$root/docs/icon/development/AppIcon.icns"
+echo "$root/docs/icon/development/AppIcon.icns"
