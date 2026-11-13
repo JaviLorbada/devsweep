@@ -92,7 +92,16 @@
               0,
               0
             ]
-          }
+          },
+          "opacity-specializations": [
+            {
+              "value": 1.0
+            },
+            {
+              "appearance": "dark",
+              "value": 0.7
+            }
+          ]
         }
       ],
       "shadow": {
