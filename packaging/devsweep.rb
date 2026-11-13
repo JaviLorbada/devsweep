@@ -4,7 +4,7 @@
 class Devsweep < Formula
   desc "Shows how much space developer caches take up, and cleans them"
   homepage "https://github.com/JaviLorbada/devsweep"
-  url "https://github.com/JaviLorbada/devsweep/archive/refs/tags/v0.5.0.tar.gz"
+  url "https://github.com/JaviLorbada/devsweep/archive/refs/tags/v0.5.1.tar.gz"
   sha256 "REPLACE_WITH_THE_SOURCE_TARBALL_SHA256"
   license "MIT"
   head "https://github.com/JaviLorbada/devsweep.git", branch: "main"
