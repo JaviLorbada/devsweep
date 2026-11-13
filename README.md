@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/icon/readme-dark.png">
+  <img width="128" alt="The DevSweep icon: a ring of five coloured segments floating over a frosted glass dish" src="docs/icon/readme-light.png">
+</picture>
+
 # DevSweep
 
 See how much space developer caches take up on your Mac, and clean what you
