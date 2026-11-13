@@ -7,7 +7,7 @@ import SwiftUI
 /// scan to finish, draws the window's content into that file and quits.
 /// `DEVSWEEP_SNAPSHOT_SCREEN` picks `overview`, `scanning`, `blocks`, `runtimes`,
 /// `xcodes`, `about` (the About window's content), `menubar` (the menu bar
-/// item's panel), `remove-runtime` (shows the removal sheet, never confirms it),
+/// item over its panel), `remove-runtime` (shows the removal sheet, never confirms it),
 /// `cleaned` (cleans what is marked first) or `putback` (then puts
 /// the SwiftPM cache back). Cleaning must only ever run against a fake home,
 /// with `DEVSWEEP_TRASH_FOLDER` set;
@@ -63,7 +63,7 @@ enum Snapshotter {
         // bar item's panel instead of the main window.
         let content = switch environment["DEVSWEEP_SNAPSHOT_SCREEN"] {
         case "about": AnyView(AboutView().background(Color(nsColor: .windowBackgroundColor)))
-        case "menubar": AnyView(MenuBarPanel().background(.regularMaterial))
+        case "menubar": AnyView(MenuBarSnapshot())
         default: AnyView(SnapshotLayout(width: width))
         }
         let renderer = ImageRenderer(content: content
@@ -76,6 +76,30 @@ enum Snapshotter {
         }
         // Not terminate(_:), which waits on an open sheet.
         exit(0)
+    }
+}
+
+/// The menu bar item over its panel, as the menu bar shows them while the
+/// panel is open: the item highlighted at the bar's right end.
+private struct MenuBarSnapshot: View {
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            HStack {
+                Spacer()
+                MenuBarLabel()
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.fill.secondary, in: Capsule())
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 30)
+            .background(.bar)
+            MenuBarPanel()
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                .padding([.horizontal, .bottom], 8)
+        }
+        .frame(width: 296)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 

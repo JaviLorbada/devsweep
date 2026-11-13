@@ -8,6 +8,7 @@
 #
 # Usage: Scripts/snapshot.sh [output folder] [screen...]
 #   screens: overview scanning blocks runtimes xcodes remove-runtime cleaned putback,
+#            about, menubar (the menu bar item over its panel),
 #            any with -light (default: overview); with WIDTH also
 #            android-studios android-sdk gradle worktrees
 #   cleaned and putback clean what starts marked, in the fake home only, with
