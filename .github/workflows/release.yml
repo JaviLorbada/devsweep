@@ -24,8 +24,9 @@ jobs:
   release:
     runs-on: xcode-27
     # Apple's notary service can take hours on a new account's first
-    # submissions; the build waits for it.
-    timeout-minutes: 300
+    # submissions (the first took almost six); the build waits for it, up to
+    # just under the six hours GitHub gives a job.
+    timeout-minutes: 350
     # The signing secrets live in this environment, so only this job can
     # read them.
     environment: release

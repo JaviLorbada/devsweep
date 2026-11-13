@@ -77,7 +77,9 @@ what that takes:
 
 With all five set, the release workflow signs both the app and the tool with
 the hardened runtime and a secure timestamp, notarizes them, staples the
-ticket to the app and checks it with `spctl`. Locally, the same happens with
+ticket to the app and checks it with `spctl`. Both zips go to the notary
+service before either is waited for. A new team's first submissions can
+wait for hours (DevSweep's first took almost six); later ones take minutes. Locally, the same happens with
 `make release` when `DEVELOPER_ID_APPLICATION` (the identity's full name, as
 `security find-identity -v -p codesigning` prints it), `ASC_KEY_ID`,
 `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_P8` (the `.p8`'s path) are set. App

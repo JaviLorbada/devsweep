@@ -67,19 +67,31 @@ mkdir "$work/cli"
 cp "$cli" "$work/cli/"
 ditto -c -k --norsrc --noextattr "$work/cli" "$work/cli.zip"
 
-notarize() {
-  local zip="$1" result
-  echo "Notarizing $(basename "$zip")"
-  xcrun notarytool submit "$zip" "${credentials[@]}" --wait --output-format json > "$work/result.json"
+# Both zips go in before either is waited for, so the notary service checks
+# them side by side: on a new account each can take hours.
+submit() {
+  local zip="$1"
+  echo "Notarizing $(basename "$zip")" >&2
+  xcrun notarytool submit "$zip" "${credentials[@]}" --output-format json > "$work/submitted.json"
+  plutil -extract id raw -o - "$work/submitted.json"
+}
+wait_for() {
+  local name="$1" id="$2" result
+  echo "Waiting for $name, submission $id"
+  xcrun notarytool wait "$id" "${credentials[@]}" > /dev/null || true
+  xcrun notarytool info "$id" "${credentials[@]}" --output-format json > "$work/result.json"
   result="$(plutil -extract status raw -o - "$work/result.json")"
   if [[ "$result" != "Accepted" ]]; then
-    echo "sign-and-notarize.sh: notarization of $(basename "$zip") came back $result" >&2
-    xcrun notarytool log "$(plutil -extract id raw -o - "$work/result.json")" "${credentials[@]}" >&2 || true
+    echo "sign-and-notarize.sh: notarization of $name came back $result" >&2
+    xcrun notarytool log "$id" "${credentials[@]}" >&2 || true
     exit 1
   fi
+  echo "$name: Accepted"
 }
-notarize "$work/app.zip"
-notarize "$work/cli.zip"
+app_submission="$(submit "$work/app.zip")"
+cli_submission="$(submit "$work/cli.zip")"
+wait_for app.zip "$app_submission"
+wait_for cli.zip "$cli_submission"
 
 xcrun stapler staple "$app"
 xcrun stapler validate "$app"
