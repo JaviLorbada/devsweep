@@ -9,7 +9,9 @@ the signing secrets are set, and publishes a GitHub release with notes from
 
 1. **Changelog.** Move the lines under Unreleased in `CHANGELOG.md` into a new
    section, `## 0.5.0`, and leave Unreleased empty.
-2. **Version.** Set `MARKETING_VERSION` and bump `BUILD_NUMBER` in `version.env`.
+2. **Version.** Set `MARKETING_VERSION` in `version.env`, and `BUILD_NUMBER` to
+   the date and time in UTC, `date -u +%Y%m%d%H%M`: `202611131041` says when
+   a build was cut, where a count wouldn't.
 3. **Checks.** `make lint test` and `make acceptance DOTFILES=<dotfiles checkout>`.
    Commit.
 4. **Rehearse.** Run the Release workflow by hand; it is a dry run by default:
