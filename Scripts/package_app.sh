@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 #
 # Packages the app from the DevSweepApp executable: an Info.plist with the
-# bundle id and version from version.env, the icon from docs/icon, and
-# a signature. Prints the bundle's path.
+# bundle id and version from version.env, the icon compiled from its Icon
+# Composer file in docs/icon, and a signature. Prints the bundle's path.
 #
 # Usage: Scripts/package_app.sh [release|debug]   default release
 #
-# What it packages is a development build, "DevSweep Dev" with a DEV band on
-# its icon, its own bundle id (the released one's plus .dev, or .debug for a
-# debug build) and so its own settings and last scan: it can run beside the
-# released app and be told apart. FOR_RELEASE=1, as Scripts/build_release.sh
-# sets it, packages the app people download: DevSweep, its bundle id and icon.
+# What it packages is a development build, "DevSweep Dev" with its own icon
+# (docs/icon/development), its own bundle id (the released one's plus .dev,
+# or .debug for a debug build) and so its own settings and last scan: it can
+# run beside the released app and be told apart. FOR_RELEASE=1, as
+# Scripts/build_release.sh sets it, packages the app people download:
+# DevSweep, its bundle id and icon.
 # A release build goes to build/, a debug one to build/debug/.
 #
 # Signing: ad hoc, unless DEVELOPER_ID_APPLICATION names a Developer ID
@@ -26,12 +27,12 @@ source "$root/version.env"
 if [[ -n "${FOR_RELEASE:-}" && "$config" != debug ]]; then
   name="$PRODUCT_NAME"
   bundle_id="$BUNDLE_ID"
-  icon="$root/docs/icon/AppIcon.icns"
+  icon="$root/docs/icon/AppIcon.icon"
   development="<false/>"
 else
   name="$PRODUCT_NAME Dev"
   bundle_id="$BUNDLE_ID.dev"
-  icon="$root/docs/icon/development/AppIcon.icns"
+  icon="$root/docs/icon/development/AppIcon.icon"
   development="<true/>"
 fi
 destination="$root/build/$name.app"
@@ -51,9 +52,9 @@ app="$work/$name.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
 cp "$bin/DevSweepApp" "$app/Contents/MacOS/$PRODUCT_NAME"
 
-# The icon: docs/icon/AppIcon.icns, or its development variant, drawn by
-# Scripts/make_icon.sh, or real artwork in their place.
-cp "$icon" "$app/Contents/Resources/AppIcon.icns"
+# The icon, from docs/icon/AppIcon.icon or the development build's: its
+# layers and appearances in Assets.car, and a flat AppIcon.icns.
+"$root/Scripts/compile_icon.sh" "$icon" "$app/Contents/Resources"
 # Its license travels with it; the app links no third-party code.
 cp "$root/LICENSE" "$app/Contents/Resources/LICENSE"
 
@@ -79,6 +80,7 @@ cat > "$app/Contents/Info.plist" <<EOF
   <key>CFBundleIdentifier</key><string>$bundle_id</string>
   <key>CFBundleExecutable</key><string>$PRODUCT_NAME</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
+  <key>CFBundleIconName</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>$MARKETING_VERSION</string>
   <key>CFBundleVersion</key><string>$BUILD_NUMBER</string>

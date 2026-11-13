@@ -3,7 +3,7 @@
 // cropped from the dark overview at 1280 points wide.
 //
 //   RELEASE_LOOK=1 SIDEBAR_WIDTH=240 WIDTH=1280 Scripts/snapshot.sh build/shots overview
-//   swift Scripts/make_social_preview.swift docs/icon/icon_512x512@2x.png \
+//   swift Scripts/make_social_preview.swift docs/icon/AppIcon.png \
 //     build/shots/overview-1280.png docs/social-preview.png
 //
 // GitHub has no API for it: upload it in Settings > General > Social preview.

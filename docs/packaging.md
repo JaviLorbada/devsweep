@@ -11,8 +11,8 @@ Scripts/package_app.sh          # release build into build/DevSweep Dev.app
 Scripts/package_app.sh debug    # debug build, with the debug-only harnesses
 ```
 
-Both are development builds: DevSweep Dev, with a DEV band on the icon
-(`docs/icon/development/AppIcon.icns`), the bundle id
+Both are development builds: DevSweep Dev, with its own icon
+(`docs/icon/development/AppIcon.icon`), the bundle id
 `com.javilorbada.devsweep.dev`, and its own settings and last scan
 (`~/Library/Application Support/DevSweep Dev`), so one runs beside the
 DevSweep you installed and neither touches the other's. Only
@@ -37,12 +37,16 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   shows the commit, and so does the overview's status line unless the build
   is signed for release. `defaults read <bundle>/Contents/Info DevSweepCommit`
   reads it from outside.
-- **The icon** is `docs/icon/AppIcon.icns`. `Scripts/make_icon.sh` draws it
-  from `AppIconView` in `Sources/DevSweepApp/Views/Style/AppIcon.swift`, a ring in the five
-  family colors on a dark rounded square: it writes the PNGs an iconset holds,
-  `icon_16x16.png` up to `icon_512x512@2x.png`, to `docs/icon` and builds the
-  `.icns` from them with `iconutil`. It is a placeholder; real artwork goes in
-  the same files, and the packaging takes it as it is.
+- **The icon** is an Icon Composer file, `docs/icon/AppIcon.icon`: a frosted
+  dish and the ring of the five families as separate layers, each with a
+  light and a dark version, over a porcelain or indigo fill. The development
+  build's is `docs/icon/development/AppIcon.icon`. `Scripts/compile_icon.sh`
+  compiles one with Xcode's `actool` into `Assets.car`, where macOS 26 finds
+  the layers and draws the light, dark, clear and tinted appearances, and a
+  flat `AppIcon.icns`; the plist names both as `AppIcon`. Open the file in
+  Icon Composer (in Xcode's Applications) to change it.
+  `swift Scripts/render_icon.swift <app> docs/icon/AppIcon.png` draws a
+  bundle's icon into a PNG, as the social preview uses it.
 - **The signature** is ad hoc with the hardened runtime, enough to run the app
   on this Mac. When `DEVELOPER_ID_APPLICATION` names a Developer ID Application
   identity in the keychain, the script signs with it and a secure timestamp

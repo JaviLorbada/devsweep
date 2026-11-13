@@ -42,7 +42,7 @@ enum MenuBarGlyph {
     static let gap = 0.045
 
     static let image: NSImage = {
-        let segments = AppIconView.segments(gap: gap).map { (from: $0.from, to: $0.to) }
+        let segments = IconRing.segments(gap: gap).map { (from: $0.from, to: $0.to) }
         let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { [radius, lineWidth] rect in
             NSColor.black.setStroke()
             for segment in segments {

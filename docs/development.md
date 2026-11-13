@@ -75,7 +75,7 @@ view hierarchy, which is how the window was checked at 900, 1100, 1280 and
 make app && Scripts/open_app.sh
 ```
 
-`make app` builds DevSweep Dev: a DEV band on its icon, its own bundle id,
+`make app` builds DevSweep Dev: its own icon, its own bundle id,
 settings and last scan, so it runs beside the DevSweep you installed and the
 two can be told apart. `open` alone brings a DevSweep Dev that is already
 running forward, old build and all. `Scripts/open_app.sh` asks it to quit,
