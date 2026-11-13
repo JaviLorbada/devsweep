@@ -1,4 +1,5 @@
 import DevSweepKit
+import Foundation
 
 /// The words the window uses for each item.
 extension Item {
@@ -71,18 +72,31 @@ extension Item {
     }
 }
 
+/// Sizes as Finder and System Settings write them: in thousands, rounded,
+/// so the app's numbers match the Mac's. The command line tool keeps the bash
+/// script's report, which counts in 1024s.
 enum SizeText {
-    /// The report's format: binary multiples with decimal labels.
+    /// Kilobytes as the kit measures them: 1024 bytes each.
     static func of(kilobytes: Int64) -> String {
-        Report.human(kilobytes: max(0, kilobytes))
+        self.of(bytes: kilobytes * 1024)
     }
 
+    /// "356.6 GB", "105 MB", "16 KB". A unit takes over where the one below
+    /// would round to 1000.
     static func of(bytes: Int64) -> String {
-        Report.human(bytes: max(0, bytes))
+        let bytes = max(0, bytes)
+        if bytes >= 999_500_000 {
+            return String(format: "%.1f GB", Double(bytes) / 1_000_000_000)
+        }
+        if bytes >= 999_500 {
+            return "\((bytes + 500_000) / 1_000_000) MB"
+        }
+        return "\((bytes + 500) / 1000) KB"
     }
 
-    /// A disk's capacity, in whole gigabytes once it is that big: "926 GB".
+    /// A disk's capacity, in whole gigabytes once it is that big: "995 GB".
     static func wholeGigabytes(kilobytes: Int64) -> String {
-        kilobytes >= 1_048_576 ? "\(Int((Double(kilobytes) / 1_048_576).rounded())) GB" : self.of(kilobytes: kilobytes)
+        let bytes = kilobytes * 1024
+        return bytes >= 999_500_000 ? "\((bytes + 500_000_000) / 1_000_000_000) GB" : self.of(bytes: bytes)
     }
 }

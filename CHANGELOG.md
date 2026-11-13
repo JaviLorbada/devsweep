@@ -6,6 +6,11 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+- The app writes sizes as Finder and System Settings do, in thousands and
+  rounded, so its numbers match the Mac's: a 1 TB disk reads 995 GB, not
+  926 GB. The DerivedData growth threshold counts the same way. `devsweep`
+  keeps the bash script's report, in 1024s.
+
 ## 0.5.0
 
 The first public release. DevSweep shows how much space developer caches

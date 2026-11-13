@@ -18,24 +18,25 @@ struct BackgroundTests {
 
     @Test
     func `DerivedData growth past the threshold since the last scan is worth a notification`() {
-        let gigabyte: Int64 = 1024 * 1024
+        /// Gigabytes as the app writes them, in the kit's 1024-byte kilobytes.
+        func gigabytes(_ count: Int64) -> Int64 { count * 1_000_000_000 / 1024 }
         #expect(GrowthCheck.derivedData(
             previousKilobytes: nil,
-            currentKilobytes: 90 * gigabyte,
+            currentKilobytes: gigabytes(90),
             thresholdGigabytes: 20) == nil)
         #expect(GrowthCheck.derivedData(
-            previousKilobytes: 40 * gigabyte,
-            currentKilobytes: 60 * gigabyte,
+            previousKilobytes: gigabytes(40),
+            currentKilobytes: gigabytes(60),
             thresholdGigabytes: 20) == nil)
         let alert = GrowthCheck.derivedData(
-            previousKilobytes: 40 * gigabyte,
-            currentKilobytes: 61 * gigabyte,
+            previousKilobytes: gigabytes(40),
+            currentKilobytes: gigabytes(61),
             thresholdGigabytes: 20)
-        #expect(alert?.title == "DerivedData grew by \(SizeText.of(kilobytes: 21 * gigabyte))")
-        #expect(alert?.body.contains(SizeText.of(kilobytes: 40 * gigabyte)) == true)
+        #expect(alert?.title == "DerivedData grew by 21.0 GB")
+        #expect(alert?.body == "It holds 61.0 GB now, up from 40.0 GB at the last scan. Open DevSweep to clean it.")
         #expect(GrowthCheck.derivedData(
-            previousKilobytes: 60 * gigabyte,
-            currentKilobytes: 10 * gigabyte,
+            previousKilobytes: gigabytes(60),
+            currentKilobytes: gigabytes(10),
             thresholdGigabytes: 1) == nil)
     }
 
