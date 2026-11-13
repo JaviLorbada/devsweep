@@ -21,10 +21,11 @@ enum GrowthCheck {
 
     /// An alert when DerivedData grew by more than `thresholdGigabytes`
     /// since the previous scan; nil on a first scan or below the threshold.
+    /// Gigabytes are a billion bytes, as the app writes them.
     static func derivedData(previousKilobytes: Int64?, currentKilobytes: Int64?, thresholdGigabytes: Int) -> Alert? {
         guard let previous = previousKilobytes, let current = currentKilobytes else { return nil }
         let growth = current - previous
-        guard growth > Int64(thresholdGigabytes) * 1024 * 1024 else { return nil }
+        guard growth * 1024 > Int64(thresholdGigabytes) * 1_000_000_000 else { return nil }
         return Alert(
             title: "DerivedData grew by \(SizeText.of(kilobytes: growth))",
             body: "It holds \(SizeText.of(kilobytes: current)) now, up from \(SizeText.of(kilobytes: previous)) at "
