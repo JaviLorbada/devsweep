@@ -36,7 +36,7 @@
 
 ## Commits
 - Imperative subject line, a short body saying why. One coherent change per commit, with tests passing.
-- Automation never pushes; the maintainer does.
+- Changes land through pull requests that pass CI. Pushes and merges happen when the maintainer says so.
 
 ## Tests
 - Swift Testing, with backticked sentence names: ``@Test func `skips folders git tracks`()``.
