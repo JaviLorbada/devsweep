@@ -174,7 +174,13 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
     public var platform: String
     public var version: String
     public var build: String
+    /// What removing it frees: simctl's size, plus the download macOS keeps
+    /// for it when the scan counts it.
     public var kilobytes: Int64
+    /// The download macOS keeps for it, which simctl's size leaves out and
+    /// `simctl runtime delete` removes with it; counted in `kilobytes`. Nil
+    /// when it has none of its own, or the scan doesn't count it.
+    public var downloadKilobytes: Int64?
     /// `YYYY-MM-DD`, nil when never used.
     public var lastUsedDay: String?
     /// Whole days since last use, nil when never used or the date doesn't parse.
@@ -190,7 +196,8 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
         kilobytes: Int64,
         lastUsedDay: String?,
         daysSinceUsed: Int?,
-        simulatorCount: Int)
+        simulatorCount: Int,
+        downloadKilobytes: Int64? = nil)
     {
         self.id = id
         self.identifier = identifier
@@ -198,6 +205,7 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
         self.version = version
         self.build = build
         self.kilobytes = kilobytes
+        self.downloadKilobytes = downloadKilobytes
         self.lastUsedDay = lastUsedDay
         self.daysSinceUsed = daysSinceUsed
         self.simulatorCount = simulatorCount

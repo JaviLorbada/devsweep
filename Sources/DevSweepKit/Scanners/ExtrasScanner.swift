@@ -49,7 +49,46 @@ enum ExtrasScanner {
         guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(),
               !runtimesData.isEmpty else { return [] }
         let devicesData = await simctl.devicesJSON() ?? Data()
-        return self.parseRuntimes(runtimesData, devices: devicesData, now: now)
+        let runtimes = self.parseRuntimes(runtimesData, devices: devicesData, now: now)
+        guard context.config.includeRuntimeDownloads else { return runtimes }
+        let downloads = self.downloads(runtimesData)
+        return runtimes.map { runtime in
+            guard let folder = downloads[runtime.id] else { return runtime }
+            let kilobytes = context.measurer.measure(folder).kilobytes
+            guard kilobytes > 0 else { return runtime }
+            var counted = runtime
+            counted.downloadKilobytes = kilobytes
+            counted.kilobytes += kilobytes
+            return counted
+        }
+    }
+
+    /// The download macOS keeps for each runtime that has one of its own, by
+    /// runtime id: the MobileAsset folder simctl's `parentImagePath` is in,
+    /// which `simctl runtime delete` removes with the runtime. simctl's size
+    /// leaves it out. Not counted: a folder that is another runtime's own,
+    /// counted there, and one several runtimes share, which removing one of
+    /// them doesn't free.
+    static func downloads(_ runtimesData: Data) -> [String: String] {
+        guard let runtimes = (try? JSONSerialization.jsonObject(with: runtimesData)) as? [String: Any]
+        else { return [:] }
+        var parents: [String: String] = [:]
+        var ownFolders: Set<String> = []
+        for (id, value) in runtimes {
+            guard let runtime = value as? [String: Any] else { continue }
+            if let folder = (runtime["path"] as? String).flatMap(self.assetFolder) { ownFolders.insert(folder) }
+            if let folder = (runtime["parentImagePath"] as? String).flatMap(self.assetFolder) { parents[id] = folder }
+        }
+        let namedBy = Dictionary(grouping: parents.values) { $0 }.mapValues(\.count)
+        return parents.filter { !ownFolders.contains($0.value) && namedBy[$0.value] == 1 }
+    }
+
+    /// The `.asset` folder a path is in, nil when it isn't in one.
+    static func assetFolder(_ path: String) -> String? {
+        let components = path.split(separator: "/", omittingEmptySubsequences: false)
+        guard let index = components.firstIndex(where: { $0.count > 6 && $0.hasSuffix(".asset") }), index > 0
+        else { return nil }
+        return components[...index].joined(separator: "/")
     }
 
     /// Joins `simctl runtime list -j` with `simctl list devices -j`, sorted by
