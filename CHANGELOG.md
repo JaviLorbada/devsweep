@@ -36,6 +36,8 @@ bar item and a command line tool, `devsweep`.
 - Put Back waits while a clean is running.
 - The daily scan waits while a clean is asking you something. If a scan
   starts before you answer anyway, nothing is cleaned and the window says so.
+- Worktree paths show correctly when your home folder is reached through a
+  symlink and its real name has a letter like ö.
 
 ### For developers
 - The app is split into a view model per screen, four shared models, plain

@@ -89,10 +89,11 @@ enum WorktreeScanner {
 
     /// A path under the resolved home folder, as git gives paths, from the
     /// home folder as `HOME` names it instead, so it shortens to `~`. The
-    /// two differ when `HOME` goes through a symlink.
+    /// two differ when `HOME` goes through a symlink. The prefix is compared
+    /// and dropped as bytes: a letter like ö takes two.
     static func fromHome(_ path: String, policy: PathPolicy) -> String {
         guard !policy.home.bytesEqual(policy.homeReal), path.hasBytePrefix(policy.homeReal + "/") else { return path }
-        return policy.home + path.dropFirst(policy.homeReal.utf8.count)
+        return policy.home + path.removingPrefix(policy.homeReal)
     }
 
     /// One entry of `git worktree list --porcelain`.

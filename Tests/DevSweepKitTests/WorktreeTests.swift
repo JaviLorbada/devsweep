@@ -150,18 +150,6 @@ struct WorktreeTests {
     }
 
     @Test
-    func `worktree paths read from HOME as given, so they shorten to the tilde`() async throws {
-        let home = FakeHome(), tools = FakeTools(home: home)
-        let fixture = WorktreeFixture(home)
-        fixture.add(home.path(".tool/worktrees/clean"), branch: "clean")
-        let engine = try engine(home, tools)
-        let worktree = try #require(await engine.extras().worktrees.first)
-        // The temp folder the fake home is in goes through a symlink, as /var does.
-        #expect(engine.policy.tilde(worktree.path) == "~/.tool/worktrees/clean")
-        #expect(engine.policy.tilde(worktree.repository) == "~/Workspace/App")
-    }
-
-    @Test
     func `worktrees outside the home folder aren't listed`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let fixture = WorktreeFixture(home)
@@ -325,6 +313,33 @@ struct WorktreeTests {
     func `a scan saved before worktrees were listed reads with none`() throws {
         let json = Data(#"{"xcodes":[],"runtimes":[]}"#.utf8)
         #expect(try JSONDecoder().decode(Extras.self, from: json).worktrees.isEmpty)
+    }
+}
+
+/// Paths as git gives them, resolved, read back from HOME as given.
+extension WorktreeTests {
+    @Test
+    func `worktree paths read from HOME as given, so they shorten to the tilde`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        let fixture = WorktreeFixture(home)
+        fixture.add(home.path(".tool/worktrees/clean"), branch: "clean")
+        let engine = try engine(home, tools)
+        let worktree = try #require(await engine.extras().worktrees.first)
+        // The temp folder the fake home is in goes through a symlink, as /var does.
+        #expect(engine.policy.tilde(worktree.path) == "~/.tool/worktrees/clean")
+        #expect(engine.policy.tilde(worktree.repository) == "~/Workspace/App")
+    }
+
+    @Test
+    func `a path git resolved reads from HOME even when the real home's name isn't ASCII`() throws {
+        let home = FakeHome()
+        // HOME is a symlink to a folder whose name takes more bytes than letters.
+        home.mkdir(home.outside("Jösé"))
+        home.symlink(home.outside("Jösé"), at: home.outside("link"))
+        let policy = try PathPolicy(home: home.outside("link"))
+        #expect(policy.homeReal.hasSuffix("/Jösé"))
+        #expect(WorktreeScanner.fromHome("\(policy.homeReal)/Workspace/App", policy: policy) ==
+            "\(policy.home)/Workspace/App")
     }
 }
 
