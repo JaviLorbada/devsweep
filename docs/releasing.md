@@ -53,8 +53,8 @@ where each value comes from.
 
 ## Notarizing
 
-Until this is set up, releases are signed ad hoc, not notarized, and the
-release notes say so. Everything is in place for the day it is:
+Releases are signed with Developer ID and notarized from 0.5.0 on. This is
+what that takes:
 
 1. **Apple Developer Program** membership, for a Developer ID.
 2. **A Developer ID Application certificate**: create it in Xcode (Settings >

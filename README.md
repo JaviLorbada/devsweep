@@ -88,10 +88,9 @@ Download it from the [releases page](https://github.com/JaviLorbada/devsweep/rel
 `DevSweep-<version>.zip` holds the app, `devsweep-<version>-macos.zip` the
 command line tool.
 
-Releases aren't notarized yet, so macOS won't open the app the first time.
-Control-click it in Finder and choose Open, or allow it in System Settings >
-Privacy & Security. For the tool, after unzipping, run
-`xattr -d com.apple.quarantine devsweep`.
+Both are signed with Developer ID and notarized by Apple, so they open like
+anything else you download. Move DevSweep to Applications, and `devsweep`
+to a folder on your `PATH`, like `~/.local/bin`.
 
 ### From source
 
