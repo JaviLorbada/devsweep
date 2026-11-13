@@ -46,5 +46,5 @@
 
 ## Pull requests
 - What changed and why, and the commands run: `make lint test acceptance`.
-- Screenshots for window changes, from `WIDTH=1280 Scripts/snapshot.sh`.
+- Screenshots for window changes, from `WIDTH=1280 Scripts/snapshot.sh`, and for menu bar changes, from `Scripts/snapshot.sh <folder> menubar-light`, before and after.
 - A line under Unreleased in `CHANGELOG.md` for anything a user would notice, and README.md kept current.
