@@ -6,6 +6,9 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+- A new icon: DevSweep's ring of caches floating over a frosted dish, in
+  light and dark versions that follow the icon style you choose in macOS 26.
+
 ## 0.5.1
 
 The app's numbers now match your Mac's.
