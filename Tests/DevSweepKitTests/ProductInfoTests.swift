@@ -23,7 +23,17 @@ struct ProductInfoTests {
         #expect(file["CLI_NAME"] == ProductInfo.cliName)
         #expect(file["BUNDLE_ID"] == ProductInfo.bundleIdentifier)
         #expect(file["MARKETING_VERSION"]?.isEmpty == false)
-        #expect(Int(file["BUILD_NUMBER"] ?? "") != nil)
+    }
+
+    @Test func `the build number is the date and time the release was cut`() throws {
+        let build = try #require(try versionFile()["BUILD_NUMBER"])
+        let format = DateFormatter()
+        format.locale = Locale(identifier: "en_US_POSIX")
+        format.timeZone = TimeZone(identifier: "UTC")
+        format.dateFormat = "yyyyMMddHHmm"
+        #expect(build.count == 12 && build.allSatisfy(\.isASCII) && build.allSatisfy(\.isNumber))
+        let date = try #require(format.date(from: build))
+        #expect(format.string(from: date) == build, "\(build) isn't a real date and time")
     }
 
     @Test func `the About window and Help menu link to the repository the README names`() throws {
