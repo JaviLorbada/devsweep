@@ -40,7 +40,8 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
 - **The icon** is an Icon Composer file, `docs/icon/AppIcon.icon`: a frosted
   dish and the ring of the five families as separate layers, each with a
   light and a dark version, over a porcelain or indigo fill. The development
-  build's is `docs/icon/development/AppIcon.icon`. `Scripts/compile_icon.sh`
+  build's, `docs/icon/development/AppIcon.icon`, is a blueprint of the same
+  ring and dish in white line art on a graphite grid, labelled DEV. `Scripts/compile_icon.sh`
   compiles one with Xcode's `actool` into `Assets.car`, where macOS 26 finds
   the layers and draws the light, dark, clear and tinted appearances, and a
   flat `AppIcon.icns`; the plist names both as `AppIcon`. Open the file in
