@@ -183,9 +183,10 @@ public struct Engine: Sendable {
         }
     }
 
-    /// Free space on the home folder's volume.
+    /// Free space on the home folder's volume, with what Finder counts as
+    /// available beside `df`'s figure.
     public func diskSpace() -> DiskSpace? {
-        DiskSpace.of(self.config.home)
+        DiskSpace.of(self.config.home, includingPurgeable: true)
     }
 
     /// Lists installed Xcodes and simulator runtimes again, without scanning the items.

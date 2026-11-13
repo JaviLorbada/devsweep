@@ -18,14 +18,14 @@ struct MenuBarLabel: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(self.scan.diskSpace
-            .map { "\(SizeText.of(kilobytes: $0.availableKilobytes)) free" } ?? "\(ProductInfo.name)")
+            .map { "\(SizeText.of(kilobytes: $0.freeKilobytes)) free" } ?? "\(ProductInfo.name)")
     }
 
     /// The text beside the glyph, such as "48.2 GB". A plain string with
     /// nothing interpolated into it: an Image interpolated into a String
     /// becomes its type's description, and that was what the menu bar showed.
     static func title(_ space: DiskSpace) -> String {
-        SizeText.of(kilobytes: space.availableKilobytes)
+        SizeText.of(kilobytes: space.freeKilobytes)
     }
 }
 
@@ -85,13 +85,16 @@ struct MenuBarPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text(self.scan.volumeName).font(.headline)
+                // A long volume name gives way before the free space does.
+                Text(self.scan.volumeName).font(.headline).lineLimit(1)
                 Spacer()
                 if let space = scan.diskSpace {
-                    Text("\(SizeText.of(kilobytes: space.availableKilobytes)) free")
+                    Text(space.freeOfTotal)
                         .font(.callout)
                         .monospacedDigit()
                         .foregroundStyle(.muted)
+                        .lineLimit(1)
+                        .layoutPriority(1)
                 }
             }
             .foregroundStyle(Self.label)

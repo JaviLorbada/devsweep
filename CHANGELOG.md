@@ -10,6 +10,9 @@ gets a line under Unreleased as it lands.
   rounded, so its numbers match the Mac's: a 1 TB disk reads 995 GB, not
   926 GB. The DerivedData growth threshold counts the same way. `devsweep`
   keeps the bash script's report, in 1024s.
+- Free space is what Finder and System Settings show: it counts the space
+  macOS frees on its own, such as local snapshots, and the menu reads
+  "337.6 GB free of 995 GB".
 
 ## 0.5.0
 

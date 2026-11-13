@@ -12,7 +12,11 @@ struct MenuBarTests {
     @Test
     func `the menu bar item's text is the free space, never a view's description`() {
         for kilobytes: Int64 in [0, 900, 50_536_000, 4_000_000_000] {
-            let title = MenuBarLabel.title(DiskSpace(totalKilobytes: 5_000_000_000, availableKilobytes: kilobytes))
+            let space = DiskSpace(
+                totalKilobytes: 5_000_000_000,
+                availableKilobytes: kilobytes / 2,
+                availableIncludingPurgeableKilobytes: kilobytes)
+            let title = MenuBarLabel.title(space)
             #expect(title == SizeText.of(kilobytes: kilobytes))
             #expect(!title.contains("Image("))
             #expect(!title.contains("provider:"))
