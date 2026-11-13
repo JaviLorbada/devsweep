@@ -46,8 +46,10 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   the layers and draws the light, dark, clear and tinted appearances, and a
   flat `AppIcon.icns`; the plist names both as `AppIcon`. Open the file in
   Icon Composer (in Xcode's Applications) to change it.
-  `swift Scripts/render_icon.swift <app> docs/icon/AppIcon.png` draws a
-  bundle's icon into a PNG, as the social preview uses it.
+  `swift Scripts/render_icon.swift <icon> <png> [side] [light|dark]` draws it
+  into a PNG as Finder shows it, with Icon Composer's renderer: `AppIcon.png`
+  for the social preview, and the README's `readme-light.png` and
+  `readme-dark.png` at 256 pixels.
 - **The signature** is ad hoc with the hardened runtime, enough to run the app
   on this Mac. When `DEVELOPER_ID_APPLICATION` names a Developer ID Application
   identity in the keychain, the script signs with it and a secure timestamp
