@@ -36,7 +36,7 @@ struct AppCoordinatorTests {
         storage.set(false, forKey: Preferences.Key.moveToTrash)
         let home = TemporaryHome()
         let app = AppCoordinator(
-            environment: ["HOME": home.path],
+            environment: testEnvironment(home: home),
             store: InMemoryScanStore(),
             preferences: Preferences(storage: storage),
             notifier: SilentNotificationPoster(),

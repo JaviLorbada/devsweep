@@ -57,6 +57,17 @@ func waitUntil(_ condition: () -> Bool) async {
 /// A scan of a temp home with none of the tools, so nothing outside the temp
 /// folder runs. Its last scan is kept in memory unless `store` is nil, which
 /// keeps it in the temp home's own file.
+/// The environment the app's tests scan in: everything inside the fake home,
+/// so no test measures the Xcodes in the Mac's own /Applications. On a CI
+/// runner with several, that made scans take minutes and tests time out.
+func testEnvironment(home: TemporaryHome, projectFolders: String = "") -> [String: String] {
+    [
+        "HOME": home.path,
+        "DEVSWEEP_PROJECT_DIRS": projectFolders,
+        "DEVSWEEP_APPLICATIONS_DIRS": home.path + "/Applications",
+    ]
+}
+
 @MainActor
 func makeScan(
     home: TemporaryHome,
@@ -64,7 +75,7 @@ func makeScan(
     preferences: Preferences = Preferences(storage: InMemoryPreferencesStore())) -> ScanModel
 {
     ScanModel(
-        environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": ""],
+        environment: testEnvironment(home: home),
         store: store,
         preferences: preferences,
         dependencies: Dependencies(tools: .unavailable))
@@ -86,7 +97,7 @@ func finishScan(_ scan: ScanModel) async {
 @MainActor
 func makeApp(home: TemporaryHome, extras: Extras? = nil) -> AppCoordinator {
     let app = AppCoordinator(
-        environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": ""],
+        environment: testEnvironment(home: home),
         store: InMemoryScanStore(),
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: SilentNotificationPoster(),
@@ -115,7 +126,7 @@ func scannedApp(
     tools.trash = FolderTrash(folder: "\(home.root)/Trash")
     tools.runningApps = apps
     let app = AppCoordinator(
-        environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": projectFolders],
+        environment: testEnvironment(home: home, projectFolders: projectFolders),
         store: InMemoryScanStore(),
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: SilentNotificationPoster(),
@@ -130,7 +141,7 @@ func scannedApp(
 @MainActor
 func scanningApp(home: TemporaryHome, notifier: NotificationPoster = SilentNotificationPoster()) -> AppCoordinator {
     AppCoordinator(
-        environment: ["HOME": home.path, "DEVSWEEP_PROJECT_DIRS": ""],
+        environment: testEnvironment(home: home),
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: notifier,
         dependencies: Dependencies(tools: .unavailable))
