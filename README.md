@@ -96,7 +96,7 @@ to a folder on your `PATH`, like `~/.local/bin`.
 
 ```bash
 git clone https://github.com/JaviLorbada/devsweep.git && cd devsweep
-make app                       # builds build/DevSweep.app
+make app                       # builds build/DevSweep Dev.app
 Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 ```
 
@@ -184,7 +184,7 @@ back as you build, resolve packages or download again.
 make build        # the kit, the tool and the app
 make test         # Swift Testing, in parallel
 make lint         # SwiftFormat and SwiftLint, strict
-make app          # build/DevSweep.app
+make app          # build/DevSweep Dev.app, beside the released app
 ```
 
 - [docs/development.md](docs/development.md): requirements, the three test

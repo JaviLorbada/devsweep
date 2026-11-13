@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Draws the app's window into PNG files without touching the real home folder:
-# it builds a debug DevSweep.app, makes a fake home in a temp folder with
+# it builds a debug DevSweep Dev.app, makes a fake home in a temp folder with
 # something in every item, puts stubs for xcrun, brew, pgrep, defaults and
 # xcode-select first on PATH, and launches the app with that HOME. The app
 # scans, draws its window into a file and quits. Nothing is cleaned.
@@ -32,7 +32,7 @@
 #   README's screenshots. WORKTREES=none makes no
 #   worktrees, and PROJECT_FOLDERS='("~/.agents/worktrees")' sets the
 #   project folders, ~/Developer otherwise, where the repository is.
-#   The debug build is build/debug/DevSweep.app, apart from the one you open.
+#   The debug build is build/debug/DevSweep Dev.app, apart from the one you open.
 #   While you work in another app, macOS won't let the app activate itself,
 #   and its window would draw inactive; so once the scan is done the script
 #   activates it through Launch Services, as a Dock click would, and only
@@ -55,12 +55,17 @@ bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$app/Conten
 work="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$work"' EXIT
 
-# A copy marked as signed for release, which drops the status line's
-# "Built from" note; the build in build/debug stays as it is.
+# A copy that looks released: signed for release, which drops the status
+# line's "Built from" note, named DevSweep, with its icon. The build in
+# build/debug stays as it is.
 if [[ -n "${RELEASE_LOOK:-}" ]]; then
   ditto "$app" "$work/DevSweep.app"
   app="$work/DevSweep.app"
-  /usr/libexec/PlistBuddy -c 'Set :DevSweepReleaseSigned true' "$app/Contents/Info.plist"
+  for set in "DevSweepReleaseSigned true" "DevSweepDevelopment false" "CFBundleName DevSweep" \
+    "CFBundleDisplayName DevSweep"; do
+    /usr/libexec/PlistBuddy -c "Set :$set" "$app/Contents/Info.plist"
+  done
+  cp "$root/docs/icon/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
   codesign --force --sign - "$app" 2>/dev/null
 fi
 

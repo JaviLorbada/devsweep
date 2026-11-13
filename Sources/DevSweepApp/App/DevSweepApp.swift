@@ -50,7 +50,7 @@ struct DevSweepApp: App {
         .defaultLaunchBehavior(.presented)
         .commands { AppCommands(scan: self.app.scan, window: self.app.window) }
 
-        Window("About \(ProductInfo.name)", id: "about") {
+        Window("About \(BuildIdentity.current.appName)", id: "about") {
             AboutView()
         }
         .windowStyle(.hiddenTitleBar)
@@ -125,7 +125,7 @@ struct AppCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
-            Button("About \(ProductInfo.name)") { self.openWindow(id: "about") }
+            Button("About \(BuildIdentity.current.appName)") { self.openWindow(id: "about") }
         }
         CommandGroup(replacing: .newItem) {
             Button(self.scan.isScanning ? "Stop Scan" : "Scan Again") {
