@@ -86,6 +86,7 @@ private struct RuntimeRow: View {
                 .monospacedDigit()
                 .lineLimit(1)
                 .frame(width: 64, alignment: .trailing)
+                .help(RuntimeWords.parts(self.runtime) ?? "")
             Group {
                 if reason == nil {
                     Color.clear
@@ -174,6 +175,9 @@ struct RuntimeDetails: View {
             }
             Section(reason == nil ? "Usage" : "Why it is flagged") {
                 Text(RuntimeWords.usage(self.runtime, staleDays: self.runtimes.staleDays))
+            }
+            if let size = RuntimeWords.size(self.runtime) {
+                Section("Size") { Text(size) }
             }
             Section("What happens") {
                 Text(RuntimeWords.whatHappens(self.runtime))
@@ -292,6 +296,23 @@ enum RuntimeWords {
         default: sentence += ". \(runtime.simulatorCount) simulators use it."
         }
         return sentence
+    }
+
+    /// "8.2 GB runtime and 9.1 GB download", for a runtime with a download of
+    /// its own; nil for one without.
+    static func parts(_ runtime: SimulatorRuntime) -> String? {
+        guard let download = runtime.downloadKilobytes else { return nil }
+        return "\(SizeText.of(kilobytes: runtime.kilobytes - download)) runtime and "
+            + "\(SizeText.of(kilobytes: download)) download"
+    }
+
+    /// What its size is made of, for a runtime with a download of its own;
+    /// nil for one without.
+    static func size(_ runtime: SimulatorRuntime) -> String? {
+        guard let download = runtime.downloadKilobytes else { return nil }
+        return "\(SizeText.of(kilobytes: runtime.kilobytes - download)) is the runtime, and "
+            + "\(SizeText.of(kilobytes: download)) a download macOS keeps for it in /System/Library/AssetsV2, "
+            + "which simctl leaves out of its size. Removing the runtime removes both."
     }
 
     static func whatHappens(_ runtime: SimulatorRuntime) -> String {
