@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# Prints a release's notes for GitHub: its section of CHANGELOG.md (or
-# Unreleased when it has none yet), what to download, how the build is
-# signed (from dist/signing.txt), and the zips' SHA-256 when they are in
-# dist/. GitHub shows every newline in release notes, so the lines a
-# paragraph or a list item wraps onto are joined.
+# Prints a release's notes for GitHub: the README's screenshot, its section
+# of CHANGELOG.md (or Unreleased when it has none yet), what to download,
+# how the build is signed (from dist/signing.txt), and the zips' SHA-256 when
+# they are in dist/. GitHub shows every newline in release notes, so the
+# lines a paragraph or a list item wraps onto are joined.
 #
 # Usage: Scripts/release_notes.sh <version>
 
@@ -18,6 +18,7 @@ repository="${GITHUB_REPOSITORY:-JaviLorbada/devsweep}"
 app_zip="$PRODUCT_NAME-$version.zip"
 cli_zip="$CLI_NAME-$version-macos.zip"
 download="https://github.com/$repository/releases/download/v$version"
+files="https://raw.githubusercontent.com/$repository/v$version"
 
 section() {
   awk -v heading="## $1" '
@@ -41,6 +42,15 @@ unwrap() {
 
 notes="$(section "$version")"
 [[ -n "${notes//[[:space:]]/}" ]] || notes="$(section Unreleased)"
+
+# The window, light or dark as the reader's GitHub is, from the tagged files.
+cat <<EOF
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="$files/docs/screenshot-dark.png">
+  <img alt="The $PRODUCT_NAME window: a ring of what each cache holds, the items to clean, and the inspector for DerivedData" src="$files/docs/screenshot-light.png">
+</picture>
+
+EOF
 # Links relative to the repository, like docs/architecture.md, point at the
 # tagged version's files; on a release page they would point nowhere.
 printf '%s\n' "$notes" | sed -e '/./,$!d' | unwrap | cat -s \
@@ -48,7 +58,7 @@ printf '%s\n' "$notes" | sed -e '/./,$!d' | unwrap | cat -s \
 
 cat <<EOF
 
-## Download
+### Download
 
 | File | What it is |
 |---|---|
