@@ -8,6 +8,10 @@ gets a line under Unreleased as it lands.
 
 - A new icon: DevSweep's ring of caches floating over a frosted dish, in
   light and dark versions that follow the icon style you choose in macOS 26.
+- A simulator runtime's size counts the download macOS keeps for it, which
+  removing the runtime removes too: an older runtime such as iOS 18.5 can
+  take twice what simctl says. The inspector shows both parts. `devsweep`
+  counts it too; run as `devclean` it keeps the bash script's report.
 
 ## 0.5.1
 

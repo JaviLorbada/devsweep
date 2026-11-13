@@ -185,12 +185,19 @@ defaults_args=(-scanOnLaunch YES -skippedItems "()" -staleDays 90 -moveToTrash Y
 stubs="$work/stubs"
 mkdir -p "$stubs"
 now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+# iOS 18.5 lives in the Cryptex folder and has a download of its own, as an
+# older runtime can: small here, since the app measures what is on disk.
+download="$work/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime/c0d3fd05.asset"
+mkdir -p "$download/AssetData"
+dd if=/dev/zero of="$download/AssetData/044-89849-100.dmg" bs=1048576 count=64 2>/dev/null
 cat > "$work/runtimes.json" <<EOF
 {
   "6A1B2C3D-0000-4000-8000-000000000001": { "build": "24B5055e", "version": "27.1", "sizeBytes": 9019431321,
     "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-1", "lastUsedAt": "$now" },
   "4C1F2B8E-0D3A-4F6B-9C21-7E5A1B2C3DA2": { "build": "22F77", "version": "18.5", "sizeBytes": 8160437862,
-    "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-18-5", "lastUsedAt": "2026-05-30T09:00:00Z" },
+    "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.iOS-18-5", "lastUsedAt": "2026-05-30T09:00:00Z",
+    "path": "$work/Cryptex/Images/bundle/SimRuntimeBundle-1/Restore/044-89417-100.dmg",
+    "parentImagePath": "$download/AssetData/044-89849-100.dmg" },
   "9E8D7C6B-0000-4000-8000-000000000003": { "build": "23R61", "version": "26.1", "sizeBytes": 4187593113,
     "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.watchOS-26-1", "lastUsedAt": "2026-09-01T09:00:00Z" }
 }
