@@ -30,7 +30,7 @@ struct MenuBarTests {
         #expect(image.size == CGSize(width: 16, height: 16))
         // Each gap and each segment measured along the ring, in points.
         let circumference = 2 * Double.pi * MenuBarGlyph.radius
-        let segments = AppIconView.segments(gap: MenuBarGlyph.gap)
+        let segments = IconRing.segments(gap: MenuBarGlyph.gap)
         #expect(segments.count == Family.allCases.count)
         #expect(MenuBarGlyph.gap * circumference >= 1.5)
         #expect(segments.allSatisfy { ($0.to - $0.from) * circumference >= 2 })

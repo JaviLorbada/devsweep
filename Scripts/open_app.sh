@@ -27,7 +27,7 @@ app="$root/build/$PRODUCT_NAME.app"
 # Checked before anything is asked to quit, against what Scripts/package_app.sh
 # puts in the bundle. Outside a git checkout there is nothing to compare with.
 commit="$(defaults read "$app/Contents/Info" DevSweepCommit 2>/dev/null || true)"
-inputs=(Sources Package.swift Package.resolved version.env docs/icon Scripts/package_app.sh)
+inputs=(Sources Package.swift Package.resolved version.env docs/icon Scripts/package_app.sh Scripts/compile_icon.sh)
 if git -C "$root" rev-parse --verify -q HEAD >/dev/null; then
   head="$(git -C "$root" rev-parse --short HEAD)"
   if [[ -z "$commit" ]]; then

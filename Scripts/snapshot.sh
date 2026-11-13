@@ -65,7 +65,7 @@ if [[ -n "${RELEASE_LOOK:-}" ]]; then
     "CFBundleDisplayName DevSweep"; do
     /usr/libexec/PlistBuddy -c "Set :$set" "$app/Contents/Info.plist"
   done
-  cp "$root/docs/icon/AppIcon.icns" "$app/Contents/Resources/AppIcon.icns"
+  "$root/Scripts/compile_icon.sh" "$root/docs/icon/AppIcon.icon" "$app/Contents/Resources"
   codesign --force --sign - "$app" 2>/dev/null
 fi
 
