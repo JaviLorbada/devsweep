@@ -113,7 +113,7 @@ struct DiskMeter: View {
     var body: some View {
         let space = self.scan.diskSpace
         let total = Double(max(space?.totalKilobytes ?? 1, 1))
-        let free = Double(space?.availableKilobytes ?? 0)
+        let free = Double(space?.freeKilobytes ?? 0)
         let reclaimable = min(Double(scan.tally.reclaimableKilobytes), max(total - free, 0))
         let usedOther = max(total - free - reclaimable, 0)
 
@@ -122,9 +122,7 @@ struct DiskMeter: View {
                 Text(self.scan.volumeName).font(.callout.weight(.semibold))
                 Spacer()
                 if let space {
-                    Text(
-                        "\(SizeText.of(kilobytes: space.availableKilobytes)) free of "
-                            + "\(SizeText.wholeGigabytes(kilobytes: space.totalKilobytes))")
+                    Text(space.freeOfTotal)
                         .font(.caption)
                         .monospacedDigit()
                         .foregroundStyle(.muted)

@@ -262,4 +262,13 @@ struct MeasuringTests {
         #expect(space.totalKilobytes >= space.availableKilobytes)
         #expect(DiskSpace.of(home.path("missing")) == nil)
     }
+
+    @Test
+    func `macOS's available figure is read only when asked for, so the report stays df's`() throws {
+        let home = FakeHome()
+        #expect(try #require(DiskSpace.of(home.home)).availableIncludingPurgeableKilobytes == nil)
+        let space = try #require(DiskSpace.of(home.home, includingPurgeable: true))
+        let available = try #require(space.availableIncludingPurgeableKilobytes)
+        #expect(available > 0 && available <= space.totalKilobytes)
+    }
 }

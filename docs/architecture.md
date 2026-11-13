@@ -221,7 +221,7 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
-| `Values` | `Tally`, `StatusText`, `CleanPrompt`, the items' words, `WindowLayout`'s sizes. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, the items' words, sizes and free space as Finder writes them, `WindowLayout`'s sizes. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
 | `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
