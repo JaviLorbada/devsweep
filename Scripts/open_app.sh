@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 #
-# Opens build/DevSweep.app, the bundle `make app` makes. A DevSweep already
-# running is asked to quit first, and the new one opens only once it has
-# exited, since `open` would otherwise bring the running copy forward.
+# Opens build/DevSweep Dev.app, the development build `make app` makes. A
+# DevSweep Dev already running is asked to quit first, and the new one opens
+# only once it has exited, since `open` would otherwise bring the running copy
+# forward. The released DevSweep, with its own bundle id, keeps running.
 # Asking it to quit is an Apple event, which macOS lets the terminal send
-# only with its Automation permission for DevSweep; without that, this says
-# so and opens nothing. Nor does it open a bundle built before a change to
-# what goes into it, which would show old code; `make app` first. A commit
+# only with its Automation permission for DevSweep Dev; without that, this
+# says so and opens nothing. Nor does it open a bundle built before a change
+# to what goes into it, which would show old code; `make app` first. A commit
 # that changes only docs leaves the bundle as good as new.
 #
 # Usage: make app && Scripts/open_app.sh
@@ -16,6 +17,9 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=../version.env
 source "$root/version.env"
+# The development build's name and bundle id, as Scripts/package_app.sh makes them.
+PRODUCT_NAME="$PRODUCT_NAME Dev"
+BUNDLE_ID="$BUNDLE_ID.dev"
 app="$root/build/$PRODUCT_NAME.app"
 
 [[ -d "$app" ]] || { echo "open_app.sh: there is no $app; run make app first" >&2; exit 1; }
@@ -41,7 +45,7 @@ if git -C "$root" rev-parse --verify -q HEAD >/dev/null; then
   fi
 fi
 
-# The pid of a running DevSweep, whichever copy it is, or nothing.
+# The pid of a running DevSweep Dev, whichever copy it is, or nothing.
 running() { lsappinfo info -only pid "$BUNDLE_ID" | sed -n 's/^"pid"=//p'; }
 
 pid="$(running)"

@@ -25,7 +25,7 @@
 ## Build, test, lint
 - `make build`, `make test` (Swift Testing, in parallel), `make lint` (strict), `make format`.
 - `make acceptance DOTFILES=<dotfiles checkout>`: the bash script's bats suite against the binary, then both side by side on a fake home.
-- `make app` packages `build/DevSweep.app`; `make release` zips the tool and the app into `dist/`.
+- `make app` packages `build/DevSweep Dev.app`, a development build with its own name, icon, bundle id and data, so it runs beside the released app; `make release` zips the tool and the released app into `dist/`.
 - Swift 6 strict concurrency and zero warnings. swift-argument-parser is the only dependency; ask before adding one.
 
 ## Safety rule

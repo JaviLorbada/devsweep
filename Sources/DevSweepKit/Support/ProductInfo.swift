@@ -10,8 +10,12 @@ public enum ProductInfo {
     /// The prefix of the tool's environment variables: `DEVSWEEP_PROJECT_DIRS`.
     public static let environmentPrefix = "DEVSWEEP"
     public static let bundleIdentifier = "com.javilorbada.devsweep"
-    /// The folder in `~/Library/Application Support` the app keeps its last scan in.
-    public static let applicationSupportFolder = name
+    /// The folder in `~/Library/Application Support` the app keeps its last
+    /// scan in: DevSweep, or DevSweep Dev for a development build.
+    public static var applicationSupportFolder: String {
+        BuildIdentity.current.supportFolder
+    }
+
     /// The app's UserDefaults domain: its bundle's standard defaults.
     public static let defaultsSuite = bundleIdentifier
 

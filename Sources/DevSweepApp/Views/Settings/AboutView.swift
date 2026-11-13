@@ -16,7 +16,7 @@ struct AboutView: View {
                 .frame(width: 112, height: 112)
                 .accessibilityHidden(true)
             VStack(spacing: 4) {
-                Text(ProductInfo.name)
+                Text(BuildIdentity.current.appName)
                     .font(.title.weight(.semibold))
                 Text("Version \(ProductInfo.version) (\(ProductInfo.build))")
                     .font(.callout)

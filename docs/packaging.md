@@ -7,11 +7,19 @@ open `Package.swift`: Xcode keeps its workspace in
 ## The app
 
 ```bash
-Scripts/package_app.sh          # release build into build/DevSweep.app
+Scripts/package_app.sh          # release build into build/DevSweep Dev.app
 Scripts/package_app.sh debug    # debug build, with the debug-only harnesses
 ```
 
-The debug build goes to `build/debug/DevSweep.app` with the bundle id
+Both are development builds: DevSweep Dev, with a DEV band on the icon
+(`docs/icon/development/AppIcon.icns`), the bundle id
+`com.javilorbada.devsweep.dev`, and its own settings and last scan
+(`~/Library/Application Support/DevSweep Dev`), so one runs beside the
+DevSweep you installed and neither touches the other's. Only
+`Scripts/build_release.sh` packages the app people download, with
+`FOR_RELEASE=1`: DevSweep, its bundle id and icon.
+
+The debug build goes to `build/debug/DevSweep Dev.app` with the bundle id
 `com.javilorbada.devsweep.debug`. `Scripts/snapshot.sh` uses it, so
 captures never replace the bundle you open, and its settings stay apart
 from the release build's.
@@ -23,8 +31,9 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   them there, never in the plist. `ProductInfo.swift` holds the same names for
   the code, and a test fails when the two disagree.
 - **Which build it is** goes in the plist too: `DevSweepCommit`, the short
-  commit; `DevSweepTreeDirty`, whether the tree had uncommitted changes; and
-  `DevSweepReleaseSigned`, whether it was signed with a Developer ID. About
+  commit; `DevSweepTreeDirty`, whether the tree had uncommitted changes;
+  `DevSweepReleaseSigned`, whether it was signed with a Developer ID; and
+  `DevSweepDevelopment`, whether it is a development build. About
   shows the commit, and so does the overview's status line unless the build
   is signed for release. `defaults read <bundle>/Contents/Info DevSweepCommit`
   reads it from outside.
@@ -40,7 +49,7 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   instead; `Scripts/sign-and-notarize.sh` then notarizes and staples. App
   Sandbox stays off: the app has to read and clean other tools' caches.
 
-The bundle is put together in a temp folder and replaces `build/DevSweep.app`
+The bundle is put together in a temp folder and replaces the one in `build/`
 only once it is signed, so a failed build or signature leaves the previous
 bundle as it was.
 

@@ -23,7 +23,8 @@ cli="$dist/$CLI_NAME"
 cp "$bin/$CLI_NAME" "$cli"
 codesign --force --sign "${DEVELOPER_ID_APPLICATION:--}" --options runtime ${DEVELOPER_ID_APPLICATION:+--timestamp} "$cli" >&2
 
-app="$("$root/Scripts/package_app.sh" release)"
+# The app people download: DevSweep, not the development build.
+app="$(FOR_RELEASE=1 "$root/Scripts/package_app.sh" release)"
 cp -R "$app" "$dist/"
 
 # Signed and notarized when the credentials are there; ad hoc otherwise.

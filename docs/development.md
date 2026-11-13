@@ -75,10 +75,13 @@ view hierarchy, which is how the window was checked at 900, 1100, 1280 and
 make app && Scripts/open_app.sh
 ```
 
-`open` alone brings a DevSweep that is already running forward, old build
-and all. `Scripts/open_app.sh` asks it to quit, waits for it to exit, then
-opens `build/DevSweep.app` and says which commit it was built from. Quitting
-it takes the terminal's Automation permission for DevSweep; when macOS
+`make app` builds DevSweep Dev: a DEV band on its icon, its own bundle id,
+settings and last scan, so it runs beside the DevSweep you installed and the
+two can be told apart. `open` alone brings a DevSweep Dev that is already
+running forward, old build and all. `Scripts/open_app.sh` asks it to quit,
+waits for it to exit, then opens `build/DevSweep Dev.app` and says which
+commit it was built from; the installed DevSweep keeps running. Quitting it
+takes the terminal's Automation permission for DevSweep Dev; when macOS
 refuses, the script says so and opens nothing. Nor does it open a bundle
 built before a change to what goes into it (the sources, the package,
 `version.env`, the icon or the packaging script): it says to run

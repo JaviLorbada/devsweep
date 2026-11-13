@@ -23,11 +23,24 @@ struct BuildIdentityTests {
     }
 
     @Test
+    func `a development build calls itself DevSweep Dev and keeps its own data`() {
+        let development = BuildIdentity(info: ["DevSweepCommit": "506cc8c", "DevSweepDevelopment": true])
+        #expect(development.isDevelopment)
+        #expect(development.appName == "DevSweep Dev")
+        #expect(development.supportFolder == "DevSweep Dev")
+        for released in [BuildIdentity(info: ["DevSweepDevelopment": false]), BuildIdentity(info: [:])] {
+            #expect(!released.isDevelopment)
+            #expect(released.appName == "DevSweep")
+            #expect(released.supportFolder == "DevSweep")
+        }
+    }
+
+    @Test
     func `package_app.sh writes the keys the app reads`() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent()
         let script = try String(contentsOf: root.appending(path: "Scripts/package_app.sh"), encoding: .utf8)
-        for key in ["DevSweepCommit", "DevSweepTreeDirty", "DevSweepReleaseSigned"] {
+        for key in ["DevSweepCommit", "DevSweepTreeDirty", "DevSweepReleaseSigned", "DevSweepDevelopment"] {
             #expect(script.contains("<key>\(key)</key>"), "\(key)")
         }
     }
