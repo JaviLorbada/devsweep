@@ -1,20 +1,43 @@
 {
-  "fill": {
-    "linear-gradient": [
-      "srgb:0.12157,0.17647,0.23137,1.00000",
-      "srgb:0.04706,0.09020,0.13725,1.00000"
-    ],
-    "orientation": {
-      "start": {
-        "x": 0.3,
-        "y": 0.0
-      },
-      "stop": {
-        "x": 0.7,
-        "y": 1.0
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "srgb:0.12157,0.17647,0.23137,1.00000",
+          "srgb:0.04706,0.09020,0.13725,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.3,
+            "y": 0.0
+          },
+          "stop": {
+            "x": 0.7,
+            "y": 1.0
+          }
+        }
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "srgb:0.12157,0.17647,0.23137,1.00000",
+          "srgb:0.04706,0.09020,0.13725,1.00000"
+        ],
+        "orientation": {
+          "start": {
+            "x": 0.3,
+            "y": 0.0
+          },
+          "stop": {
+            "x": 0.7,
+            "y": 1.0
+          }
+        }
       }
     }
-  },
+  ],
   "groups": [
     {
       "name": "Ring",
