@@ -42,7 +42,7 @@
 - Swift Testing, with backticked sentence names: ``@Test func `skips folders git tracks`()``.
 - Every test makes its own temp folder and fakes what has side effects through `Dependencies` and the app's seams (`AppQuitting`, the preferences, scan memory and notification stores), and the other models through their protocols. Nothing shared, nothing `.serialized`; `swift test --parallel` must pass.
 - No stubs on `PATH` in Swift tests. They belong to the bats suite, which runs the built binary as a user would.
-- The bats suite is the acceptance test: 52 of 52, and `Scripts/compare.sh` identical.
+- The bats suite is the acceptance test: 57 of 57, and `Scripts/compare.sh` identical.
 
 ## Pull requests
 - What changed and why, and the commands run: `make lint test acceptance`.

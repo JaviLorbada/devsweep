@@ -90,19 +90,21 @@ struct CommandLineOptionTests {
 @Suite("Tool output parsing")
 struct ToolOutputParsingTests {
     @Test(arguments: [
-        ("==> This operation would free approximately 1.5GB of disk space.", Int64(1_572_864)),
+        ("==> This operation would free approximately 1.5GB of disk space.", Int64(1_464_844)),
         ("==> This operation would free approximately 2048B of disk space.", 2),
-        ("==> This operation would free approximately 1023B of disk space.", 0),
+        ("==> This operation would free approximately 511B of disk space.", 0),
+        ("==> This operation would free approximately 1023B of disk space.", 1),
         ("==> This operation would free approximately 12KB of disk space.", 12),
-        ("==> This operation would free approximately 300.5MB of disk space.", 307_712),
-        ("==> This operation would free approximately 2TB of disk space.", 2_147_483_648),
+        ("==> This operation would free approximately 6.1KB of disk space.", 6),
+        ("==> This operation would free approximately 300.5MB of disk space.", 293_457),
+        ("==> This operation would free approximately 2TB of disk space.", 1_953_125_000),
         ("==> This operation would free approximately 1.5PB of disk space.", 0),
-        ("==> This operation would free approximately .5GB of disk space.", 524_288),
+        ("==> This operation would free approximately .5GB of disk space.", 488_281),
         ("would free approximately", 0),
         ("Nothing to clean", 0),
-        ("would free approximately 1GB\nwould free approximately 2MB", 2048),
+        ("would free approximately 1GB\nwould free approximately 2MB", 1953),
     ])
-    func `homebrew's dry run gives the size it would free`(output: String, kilobytes: Int64) {
+    func `homebrew's dry run gives the size it would free, counted in thousands`(output: String, kilobytes: Int64) {
         #expect(HomebrewScanner.kilobytes(fromDryRun: output) == kilobytes)
     }
 

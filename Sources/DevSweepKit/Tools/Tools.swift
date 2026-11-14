@@ -8,6 +8,7 @@ public struct Tools: Sendable {
     public var runningApps: any RunningAppsChecking
     public var lastUsedDates: any LastUsedDateReading
     public var trash: any TrashService
+    public var freeSpace: any FreeSpaceReading
 
     public init(
         simctl: any SimctlClient,
@@ -17,7 +18,8 @@ public struct Tools: Sendable {
         git: any GitClient,
         runningApps: any RunningAppsChecking,
         lastUsedDates: any LastUsedDateReading,
-        trash: any TrashService)
+        trash: any TrashService,
+        freeSpace: any FreeSpaceReading)
     {
         self.simctl = simctl
         self.brew = brew
@@ -27,11 +29,19 @@ public struct Tools: Sendable {
         self.runningApps = runningApps
         self.lastUsedDates = lastUsedDates
         self.trash = trash
+        self.freeSpace = freeSpace
     }
 
     /// The real tools, found through the environment's `PATH`.
-    /// - Parameter passthroughOutput: let `simctl delete` print to the terminal.
-    public static func live(environment: [String: String], passthroughOutput: Bool = false) -> Tools {
+    /// - Parameters:
+    ///   - passthroughOutput: let `simctl delete` print to the terminal.
+    ///   - command: under the original script's name, free space is read the
+    ///     script's way, through `osascript`; otherwise macOS is asked directly.
+    public static func live(
+        environment: [String: String],
+        passthroughOutput: Bool = false,
+        command: CommandName = .product) -> Tools
+    {
         let runner = LiveProcessRunner(environment: environment)
         return Tools(
             simctl: LiveSimctlClient(runner: runner, passthroughDeletes: passthroughOutput),
@@ -41,6 +51,7 @@ public struct Tools: Sendable {
             git: LiveGitClient(runner: runner),
             runningApps: PgrepRunningApps(runner: runner),
             lastUsedDates: SpotlightLastUsedDates(),
-            trash: SystemTrash())
+            trash: SystemTrash(),
+            freeSpace: command == .original ? OsascriptFreeSpace(runner: runner) : SystemFreeSpace())
     }
 }

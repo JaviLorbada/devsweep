@@ -57,7 +57,7 @@ struct DevSweepCommand: AsyncParsableCommand {
         let status = await CommandLineSession.run(
             CommandLineOptions(run: self.run, yes: self.yes, skip: self.skip, projects: self.projects),
             environment: environment,
-            dependencies: .live(environment: environment, passthroughOutput: true),
+            dependencies: .live(environment: environment, passthroughOutput: true, command: Self.commandName),
             terminal: StandardTerminal(command: Self.commandName),
             command: Self.commandName)
         Darwin.exit(status)

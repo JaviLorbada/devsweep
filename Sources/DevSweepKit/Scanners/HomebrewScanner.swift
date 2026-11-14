@@ -20,8 +20,8 @@ public struct HomebrewScanner: Scanner {
     }
 
     /// Size in KB from the dry run's "would free approximately 1.5GB" line.
-    /// The last such line wins; units are binary multiples; fractions of a KB
-    /// are dropped.
+    /// The last such line wins. Homebrew counts in thousands: its 1.5GB is
+    /// 1.5 billion bytes, rounded to the nearest 1024-byte KB.
     static func kilobytes(fromDryRun output: String) -> Int64 {
         var result: Double = 0
         for line in output.split(separator: "\n", omittingEmptySubsequences: false)
@@ -33,18 +33,20 @@ public struct HomebrewScanner: Scanner {
                 value = index + 1 < fields.count ? String(fields[index + 1]) : ""
             }
             let unit = String(value.drop(while: { $0.isASCII && ($0.isNumber || $0 == ".") }))
-            let multiplier: Double = switch unit {
-            case "B": 1.0 / 1024
-            case "KB": 1
-            case "MB": 1024
-            case "GB": 1_048_576
-            case "TB": 1_073_741_824
+            let bytes: Double = switch unit {
+            case "B": 1
+            case "KB": 1e3
+            case "MB": 1e6
+            case "GB": 1e9
+            case "TB": 1e12
             default: 0
             }
-            result = leadingNumber(value) * multiplier
+            result = leadingNumber(value) * bytes / 1024
         }
-        guard result.isFinite, result > 0, result < Double(Int64.max) else { return 0 }
-        return Int64(result)
+        // awk's printf "%d" of kb + 0.5: rounded, halves up.
+        let rounded = result + 0.5
+        guard rounded.isFinite, rounded >= 1, rounded < Double(Int64.max) else { return 0 }
+        return Int64(rounded)
     }
 
     /// The number at the start of `text`, like awk's `text + 0`.

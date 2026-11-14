@@ -36,6 +36,8 @@ final class FakeTools: @unchecked Sendable {
     var selectedDeveloperDirectory = ""
     var running: Set<DeveloperApp> = []
     var lastUsed: [String: Date] = [:]
+    /// Finder's free space in bytes, nil to fall back to `df`'s figure.
+    var freeBytes: Int64?
     var gitEnvironment: [String: String]
     /// Replaces git with an answer, nil meaning git failed.
     var gitAnswer: (@Sendable (String, String) -> String?)?
@@ -70,7 +72,8 @@ final class FakeTools: @unchecked Sendable {
             git: gitClient,
             runningApps: FakeRunningApps(log: self.log, running: self.running),
             lastUsedDates: FakeLastUsed(dates: self.lastUsed),
-            trash: LoggingTrash(trash: FolderTrash(folder: self.trashFolder), log: self.log))
+            trash: LoggingTrash(trash: FolderTrash(folder: self.trashFolder), log: self.log),
+            freeSpace: FakeFreeSpace(bytes: self.freeBytes))
     }
 
     /// Makes simctl report two runtimes: iOS 27.0 used today with two
@@ -171,6 +174,11 @@ struct FakeRunningApps: RunningAppsChecking {
         self.log.record("pgrep -xq \(app.rawValue)")
         return self.running.contains(app)
     }
+}
+
+struct FakeFreeSpace: FreeSpaceReading {
+    let bytes: Int64?
+    func availableBytes(on path: String) async -> Int64? { self.bytes }
 }
 
 struct FakeLastUsed: LastUsedDateReading {

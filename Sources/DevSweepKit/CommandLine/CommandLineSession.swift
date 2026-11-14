@@ -83,7 +83,7 @@ public enum CommandLineSession {
             case let .done(totalBytes, freeBytes):
                 terminal.write(Report.summary(
                     totalKilobytes: found.isEmpty ? nil : totalBytes / 1024,
-                    freeKilobytes: freeBytes / 1024))
+                    freeBytes: freeBytes))
             case let .extras(extras):
                 terminal.write(Report.extras(
                     extras,
@@ -118,13 +118,13 @@ public enum CommandLineSession {
             }
         }
 
-        let before = engine.diskSpace()?.availableKilobytes ?? 0
+        let before = await engine.freeBytes()
         for result in found {
             terminal.write(Report.deleting(result))
             let outcome = await engine.clean(result, mode: .delete)
             outcome.warnings.forEach(terminal.warn)
         }
-        terminal.write(Report.done(freeBefore: before, freeAfter: engine.diskSpace()?.availableKilobytes ?? 0))
+        await terminal.write(Report.done(freeBefore: before, freeAfter: engine.freeBytes()))
         return 0
     }
 }

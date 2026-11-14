@@ -72,28 +72,7 @@ extension Item {
     }
 }
 
-/// Sizes as Finder and System Settings write them: in thousands, rounded,
-/// so the app's numbers match the Mac's. The command line tool keeps the bash
-/// script's report, which counts in 1024s.
-enum SizeText {
-    /// Kilobytes as the kit measures them: 1024 bytes each.
-    static func of(kilobytes: Int64) -> String {
-        self.of(bytes: kilobytes * 1024)
-    }
-
-    /// "356.6 GB", "105 MB", "16 KB". A unit takes over where the one below
-    /// would round to 1000.
-    static func of(bytes: Int64) -> String {
-        let bytes = max(0, bytes)
-        if bytes >= 999_500_000 {
-            return String(format: "%.1f GB", Double(bytes) / 1_000_000_000)
-        }
-        if bytes >= 999_500 {
-            return "\((bytes + 500_000) / 1_000_000) MB"
-        }
-        return "\((bytes + 500) / 1000) KB"
-    }
-
+extension SizeText {
     /// A disk's capacity, in whole gigabytes once it is that big: "995 GB".
     static func wholeGigabytes(kilobytes: Int64) -> String {
         let bytes = kilobytes * 1024

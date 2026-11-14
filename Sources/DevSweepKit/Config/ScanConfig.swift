@@ -19,10 +19,6 @@ public struct ScanConfig: Sendable {
     /// folders with the extras. Run under the original script's name the tool
     /// runs no git for them, so its report and tool calls stay the script's.
     public var includeWorktrees: Bool
-    /// Whether a simulator runtime's size counts the download macOS keeps for
-    /// it, which `simctl runtime delete` removes with it. Run under the
-    /// original script's name the tool keeps simctl's size, as the script does.
-    public var includeRuntimeDownloads: Bool
     /// The environment the scan runs in. Git's `GIT_DIR` and `GIT_WORK_TREE`
     /// come from here.
     public var environment: [String: String]
@@ -36,7 +32,6 @@ public struct ScanConfig: Sendable {
         includeExtras: Bool = true,
         includeAndroid: Bool = false,
         includeWorktrees: Bool = false,
-        includeRuntimeDownloads: Bool = false,
         environment: [String: String] = [:])
     {
         self.home = home
@@ -47,7 +42,6 @@ public struct ScanConfig: Sendable {
         self.includeExtras = includeExtras
         self.includeAndroid = includeAndroid
         self.includeWorktrees = includeWorktrees
-        self.includeRuntimeDownloads = includeRuntimeDownloads
         self.environment = environment
     }
 
@@ -74,7 +68,6 @@ public struct ScanConfig: Sendable {
             skipped: skipped,
             includeExtras: includeExtras,
             includeWorktrees: includeExtras && command == .product,
-            includeRuntimeDownloads: includeExtras && command == .product,
             environment: environment)
     }
 

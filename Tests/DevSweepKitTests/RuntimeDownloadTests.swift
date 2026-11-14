@@ -40,15 +40,15 @@ struct RuntimeDownloadTests {
     }
 
     @Test
-    func `under the original script's name a runtime's size stays simctl's`() async throws {
+    func `under the original script's name the download counts too, as the script counts it`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
-        _ = self.stubRuntimes(home, tools)
+        let download = self.stubRuntimes(home, tools)
         var config = ScanConfig.fromEnvironment(home.environment, command: .original)
         config.environment = home.environment
-        #expect(!config.includeRuntimeDownloads)
         let runtimes = try await Engine(config: config, tools: tools.tools).extras().runtimes
-        #expect(runtimes.map(\.kilobytes) == [1024, 1024])
-        #expect(runtimes.allSatisfy { $0.downloadKilobytes == nil })
+        let measured = SizeMeasurer().measure(download).kilobytes
+        #expect(runtimes.first { $0.id == "WITH-DOWNLOAD" }?.kilobytes == 1024 + measured)
+        #expect(runtimes.first { $0.id == "IN-ITS-DOWNLOAD" }?.kilobytes == 1024)
     }
 
     @Test
@@ -75,8 +75,13 @@ struct RuntimeDownloadTests {
             "/System/Library/AssetsV2/kind/ios-18-5.asset"),
         ("/System/Library/AssetsV2/kind/ios-18-5.asset", "/System/Library/AssetsV2/kind/ios-18-5.asset"),
         ("/Library/Developer/CoreSimulator/Images/a.dmg", nil),
-        ("/folder/.asset/a.dmg", nil),
-        ("ios-18-5.asset/a.dmg", nil),
+        // As the script's /^(.*\.asset)(\/|$)/ reads them: the last .asset
+        // that ends a name, on the first line, relative or not.
+        ("/a.asset/b.asset/c.dmg", "/a.asset/b.asset"),
+        ("/folder/.asset/a.dmg", "/folder/.asset"),
+        ("ios-18-5.asset/a.dmg", "ios-18-5.asset"),
+        ("/x.assets/y.dmg", nil),
+        ("/p.asset\n/q.asset", nil),
     ])
     func `a download is the MobileAsset folder its image is in`(path: String, folder: String?) {
         #expect(ExtrasScanner.assetFolder(path) == folder)

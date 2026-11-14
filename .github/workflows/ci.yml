@@ -60,7 +60,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: JaviLorbada/dotfiles
-          ref: ce495ec4fc15b57086f30b7dbb60cf43c5c5f0a9
+          ref: 500a27250420cc82e1312187901dd77fcfb3669d
           path: dotfiles
           persist-credentials: false
       - name: Xcode 27.2
