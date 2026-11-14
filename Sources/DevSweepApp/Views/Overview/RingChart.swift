@@ -8,6 +8,7 @@ import SwiftUI
 struct RingChart: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
+    @Environment(\.colorSchemeContrast) private var contrast
 
     /// The ring's diameter: 240 points when there is room, down to 150 in
     /// the narrowest center column, so the legend keeps its share.
@@ -29,10 +30,14 @@ struct RingChart: View {
         let shares = self.itemShares
         return HStack(spacing: diameter < 200 ? 18 : 28) {
             ZStack {
-                Ring(segments: self.outerSegments(shares), innerRatio: 0.75, inset: 1.6) { self.select($0) }
-                    .frame(width: diameter, height: diameter)
-                Ring(segments: self.innerSegments(shares), innerRatio: 0.786, inset: 1.6) { self.select($0) }
-                    .frame(width: diameter * 0.7, height: diameter * 0.7)
+                Ring(segments: self.outerSegments(shares), innerRatio: 0.75, inset: self.tones.ringGap) {
+                    self.select($0)
+                }
+                .frame(width: diameter, height: diameter)
+                Ring(segments: self.innerSegments(shares), innerRatio: 0.786, inset: self.tones.ringGap) {
+                    self.select($0)
+                }
+                .frame(width: diameter * 0.7, height: diameter * 0.7)
                 VStack(spacing: 2) {
                     Text(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
                         .font(.system(size: diameter < 200 ? 22 : 30, weight: .bold))
@@ -89,6 +94,10 @@ struct RingChart: View {
         }
     }
 
+    private var tones: ChartTones {
+        ChartTones(self.contrast)
+    }
+
     private var selectedFamily: Family? {
         self.overview.selection?.family
     }
@@ -124,15 +133,15 @@ struct RingChart: View {
             let reclaimable = rows.filter { $0.isLive || $0.state == .cleaned }
             let allCleaned = !reclaimable.isEmpty && reclaimable.allSatisfy { $0.state == .cleaned }
             let color: Color = if previousOnly {
-                Palette.color(family).opacity(0.25)
+                Palette.color(family).opacity(self.tones.lastScan)
             } else if !measured {
-                Palette.placeholder
+                self.tones.placeholder
             } else if allCleaned {
-                Palette.cleaned
+                self.tones.cleaned
             } else if self.selectedFamily == nil || self.selectedFamily == family {
                 Palette.color(family)
             } else {
-                Palette.color(family).opacity(0.42)
+                Palette.color(family).opacity(self.tones.dimmed)
             }
             return Ring.Segment(id: family.rawValue, weight: weight, color: color)
         }
@@ -141,18 +150,18 @@ struct RingChart: View {
     private func color(for row: ScanRow) -> Color {
         switch row.state {
         case .measuring where row.isCounting:
-            return Palette.color(row.item).opacity(0.6)
+            return Palette.color(row.item).opacity(self.tones.measuring)
         case .waiting where row.showsPrevious:
-            return Palette.color(row.item).opacity(0.25)
+            return Palette.color(row.item).opacity(self.tones.lastScan)
         case .waiting, .measuring, .notMeasured:
-            return Palette.placeholder
+            return self.tones.placeholder
         case .cleaning, .cleaned:
-            return Palette.cleaned
+            return self.tones.cleaned
         case .measured:
             if self.overview.selection == nil || self.overview.selection == row.item {
                 return Palette.color(row.item)
             }
-            return Palette.color(row.item).opacity(0.42)
+            return Palette.color(row.item).opacity(self.tones.dimmed)
         }
     }
 }
@@ -169,12 +178,13 @@ struct Ring: View {
     let innerRatio: Double
     let inset: CGFloat
     let onSelect: (String) -> Void
+    @Environment(\.colorSchemeContrast) private var contrast
     @State private var selectedValue: Double?
 
     var body: some View {
         let drawn = self.segments.contains { $0.weight > 0 }
             ? self.segments
-            : [Segment(id: "empty", weight: 1, color: Palette.placeholder)]
+            : [Segment(id: "empty", weight: 1, color: ChartTones(self.contrast).placeholder)]
         Chart(drawn) { segment in
             SectorMark(
                 angle: .value("Size", segment.weight),
@@ -210,6 +220,7 @@ struct Ring: View {
 struct FamilyLegend: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
+    @Environment(\.colorSchemeContrast) private var contrast
     var showsShare = true
 
     var body: some View {
@@ -220,7 +231,7 @@ struct FamilyLegend: View {
                 let gaps = CGFloat(max(live.count - 1, 0)) * 2
                 HStack(spacing: 2) {
                     if live.isEmpty {
-                        Capsule().fill(Palette.placeholder)
+                        Capsule().fill(ChartTones(self.contrast).placeholder)
                     }
                     ForEach(live) { family in
                         Rectangle()

@@ -71,6 +71,7 @@ struct ItemRow: View {
     @Environment(MarksModel.self) private var marks
     @Environment(CleaningModel.self) private var cleaning
     @Environment(\.appearsActive) private var appearsActive
+    @Environment(\.colorSchemeContrast) private var contrast
     @FocusState private var focused: Bool
     let row: ScanRow
     let largest: Double
@@ -198,11 +199,15 @@ struct ItemRow: View {
             .lineLimit(1)
     }
 
+    private var tones: ChartTones {
+        ChartTones(self.contrast)
+    }
+
     private var barColor: Color {
         switch self.row.state {
-        case .cleaned, .cleaning: Palette.cleaned
-        case .measuring: Palette.color(self.row.item).opacity(0.6)
-        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(0.25)
+        case .cleaned, .cleaning: self.tones.cleaned
+        case .measuring: Palette.color(self.row.item).opacity(self.tones.measuring)
+        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(self.tones.lastScan)
         case .measured: Palette.color(self.row.item)
         }
     }
