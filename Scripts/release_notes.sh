@@ -4,14 +4,16 @@
 # of CHANGELOG.md (or Unreleased when it has none yet), what to download,
 # how the build is signed (from dist/signing.txt), and the zips' SHA-256 when
 # they are in dist/. GitHub shows every newline in release notes, so the
-# lines a paragraph or a list item wraps onto are joined.
+# lines a paragraph or a list item wraps onto are joined. With --changes,
+# only its section of CHANGELOG.md, as Markdown for the appcast, which
+# Sparkle's update window shows.
 #
-# Usage: Scripts/release_notes.sh <version>
+# Usage: Scripts/release_notes.sh <version> [--changes]
 
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="${1:?usage: Scripts/release_notes.sh <version>}"
+version="${1:?usage: Scripts/release_notes.sh <version> [--changes]}"
 # shellcheck source=../version.env
 source "$root/version.env"
 repository="${GITHUB_REPOSITORY:-JaviLorbada/devsweep}"
@@ -43,6 +45,17 @@ unwrap() {
 notes="$(section "$version")"
 [[ -n "${notes//[[:space:]]/}" ]] || notes="$(section Unreleased)"
 
+# Links relative to the repository, like docs/architecture.md, point at the
+# tagged version's files; on a release page they would point nowhere.
+changes() {
+  printf '%s\n' "$notes" | sed -e '/./,$!d' | unwrap | cat -s \
+    | sed -E "s#\\]\\(([^):#]+)\\)#](https://github.com/$repository/blob/v$version/\\1)#g"
+}
+if [[ "${2:-}" == --changes ]]; then
+  changes
+  exit 0
+fi
+
 # The window, light or dark as the reader's GitHub is, from the tagged files.
 cat <<EOF
 <picture>
@@ -51,10 +64,7 @@ cat <<EOF
 </picture>
 
 EOF
-# Links relative to the repository, like docs/architecture.md, point at the
-# tagged version's files; on a release page they would point nowhere.
-printf '%s\n' "$notes" | sed -e '/./,$!d' | unwrap | cat -s \
-  | sed -E "s#\\]\\(([^):#]+)\\)#](https://github.com/$repository/blob/v$version/\\1)#g"
+changes
 
 cat <<EOF
 

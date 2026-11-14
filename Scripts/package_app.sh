@@ -13,12 +13,15 @@
 # run beside the released app and be told apart. FOR_RELEASE=1, as
 # Scripts/build_release.sh sets it, packages the app people download:
 # DevSweep, its bundle id and icon.
-# A release build goes to build/, a debug one to build/debug/.
+# A release build goes to build/, a debug one to build/debug/; OUTPUT names
+# another folder.
 #
 # Updates: the app people download looks for them at version.env's
-# UPDATE_FEED_URL. A development build has no feed, so it never offers to
-# replace itself with a release. FEED_URL names another feed for either,
-# such as a local appcast to try an update with.
+# UPDATE_FEED_URL, and trusts those signed with UPDATE_PUBLIC_KEY's private
+# half. A development build has no feed, so it never offers to replace
+# itself with a release. FEED_URL and PUBLIC_KEY give a development build a
+# feed and a key of its own, as Scripts/try_update.sh does to try an update
+# from a local appcast; the app people download ignores them.
 #
 # Signing: ad hoc, unless DEVELOPER_ID_APPLICATION names a Developer ID
 # Application identity in the keychain; then hardened runtime and a secure
@@ -36,17 +39,19 @@ if [[ -n "${FOR_RELEASE:-}" && "$config" != debug ]]; then
   bundle_id="$BUNDLE_ID"
   icon="$root/docs/icon/AppIcon.icon"
   development="<false/>"
-  feed="${FEED_URL:-$UPDATE_FEED_URL}"
+  feed="$UPDATE_FEED_URL"
+  public_key="$UPDATE_PUBLIC_KEY"
 else
   name="$PRODUCT_NAME Dev"
   bundle_id="$BUNDLE_ID.dev"
   icon="$root/docs/icon/development/AppIcon.icon"
   development="<true/>"
   feed="${FEED_URL:-}"
+  public_key="${PUBLIC_KEY:-$UPDATE_PUBLIC_KEY}"
 fi
-destination="$root/build/$name.app"
+destination="${OUTPUT:-$root/build}/$name.app"
 if [[ "$config" == debug ]]; then
-  destination="$root/build/debug/$name.app"
+  destination="${OUTPUT:-$root/build/debug}/$name.app"
   bundle_id="$BUNDLE_ID.debug"
 fi
 
@@ -100,7 +105,7 @@ release_signed="<false/>"
 # Sparkle's settings. Without SUEnableAutomaticChecks, it asks on the second
 # launch whether to check automatically, so nothing is turned on unasked; it
 # never sends a profile of the Mac. Without a feed, the app starts no updater.
-updates="  <key>SUPublicEDKey</key><string>$UPDATE_PUBLIC_KEY</string>
+updates="  <key>SUPublicEDKey</key><string>$public_key</string>
   <key>SUEnableSystemProfiling</key><false/>"
 [[ -z "$feed" ]] || updates+="
   <key>SUFeedURL</key><string>$feed</string>"

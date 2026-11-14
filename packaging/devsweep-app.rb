@@ -11,12 +11,16 @@ cask "devsweep-app" do
   desc "Shows how much space developer caches take up, and cleans them"
   homepage "https://github.com/JaviLorbada/devsweep"
 
+  # The app updates itself with Sparkle, so `brew upgrade` leaves it to that.
+  auto_updates true
   depends_on macos: ">= :tahoe"
 
   app "DevSweep.app"
 
   zap trash: [
     "~/Library/Application Support/DevSweep",
+    "~/Library/Caches/com.javilorbada.devsweep",
+    "~/Library/HTTPStorages/com.javilorbada.devsweep",
     "~/Library/Preferences/com.javilorbada.devsweep.plist",
   ]
 end
