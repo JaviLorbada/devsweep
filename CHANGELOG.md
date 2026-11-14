@@ -6,6 +6,11 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+## 0.6.0
+
+A new icon, and one way of counting everywhere: simulator runtimes with
+the download macOS keeps for them, and the command line as the app counts.
+
 - A new icon: DevSweep's ring of caches floating over a frosted dish, in
   light and dark versions that follow the icon style you choose in macOS 26.
 - A simulator runtime's size counts the download macOS keeps for it, which
