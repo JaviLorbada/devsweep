@@ -61,7 +61,8 @@ struct SavedScanTests {
                     kilobytes: 5,
                     lastUsedDay: "2026-10-20",
                     daysSinceUsed: 1,
-                    deviceSet: .previews)]))
+                    deviceSet: .previews,
+                    isAvailable: false)]))
     }
 
     @Test

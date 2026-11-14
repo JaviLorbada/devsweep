@@ -11,7 +11,7 @@ struct SimulatorsViewModelTests {
     func `the simulators Xcode and Simulator show are listed apart from the ones Xcode made for previews and tests`() {
         let model = SimulatorsViewModel(scan: FakeListings(extras: sampleExtras), preferences: self.preferences)
         #expect(model.simulators.map(\.name) == [
-            "iPhone 18 Pro Max", "iPhone 16 Pro", "iPhone Air", "iPad Pro 13-inch (M5)",
+            "iPhone 18 Pro Max", "iPhone 16 Pro", "iPhone Air", "iPad Pro 13-inch (M5)", "iPhone 17",
         ])
         #expect(model.previewsAndTests.map(\.name) == ["iPhone 17 Pro", "Clone 1 of iPhone 17 Pro Max"])
         #expect(SimulatorsViewModel(scan: FakeListings(), preferences: self.preferences).simulators.isEmpty)

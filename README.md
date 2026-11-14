@@ -153,7 +153,8 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   its runtime, state, size and last use, and flags the ones unused for as
   long as Settings says, as it flags runtimes. The ones Xcode makes on its
   own, for SwiftUI previews and for running tests in parallel, are listed
-  apart. DevSweep never erases or deletes a simulator that works.
+  apart. DevSweep never erases or deletes a simulator that works; one whose
+  runtime is gone is marked, since the Simulators item cleans those.
 - **Find worktrees.** DevSweep lists the worktrees of the repositories in
   your project folders, wherever the worktrees are. If a tool keeps its
   worktrees in a folder of its own, add that folder as a project folder.

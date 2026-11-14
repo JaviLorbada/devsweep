@@ -7,10 +7,11 @@ struct SimulatorDetails: View {
     let staleDays: Int
 
     var body: some View {
-        let stale = self.simulator.flagReason(staleDays: self.staleDays) != nil
+        let unused = self.simulator.flagReason(staleDays: self.staleDays) != nil
+        let flagged = unused || !self.simulator.isAvailable
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
-                Dot(color: stale ? .orange : .secondary.opacity(0.6))
+                Dot(color: flagged ? .orange : .secondary.opacity(0.6))
                 Eyebrow(text: SimulatorWords.kind(self.simulator.deviceSet))
             }
             Text(self.simulator.name).font(.title3.weight(.semibold))
@@ -20,10 +21,13 @@ struct SimulatorDetails: View {
                     .monospacedDigit()
                 Text(SimulatorWords.status(self.simulator, staleDays: self.staleDays))
                     .font(.callout.weight(.medium))
-                    .foregroundStyle(stale ? AnyShapeStyle(.orange) : AnyShapeStyle(.muted))
+                    .foregroundStyle(flagged ? AnyShapeStyle(.orange) : AnyShapeStyle(.muted))
             }
             InspectorSection("Runtime") { Text(self.simulator.runtime) }
-            InspectorSection(stale ? "Why it is flagged" : "Usage") { Text(SimulatorWords.usage(self.simulator)) }
+            if !self.simulator.isAvailable {
+                InspectorSection("What happens") { Text(SimulatorWords.runtimeGone) }
+            }
+            InspectorSection(unused ? "Why it is flagged" : "Usage") { Text(SimulatorWords.usage(self.simulator)) }
             InspectorSection("Size") { Text(SimulatorWords.size) }
             InspectorSection("Where it comes from") { Text(SimulatorWords.origin(self.simulator.deviceSet)) }
             InspectorSection("UDID") {

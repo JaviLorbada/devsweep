@@ -2,9 +2,12 @@ import DevSweepKit
 
 /// The words the Simulators screen uses.
 enum SimulatorWords {
-    /// "98 days unused", for a simulator flagged after `staleDays`; nil for
-    /// one that isn't.
+    /// "runtime gone" for a simulator that can't run, "98 days unused" for
+    /// one flagged after `staleDays`, nil for the others.
     static func badge(_ simulator: Simulator, staleDays: Int) -> String? {
+        guard simulator.isAvailable else {
+            return "runtime gone"
+        }
         guard simulator.flagReason(staleDays: staleDays) != nil, let days = simulator.daysSinceUsed else {
             return nil
         }
@@ -32,9 +35,12 @@ enum SimulatorWords {
         }
     }
 
-    /// "looks unused" for a flagged one, otherwise simctl's state in words:
-    /// "booted", "shut down".
+    /// "runtime gone" for one that can't run, "looks unused" for a flagged
+    /// one, otherwise simctl's state in words: "booted", "shut down".
     static func status(_ simulator: Simulator, staleDays: Int) -> String {
+        if !simulator.isAvailable {
+            return "runtime gone"
+        }
         if simulator.flagReason(staleDays: staleDays) != nil {
             return "looks unused"
         }
@@ -58,6 +64,10 @@ enum SimulatorWords {
         case .testing: "Xcode cloned it to run tests in parallel, and clones another when tests need one."
         }
     }
+
+    /// What happens to a simulator whose runtime is gone.
+    static let runtimeGone = "Its runtime is gone, so it can't run. The Overview's Simulators item removes it, "
+        + "with xcrun simctl delete unavailable."
 
     /// What a simulator's size is.
     static let size = "Its data, as simctl measures it: the apps installed on it and what they keep."

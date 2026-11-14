@@ -86,7 +86,7 @@ struct TallyTests {
         #expect(sampleExtras.xcodesKilobytes == 12_582_912 + 11_534_336)
         #expect(sampleExtras.runtimesKilobytes == 7_689_179 + 8_295_197 + 4_089_446)
         #expect(sampleExtras.removableWorktreesKilobytes == 2 * 623_000)
-        #expect(sampleExtras.simulatorsKilobytes == 26_537_136)
+        #expect(sampleExtras.simulatorsKilobytes == 26_537_136 + 8192)
         #expect(sampleAndroid.studiosKilobytes == 3_500_000)
         #expect(sampleAndroid.sdkKilobytes == 9_000_000 + 120_000 + 150_000 + 900_000 + 6_000_000)
         #expect(sampleAndroid.gradleCachesKilobytes == 4_000_000)

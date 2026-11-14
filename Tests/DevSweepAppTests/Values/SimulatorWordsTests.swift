@@ -14,6 +14,16 @@ struct SimulatorWordsTests {
     }
 
     @Test
+    func `one whose runtime is gone says so first, and what removes it`() {
+        let gone = sampleSimulators[6]
+        #expect(SimulatorWords.badge(gone, staleDays: 90) == "runtime gone")
+        #expect(SimulatorWords.badge(gone, staleDays: 1000) == "runtime gone")
+        #expect(SimulatorWords.status(gone, staleDays: 90) == "runtime gone")
+        #expect(SimulatorWords.runtimeGone.contains("Overview's Simulators item"))
+        #expect(SimulatorWords.runtimeGone.contains("xcrun simctl delete unavailable"))
+    }
+
+    @Test
     func `a row names the runtime, and the set when Xcode made it on its own`() {
         #expect(SimulatorWords.detail(sampleSimulators[0]) == "iOS 27.1")
         #expect(SimulatorWords.detail(sampleSimulators[3]) == "iOS 27.1, for previews")
