@@ -22,6 +22,25 @@ struct MarksModelTests {
     }
 
     @Test
+    func `other languages' build folders never start ticked, however big`() {
+        let scan = FakeScanResults([
+            result(.nodeModules, kilobytes: 4096),
+            result(.cargoBuilds, kilobytes: 2048),
+            result(.cocoapodsPods, kilobytes: 1024),
+            result(.derivedData, kilobytes: 256),
+            result(.swiftpmCache, kilobytes: 192),
+            result(.toolCaches, kilobytes: 128),
+            result(.npmCache, kilobytes: 16),
+        ])
+        let marks = MarksModel(scan: scan)
+        marks.applyDefaults()
+        #expect(marks.marked == [.derivedData, .swiftpmCache, .toolCaches])
+
+        marks.markAll()
+        #expect(marks.marked.isSuperset(of: [.nodeModules, .cargoBuilds, .cocoapodsPods]))
+    }
+
+    @Test
     func `marks changed before the defaults apply are kept, until a new scan`() {
         let marks = MarksModel(scan: self.scan)
         marks.setMarked(.npmCache, true)

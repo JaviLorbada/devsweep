@@ -1,4 +1,4 @@
-/// The eleven things DevSweep measures and can delete, in report order.
+/// The fourteen things DevSweep measures and can delete, in report order.
 public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codable {
     case derivedData = "derived-data"
     case simulators
@@ -8,6 +8,9 @@ public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codabl
     case swiftpmBuilds = "swiftpm-builds"
     case xcodeBuilds = "xcode-builds"
     case gradleBuilds = "gradle-builds"
+    case cocoapodsPods = "cocoapods-pods"
+    case cargoBuilds = "cargo-builds"
+    case nodeModules = "node-modules"
     case npmCache = "npm-cache"
     case homebrew
     case toolCaches = "tool-caches"
@@ -27,6 +30,9 @@ public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codabl
         case .swiftpmBuilds: "SwiftPM .build folders"
         case .xcodeBuilds: "Xcode build folders"
         case .gradleBuilds: "Gradle build folders"
+        case .cocoapodsPods: "CocoaPods Pods folders"
+        case .cargoBuilds: "Cargo target folders"
+        case .nodeModules: "node_modules folders"
         case .npmCache: "npm cache"
         case .homebrew: "Homebrew old versions and downloads"
         case .toolCaches: "Tool caches"
@@ -36,7 +42,8 @@ public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codabl
     /// Whether the report shows how many folders it found.
     public var showsCount: Bool {
         switch self {
-        case .simulators, .deviceSupport, .swiftpmBuilds, .xcodeBuilds, .gradleBuilds, .toolCaches: true
+        case .simulators, .deviceSupport, .swiftpmBuilds, .xcodeBuilds, .gradleBuilds, .cocoapodsPods, .cargoBuilds,
+             .nodeModules, .toolCaches: true
         default: false
         }
     }
@@ -59,14 +66,29 @@ public enum Item: String, CaseIterable, Sendable, Identifiable, Hashable, Codabl
         case .derivedData, .deviceSupport, .simulators, .xcodeBuilds, .deviceInstalls: .xcode
         case .swiftpmCache, .swiftpmBuilds: .swiftPackages
         case .homebrew: .homebrew
-        case .npmCache: .npm
-        case .toolCaches, .gradleBuilds: .otherTools
+        case .npmCache, .nodeModules: .npm
+        case .toolCaches, .gradleBuilds, .cocoapodsPods, .cargoBuilds: .otherTools
         }
     }
 
-    /// Ids joined the way the bash script lists them in errors.
-    public static var idList: String {
-        allCases.map(\.rawValue).joined(separator: " ")
+    /// Whether the bash script has it. Run under the script's name, the tool
+    /// knows only these, so its report, `--skip` and errors stay the script's.
+    public var isInOriginalScript: Bool {
+        switch self {
+        case .derivedData, .simulators, .deviceInstalls, .deviceSupport, .swiftpmCache, .swiftpmBuilds, .xcodeBuilds,
+             .gradleBuilds, .npmCache, .homebrew, .toolCaches: true
+        case .cocoapodsPods, .cargoBuilds, .nodeModules: false
+        }
+    }
+
+    /// The items `command` knows, in report order.
+    public static func known(by command: CommandName) -> [Item] {
+        command == .original ? allCases.filter(\.isInOriginalScript) : allCases
+    }
+
+    /// The ids `command` knows, joined the way the bash script lists them in errors.
+    public static func idList(for command: CommandName) -> String {
+        self.known(by: command).map(\.rawValue).joined(separator: " ")
     }
 }
 
@@ -92,15 +114,17 @@ public enum Family: String, CaseIterable, Sendable, Identifiable, Hashable, Coda
         }
     }
 
-    /// Items of this family, largest first in a typical home folder, which is
-    /// the order the palette assigns them from darker to lighter.
+    /// Items of this family in the order the palette steps them, darker to
+    /// lighter: largest first in a typical home folder, except that items
+    /// added to a family later took darker steps, so the others kept their
+    /// colors.
     public var items: [Item] {
         switch self {
         case .xcode: [.derivedData, .deviceSupport, .simulators, .xcodeBuilds, .deviceInstalls]
         case .swiftPackages: [.swiftpmCache, .swiftpmBuilds]
         case .homebrew: [.homebrew]
-        case .npm: [.npmCache]
-        case .otherTools: [.toolCaches, .gradleBuilds]
+        case .npm: [.nodeModules, .npmCache]
+        case .otherTools: [.cargoBuilds, .cocoapodsPods, .toolCaches, .gradleBuilds]
         }
     }
 }

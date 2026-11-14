@@ -29,6 +29,7 @@ extension Item {
     /// folder searches, then DerivedData.
     public static let quickestFirst: [Item] = [
         .npmCache, .toolCaches, .deviceInstalls, .simulators, .deviceSupport, .swiftpmCache,
-        .homebrew, .gradleBuilds, .xcodeBuilds, .swiftpmBuilds, .derivedData,
+        .homebrew, .cocoapodsPods, .cargoBuilds, .nodeModules, .gradleBuilds, .xcodeBuilds, .swiftpmBuilds,
+        .derivedData,
     ]
 }

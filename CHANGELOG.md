@@ -21,6 +21,12 @@ gets a line under Unreleased as it lands.
   download this one by hand, and it updates itself from here on.
 - Settings resizes from its edges, and opens tall enough to show General
   whole. A tab taller than the window scrolls, as before.
+- Three more items, listed and cleaned per project like `.build` folders:
+  `node_modules` next to a `package.json`, CocoaPods' `Pods` next to a
+  `Podfile.lock`, and Cargo's `target` next to a `Cargo.toml`. Folders git
+  tracks stay, and so does one inside another. The app never ticks them on
+  its own; `devsweep --run` deletes them with the rest unless you `--skip`
+  them.
 
 ## 0.6.0
 

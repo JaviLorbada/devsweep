@@ -2,7 +2,8 @@ import DevSweepKit
 import Observation
 
 /// What is ticked to clean: whole items in the list, and parts of an item
-/// in its inspector. The three biggest start ticked once a scan is done.
+/// in its inspector. The three biggest that can start ticked do, once a
+/// scan is done.
 @MainActor
 @Observable
 final class MarksModel: Marking {
@@ -54,13 +55,13 @@ final class MarksModel: Marking {
         self.partMarks = [:]
     }
 
-    /// The three biggest items start ticked, unless the marks were changed
-    /// during the scan.
+    /// The three biggest items that can start ticked do, unless the marks
+    /// were changed during the scan.
     func applyDefaults() {
         guard !self.touched else {
             return
         }
-        self.marked = Set(self.scan.tally.live.prefix(3).map(\.item))
+        self.marked = Set(self.scan.tally.live.filter(\.item.canStartTicked).prefix(3).map(\.item))
     }
 
     /// `item` was cleaned, so it can't be ticked any more.

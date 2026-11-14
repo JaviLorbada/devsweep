@@ -1,6 +1,7 @@
 /// Build folders in the project folders: `.build` next to a `Package.swift`,
-/// `build` folders Xcode wrote, and `build` folders next to a Gradle file.
-/// Each is listed only when git provably tracks nothing in it.
+/// `build` folders Xcode wrote, `build` folders next to a Gradle file, and
+/// other languages' folders next to their project's file. Each is listed
+/// only when git provably tracks nothing in it.
 public struct ProjectBuildScanner: Scanner {
     public let item: Item
     let folderName: String
@@ -34,7 +35,7 @@ public struct ProjectBuildScanner: Scanner {
         item: .swiftpmBuilds,
         folderName: ".build",
         describe: ".build next to a Package.swift, in project folders",
-        qualifies: isSwiftPMBuild)
+        qualifies: beside("Package.swift"))
 
     public static let xcode = ProjectBuildScanner(
         item: .xcodeBuilds,
@@ -48,8 +49,30 @@ public struct ProjectBuildScanner: Scanner {
         describe: "build next to a Gradle build file, in project folders",
         qualifies: isGradleBuild)
 
-    static func isSwiftPMBuild(_ folder: String) -> Bool {
-        FileSystem.isRegularFile("\(FileSystem.dirname(folder))/Package.swift")
+    // Other languages' folders of installed packages and build output, each
+    // next to the file it comes back from.
+
+    public static let cocoapods = ProjectBuildScanner(
+        item: .cocoapodsPods,
+        folderName: "Pods",
+        describe: "Pods next to a Podfile.lock, in project folders",
+        qualifies: beside("Podfile.lock"))
+
+    public static let cargo = ProjectBuildScanner(
+        item: .cargoBuilds,
+        folderName: "target",
+        describe: "target next to a Cargo.toml, in project folders",
+        qualifies: beside("Cargo.toml"))
+
+    public static let nodeModules = ProjectBuildScanner(
+        item: .nodeModules,
+        folderName: "node_modules",
+        describe: "node_modules next to a package.json, in project folders",
+        qualifies: beside("package.json"))
+
+    /// Whether a file called `name` sits next to the folder.
+    static func beside(_ name: String) -> @Sendable (String) -> Bool {
+        { folder in FileSystem.isRegularFile("\(FileSystem.dirname(folder))/\(name)") }
     }
 
     static func isGradleBuild(_ folder: String) -> Bool {
