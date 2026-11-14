@@ -80,10 +80,12 @@ public enum CommandLineSession {
             case let .finished(result):
                 if !result.isEmpty { found.append(result) }
                 terminal.write(Report.row(result, style: style))
-            case let .done(totalBytes, freeBytes):
-                terminal.write(Report.summary(
+            case let .done(totalBytes, _):
+                // Finder's figure, asked for here rather than by the scan,
+                // which the app runs and has no use for it.
+                await terminal.write(Report.summary(
                     totalKilobytes: found.isEmpty ? nil : totalBytes / 1024,
-                    freeBytes: freeBytes))
+                    freeBytes: engine.freeBytes()))
             case let .extras(extras):
                 terminal.write(Report.extras(
                     extras,

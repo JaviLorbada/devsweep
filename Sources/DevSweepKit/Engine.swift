@@ -111,7 +111,8 @@ public struct Engine: Sendable {
             continuation.yield(.finished(result))
         }
 
-        await continuation.yield(.done(totalBytes: totalKilobytes * 1024, freeBytes: self.freeBytes()))
+        let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
+        continuation.yield(.done(totalBytes: totalKilobytes * 1024, freeBytes: free * 1024))
 
         if self.config.includeExtras, !Task.isCancelled {
             await continuation.yield(.extras(ExtrasScanner.scan(in: context)))
@@ -160,7 +161,8 @@ public struct Engine: Sendable {
                         return (state.finished, state.kilobytes)
                     }
                     if finished == order.count {
-                        await continuation.yield(.done(totalBytes: total * 1024, freeBytes: self.freeBytes()))
+                        let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
+                        continuation.yield(.done(totalBytes: total * 1024, freeBytes: free * 1024))
                     }
                 }
             }
@@ -176,7 +178,8 @@ public struct Engine: Sendable {
             }
         }
         if order.isEmpty {
-            await continuation.yield(.done(totalBytes: 0, freeBytes: self.freeBytes()))
+            let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
+            continuation.yield(.done(totalBytes: 0, freeBytes: free * 1024))
         }
     }
 

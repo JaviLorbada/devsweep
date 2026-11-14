@@ -85,7 +85,7 @@ func makeScan(
 @MainActor
 func finishScan(_ scan: ScanModel) async {
     scan.scan()
-    for _ in 0..<200 where scan.isScanning || scan.isLoadingExtras {
+    for _ in 0..<200 where scan.isScanning || scan.isLoadingExtras || scan.isLoadingAndroid {
         try? await Task.sleep(for: .milliseconds(50))
     }
 }
