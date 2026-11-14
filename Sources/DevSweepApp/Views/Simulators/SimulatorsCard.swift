@@ -8,6 +8,10 @@ struct SimulatorsCard: View {
     let simulators: [Simulator]
     /// What the card says when it has none.
     let empty: String
+    /// The UDID of the one shown selected.
+    let selectedID: String?
+    let staleDays: Int
+    let select: @MainActor (Simulator) -> Void
 
     var body: some View {
         ExtrasCard(title: self.title, note: self.note, rowCount: self.simulators.count) {
@@ -17,7 +21,14 @@ struct SimulatorsCard: View {
                 let largest = Double(self.simulators.map(\.kilobytes).max() ?? 1)
                 ForEach(self.simulators) { simulator in
                     Divider().opacity(0.6)
-                    SimulatorRow(simulator: simulator, largest: largest)
+                    SimulatorRow(
+                        simulator: simulator,
+                        largest: largest,
+                        staleDays: self.staleDays,
+                        isSelected: simulator.id == self.selectedID)
+                    {
+                        self.select(simulator)
+                    }
                 }
             }
         }

@@ -42,6 +42,16 @@ extension LayoutTests {
     }
 
     @Test
+    func `a simulator row takes only values, with no model in its environment`() {
+        let row = SimulatorRow(
+            simulator: sampleSimulators[2],
+            largest: Double(sampleSimulators[0].kilobytes),
+            staleDays: 90,
+            isSelected: true) {}
+        #expect(NSHostingController(rootView: row).sizeThatFits(in: .zero).height == 40)
+    }
+
+    @Test
     func `the simulator inspector never asks the window for more height`() {
         let home = TemporaryHome()
         let app = makeApp(home: home, extras: sampleExtras)

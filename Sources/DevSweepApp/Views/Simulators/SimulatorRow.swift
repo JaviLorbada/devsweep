@@ -1,17 +1,19 @@
 import DevSweepKit
 import SwiftUI
 
-/// A simulator: its name, runtime, last use and size, flagged when stale.
+/// A simulator: its name, runtime, last use and size, flagged when its
+/// runtime is gone or it is unused for `staleDays`.
 struct SimulatorRow: View {
-    @Environment(WindowViewModel.self) private var window
-    @Environment(SimulatorsViewModel.self) private var simulators
     @Environment(\.extrasColumns) private var columns
     let simulator: Simulator
+    /// The card's largest, which fills the bar.
     let largest: Double
+    let staleDays: Int
+    let isSelected: Bool
+    let select: @MainActor () -> Void
 
     var body: some View {
-        let badge = SimulatorWords.badge(self.simulator, staleDays: self.simulators.staleDays)
-        let selected = self.window.screen == .simulators && self.simulators.current?.id == self.simulator.id
+        let badge = SimulatorWords.badge(self.simulator, staleDays: self.staleDays)
         let tint: Color = badge == nil ? .secondary.opacity(0.6) : .orange
         HStack(spacing: 12) {
             Dot(color: tint)
@@ -48,11 +50,9 @@ struct SimulatorRow: View {
                 .frame(width: 64, alignment: .trailing)
         }
         .selectableRow(
-            selected: selected,
+            selected: self.isSelected,
             label: "\(self.simulator.name), \(SizeText.of(kilobytes: self.simulator.kilobytes))"
-                + (badge.map { ", \($0)" } ?? ""))
-        {
-            self.simulators.select(self.simulator)
-        }
+                + (badge.map { ", \($0)" } ?? ""),
+            select: self.select)
     }
 }
