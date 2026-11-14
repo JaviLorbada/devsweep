@@ -277,3 +277,33 @@ final class RecordingPoster: NotificationPoster {
     let posted = Mutex<[String]>([])
     func post(title: String, body: String) async { self.posted.withLock { $0.append(title) } }
 }
+
+/// Sparkle as a test sets it: what it can do and how it is set, the checks
+/// asked of it, and Sparkle's own windows changing its settings. It never
+/// asks the network.
+@MainActor
+final class FakeUpdater: AppUpdating {
+    var canCheckForUpdates = true
+    var checksAutomatically = false
+    var downloadsAutomatically = false
+    var onChange: (@MainActor () -> Void)?
+    private(set) var checks = 0
+
+    func checkForUpdates() {
+        self.checks += 1
+    }
+
+    /// A check starts or ends, and Check for Updates… follows.
+    func setCanCheck(_ canCheck: Bool) {
+        self.canCheckForUpdates = canCheck
+        self.onChange?()
+    }
+
+    /// The answer to Sparkle's question on the second launch, or to its
+    /// update window's checkbox.
+    func answer(checks: Bool, downloads: Bool) {
+        self.checksAutomatically = checks
+        self.downloadsAutomatically = downloads
+        self.onChange?()
+    }
+}

@@ -5,17 +5,32 @@ import SwiftUI
 @main
 struct DevSweepApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
-    @State private var app = AppCoordinator(notifier: Self.notifier)
+    @State private var app = AppCoordinator(notifier: Self.notifier, updater: Self.updater)
 
     /// Development runs, with or without a fake home, never ask to notify.
     private static var notifier: NotificationPoster {
+        self.isDevelopmentRun ? SilentNotificationPoster() : UserNotificationPoster()
+    }
+
+    /// Sparkle, in a build with a feed. Development runs show the update
+    /// controls without checking anything.
+    private static var updater: (any AppUpdating)? {
+        #if DEBUG
+        if self.isDevelopmentRun { return StandInUpdater() }
+        #endif
+        return SparkleUpdater.forThisBuild()
+    }
+
+    /// A development run that captures, probes or skips items, on a fake
+    /// home or the real one.
+    private static var isDevelopmentRun: Bool {
         #if DEBUG
         let environment = ProcessInfo.processInfo.environment
-        if DebugLaunch.isRequested || environment["DEVSWEEP_SNAPSHOT"] != nil || environment["DEVSWEEP_SKIP"] != nil {
-            return SilentNotificationPoster()
-        }
+        return DebugLaunch.isRequested || environment["DEVSWEEP_SNAPSHOT"] != nil
+            || environment["DEVSWEEP_SKIP"] != nil
+        #else
+        return false
         #endif
-        return UserNotificationPoster()
     }
 
     init() {
@@ -45,7 +60,7 @@ struct DevSweepApp: App {
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
-        .commands { AppCommands(scan: self.app.scan, window: self.app.window) }
+        .commands { AppCommands(scan: self.app.scan, window: self.app.window, updates: self.app.updates) }
 
         Window("About \(BuildIdentity.current.appName)", id: "about") {
             AboutView()
@@ -98,14 +113,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// The menu bar's commands: About, Scan Again in the File menu, the chart
-/// and the inspector in the View menu, and the project's pages and its tip
-/// jar under Help.
+/// The menu bar's commands: About and Check for Updates…, Scan Again in the
+/// File menu, the chart and the inspector in the View menu, and the
+/// project's pages and its tip jar under Help.
 /// Template items that would do nothing, such as New Window and a Help book
 /// there is none of, are replaced; the Edit menu stays for text fields.
 struct AppCommands: Commands {
     let scan: ScanModel
     let window: WindowViewModel
+    let updates: UpdatesModel
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openURL) private var openURL
 
@@ -117,12 +133,18 @@ struct AppCommands: Commands {
 
     /// In title case, as menu items are written.
     static let reportProblemTitle = "Report a Problem"
+    /// With an ellipsis: it opens a window, Sparkle's, to say what it found.
+    static let checkForUpdatesTitle = "Check for Updates…"
     /// Opens the tip jar.
     static let supportTitle = "Support \(ProductInfo.name)"
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About \(BuildIdentity.current.appName)") { self.openWindow(id: "about") }
+            if self.updates.isAvailable {
+                Button(Self.checkForUpdatesTitle) { self.updates.checkForUpdates() }
+                    .disabled(!self.updates.canCheck)
+            }
         }
         CommandGroup(replacing: .newItem) {
             Button(self.scan.isScanning ? "Stop Scan" : "Scan Again") {

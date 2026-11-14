@@ -22,6 +22,7 @@ final class AppCoordinator {
     let marks: MarksModel
     let runningApps: RunningAppsModel
     let cleaning: CleaningModel
+    let updates: UpdatesModel
     let window: WindowViewModel
     let overview: OverviewViewModel
     let xcodes: XcodesViewModel
@@ -33,6 +34,8 @@ final class AppCoordinator {
     /// Everything is live unless a test says otherwise.
     /// - Parameters:
     ///   - store: where the last scan is kept; the home's own file when nil.
+    ///   - updater: Sparkle, which the app hands in when its build has a
+    ///     feed; none when nil, so a test never checks for updates.
     ///   - dependencies: the kit's side effects; `Dependencies.live` when nil.
     ///   - quitter: quits Xcode and Simulator; as choosing Quit would when nil.
     init(
@@ -40,6 +43,7 @@ final class AppCoordinator {
         store: (any ScanMemoryStore)? = nil,
         preferences: Preferences? = nil,
         notifier: NotificationPoster = UserNotificationPoster(),
+        updater: (any AppUpdating)? = nil,
         dependencies: Dependencies? = nil,
         quitter: (any AppQuitting)? = nil)
     {
@@ -85,6 +89,7 @@ final class AppCoordinator {
         self.marks = marks
         self.runningApps = runningApps
         self.cleaning = cleaning
+        self.updates = UpdatesModel(updater: updater)
 
         // The view models, on the shared models.
         let window = WindowViewModel()
@@ -189,6 +194,7 @@ extension View {
             .environment(app.marks)
             .environment(app.runningApps)
             .environment(app.cleaning)
+            .environment(app.updates)
             .environment(app.window)
             .environment(app.overview)
             .environment(app.xcodes)

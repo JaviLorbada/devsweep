@@ -20,8 +20,9 @@
 #   shows it, glass and all, for overview, runtimes and xcodes. With it:
 #   SELECT=derived-data selects an item (or a runtime id, or an Xcode by its
 #   folder's name), CHART=blocks picks the chart, SCROLL=200 scrolls the
-#   center panel down that many points, and ACTIVE=1 draws the window as
-#   active when it can't be, as while the screen is locked. CLICK="x,y;x,y"
+#   center panel down that many points, SETTINGS=General captures that
+#   Settings tab instead, scrolled by SCROLL too, and ACTIVE=1 draws the
+#   window as active when it can't be, as while the screen is locked. CLICK="x,y;x,y"
 #   clicks those points from the window's top-left, THEN_WIDTHS=900,1400
 #   resizes to each in turn, and PROBE=1 writes <screen>-<width>.txt, whether
 #   the content fits the window; SIDEBAR_TIMING=1 traces the sidebar's

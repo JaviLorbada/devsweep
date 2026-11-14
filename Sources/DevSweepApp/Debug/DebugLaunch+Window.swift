@@ -50,9 +50,10 @@ extension DebugLaunch {
         }
     }
 
-    /// Opens Settings on a tab, captures it and quits.
+    /// Opens Settings on a tab, scrolls it down `scroll` points when given,
+    /// captures it and quits.
     @MainActor
-    static func captureSettings(tab: String, to output: String?) async -> Never {
+    static func captureSettings(tab: String, scroll: Double?, to output: String?) async -> Never {
         let main = self.mainWindow
         // The app menu's Settings… item, as ⌘, would choose it.
         if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
@@ -74,6 +75,10 @@ extension DebugLaunch {
                 self.trace("no tab \(tab)")
             }
             try? await Task.sleep(for: .seconds(1))
+            if let scroll {
+                self.trace(self.scrollCenter(by: scroll, in: settings))
+                try? await Task.sleep(for: .milliseconds(500))
+            }
             if let output {
                 self.trace(self.capture(settings, to: output) ? "captured \(output)" : "capture failed")
             }

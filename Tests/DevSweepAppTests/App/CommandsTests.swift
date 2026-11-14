@@ -13,6 +13,7 @@ struct CommandsTests {
         #expect(AppCommands.inspectorTitle(shown: window.inspectorShown) == "Show Inspector")
         #expect(AppCommands.reportProblemTitle == "Report a Problem")
         #expect(AppCommands.supportTitle == "Support DevSweep")
+        #expect(AppCommands.checkForUpdatesTitle == "Check for Updates…")
     }
 
     @Test
