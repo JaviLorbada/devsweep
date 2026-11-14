@@ -14,6 +14,11 @@ struct AppCommandsTests {
     }
 
     @Test
+    func `Check for Updates… has an ellipsis, as it opens Sparkle's window`() {
+        #expect(AppCommands.checkForUpdatesTitle == "Check for Updates…")
+    }
+
+    @Test
     func `the inspector moves with the sidebar's timing, and only fades with Reduce Motion`() {
         #expect(InspectorMotion.duration == 0.25)
         #expect(InspectorMotion.layoutAnimation(reduceMotion: false) == .easeInOut(duration: 0.25))

@@ -2,9 +2,9 @@ import AppKit
 import DevSweepKit
 import SwiftUI
 
-/// The Settings window: what to scan, how cleaning starts out, and when
-/// something counts as unused. The command line keeps its own flags and
-/// environment variables.
+/// The Settings window: what to scan, how cleaning starts out, when
+/// something counts as unused, and updates. The command line keeps its own
+/// flags and environment variables.
 struct SettingsView: View {
     var body: some View {
         TabView {
@@ -19,6 +19,7 @@ struct SettingsView: View {
 private struct GeneralSettings: View {
     @Environment(Preferences.self) private var preferences
     @Environment(CleaningModel.self) private var cleaning
+    @Environment(UpdatesModel.self) private var updates
 
     var body: some View {
         @Bindable var preferences = self.preferences
@@ -66,6 +67,9 @@ private struct GeneralSettings: View {
                     "While \(ProductInfo.name) runs it scans again once a day, and says so when DerivedData grew by "
                         + "more than this since the scan before.")
                     .settingsFooter()
+            }
+            if self.updates.isAvailable {
+                UpdateSettings(updates: self.updates)
             }
         }
         .formStyle(.grouped)
@@ -164,12 +168,6 @@ private struct ItemSettings: View {
             }
         }
         .formStyle(.grouped)
-    }
-}
-
-extension Text {
-    fileprivate func settingsFooter() -> some View {
-        font(.callout).foregroundStyle(.muted).fixedSize(horizontal: false, vertical: true)
     }
 }
 

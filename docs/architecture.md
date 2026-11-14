@@ -79,6 +79,7 @@ The app adds its own:
 | Notifications | `NotificationPoster` | `UserNotificationPoster` | `SilentNotificationPoster`, a recording poster |
 | Quitting Xcode and Simulator | `AppQuitting` | `WorkspaceAppQuitter`, as choosing Quit would | `FakeDeveloperApps`, which also says what runs |
 | Opening a page in the browser | `LinkOpening` | `WorkspaceLinkOpener`, the default browser | `RecordingLinkOpener`, which keeps the links |
+| Updates | `AppUpdating` | `SparkleUpdater`, in a build with a feed; none in a development build | None, or `FakeUpdater`; screenshots use `StandInUpdater`, which checks nothing |
 
 No Swift test puts a stub on `PATH`; stubs on `PATH` live only in the bats
 suite, which runs the built binary as a user would.
@@ -119,6 +120,7 @@ flowchart TB
     Cleaning[CleaningModel]
     Marks[MarksModel]
     Apps[RunningAppsModel]
+    Updates[UpdatesModel]
   end
 
   subgraph Kit["DevSweepKit"]
@@ -129,9 +131,10 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
+  GitHub[("GitHub<br/>the latest release's appcast")]
 
   Views -->|"read state, call methods"| ViewModels
   Views -->|"read state, call methods"| Models
@@ -141,6 +144,7 @@ flowchart TB
   Models -->|"async calls, scan events back"| Engine
   Models --> Seams
   Views -->|"the Help menu's links"| Seams
+  Seams -->|"Sparkle: the update check"| GitHub
   CLI --> Engine
   Engine --> Rules
   Rules --> Deps
@@ -169,6 +173,7 @@ cells and ring segments take plain values.
 | `CleaningModel` | A clean from the question to the end: quitting Xcode, confirming, the Trash or deleting, Put Back, cleaning parts, this session's totals, the notices. | Overview footer, items list, inspector, the window's alerts |
 | `MarksModel` | What is ticked, items and parts, and the three biggest ticked by default. | Items list, inspector, `CleaningModel` |
 | `RunningAppsModel` | Whether Xcode and Simulator are open, and quitting them. | `CleaningModel`, the status line |
+| `UpdatesModel` | Whether the build updates itself, Check for Updates…, and the automatic checks, as Sparkle keeps them. | The app menu, Settings |
 | `Tally` | Row order, totals, each family's share, the ring's weights. | `ScanModel`, the charts, the sidebar |
 | `StatusText` | The status lines, the subtitles' words, "3 minutes ago". | The view models, the menu bar |
 | `CleanPrompt` | The questions' words, by name up to three and by count past that. | `CleaningModel`, the window's alerts |
@@ -210,8 +215,8 @@ Three things have no protocol, on purpose:
 
 Below the models, the kit's own protocols fake the world: the disk,
 processes, simctl, brew, git, the Trash and the clock, in `Dependencies`;
-the app adds quitting apps, notifications, the preferences store and the
-last scan's file.
+the app adds quitting apps, notifications, updates, the preferences store
+and the last scan's file.
 
 ### Folders
 
@@ -225,7 +230,7 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `ViewModels` | A view model per screen, and `Removal`. |
 | `Values` | `Tally`, `StatusText`, `CleanPrompt`, `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), `WindowLayout`'s sizes. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
-| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser. |
+| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
 
 ### A scan

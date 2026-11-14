@@ -152,12 +152,20 @@ nothing to lose.
 
 ## Privacy
 
-DevSweep makes no network connections and collects nothing. It reads
-folders in your home folder, and runs a few developer tools to find and
-clean what they own: `xcrun simctl`, `xcode-select`, `defaults` (to read
-where Xcode keeps DerivedData), `brew` and `git`, and the command line tool
-also `pgrep`, to see whether Xcode runs. It keeps its last scan in
-`~/Library/Application Support/DevSweep` and its settings in its
+DevSweep collects nothing, and makes one network connection: the app's
+update check. It asks GitHub for the appcast of DevSweep's latest release,
+`https://github.com/JaviLorbada/devsweep/releases/latest/download/appcast.xml`,
+sending only the app's version, never a profile of your Mac. It checks once
+a day only if you allow it, which it asks on its second launch; Check for
+Updates… in the DevSweep menu checks when you choose it. To turn the daily
+check off, untick "Check for updates automatically" in Settings > General.
+The command line tool makes no network connections.
+
+It reads folders in your home folder, and runs a few developer tools to
+find and clean what they own: `xcrun simctl`, `xcode-select`, `defaults`
+(to read where Xcode keeps DerivedData), `brew` and `git`, and the command
+line tool also `pgrep`, to see whether Xcode runs. It keeps its last scan
+in `~/Library/Application Support/DevSweep` and its settings in its
 preferences. Help > Report a Problem… and Suggest an Idea… only open
 GitHub's issue form in your browser. The link carries DevSweep's
 version, and for a problem the macOS version, so GitHub sees those when
@@ -245,6 +253,7 @@ flowchart TB
     Cleaning[CleaningModel]
     Marks[MarksModel]
     Apps[RunningAppsModel]
+    Updates[UpdatesModel]
   end
 
   subgraph Kit["DevSweepKit"]
@@ -255,9 +264,10 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
+  GitHub[("GitHub<br/>the latest release's appcast")]
 
   Views -->|"read state, call methods"| ViewModels
   Views -->|"read state, call methods"| Models
@@ -267,6 +277,7 @@ flowchart TB
   Models -->|"async calls, scan events back"| Engine
   Models --> Seams
   Views -->|"the Help menu's links"| Seams
+  Seams -->|"Sparkle: the update check"| GitHub
   CLI --> Engine
   Engine --> Rules
   Rules --> Deps

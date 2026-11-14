@@ -57,6 +57,13 @@ struct AboutView: View {
                         ("Source", URL(string: "https://github.com/apple/swift-argument-parser")!),
                     ])
                 Acknowledgement(
+                    name: "Sparkle",
+                    note: "Updates the app.",
+                    links: [
+                        ("MIT License", URL(string: "https://github.com/sparkle-project/Sparkle/blob/2.x/LICENSE")!),
+                        ("Source", URL(string: "https://github.com/sparkle-project/Sparkle")!),
+                    ])
+                Acknowledgement(
                     name: "devclean",
                     note: "The bash script in \(Self.author)'s dotfiles that the command line tool grew "
                         + "from, and still matches word for word.",
