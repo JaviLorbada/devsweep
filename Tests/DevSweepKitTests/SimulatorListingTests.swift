@@ -7,7 +7,8 @@ struct SimulatorListingTests {
     let now = Date(timeIntervalSince1970: JavaScriptDate.parse("2026-11-14T12:00:00Z")! / 1000)
 
     /// The three device sets of a Mac with a booted iPhone, an iPad never
-    /// used, an iPhone unused since August, a preview device and a test clone.
+    /// used, an iPhone unused since August, one whose runtime is gone, a
+    /// preview device and a test clone.
     var lists: [Simulator.DeviceSet: SimctlDeviceList] {
         [
             .default: SimctlDeviceList(Data(fixture("simctl-devices.json").utf8)),
@@ -21,8 +22,9 @@ struct SimulatorListingTests {
         let simulators = ExtrasScanner.simulators(self.lists, now: self.now)
         #expect(simulators.map(\.name) == [
             "iPhone 18 Pro Max", "iPhone Air", "iPhone 17 Pro", "Clone 1 of iPhone 17", "iPad Air 13-inch (M4)",
+            "iPhone 17",
         ])
-        #expect(simulators.map(\.deviceSet) == [.default, .default, .previews, .testing, .default])
+        #expect(simulators.map(\.deviceSet) == [.default, .default, .previews, .testing, .default, .default])
         #expect(simulators[0] == Simulator(
             id: "79CDB9F9-4BD5-4272-A90E-ADDD1FB2A156",
             name: "iPhone 18 Pro Max",
@@ -31,7 +33,8 @@ struct SimulatorListingTests {
             kilobytes: 10_081_016,
             lastUsedDay: "2026-11-13",
             daysSinceUsed: 0,
-            deviceSet: .default))
+            deviceSet: .default,
+            isAvailable: true))
         #expect(simulators[1].runtime == "iOS 26.5")
         #expect(simulators[1].daysSinceUsed == 98)
         #expect(simulators[4].kilobytes == 18020)
@@ -44,10 +47,21 @@ struct SimulatorListingTests {
         let simulators = ExtrasScanner.simulators(self.lists, now: self.now)
         let flagged = { (days: Int) in simulators.filter { $0.flagReason(staleDays: days) != nil }.map(\.name) }
         // The preview device was last used exactly 30 days ago, the iPhone Air 98.
-        #expect(flagged(30) == ["iPhone Air", "iPhone 17 Pro"])
-        #expect(flagged(90) == ["iPhone Air"])
+        #expect(flagged(30) == ["iPhone Air", "iPhone 17 Pro", "iPhone 17"])
+        #expect(flagged(90) == ["iPhone Air", "iPhone 17"])
         #expect(simulators[1].flagReason(staleDays: 90) == "Not used in 98 days")
         #expect(simulators.first { $0.daysSinceUsed == nil }?.flagReason(staleDays: 0) == nil)
+    }
+
+    @Test
+    func `a simulator whose runtime is gone says so, and one simctl says nothing about is available`() {
+        let simulators = ExtrasScanner.simulators(self.lists, now: self.now)
+        #expect(simulators.filter { !$0.isAvailable }.map(\.id) == ["0CD98AA9-475F-4336-BCD7-383B43BC4DBA"])
+        let unsure = SimctlDeviceList(Data(#"""
+        { "devices": { "R": [ { "udid": "A" }, { "udid": "B", "isAvailable": "no" } ] } }
+        """#.utf8))
+        let listed = ExtrasScanner.simulators([.default: unsure], now: self.now)
+        #expect(listed.map(\.isAvailable) == [true, true])
     }
 
     @Test
@@ -110,7 +124,7 @@ struct SimulatorListingTests {
         config.includeSimulators = true
         let calls = tools.log.calls.count
         let extras = try await Engine(config: config, tools: tools.tools).extras()
-        #expect(extras.simulators.count == 5)
+        #expect(extras.simulators.count == 6)
         #expect(Set(extras.simulators.map(\.deviceSet)) == [.default, .previews, .testing])
         #expect(extras.runtimes.first { $0.id == "RECENT-RUNTIME" }?.simulatorCount == 2)
         let listings = tools.log.calls.dropFirst(calls).filter { $0.hasSuffix("list devices -j") }

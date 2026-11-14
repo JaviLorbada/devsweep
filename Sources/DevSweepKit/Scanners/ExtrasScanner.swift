@@ -193,7 +193,8 @@ enum ExtrasScanner {
                     kilobytes: self.kilobytes(bytes: device.dataPathSize),
                     lastUsedDay: self.day(of: device.lastUsedAt),
                     daysSinceUsed: self.days(since: device.lastUsedAt, now: now),
-                    deviceSet: set)
+                    deviceSet: set,
+                    isAvailable: device.isAvailable ?? true)
             }
         }
         return simulators.sorted { a, b in

@@ -1,8 +1,8 @@
 import DevSweepKit
 import SwiftUI
 
-/// A simulator: its name, runtime, last use and size, flagged when it is
-/// unused for `staleDays`.
+/// A simulator: its name, runtime, last use and size, flagged when its
+/// runtime is gone or it is unused for `staleDays`.
 struct SimulatorRow: View {
     @Environment(\.extrasColumns) private var columns
     let simulator: Simulator

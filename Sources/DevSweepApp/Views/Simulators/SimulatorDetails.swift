@@ -23,6 +23,9 @@ struct SimulatorDetails: View {
                     .foregroundStyle(flagged ? AnyShapeStyle(.orange) : AnyShapeStyle(.muted))
             }
             InspectorSection("Runtime") { Text(self.simulator.runtime) }
+            if !self.simulator.isAvailable {
+                InspectorSection("What happens") { Text(SimulatorWords.runtimeGone(self.simulator.deviceSet)) }
+            }
             InspectorSection(SimulatorWords.usageHeading(self.simulator, staleDays: self.staleDays)) {
                 Text(SimulatorWords.usage(self.simulator))
             }

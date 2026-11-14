@@ -14,6 +14,22 @@ struct SimulatorWordsTests {
     }
 
     @Test
+    func `one whose runtime is gone says so first, and what removes it`() {
+        let gone = sampleSimulators[6]
+        #expect(SimulatorWords.badge(gone, staleDays: 90) == "runtime gone")
+        #expect(SimulatorWords.badge(gone, staleDays: 1000) == "runtime gone")
+        #expect(SimulatorWords.status(gone, staleDays: 90) == "runtime gone")
+        #expect(SimulatorWords.label(gone, staleDays: 90) == "iPhone 17, 8 MB, runtime gone")
+        #expect(SimulatorWords.runtimeGone(.default) == "Its runtime is gone, so it can't run. "
+            + "The Overview's Simulators item removes it, with xcrun simctl delete unavailable.")
+        // That item cleans only the default set, so Xcode's own say what does.
+        #expect(SimulatorWords.runtimeGone(.previews) == "Its runtime is gone, so it can't run. "
+            + "DevSweep leaves it: xcrun simctl --set previews delete unavailable removes it.")
+        #expect(SimulatorWords.runtimeGone(.testing) == "Its runtime is gone, so it can't run. "
+            + "DevSweep leaves it: xcrun simctl --set testing delete unavailable removes it.")
+    }
+
+    @Test
     func `a row names the runtime, and the set when Xcode made it on its own`() {
         #expect(SimulatorWords.detail(sampleSimulators[0]) == "iOS 27.1")
         #expect(SimulatorWords.detail(sampleSimulators[3]) == "iOS 27.1, for previews")

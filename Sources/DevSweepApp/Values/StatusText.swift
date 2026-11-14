@@ -120,7 +120,7 @@ enum StatusText {
         case 1: "; the one \(unused) holds \(staleSize)"
         default: "; the \(stale.count) \(unused) hold \(staleSize)"
         }
-        return "\(total) in \(count)\(held). \(ProductInfo.name) never removes these."
+        return "\(total) in \(count)\(held). \(ProductInfo.name) never removes these on its own."
     }
 
     static func xcodes(_ xcodes: [InstalledXcode]?, isLoading: Bool) -> String {

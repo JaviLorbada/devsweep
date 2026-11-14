@@ -58,9 +58,10 @@ struct SimctlDeviceList: Sendable {
         let state: String?
         let dataPathSize: Double?
         let lastUsedAt: String?
+        let isAvailable: Bool?
 
         private enum Field: String, CodingKey {
-            case udid, name, state, dataPathSize, lastUsedAt
+            case udid, name, state, dataPathSize, lastUsedAt, isAvailable
         }
 
         init(from decoder: any Decoder) throws {
@@ -70,6 +71,7 @@ struct SimctlDeviceList: Sendable {
             self.state = fields.value(String.self, .state)
             self.dataPathSize = fields.value(Double.self, .dataPathSize)
             self.lastUsedAt = fields.value(String.self, .lastUsedAt)
+            self.isAvailable = fields.value(Bool.self, .isAvailable)
         }
     }
 

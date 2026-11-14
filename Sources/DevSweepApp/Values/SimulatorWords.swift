@@ -2,9 +2,12 @@ import DevSweepKit
 
 /// The words the Simulators screen uses.
 enum SimulatorWords {
-    /// "98 days unused", for a simulator flagged after `staleDays`; nil for
-    /// one that isn't.
+    /// "runtime gone" for a simulator that can't run, "98 days unused" for
+    /// one flagged after `staleDays`, nil for the others.
     static func badge(_ simulator: Simulator, staleDays: Int) -> String? {
+        guard simulator.isAvailable else {
+            return "runtime gone"
+        }
         guard simulator.flagReason(staleDays: staleDays) != nil, let days = simulator.daysSinceUsed else {
             return nil
         }
@@ -48,9 +51,12 @@ enum SimulatorWords {
         simulator.flagReason(staleDays: staleDays) == nil ? "Usage" : "Why it is flagged"
     }
 
-    /// "looks unused" for a flagged one, otherwise simctl's state in words:
-    /// "booted", "shut down".
+    /// "runtime gone" for one that can't run, "looks unused" for a flagged
+    /// one, otherwise simctl's state in words: "booted", "shut down".
     static func status(_ simulator: Simulator, staleDays: Int) -> String {
+        if !simulator.isAvailable {
+            return "runtime gone"
+        }
         if simulator.flagReason(staleDays: staleDays) != nil {
             return "looks unused"
         }
@@ -72,6 +78,17 @@ enum SimulatorWords {
         case .default: "One of the simulators Xcode and Simulator show."
         case .previews: "Xcode made it to show SwiftUI previews, and makes another when a preview needs one."
         case .testing: "Xcode cloned it to run tests in parallel, and clones another when tests need one."
+        }
+    }
+
+    /// What happens to a simulator whose runtime is gone. The Overview's
+    /// Simulators item cleans only the default set.
+    static func runtimeGone(_ set: Simulator.DeviceSet) -> String {
+        let gone = "Its runtime is gone, so it can't run."
+        return switch set {
+        case .default: "\(gone) The Overview's Simulators item removes it, with xcrun simctl delete unavailable."
+        case .previews, .testing:
+            "\(gone) \(ProductInfo.name) leaves it: xcrun simctl --set \(set.rawValue) delete unavailable removes it."
         }
     }
 

@@ -31,6 +31,10 @@ public struct Simulator: Sendable, Identifiable, Equatable, Codable {
     /// Whole days since last use, nil when never used or the date doesn't parse.
     public let daysSinceUsed: Int?
     public let deviceSet: DeviceSet
+    /// False when its runtime is gone, so it can't run: the Simulators item
+    /// removes those, through `simctl delete unavailable`. True when simctl
+    /// doesn't say.
+    public let isAvailable: Bool
 
     public init(
         id: String,
@@ -40,7 +44,8 @@ public struct Simulator: Sendable, Identifiable, Equatable, Codable {
         kilobytes: Int64,
         lastUsedDay: String?,
         daysSinceUsed: Int?,
-        deviceSet: DeviceSet)
+        deviceSet: DeviceSet,
+        isAvailable: Bool)
     {
         self.id = id
         self.name = name
@@ -50,6 +55,7 @@ public struct Simulator: Sendable, Identifiable, Equatable, Codable {
         self.lastUsedDay = lastUsedDay
         self.daysSinceUsed = daysSinceUsed
         self.deviceSet = deviceSet
+        self.isAvailable = isAvailable
     }
 
     /// Why it looks unused, or nil when it doesn't: not used for `staleDays`

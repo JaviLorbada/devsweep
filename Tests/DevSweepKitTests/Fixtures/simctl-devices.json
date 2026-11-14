@@ -38,6 +38,20 @@
         "state": "Shutdown",
         "name": "iPhone Air"
       }
+    ],
+    "com.apple.CoreSimulator.SimRuntime.iOS-26-2": [
+      {
+        "dataPath": "/Users/someone/Library/Developer/CoreSimulator/Devices/0CD98AA9-475F-4336-BCD7-383B43BC4DBA/data",
+        "dataPathSize": 8388608,
+        "logPath": "/Users/someone/Library/Logs/CoreSimulator/0CD98AA9-475F-4336-BCD7-383B43BC4DBA",
+        "udid": "0CD98AA9-475F-4336-BCD7-383B43BC4DBA",
+        "lastUsedAt": "2026-04-02T10:00:00Z",
+        "isAvailable": false,
+        "availabilityError": "runtime profile not found using \"System\" match policy",
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-17",
+        "state": "Shutdown",
+        "name": "iPhone 17"
+      }
     ]
   }
 }
