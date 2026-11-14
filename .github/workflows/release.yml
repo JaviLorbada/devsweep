@@ -1,7 +1,8 @@
 name: Release
 
-# A version tag publishes a GitHub release. Running it by hand rehearses: it
-# builds, signs when it can, and keeps the zips as workflow artifacts, but
+# A version tag publishes a GitHub release, with the appcast the app looks
+# for updates in. Running it by hand rehearses: it builds, signs when it
+# can, writes the appcast, and keeps them as workflow artifacts, but
 # publishes nothing unless dry_run is turned off.
 on:
   push:
@@ -81,12 +82,40 @@ jobs:
       - name: Release notes
         run: Scripts/release_notes.sh "${{ steps.version.outputs.version }}" > dist/notes.md
 
+      # The feed every installed DevSweep reads, at the latest release's
+      # appcast.xml: the app zip, signed with the EdDSA key whose public half
+      # is in the app. Only this step sees the key. A release without one, or
+      # with an app that isn't notarized, would leave every copy without its
+      # next update, so a tag stops here instead.
+      - name: Appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          source version.env
+          problem=""
+          if [[ -z "$SPARKLE_PRIVATE_KEY" ]]; then
+            problem="SPARKLE_PRIVATE_KEY is not set"
+          elif [[ "$(cat dist/signing.txt)" != "notarized" ]]; then
+            problem="the app isn't notarized, and an update has to be"
+          fi
+          if [[ -z "$problem" ]]; then
+            Scripts/appcast.sh "dist/$PRODUCT_NAME-$VERSION.zip" \
+              "https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            echo "::error title=No appcast::$problem, so there is no appcast, and installed copies would find no update."
+            exit 1
+          else
+            echo "::notice title=No appcast::$problem, so this rehearsal writes no appcast."
+          fi
+
       - name: Keep the build
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: release-${{ steps.version.outputs.version }}
           path: |
             dist/*.zip
+            dist/appcast.xml
             dist/notes.md
 
       - name: Publish
@@ -95,7 +124,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           source version.env
-          gh release create "$GITHUB_REF_NAME" dist/*.zip --title "$PRODUCT_NAME $MARKETING_VERSION" --notes-file dist/notes.md
+          gh release create "$GITHUB_REF_NAME" dist/*.zip dist/appcast.xml \
+            --title "$PRODUCT_NAME $MARKETING_VERSION" --notes-file dist/notes.md
 
       - name: Remove the keychain
         if: always()

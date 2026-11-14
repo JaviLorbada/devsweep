@@ -97,6 +97,11 @@ Both are signed with Developer ID and notarized by Apple, so they open like
 anything else you download. Move DevSweep to Applications, and `devsweep`
 to a folder on your `PATH`, like `~/.local/bin`.
 
+From then on the app updates itself: choose Check for Updates… in the
+DevSweep menu, or let it look once a day, which it asks about on its second
+launch. The command line tool doesn't; download its new zip from the
+releases page.
+
 ### From source
 
 ```bash
@@ -186,8 +191,10 @@ back as you build, resolve packages or download again.
 ## Uninstalling
 
 1. Quit DevSweep, and move it to the Trash.
-2. Remove what it keeps: `~/Library/Application Support/DevSweep`, and its
-   settings with `defaults delete com.javilorbada.devsweep`.
+2. Remove what it keeps: `~/Library/Application Support/DevSweep`, the
+   update check's cache in `~/Library/Caches/com.javilorbada.devsweep` and
+   `~/Library/HTTPStorages/com.javilorbada.devsweep`, and its settings with
+   `defaults delete com.javilorbada.devsweep`.
 3. Remove the `devsweep` tool, or run `Scripts/install-cli.sh --uninstall`
    if you linked it from a checkout.
 
