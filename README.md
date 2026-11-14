@@ -161,12 +161,16 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 - **Report a problem or suggest an idea** from the Help menu. It opens the
   issue form on GitHub, with the versions filled in, for you to finish and
   send.
+- **VoiceOver, the keyboard and Increase Contrast** work on the Overview.
+  VoiceOver reads each segment, block and row with its size and share of
+  the total. With Increase Contrast the charts' edges draw stronger.
 
 | Shortcut | |
 |---|---|
 | ⌘R | Scan again |
 | ⌘1, ⌘2 | Show the ring, or the blocks |
 | ⌥⌘I | Show or hide the inspector |
+| Tab, Space | Move through the items, selecting each; mark the one focused |
 
 ## Using the command line
 
