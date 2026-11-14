@@ -48,10 +48,11 @@ enum ExtrasScanner {
         let simctl = context.tools.simctl
         guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(),
               !runtimesData.isEmpty else { return [] }
-        let devicesData = await simctl.devicesJSON() ?? Data()
-        let runtimes = self.parseRuntimes(runtimesData, devices: devicesData, now: now)
+        let list = SimctlRuntimeList(runtimesData)
+        let devices = await SimctlDeviceList(simctl.devicesJSON() ?? Data())
+        let runtimes = self.runtimes(list, devices: devices, now: now)
         guard context.config.includeRuntimeDownloads else { return runtimes }
-        let downloads = self.downloads(runtimesData)
+        let downloads = self.downloads(list)
         return runtimes.map { runtime in
             guard let folder = downloads[runtime.id] else { return runtime }
             let kilobytes = context.measurer.measure(folder).kilobytes
@@ -69,15 +70,12 @@ enum ExtrasScanner {
     /// leaves it out. Not counted: a folder that is another runtime's own,
     /// counted there, and one several runtimes share, which removing one of
     /// them doesn't free.
-    static func downloads(_ runtimesData: Data) -> [String: String] {
-        guard let runtimes = (try? JSONSerialization.jsonObject(with: runtimesData)) as? [String: Any]
-        else { return [:] }
+    static func downloads(_ list: SimctlRuntimeList) -> [String: String] {
         var parents: [String: String] = [:]
         var ownFolders: Set<String> = []
-        for (id, value) in runtimes {
-            guard let runtime = value as? [String: Any] else { continue }
-            if let folder = (runtime["path"] as? String).flatMap(self.assetFolder) { ownFolders.insert(folder) }
-            if let folder = (runtime["parentImagePath"] as? String).flatMap(self.assetFolder) { parents[id] = folder }
+        for (id, runtime) in list.runtimes {
+            if let folder = runtime.path.flatMap(self.assetFolder) { ownFolders.insert(folder) }
+            if let folder = runtime.parentImagePath.flatMap(self.assetFolder) { parents[id] = folder }
         }
         let namedBy = Dictionary(grouping: parents.values) { $0 }.mapValues(\.count)
         return parents.filter { !ownFolders.contains($0.value) && namedBy[$0.value] == 1 }
@@ -93,32 +91,21 @@ enum ExtrasScanner {
 
     /// Joins `simctl runtime list -j` with `simctl list devices -j`, sorted by
     /// platform, then newest version first.
-    static func parseRuntimes(_ runtimesData: Data, devices devicesData: Data, now: Date) -> [SimulatorRuntime] {
-        guard let runtimes = (try? JSONSerialization.jsonObject(with: runtimesData)) as? [String: Any]
-        else { return [] }
-        let devicesObject = (try? JSONSerialization.jsonObject(with: devicesData)) as? [String: Any]
-        let devices = devicesObject?["devices"] as? [String: Any] ?? [:]
-
-        let order = JSONKeyOrder.topLevelKeys(runtimesData)
-        let ids = order.filter { runtimes[$0] != nil } + runtimes.keys.filter { !order.contains($0) }.sortedBytewise()
-
-        let parsed: [SimulatorRuntime] = ids.compactMap { id in
-            guard let runtime = runtimes[id] as? [String: Any] else { return nil }
-            let identifier = runtime["runtimeIdentifier"] as? String ?? ""
-            let lastUsedAt = runtime["lastUsedAt"] as? String
-            let size = (runtime["sizeBytes"] as? NSNumber)?.doubleValue ?? 0
+    static func runtimes(_ list: SimctlRuntimeList, devices: SimctlDeviceList, now: Date) -> [SimulatorRuntime] {
+        let parsed = list.runtimes.map { id, runtime in
+            let identifier = runtime.runtimeIdentifier ?? ""
             return SimulatorRuntime(
                 id: id,
                 identifier: identifier,
                 platform: self.platform(of: identifier),
-                version: self.text(runtime["version"]) ?? "?",
-                build: self.text(runtime["build"]) ?? "?",
-                kilobytes: Int64((size / 1024 + 0.5).rounded(.down)),
-                lastUsedDay: lastUsedAt.flatMap { $0.isEmpty ? nil : String($0.prefix(10)) },
-                daysSinceUsed: lastUsedAt.flatMap { JavaScriptDate.parse($0) }.map {
+                version: runtime.version ?? "?",
+                build: runtime.build ?? "?",
+                kilobytes: Int64(((runtime.sizeBytes ?? 0) / 1024 + 0.5).rounded(.down)),
+                lastUsedDay: runtime.lastUsedAt.flatMap { $0.isEmpty ? nil : String($0.prefix(10)) },
+                daysSinceUsed: runtime.lastUsedAt.flatMap { JavaScriptDate.parse($0) }.map {
                     Int(((now.timeIntervalSince1970 * 1000 - $0) / 86_400_000).rounded(.down))
                 },
-                simulatorCount: (devices[identifier] as? [Any])?.count ?? 0)
+                simulatorCount: devices.count(for: identifier))
         }
         // A stable sort, like JavaScript's.
         return parsed.enumerated().sorted { a, b in
@@ -138,18 +125,9 @@ enum ExtrasScanner {
         }
         return String(rest.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
     }
-
-    /// A JSON value as JavaScript's `value || '?'` would print it, nil for empty or missing.
-    private static func text(_ value: Any?) -> String? {
-        switch value {
-        case let string as String: string.isEmpty ? nil : string
-        case let number as NSNumber: number == 0 ? nil : number.stringValue
-        default: nil
-        }
-    }
 }
 
-/// The order of an object's keys in JSON text, which `JSONSerialization` loses.
+/// The order of an object's keys in JSON text, which decoding it into a dictionary loses.
 enum JSONKeyOrder {
     static func topLevelKeys(_ data: Data) -> [String] {
         let bytes = [UInt8](data)
