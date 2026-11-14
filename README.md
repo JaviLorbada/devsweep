@@ -170,7 +170,7 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 | ⌘R | Scan again |
 | ⌘1, ⌘2 | Show the ring, or the blocks |
 | ⌥⌘I | Show or hide the inspector |
-| Tab, Space | Move through the items, selecting each; mark the one focused |
+| Tab, Space | Move through the items, selecting each, and the inspector's lines; mark the one focused |
 
 ## Using the command line
 
