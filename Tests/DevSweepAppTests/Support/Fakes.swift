@@ -277,3 +277,10 @@ final class RecordingPoster: NotificationPoster {
     let posted = Mutex<[String]>([])
     func post(title: String, body: String) async { self.posted.withLock { $0.append(title) } }
 }
+
+/// Keeps the links it was asked to open, and opens no browser.
+@MainActor
+final class RecordingLinkOpener: LinkOpening {
+    private(set) var opened: [URL] = []
+    func open(_ url: URL) { self.opened.append(url) }
+}

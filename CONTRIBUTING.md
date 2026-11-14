@@ -6,12 +6,14 @@ so a few notes first save us both time.
 ## Issues
 
 - **A bug:** what you did, what you expected and what happened, with your
-  macOS version and DevSweep's, from its About window. The output of
-  `devsweep` on its own, which only reports, shows what DevSweep found.
+  macOS version and DevSweep's, from its About window. In the app, Help >
+  Report a Problem… fills those in. The output of `devsweep` on its own,
+  which only reports, shows what DevSweep found.
 - **DevSweep deleted, or would delete, something it shouldn't:** please
   don't open a public issue. [SECURITY.md](SECURITY.md) says how to report
   it privately.
-- **An idea:** open an issue and describe the problem it solves.
+- **An idea:** open an issue, or choose Help > Suggest an Idea… in the app,
+  and describe the problem it solves.
 
 ## Pull requests
 

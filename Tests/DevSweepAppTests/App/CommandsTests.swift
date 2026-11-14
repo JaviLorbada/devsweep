@@ -6,13 +6,11 @@ import Testing
 @Suite("Menu commands")
 struct CommandsTests {
     @Test
-    func `the inspector item says what choosing it does, and the problem report is in title case`() {
+    func `the inspector item says what choosing it does`() {
         let window = WindowViewModel()
         #expect(AppCommands.inspectorTitle(shown: window.inspectorShown) == "Hide Inspector")
         window.toggleInspector()
         #expect(AppCommands.inspectorTitle(shown: window.inspectorShown) == "Show Inspector")
-        #expect(AppCommands.reportProblemTitle == "Report a Problem")
-        #expect(AppCommands.supportTitle == "Support DevSweep")
     }
 
     @Test

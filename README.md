@@ -125,6 +125,9 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 - **The menu bar item** shows the free space and keeps DevSweep running after
   you close the window, so it can scan once a day. Nothing starts it at
   login.
+- **Report a problem or suggest an idea** from the Help menu. It opens the
+  issue form on GitHub, with the versions filled in, for you to finish and
+  send.
 
 | Shortcut | |
 |---|---|
@@ -154,7 +157,10 @@ clean what they own: `xcrun simctl`, `xcode-select`, `defaults` (to read
 where Xcode keeps DerivedData), `brew` and `git`, and the command line tool
 also `pgrep`, to see whether Xcode runs. It keeps its last scan in
 `~/Library/Application Support/DevSweep` and its settings in its
-preferences.
+preferences. Help > Report a Problem… and Suggest an Idea… only open
+GitHub's issue form in your browser. The link carries DevSweep's
+version, and for a problem the macOS version, so GitHub sees those when
+the page opens; no issue is created unless you submit the form.
 
 ## Questions
 
@@ -248,7 +254,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications · quitting"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
 
@@ -259,6 +265,7 @@ flowchart TB
   Models -.-> Values
   Models -->|"async calls, scan events back"| Engine
   Models --> Seams
+  Views -->|"the Help menu's links"| Seams
   CLI --> Engine
   Engine --> Rules
   Rules --> Deps
