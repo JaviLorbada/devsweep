@@ -14,3 +14,8 @@ body:
     attributes:
       label: The idea
       description: How DevSweep could help. Rough is fine.
+  - type: input
+    id: devsweep-version
+    attributes:
+      label: DevSweep version
+      description: Optional. From its About window, or the release you downloaded.

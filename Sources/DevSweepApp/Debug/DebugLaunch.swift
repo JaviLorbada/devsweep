@@ -48,7 +48,8 @@ import SwiftUI
 ///   it there and quits.
 /// - `DEVSWEEP_MENU=1` instead opens the menu bar item's panel, captures it
 ///   there and quits; `DEVSWEEP_MENU=item` captures the item itself, as the
-///   menu bar shows it.
+///   menu bar shows it. `DEVSWEEP_MENU=Help`, or any menu's title, opens
+///   that menu of the menu bar over the window, captures it and quits.
 /// - `DEVSWEEP_APPEARANCE=light|dark` picks the appearance.
 /// - `DEVSWEEP_ACTIVE=1` draws the window as active even when the app can't
 ///   be made active, as while the screen is locked: selected rows in the
@@ -75,10 +76,11 @@ enum DebugLaunch {
         if let tab = environment["DEVSWEEP_SETTINGS"], !tab.isEmpty {
             await self.captureSettings(tab: tab, to: environment["DEVSWEEP_CAPTURE"])
         }
-        if !(environment["DEVSWEEP_MENU"] ?? "").isEmpty {
-            await self.captureMenuBarPanel(
-                itemOnly: environment["DEVSWEEP_MENU"] == "item",
-                to: environment["DEVSWEEP_CAPTURE"])
+        switch environment["DEVSWEEP_MENU"] ?? "" {
+        case "": break
+        case "1": await self.captureMenuBarPanel(itemOnly: false, to: environment["DEVSWEEP_CAPTURE"])
+        case "item": await self.captureMenuBarPanel(itemOnly: true, to: environment["DEVSWEEP_CAPTURE"])
+        case let title: self.captureMenu(title, to: environment["DEVSWEEP_CAPTURE"])
         }
         if let output = environment["DEVSWEEP_CAPTURE"], let window = self.opened ?? mainWindow {
             // Drawn as the key window, so controls don't show their inactive look.

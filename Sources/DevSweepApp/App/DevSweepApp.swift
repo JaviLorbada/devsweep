@@ -45,7 +45,10 @@ struct DevSweepApp: App {
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
-        .commands { AppCommands(scan: self.app.scan, window: self.app.window) }
+        .commands {
+            AppCommands(scan: self.app.scan, window: self.app.window)
+            HelpCommands(links: self.app.links)
+        }
 
         Window("About \(BuildIdentity.current.appName)", id: "about") {
             AboutView()
@@ -95,58 +98,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Without the item, closing the window quits, as a utility does.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         !(UserDefaults.standard.object(forKey: Preferences.Key.showInMenuBar) as? Bool ?? true)
-    }
-}
-
-/// The menu bar's commands: About, Scan Again in the File menu, the chart
-/// and the inspector in the View menu, and the project's pages and its tip
-/// jar under Help.
-/// Template items that would do nothing, such as New Window and a Help book
-/// there is none of, are replaced; the Edit menu stays for text fields.
-struct AppCommands: Commands {
-    let scan: ScanModel
-    let window: WindowViewModel
-    @Environment(\.openWindow) private var openWindow
-    @Environment(\.openURL) private var openURL
-
-    /// What choosing the inspector's item does, as a menu item whose title
-    /// changes says it, rather than "Toggle Inspector".
-    static func inspectorTitle(shown: Bool) -> String {
-        shown ? "Hide Inspector" : "Show Inspector"
-    }
-
-    /// In title case, as menu items are written.
-    static let reportProblemTitle = "Report a Problem"
-    /// Opens the tip jar.
-    static let supportTitle = "Support \(ProductInfo.name)"
-
-    var body: some Commands {
-        CommandGroup(replacing: .appInfo) {
-            Button("About \(BuildIdentity.current.appName)") { self.openWindow(id: "about") }
-        }
-        CommandGroup(replacing: .newItem) {
-            Button(self.scan.isScanning ? "Stop Scan" : "Scan Again") {
-                self.scan.isScanning ? self.scan.stopScan() : self.scan.scan()
-            }
-            .keyboardShortcut("r")
-            .disabled(!self.scan.canScanOrStop)
-        }
-        CommandGroup(before: .toolbar) {
-            ForEach(WindowViewModel.ChartStyle.allCases) { style in
-                Toggle(style.rawValue, isOn: Binding(
-                    get: { self.window.screen == .overview && self.window.chartStyle == style },
-                    set: { if $0 { self.window.showChart(style) } }))
-                    .keyboardShortcut(style == .ring ? "1" : "2")
-            }
-            Divider()
-            Button(Self.inspectorTitle(shown: self.window.inspectorShown)) { self.window.toggleInspector() }
-                .keyboardShortcut("i", modifiers: [.command, .option])
-        }
-        CommandGroup(replacing: .help) {
-            Button("\(ProductInfo.name) on GitHub") { self.openURL(ProductInfo.repository) }
-            Button(Self.reportProblemTitle) { self.openURL(ProductInfo.issues) }
-            Divider()
-            Button(Self.supportTitle) { self.openURL(ProductInfo.tipJar) }
-        }
     }
 }
