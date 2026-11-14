@@ -22,7 +22,8 @@ DevSweep you installed and neither touches the other's. Only
 The debug build goes to `build/debug/DevSweep Dev.app` with the bundle id
 `com.javilorbada.devsweep.debug`. `Scripts/snapshot.sh` uses it, so
 captures never replace the bundle you open, and its settings stay apart
-from the release build's.
+from the release build's. `OUTPUT=<folder>` puts either somewhere else, as
+`Scripts/try_update.sh` does with its two copies.
 
 The script builds the `DevSweepApp` executable and wraps it in a bundle:
 
@@ -61,10 +62,11 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   release workflow attaches to each release, and `SUPublicEDKey`, the key
   its updates are signed with, both from `version.env`. A development build
   gets no feed, so it never offers to replace itself with a release;
-  `FEED_URL=<url>` gives either build another one, such as a local appcast to
-  try an update with. `SUEnableAutomaticChecks` is left out, so Sparkle asks
-  on the second launch whether to check automatically, and
-  `SUEnableSystemProfiling` is off.
+  `FEED_URL=<url>` and `PUBLIC_KEY=<key>` give it a feed and a key of its
+  own, as `Scripts/try_update.sh` does to try an update from a local
+  appcast, and the app people download ignores both. `SUEnableAutomaticChecks`
+  is left out, so Sparkle asks on the second launch whether to check
+  automatically, and `SUEnableSystemProfiling` is off.
 - **The signature** is ad hoc with the hardened runtime, enough to run the app
   on this Mac. When `DEVELOPER_ID_APPLICATION` names a Developer ID Application
   identity in the keychain, the script signs with it and a secure timestamp
