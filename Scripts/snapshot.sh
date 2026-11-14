@@ -117,6 +117,15 @@ make_home() {
   blob "$home/Library/Caches/JetBrains/Toolbox/download/blob" 1
   mkdir -p "$ws/android/app"; touch "$ws/android/app/build.gradle.kts"
   blob "$ws/android/app/build/intermediates/blob" 4
+  for project in "Atlas/web 24" "Pebble/site 5" "dashboard 3"; do
+    set -- $project
+    blob "$ws/$1/node_modules/react/blob" "$2"
+    printf '{ "private": true }\n' > "$ws/$1/package.json"
+  done
+  blob "$ws/Recipes/Pods/Alamofire/blob" 4
+  touch "$ws/Recipes/Podfile.lock"
+  blob "$ws/ferris/target/debug/deps/blob" 7
+  touch "$ws/ferris/Cargo.toml"
 
   plist "$home/Applications/Android Studio.app/Contents/Info.plist" \
     "<key>CFBundleShortVersionString</key><string>2025.2</string><key>CFBundleVersion</key><string>AI-252.25557.131</string>"
