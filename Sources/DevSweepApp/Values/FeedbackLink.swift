@@ -3,8 +3,8 @@ import Foundation
 
 /// A link to one of the project's issue forms on GitHub, with what the form
 /// asks about the app and the Mac filled in: DevSweep's version and build,
-/// the macOS version and the architecture. Nothing else goes in it, no
-/// paths and nothing a scan found. Opening it only opens the browser; the
+/// and the macOS version. Nothing else goes in it, no paths and nothing a
+/// scan found. Opening it only opens the browser; the
 /// person reads the form there and decides whether to submit it.
 ///
 /// GitHub fills a form's field from the query parameter named after the
@@ -33,8 +33,6 @@ struct FeedbackLink: Equatable {
         let version: String
         /// "26.1 (25B78)".
         let macOS: String
-        /// "arm64" or "x86_64".
-        let architecture: String
     }
 
     let form: Form
@@ -45,11 +43,7 @@ struct FeedbackLink: Equatable {
     var fields: [(id: String, value: String)] {
         switch self.form {
         case .problem:
-            [
-                ("devsweep-version", self.about.version),
-                ("macos-version", self.about.macOS),
-                ("architecture", self.about.architecture),
-            ]
+            [("devsweep-version", self.about.version), ("macos-version", self.about.macOS)]
         case .idea:
             [("devsweep-version", self.about.version)]
         }
@@ -71,8 +65,7 @@ extension FeedbackLink.About {
             version: "\(ProductInfo.version) (\(ProductInfo.build))",
             macOS: self.macOS(
                 process.operatingSystemVersion,
-                build: self.build(fromVersionText: process.operatingSystemVersionString)),
-            architecture: self.architecture)
+                build: self.build(fromVersionText: process.operatingSystemVersionString)))
     }
 
     /// "26.1", or "26.0.1" with a patch, then macOS's build when known:
@@ -92,16 +85,5 @@ extension FeedbackLink.About {
               start < end
         else { return nil }
         return String(text[start..<end])
-    }
-
-    /// The architecture this app runs as.
-    static var architecture: String {
-        #if arch(arm64)
-        "arm64"
-        #elseif arch(x86_64)
-        "x86_64"
-        #else
-        "unknown"
-        #endif
     }
 }

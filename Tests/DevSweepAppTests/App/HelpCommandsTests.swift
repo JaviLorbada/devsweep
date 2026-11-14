@@ -16,7 +16,7 @@ struct HelpCommandsTests {
     func `reporting a problem or an idea opens its form, filled in, in the browser and nothing else`() {
         let links = RecordingLinkOpener()
         let help = HelpCommands(links: links)
-        let about = FeedbackLink.About(version: "0.6.0 (202611141200)", macOS: "26.1 (25B78)", architecture: "arm64")
+        let about = FeedbackLink.About(version: "0.6.0 (202611141200)", macOS: "26.1 (25B78)")
         help.open(.problem, about: about)
         help.open(.idea, about: about)
         #expect(links.opened == [

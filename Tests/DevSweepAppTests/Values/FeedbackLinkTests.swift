@@ -5,7 +5,7 @@ import Testing
 
 @Suite("Feedback links")
 struct FeedbackLinkTests {
-    let about = FeedbackLink.About(version: "0.6.0 (202611141200)", macOS: "26.1 (25B78)", architecture: "arm64")
+    let about = FeedbackLink.About(version: "0.6.0 (202611141200)", macOS: "26.1 (25B78)")
 
     /// The query's names and values, in order.
     func query(_ url: URL) -> [String] {
@@ -14,15 +14,14 @@ struct FeedbackLinkTests {
     }
 
     @Test
-    func `a problem's form is filled in with the versions and the architecture, and nothing else`() {
+    func `a problem's form is filled in with DevSweep's and macOS's versions, and nothing else`() {
         let url = FeedbackLink(form: .problem, about: self.about).url
         #expect(url.absoluteString == "https://github.com/JaviLorbada/devsweep/issues/new?template=bug.yml"
-            + "&devsweep-version=0.6.0%20(202611141200)&macos-version=26.1%20(25B78)&architecture=arm64")
+            + "&devsweep-version=0.6.0%20(202611141200)&macos-version=26.1%20(25B78)")
         #expect(self.query(url) == [
             "template=bug.yml",
             "devsweep-version=0.6.0 (202611141200)",
             "macos-version=26.1 (25B78)",
-            "architecture=arm64",
         ])
     }
 
@@ -62,11 +61,10 @@ struct FeedbackLinkTests {
     }
 
     @Test
-    func `this app on this Mac: the version as the About window writes it, and the architecture it runs as`() {
+    func `this app on this Mac: the version as the About window writes it, and macOS's`() {
         let current = FeedbackLink.About.current
         let system = ProcessInfo.processInfo.operatingSystemVersion
         #expect(current.version == "\(ProductInfo.version) (\(ProductInfo.build))")
         #expect(current.macOS.hasPrefix("\(system.majorVersion).\(system.minorVersion)"))
-        #expect(["arm64", "x86_64"].contains(current.architecture))
     }
 }

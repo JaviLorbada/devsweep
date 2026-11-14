@@ -158,9 +158,9 @@ where Xcode keeps DerivedData), `brew` and `git`, and the command line tool
 also `pgrep`, to see whether Xcode runs. It keeps its last scan in
 `~/Library/Application Support/DevSweep` and its settings in its
 preferences. Help > Report a Problem… and Suggest an Idea… only open
-GitHub's issue form in your browser, with DevSweep's version, the macOS
-version and your Mac's architecture filled in; nothing reaches GitHub
-unless you submit the form there.
+GitHub's issue form in your browser, with DevSweep's version and the
+macOS version filled in; nothing reaches GitHub unless you submit the
+form there.
 
 ## Questions
 
