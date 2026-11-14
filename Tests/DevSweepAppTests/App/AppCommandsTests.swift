@@ -4,7 +4,7 @@ import Testing
 
 @MainActor
 @Suite("Menu commands")
-struct CommandsTests {
+struct AppCommandsTests {
     @Test
     func `the inspector item says what choosing it does`() {
         let window = WindowViewModel()
