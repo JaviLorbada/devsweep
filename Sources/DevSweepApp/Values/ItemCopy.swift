@@ -16,7 +16,7 @@ extension Item {
         case .gradleBuilds: "Gradle build folders"
         case .cocoapodsPods: "Pods folders"
         case .cargoBuilds: "Cargo target folders"
-        case .nodeModules: "node_modules"
+        case .nodeModules: "node_modules folders"
         case .npmCache: "npm cache"
         case .homebrew: "Homebrew"
         case .toolCaches: "Tool caches"
