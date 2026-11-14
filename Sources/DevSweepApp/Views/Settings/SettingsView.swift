@@ -2,9 +2,9 @@ import AppKit
 import DevSweepKit
 import SwiftUI
 
-/// The Settings window: what to scan, how cleaning starts out, and when
-/// something counts as unused. The command line keeps its own flags and
-/// environment variables.
+/// The Settings window: what to scan, how cleaning starts out, when
+/// something counts as unused, and updates. The command line keeps its own
+/// flags and environment variables.
 struct SettingsView: View {
     var body: some View {
         TabView {
@@ -19,6 +19,7 @@ struct SettingsView: View {
 private struct GeneralSettings: View {
     @Environment(Preferences.self) private var preferences
     @Environment(CleaningModel.self) private var cleaning
+    @Environment(UpdatesModel.self) private var updates
 
     var body: some View {
         @Bindable var preferences = self.preferences
@@ -67,9 +68,37 @@ private struct GeneralSettings: View {
                         + "more than this since the scan before.")
                     .settingsFooter()
             }
+            if self.updates.isAvailable {
+                UpdateSettings(updates: self.updates)
+            }
         }
         .formStyle(.grouped)
         .onChange(of: preferences.moveToTrash) { _, moveToTrash in self.cleaning.moveToTrash = moveToTrash }
+    }
+}
+
+/// Whether the app looks for updates on its own, and installs them. Sparkle
+/// asks the same on the second launch; either answer shows here.
+private struct UpdateSettings: View {
+    let updates: UpdatesModel
+
+    var body: some View {
+        let updates = self.updates
+        Section {
+            Toggle("Check for updates automatically", isOn: Binding(
+                get: { updates.checksAutomatically },
+                set: { updates.setChecksAutomatically($0) }))
+            Toggle("Download and install updates automatically", isOn: Binding(
+                get: { updates.downloadsAutomatically },
+                set: { updates.setDownloadsAutomatically($0) }))
+                .disabled(!updates.checksAutomatically)
+        } footer: {
+            Text(
+                "With automatic checks, once a day \(ProductInfo.name) asks GitHub for its latest release, sending "
+                    + "only its own version: the one connection it makes. Check for Updates… in the "
+                    + "\(ProductInfo.name) menu asks now.")
+                .settingsFooter()
+        }
     }
 }
 

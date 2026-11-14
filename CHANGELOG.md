@@ -6,6 +6,14 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+- The app updates itself. Check for Updates… in the DevSweep menu looks
+  for a new version, and on its second launch DevSweep asks whether to
+  look once a day; Settings > General changes that later, and whether
+  updates also install on their own. The update check asks GitHub for the
+  latest release, sending only the app's version, and it is the only
+  connection DevSweep makes. Versions before this one have no updater:
+  download this one by hand, and it updates itself from here on.
+
 ## 0.6.0
 
 A new icon, and one way of counting everywhere: simulator runtimes with

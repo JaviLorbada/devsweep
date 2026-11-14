@@ -45,6 +45,24 @@ struct AppCoordinatorTests {
     }
 
     @Test
+    func `the app updates itself only with the updater it is handed, and a test's never checks`() {
+        let home = TemporaryHome()
+        #expect(!scanningApp(home: home).updates.isAvailable)
+
+        let updater = FakeUpdater()
+        let app = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: InMemoryPreferencesStore()),
+            notifier: SilentNotificationPoster(),
+            updater: updater,
+            dependencies: Dependencies(tools: .unavailable))
+        #expect(app.updates.isAvailable)
+        app.updates.checkForUpdates()
+        #expect(updater.checks == 1)
+    }
+
+    @Test
     func `the daily scan waits while a clean's question is open`() async {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/Atlas-abc")
