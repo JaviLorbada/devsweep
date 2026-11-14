@@ -3,7 +3,7 @@
 # app zip (see docs/releasing.md). Named devsweep-app so it doesn't clash
 # with the devsweep formula for the command line tool.
 cask "devsweep-app" do
-  version "0.5.1"
+  version "0.6.0"
   sha256 "REPLACE_WITH_THE_APP_ZIP_SHA256"
 
   url "https://github.com/JaviLorbada/devsweep/releases/download/v#{version}/DevSweep-#{version}.zip"
