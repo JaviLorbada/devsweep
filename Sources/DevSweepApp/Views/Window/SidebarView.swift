@@ -56,6 +56,7 @@ struct SidebarView: View {
                         "Simulator runtimes",
                         kilobytes: self.scan.extras?.runtimesKilobytes,
                         screen: .simulatorRuntimes)
+                    self.row("Simulators", kilobytes: self.scan.extras?.simulatorsKilobytes, screen: .simulators)
                 } label: {
                     Label("Xcode", systemImage: "hammer")
                 }

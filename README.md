@@ -37,9 +37,9 @@ touches what git tracks.
 - **Cleans what you mark**, to the Trash by default, with Put Back.
 - **Cleans part of an item:** tick single DerivedData projects or build
   folders, and keep the rest.
-- **Points at the rest:** installed Xcodes, simulator runtimes, Android
-  Studio's SDK and emulators, and git worktrees, with what looks unused
-  flagged.
+- **Points at the rest:** installed Xcodes, simulator runtimes, every
+  simulator and what its data takes, Android Studio's SDK and emulators,
+  and git worktrees, with what looks unused flagged.
 - **Keeps an eye out:** a menu bar item with the free space, a daily scan,
   and a notification when DerivedData has grown a lot.
 - **Works from the terminal too:** `devsweep` reports the same items and
@@ -146,9 +146,14 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   a shared cache, in the inspector, then clean just those. Build folders
   work the same way. A project can go while Xcode is open, after a question.
 - **Look at what it won't clean.** The sidebar's Also worth a look lists
-  installed Xcodes, simulator runtimes, Android Studio's files and git
-  worktrees, with their sizes, flagging what looks unused. A worktree can
-  be removed from there when nothing in it would be lost.
+  installed Xcodes, simulator runtimes, simulators, Android Studio's files
+  and git worktrees, with their sizes, flagging what looks unused. A
+  worktree can be removed from there when nothing in it would be lost.
+- **See where simulators take space.** Simulators lists each simulator with
+  its runtime, state, size and last use, and flags the ones unused for 30
+  days. The ones Xcode makes on its own, for SwiftUI previews and for
+  running tests in parallel, are listed apart. DevSweep never erases or
+  deletes a simulator that works.
 - **Find worktrees.** DevSweep lists the worktrees of the repositories in
   your project folders, wherever the worktrees are. If a tool keeps its
   worktrees in a folder of its own, add that folder as a project folder.
@@ -268,7 +273,7 @@ with fakes in place of the others.
 flowchart TB
   subgraph Views["Views · SwiftUI"]
     direction LR
-    Screens["Overview · Xcodes · Runtimes<br/>Worktrees · Android"]
+    Screens["Overview · Xcodes · Runtimes<br/>Simulators · Worktrees · Android"]
     Chrome["Sidebar · header · inspector<br/>menu bar · Settings"]
   end
 
@@ -278,6 +283,7 @@ flowchart TB
     OverviewVM[OverviewViewModel]
     XcodesVM[XcodesViewModel]
     RuntimesVM[RuntimesViewModel]
+    SimulatorsVM[SimulatorsViewModel]
     WorktreesVM[WorktreesViewModel]
     AndroidVM[AndroidViewModel]
   end

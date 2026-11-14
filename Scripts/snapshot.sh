@@ -10,7 +10,7 @@
 #   screens: overview scanning blocks runtimes xcodes remove-runtime cleaned putback,
 #            about, menubar (the menu bar item over its panel),
 #            any with -light (default: overview); with WIDTH also
-#            android-studios android-sdk gradle worktrees
+#            simulators android-studios android-sdk gradle worktrees
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
 #   SELECT picks an item, and SNAPSHOT_WIDTH=900 lays the drawing out that wide.
@@ -228,10 +228,31 @@ cat > "$work/runtimes.json" <<EOF
     "runtimeIdentifier": "com.apple.CoreSimulator.SimRuntime.watchOS-26-1", "lastUsedAt": "2026-09-01T09:00:00Z" }
 }
 EOF
-cat > "$work/devices.json" <<'EOF'
+# Simulators in each of simctl's device sets: booted, used days ago, never
+# used, and unused for months; the previews and testing sets hold what
+# Xcode made there on its own.
+recent="$(date -u -v-3d +%Y-%m-%dT%H:%M:%SZ)"
+simulator() { printf '{ "udid": "%s", "name": "%s", "state": "%s", "dataPathSize": %s%s }' "$1" "$2" "$3" "$4" \
+  "${5:+, \"lastUsedAt\": \"$5\"}"; }
+cat > "$work/devices.json" <<EOF
 { "devices": {
-  "com.apple.CoreSimulator.SimRuntime.iOS-27-1": [ {}, {}, {}, {} ],
-  "com.apple.CoreSimulator.SimRuntime.watchOS-26-1": [ {} ] } }
+  "com.apple.CoreSimulator.SimRuntime.iOS-27-1": [
+    $(simulator 79CDB9F9-4BD5-4272-A90E-ADDD1FB2A156 "iPhone 18 Pro Max" Booted 10322960384 "$now"),
+    $(simulator 2E4F6A8C-0B1D-4E3F-9A5C-7D9E1F3A5B7C "iPhone 17" Shutdown 6012345344 "$recent"),
+    $(simulator 5B0C5E2A-0D7E-4F7B-8C9A-3E1F2A4B6C8D "iPad Pro 13-inch (M5)" Shutdown 18452480),
+    $(simulator C2D4E6F8-1A3B-4C5D-9E7F-0A2B4C6D8E0F "iPhone Air" Shutdown 6432124928 2026-08-07T22:41:49Z) ],
+  "com.apple.CoreSimulator.SimRuntime.watchOS-26-1": [
+    $(simulator 9A1B3C5D-7E9F-4A1B-8C3D-5E7F9A1B3C5D "Apple Watch Series 11 (46mm)" Shutdown 2147483648 \
+      2026-09-01T09:00:00Z) ] } }
+EOF
+cat > "$work/devices-previews.json" <<EOF
+{ "devices": { "com.apple.CoreSimulator.SimRuntime.iOS-27-1": [
+  $(simulator 8E6A4C2B-7D5F-4E3A-B1C9-2F4D6E8A0B1C "iPhone 17 Pro" Shutdown 3460000000 2026-10-01T09:00:00Z),
+  $(simulator 3C5E7A9B-1D3F-4B5D-8F1A-3C5E7A9B1D3F "iPhone 18 Pro" Shutdown 1200000000 "$recent") ] } }
+EOF
+cat > "$work/devices-testing.json" <<EOF
+{ "devices": { "com.apple.CoreSimulator.SimRuntime.iOS-27-1": [
+  $(simulator 4A6C8E0B-2D4F-4A6C-8E0B-2D4F6A8C0E2B "Clone 1 of iPhone 17" Shutdown 1073741824 "$recent") ] } }
 EOF
 cat > "$stubs/xcrun" <<EOF
 #!/bin/bash
@@ -243,6 +264,8 @@ case "\$*" in
     ;;
   "simctl runtime list -j") cat "$work/runtimes.json" ;;
   "simctl list devices -j") cat "$work/devices.json" ;;
+  "simctl --set previews list devices -j") cat "$work/devices-previews.json" ;;
+  "simctl --set testing list devices -j") cat "$work/devices-testing.json" ;;
   *) exit 1 ;;
 esac
 EOF

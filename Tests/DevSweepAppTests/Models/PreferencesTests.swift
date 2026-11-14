@@ -58,6 +58,7 @@ struct PreferencesTests {
         #expect(config.skipped == [.homebrew])
         #expect(config.staleDays == 45)
         #expect(config.includeAndroid)
+        #expect(config.includeSimulators)
 
         let overridden = preferences.scanConfig(environment: [
             "HOME": "/Users/someone",

@@ -12,6 +12,11 @@ gets a line under Unreleased as it lands.
   SwiftPM's own clones in `.build/checkouts` and `.build/repositories`,
   and in `.build/index-build` where SourceKit-LSP indexes, don't count:
   `swift package resolve` clones them again.
+- A Simulators screen, under Xcode in the sidebar, lists every simulator
+  with its runtime, state, size and last use, and flags the ones unused for
+  30 days. The ones Xcode makes for SwiftUI previews and for running tests
+  in parallel are listed apart. It only lists them: nothing is erased or
+  deleted.
 
 ## 0.7.0
 

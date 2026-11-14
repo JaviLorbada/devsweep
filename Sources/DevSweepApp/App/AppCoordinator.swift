@@ -27,6 +27,7 @@ final class AppCoordinator {
     let overview: OverviewViewModel
     let xcodes: XcodesViewModel
     let runtimes: RuntimesViewModel
+    let simulators: SimulatorsViewModel
     let worktrees: WorktreesViewModel
     let android: AndroidViewModel
     /// Opens the Help menu's pages in the browser.
@@ -102,6 +103,7 @@ final class AppCoordinator {
         self.overview = OverviewViewModel(window: window, scan: scan, cleaning: cleaning, apps: runningApps)
         self.xcodes = XcodesViewModel(scan: scan)
         self.runtimes = RuntimesViewModel(scan: scan, preferences: preferences)
+        self.simulators = SimulatorsViewModel(scan: scan)
         self.worktrees = WorktreesViewModel(scan: scan)
         self.android = AndroidViewModel(window: window, scan: scan, preferences: preferences)
 
@@ -225,6 +227,7 @@ extension View {
             .environment(app.overview)
             .environment(app.xcodes)
             .environment(app.runtimes)
+            .environment(app.simulators)
             .environment(app.worktrees)
             .environment(app.android)
     }
