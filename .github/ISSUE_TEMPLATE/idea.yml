@@ -19,4 +19,3 @@ body:
     attributes:
       label: DevSweep version
       description: Optional. From its About window, or the release you downloaded.
-      placeholder: "0.6.0"
