@@ -96,6 +96,7 @@ func finishScan(_ scan: ScanModel) async {
 /// extras: what the views and the menus read.
 @MainActor
 func makeApp(home: TemporaryHome, extras: Extras? = nil) -> AppCoordinator {
+    _ = AssistiveClient.isListening
     let app = AppCoordinator(
         environment: testEnvironment(home: home),
         store: InMemoryScanStore(),
@@ -122,6 +123,7 @@ func scannedApp(
     projectFolders: String = "",
     files: (any FileSystemAccess)? = nil) async -> AppCoordinator
 {
+    _ = AssistiveClient.isListening
     var tools = Tools.unavailable
     tools.trash = FolderTrash(folder: "\(home.root)/Trash")
     tools.runningApps = apps
@@ -140,7 +142,8 @@ func scannedApp(
 /// last scan is kept in the temp home's own file.
 @MainActor
 func scanningApp(home: TemporaryHome, notifier: NotificationPoster = SilentNotificationPoster()) -> AppCoordinator {
-    AppCoordinator(
+    _ = AssistiveClient.isListening
+    return AppCoordinator(
         environment: testEnvironment(home: home),
         preferences: Preferences(storage: InMemoryPreferencesStore()),
         notifier: notifier,

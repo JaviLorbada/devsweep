@@ -3,11 +3,8 @@ import SwiftUI
 
 /// A view's accessibility tree as VoiceOver reads it: each element's role,
 /// label, value and actions, in order. The view is hosted in a window of
-/// its own, kept while the tree is, so its elements can be pressed.
-///
-/// SwiftUI builds the tree only once an assistive app asks for it, so the
-/// tree first says it is one, as VoiceOver does when it starts: it sets the
-/// application's `AXEnhancedUserInterface`.
+/// its own, kept while the tree is, so its elements can be pressed. SwiftUI
+/// builds the tree only for an assistive app (`AssistiveClient`).
 @MainActor
 struct AccessibilityTree {
     struct Element {
@@ -46,10 +43,7 @@ struct AccessibilityTree {
     private let window: NSWindow
 
     init(_ view: some View, width: CGFloat, height: CGFloat) {
-        _ = NSApplication.shared.perform(
-            NSSelectorFromString("accessibilitySetValue:forAttribute:"),
-            with: NSNumber(value: true),
-            with: "AXEnhancedUserInterface")
+        precondition(AssistiveClient.isListening, "the application can't be told an assistive app is listening")
         let host = NSHostingView(rootView: view)
         host.frame = CGRect(x: 0, y: 0, width: width, height: height)
         self.window = NSWindow(contentRect: host.frame, styleMask: [.titled], backing: .buffered, defer: false)
