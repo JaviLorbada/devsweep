@@ -50,28 +50,51 @@ struct SimctlRuntimeList: Sendable {
     }
 }
 
-/// `simctl list devices -j`: how many simulators each runtime has.
+/// `simctl list devices -j`: the simulators under each runtime.
 struct SimctlDeviceList: Sendable {
-    private let counts: [String: Int]
+    struct Device: Decodable, Sendable {
+        let udid: String?
+        let name: String?
+        let state: String?
+        let dataPathSize: Double?
+        let lastUsedAt: String?
 
-    private struct Devices: Decodable {
-        let devices: [String: Lossy<[Ignored]>]?
+        private enum Field: String, CodingKey {
+            case udid, name, state, dataPathSize, lastUsedAt
+        }
+
+        init(from decoder: any Decoder) throws {
+            let fields = try decoder.container(keyedBy: Field.self)
+            self.udid = fields.value(String.self, .udid)
+            self.name = fields.value(String.self, .name)
+            self.state = fields.value(String.self, .state)
+            self.dataPathSize = fields.value(Double.self, .dataPathSize)
+            self.lastUsedAt = fields.value(String.self, .lastUsedAt)
+        }
     }
 
-    /// A simulator, counted and not read.
-    private struct Ignored: Decodable {
-        init(from _: any Decoder) {}
+    /// Each runtime's entries by its identifier, nil where one isn't a
+    /// simulator: the runtimes count those too, as the script counts them.
+    private let entries: [String: [Device?]]
+
+    private struct Devices: Decodable {
+        let devices: [String: Lossy<[Lossy<Device>]>]?
     }
 
     /// None when the JSON isn't the device list.
     init(_ data: Data) {
         let devices = (try? JSONDecoder().decode(Devices.self, from: data))?.devices ?? [:]
-        self.counts = devices.compactMapValues { $0.value?.count }
+        self.entries = devices.compactMapValues { $0.value?.map(\.value) }
     }
 
     /// Simulators for the runtime with this identifier.
     func count(for runtimeIdentifier: String) -> Int {
-        self.counts[runtimeIdentifier] ?? 0
+        self.entries[runtimeIdentifier]?.count ?? 0
+    }
+
+    /// Every simulator, with its runtime's identifier.
+    var devices: [(runtimeIdentifier: String, device: Device)] {
+        self.entries.flatMap { identifier, entries in entries.compactMap { $0.map { (identifier, $0) } } }
     }
 }
 
