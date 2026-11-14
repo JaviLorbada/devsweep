@@ -20,8 +20,12 @@ public struct Dependencies: Sendable {
     }
 
     /// The machine as it is, with tools found through the environment's `PATH`.
-    public static func live(environment: [String: String], passthroughOutput: Bool = false) -> Dependencies {
-        Dependencies(tools: .live(environment: environment, passthroughOutput: passthroughOutput))
+    public static func live(
+        environment: [String: String],
+        passthroughOutput: Bool = false,
+        command: CommandName = .product) -> Dependencies
+    {
+        Dependencies(tools: .live(environment: environment, passthroughOutput: passthroughOutput, command: command))
     }
 }
 
@@ -89,12 +93,13 @@ extension Tools {
             git: UnavailableTool(),
             runningApps: UnavailableTool(),
             lastUsedDates: UnavailableTool(),
-            trash: UnavailableTool())
+            trash: UnavailableTool(),
+            freeSpace: UnavailableTool())
     }
 }
 
 private struct UnavailableTool: SimctlClient, BrewClient, XcodeDefaultsReading, XcodeSelectReading, GitClient,
-    RunningAppsChecking, LastUsedDateReading, TrashService
+    RunningAppsChecking, LastUsedDateReading, TrashService, FreeSpaceReading
 {
     struct Refused: Error {}
 
@@ -125,4 +130,5 @@ private struct UnavailableTool: SimctlClient, BrewClient, XcodeDefaultsReading, 
     func lastUsedDate(of path: String) -> Date? { nil }
     func trash(_ path: String) throws -> String { throw Refused() }
     func putBack(_ trashed: String, to original: String) throws { throw Refused() }
+    func availableBytes(on path: String) async -> Int64? { nil }
 }

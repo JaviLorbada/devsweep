@@ -4,21 +4,6 @@ import Testing
 
 @Suite("Report format")
 struct ReportFormatTests {
-    @Test(arguments: [
-        (Int64(0), "0 KB"),
-        (1023, "1023 KB"),
-        (1024, "1 MB"),
-        (1_048_575, "1023 MB"),
-        (1_048_576, "1.0 GB"),
-        (1_101_005, "1.1 GB"),
-        (1_572_864, "1.5 GB"),
-        (8_388_608, "8.0 GB"),
-        (1_073_741_824, "1024.0 GB"),
-    ])
-    func `sizes use binary multiples with decimal labels`(kilobytes: Int64, expected: String) {
-        #expect(Report.human(kilobytes: kilobytes) == expected)
-    }
-
     @Test
     func `an item row pads by bytes, like printf under LC_ALL=C`() {
         let result = ItemResult(
@@ -70,16 +55,16 @@ struct ReportFormatTests {
             location: "~/Library/Developer/Xcode/DerivedData",
             derivedData: breakdown)
         #expect(Report.row(result) == """
-          derived-data     Xcode DerivedData                            2 MB
+          derived-data     Xcode DerivedData                            3 MB
                            ~/Library/Developer/Xcode/DerivedData
                              Compilation cache, all projects            2 MB
                              Module cache, all projects                 4 KB
-                             P1/P1                 built 2026-09-01    79 KB
-                             P2/P2                 built 2026-09-02    78 KB
-                             P3/P3                 built 2026-09-03    77 KB
-                             P4/P4                 built 2026-09-04    76 KB
-                             P5/P5                 built 2026-09-05    75 KB
-                             3 more projects                          148 KB
+                             P1/P1                 built 2026-09-01    81 KB
+                             P2/P2                 built 2026-09-02    80 KB
+                             P3/P3                 built 2026-09-03    79 KB
+                             P4/P4                 built 2026-09-04    78 KB
+                             P5/P5                 built 2026-09-05    77 KB
+                             3 more projects                          152 KB
                              Other                                      4 KB
                            Each part comes back as you build; projects you no longer build stay gone.
 
@@ -116,15 +101,15 @@ struct ReportFormatTests {
 
     @Test
     func `the summary prints Total and Free space now`() {
-        #expect(Report.summary(totalKilobytes: nil, freeKilobytes: 30_000_000) == """
+        #expect(Report.summary(totalKilobytes: nil, freeBytes: 28_600_000_000) == """
           ------------------------------------------------------------------
           Total                                                         none
           Free space now                                             28.6 GB
 
 
         """)
-        #expect(Report.summary(totalKilobytes: 3_077_864, freeKilobytes: 1)
-            .contains("Total                                                       2.9 GB\n"))
+        #expect(Report.summary(totalKilobytes: 3_077_864, freeBytes: 1)
+            .contains("Total                                                       3.2 GB\n"))
     }
 
     @Test(arguments: [
@@ -211,16 +196,16 @@ struct ReportFormatTests {
         Xcode versions
           Xcode 27.0 (27A266a)           8 KB   opened 2026-09-21, selected
             ~/Applications/Xcode.app
-          Xcode ? (?)                 11.4 GB   last opened unknown
+          Xcode ? (?)                 12.3 GB   last opened unknown
             /Applications/Xcode-beta.app
           Each Xcode keeps its own compilation cache in DerivedData. To remove
           one you no longer need, quit it and move it to the Trash.
 
         Simulator runtimes
-          iOS 27.0 (24A434)            8.0 GB   used 2026-10-21, 1 simulator
-          iOS 17.5 (21F79)             7.0 GB   used 2020-01-01, 3 simulators
+          iOS 27.0 (24A434)            8.6 GB   used 2026-10-21, 1 simulator
+          iOS 17.5 (21F79)             7.5 GB   used 2020-01-01, 3 simulators
             Not used in 2485 days. Remove with: xcrun simctl runtime delete B
-          watchOS 18.0 (22A3351)       977 KB   never used, 0 simulators
+          watchOS 18.0 (22A3351)         1 MB   never used, 0 simulators
             No simulators. Remove with: xcrun simctl runtime delete C
 
 

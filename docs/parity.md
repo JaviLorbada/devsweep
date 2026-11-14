@@ -14,7 +14,7 @@ Three layers, all in CI. [development.md](development.md) has the commands.
 1. **Swift Testing**: the kit and the app, each test on a fake home folder
    in its own temp folder, with fake tools, Trash and clock.
 2. **The script's own bats suite**, copied unchanged from the dotfiles
-   repository and run against the Swift binary: 52 of 52 pass. This is the
+   repository and run against the Swift binary: 57 of 57 pass. This is the
    acceptance test.
 3. **Side by side**: the bash script and the binary run against the same
    fake home with the same stubs on `PATH`, and their output, exit status,
@@ -36,8 +36,16 @@ Every tool is found through `PATH` when it runs, and runs with `LC_ALL=C`.
 
 Sizes count allocated blocks the way `du -sk` does: every entry's
 `st_blocks`, hard-linked files once, symlinks never followed. That is why
-an installed Xcode shows about 3.7 GB, not the 9 GB Finder reports: its
-files are stored compressed, and 3.7 GB is what removing it frees.
+an installed Xcode shows about 4.0 GB, not the 9 GB Finder reports: its
+files are stored compressed, and 4.0 GB is what removing it frees.
+
+Sizes print as Finder writes them, in thousands and rounded (`SizeText`, the
+app's too), and Homebrew's sizes are read in thousands, as Homebrew counts
+them. Free space is Finder's figure, with what macOS frees on its own, and
+`df`'s when that can't be read. The script reads Finder's figure through
+`osascript`, so under its name the tool does the same, through `PATH`, and
+the bats suite can stub it; as `devsweep` and in the app it asks macOS
+directly.
 
 ## Where it's stricter than the script
 

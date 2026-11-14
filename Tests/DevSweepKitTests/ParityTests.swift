@@ -403,7 +403,7 @@ struct ExtrasListingTests {
 
         let run = await devclean(home: home, tools: tools)
         #expect(run.status == 0)
-        #expect(run.output.containsInOrder("iOS 27.0 (24A434)", "8.0 GB", "used \(today), 2 simulators"))
+        #expect(run.output.containsInOrder("iOS 27.0 (24A434)", "8.6 GB", "used \(today), 2 simulators"))
         #expect(run.output.containsInOrder("iOS 17.5 (21F79)", "used 2020-01-01, 0 simulators"))
         #expect(run.output.contains("no simulators. Remove with: xcrun simctl runtime delete OLD-RUNTIME"))
         #expect(!run.output.contains("delete RECENT-RUNTIME"))

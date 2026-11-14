@@ -50,10 +50,8 @@ enum ExtrasScanner {
               !runtimesData.isEmpty else { return [] }
         let list = SimctlRuntimeList(runtimesData)
         let devices = await SimctlDeviceList(simctl.devicesJSON() ?? Data())
-        let runtimes = self.runtimes(list, devices: devices, now: now)
-        guard context.config.includeRuntimeDownloads else { return runtimes }
         let downloads = self.downloads(list)
-        return runtimes.map { runtime in
+        return self.runtimes(list, devices: devices, now: now).map { runtime in
             guard let folder = downloads[runtime.id] else { return runtime }
             let kilobytes = context.measurer.measure(folder).kilobytes
             return kilobytes > 0 ? runtime.counting(downloadKilobytes: kilobytes) : runtime
@@ -63,26 +61,40 @@ enum ExtrasScanner {
     /// The download macOS keeps for each runtime that has one of its own, by
     /// runtime id: the MobileAsset folder simctl's `parentImagePath` is in,
     /// which `simctl runtime delete` removes with the runtime. simctl's size
-    /// leaves it out. Not counted: a folder that is another runtime's own,
-    /// counted there, and one several runtimes share, which removing one of
+    /// leaves it out. Not counted, as the bash script decides: a folder that
+    /// holds any runtime's own files, this one's included, which `sizeBytes`
+    /// already counts, and one several runtimes name, which removing one of
     /// them doesn't free.
     static func downloads(_ list: SimctlRuntimeList) -> [String: String] {
         var parents: [String: String] = [:]
-        var ownFolders: Set<String> = []
         for (id, runtime) in list.runtimes {
-            if let folder = runtime.path.flatMap(self.assetFolder) { ownFolders.insert(folder) }
-            if let folder = runtime.parentImagePath.flatMap(self.assetFolder) { parents[id] = folder }
+            parents[id] = runtime.parentImagePath.flatMap(self.assetFolder)
         }
         let namedBy = Dictionary(grouping: parents.values) { $0 }.mapValues(\.count)
-        return parents.filter { !ownFolders.contains($0.value) && namedBy[$0.value] == 1 }
+        let paths = list.runtimes.map { $0.runtime.path ?? "" }
+        return parents.filter { _, folder in
+            let inside = Array((folder + "/").utf8)
+            return namedBy[folder] == 1
+                && !paths.contains { $0.utf8.elementsEqual(folder.utf8) || $0.utf8.starts(with: inside) }
+        }
     }
 
-    /// The `.asset` folder a path is in, nil when it isn't in one.
+    /// The `.asset` folder a path is in, as the script's `/^(.*\.asset)(\/|$)/`
+    /// finds it: up to the last `.asset` that ends the path or a folder's
+    /// name, on the path's first line. Nil when there is none.
     static func assetFolder(_ path: String) -> String? {
-        let components = path.split(separator: "/", omittingEmptySubsequences: false)
-        guard let index = components.firstIndex(where: { $0.count > 6 && $0.hasSuffix(".asset") }), index > 0
-        else { return nil }
-        return components[...index].joined(separator: "/")
+        let bytes = Array(path.utf8)
+        let marker = Array(".asset".utf8)
+        // JavaScript's `.` stops at a line break: \n, \r, U+2028 or U+2029.
+        let lineEnd = bytes.indices.first { index in
+            bytes[index] == 0x0A || bytes[index] == 0x0D
+                || (bytes[index...].starts(with: [0xE2, 0x80]) && index + 2 < bytes.count
+                    && (bytes[index + 2] == 0xA8 || bytes[index + 2] == 0xA9))
+        } ?? bytes.count
+        let ends = (0..<max(0, lineEnd - marker.count + 1)).map { $0 + marker.count }.filter { end in
+            bytes[(end - marker.count)..<end].elementsEqual(marker) && (end == bytes.count || bytes[end] == 0x2F)
+        }
+        return ends.last.map { String(decoding: bytes[..<$0], as: UTF8.self) }
     }
 
     /// Joins `simctl runtime list -j` with `simctl list devices -j`, sorted by

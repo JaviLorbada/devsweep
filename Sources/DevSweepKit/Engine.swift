@@ -111,8 +111,7 @@ public struct Engine: Sendable {
             continuation.yield(.finished(result))
         }
 
-        let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
-        continuation.yield(.done(totalBytes: totalKilobytes * 1024, freeBytes: free * 1024))
+        await continuation.yield(.done(totalBytes: totalKilobytes * 1024, freeBytes: self.freeBytes()))
 
         if self.config.includeExtras, !Task.isCancelled {
             await continuation.yield(.extras(ExtrasScanner.scan(in: context)))
@@ -161,8 +160,7 @@ public struct Engine: Sendable {
                         return (state.finished, state.kilobytes)
                     }
                     if finished == order.count {
-                        let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
-                        continuation.yield(.done(totalBytes: total * 1024, freeBytes: free * 1024))
+                        await continuation.yield(.done(totalBytes: total * 1024, freeBytes: self.freeBytes()))
                     }
                 }
             }
@@ -178,8 +176,7 @@ public struct Engine: Sendable {
             }
         }
         if order.isEmpty {
-            let free = DiskSpace.of(self.config.home)?.availableKilobytes ?? 0
-            continuation.yield(.done(totalBytes: 0, freeBytes: free * 1024))
+            await continuation.yield(.done(totalBytes: 0, freeBytes: self.freeBytes()))
         }
     }
 
@@ -187,6 +184,13 @@ public struct Engine: Sendable {
     /// available beside `df`'s figure.
     public func diskSpace() -> DiskSpace? {
         DiskSpace.of(self.config.home, includingPurgeable: true)
+    }
+
+    /// Bytes free on the home folder's volume as Finder shows them, or as
+    /// `df` does when that figure can't be read: what the report says.
+    public func freeBytes() async -> Int64 {
+        if let bytes = await self.tools.freeSpace.availableBytes(on: self.config.home) { return bytes }
+        return (DiskSpace.of(self.config.home)?.availableKilobytes ?? 0) * 1024
     }
 
     /// Lists installed Xcodes and simulator runtimes again, without scanning the items.

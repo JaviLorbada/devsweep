@@ -5,8 +5,8 @@ import Foundation
 /// asked for, as Finder and System Settings do.
 public struct DiskSpace: Sendable, Equatable {
     public var totalKilobytes: Int64
-    /// `df -k`'s Available: the blocks free now. The report shows this, as
-    /// the bash script does.
+    /// `df -k`'s Available: the blocks free now. The report falls back to
+    /// it when Finder's figure can't be read, as the bash script does.
     public var availableKilobytes: Int64
     /// What Finder and System Settings call available: the free blocks and
     /// the space macOS can purge on its own, such as local snapshots and

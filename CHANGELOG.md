@@ -10,8 +10,12 @@ gets a line under Unreleased as it lands.
   light and dark versions that follow the icon style you choose in macOS 26.
 - A simulator runtime's size counts the download macOS keeps for it, which
   removing the runtime removes too: an older runtime such as iOS 18.5 can
-  take twice what simctl says. The inspector shows both parts. `devsweep`
-  counts it too; run as `devclean` it keeps the bash script's report.
+  take twice what simctl says. The inspector shows both parts, and the
+  command line counts it too.
+- The command line writes sizes and free space as the app and Finder do: in
+  thousands, rounded, and free space with what macOS frees on its own. Its
+  numbers now match the app's. Run as `devclean` it still matches the bash
+  script, which counts the same way now.
 
 ## 0.5.1
 
