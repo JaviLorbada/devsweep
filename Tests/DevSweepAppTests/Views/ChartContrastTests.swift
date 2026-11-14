@@ -2,10 +2,10 @@ import SwiftUI
 import Testing
 @testable import DevSweepApp
 
-@Suite("Chart tones")
-struct ChartTonesTests {
-    let standard = ChartTones(.standard)
-    let increased = ChartTones(.increased)
+@Suite("Chart contrast")
+struct ChartContrastTests {
+    let standard = ChartContrast(.standard)
+    let increased = ChartContrast(.increased)
 
     @Test
     func `without Increase Contrast the charts draw as they always have`() {
@@ -21,12 +21,12 @@ struct ChartTonesTests {
     func `with Increase Contrast segments sit further apart, and what is faded draws stronger`() {
         #expect(self.increased.ringGap > self.standard.ringGap)
         #expect(self.increased.blockEdgeWidth > self.standard.blockEdgeWidth)
-        let faded: [KeyPath<ChartTones, Double>] = [\.dimmed, \.lastScan, \.measuring, \.pending]
+        let faded: [KeyPath<ChartContrast, Double>] = [\.dimmed, \.lastScan, \.measuring, \.pending]
         for tone in faded {
             #expect(self.increased[keyPath: tone] > self.standard[keyPath: tone])
         }
         let environment = EnvironmentValues()
-        for tone in [\ChartTones.placeholder, \.cleaned] {
+        for tone in [\ChartContrast.placeholder, \.cleaned] {
             #expect(self.increased[keyPath: tone].resolve(in: environment).opacity
                 > self.standard[keyPath: tone].resolve(in: environment).opacity * 1.8)
         }

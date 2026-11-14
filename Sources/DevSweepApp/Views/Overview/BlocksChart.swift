@@ -7,6 +7,7 @@ import SwiftUI
 struct BlocksChart: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
+    let contrast: ChartContrast
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
@@ -48,7 +49,7 @@ struct BlocksChart: View {
             .frame(width: 150)
 
             GeometryReader { proxy in
-                TreemapCells(size: proxy.size)
+                TreemapCells(size: proxy.size, contrast: self.contrast)
             }
         }
         // One element that sums the chart up, holding the families and then
@@ -119,8 +120,8 @@ struct BlocksChart: View {
 private struct TreemapCells: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
-    @Environment(\.colorSchemeContrast) private var contrast
     let size: CGSize
+    let contrast: ChartContrast
 
     var body: some View {
         let rows = self.scan.tally.ordered
@@ -131,7 +132,7 @@ private struct TreemapCells: View {
         ZStack(alignment: .topLeading) {
             if cells.isEmpty {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(ChartTones(self.contrast).placeholder)
+                    .fill(self.contrast.placeholder)
                     .overlay {
                         Text(self.scan.isScanning ? "Measuring…" : "Nothing to clean")
                             .foregroundStyle(.muted)
@@ -143,7 +144,8 @@ private struct TreemapCells: View {
                         row: row,
                         frame: cell.frame,
                         selected: self.overview.selection == cell.id,
-                        spoken: SpokenText.item(row, in: self.scan.tally))
+                        spoken: SpokenText.item(row, in: self.scan.tally),
+                        contrast: self.contrast)
                         // VoiceOver reads them largest first, as the list does,
                         // wherever the treemap puts them.
                         .accessibilitySortPriority(Double(rows.count - (rows.firstIndex { $0.item == cell.id } ?? 0)))
@@ -157,11 +159,11 @@ private struct TreemapCells: View {
 
 private struct TreemapCell: View {
     @Environment(OverviewViewModel.self) private var overview
-    @Environment(\.colorSchemeContrast) private var contrast
     let row: ScanRow
     let frame: CGRect
     let selected: Bool
     let spoken: SpokenText
+    let contrast: ChartContrast
 
     var body: some View {
         let color = Palette.color(self.row.item)
@@ -190,9 +192,9 @@ private struct TreemapCell: View {
             .frame(width: max(self.frame.width, 0), height: max(self.frame.height, 0), alignment: .topLeading)
             .background(color.opacity(self.selected ? 0.55 : 0.3), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(
-                self.tones.blockEdge(self.row.item, selected: self.selected),
-                lineWidth: self.tones.blockEdgeWidth))
-            .opacity(self.row.isLive ? 1 : self.tones.pending)
+                self.contrast.blockEdge(self.row.item, selected: self.selected),
+                lineWidth: self.contrast.blockEdgeWidth))
+            .opacity(self.row.isLive ? 1 : self.contrast.pending)
             .contentShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
@@ -203,9 +205,5 @@ private struct TreemapCell: View {
         .accessibilityAddTraits(self.selected ? .isSelected : [])
         .offset(x: self.frame.minX, y: self.frame.minY)
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
-    }
-
-    private var tones: ChartTones {
-        ChartTones(self.contrast)
     }
 }

@@ -8,6 +8,7 @@ struct ItemsCard: View {
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
     @Environment(CleaningModel.self) private var cleaning
+    let contrast: ChartContrast
 
     /// The bar is the first column to go when the center column narrows.
     static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
@@ -55,6 +56,7 @@ struct ItemsCard: View {
                     marked: marked,
                     canClean: row.isLive && !self.scan.isScanning && !self.scan.isCleaning,
                     spoken: SpokenText.row(row, marked: marked, in: self.scan.tally),
+                    contrast: self.contrast,
                     showsBar: showsBar,
                     clean: { self.clean(row.item) })
             }
@@ -83,7 +85,6 @@ struct ItemRow: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(MarksModel.self) private var marks
     @Environment(\.appearsActive) private var appearsActive
-    @Environment(\.colorSchemeContrast) private var contrast
     @FocusState private var focused: Bool
     let row: ScanRow
     let largest: Double
@@ -91,6 +92,7 @@ struct ItemRow: View {
     let marked: Bool
     let canClean: Bool
     let spoken: SpokenText
+    let contrast: ChartContrast
     var showsBar = true
     let clean: () -> Void
 
@@ -199,15 +201,11 @@ struct ItemRow: View {
             .lineLimit(1)
     }
 
-    private var tones: ChartTones {
-        ChartTones(self.contrast)
-    }
-
     private var barColor: Color {
         switch self.row.state {
-        case .cleaned, .cleaning: self.tones.cleaned
-        case .measuring: Palette.color(self.row.item).opacity(self.tones.measuring)
-        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(self.tones.lastScan)
+        case .cleaned, .cleaning: self.contrast.cleaned
+        case .measuring: Palette.color(self.row.item).opacity(self.contrast.measuring)
+        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(self.contrast.lastScan)
         case .measured: Palette.color(self.row.item)
         }
     }

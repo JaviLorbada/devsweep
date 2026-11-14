@@ -1,12 +1,14 @@
 import DevSweepKit
 import SwiftUI
 
-/// How strongly the charts draw what is faded, waiting or cleaned, and the
-/// edges between segments and blocks. With Increase Contrast every faded
-/// tone draws stronger, the ring's segments sit further apart, and blocks
-/// take an edge in a deeper shade of their hue, so neighbours stay apart
-/// from each other and from the card.
-struct ChartTones {
+/// How the overview's charts draw at the window's contrast: how strongly
+/// they draw what is faded, waiting or cleaned, the gap between the ring's
+/// segments and the blocks' edges. With Increase Contrast every faded tone
+/// draws stronger, the segments sit further apart, and blocks take an edge
+/// in a deeper shade of their hue, so neighbours stay apart from each other
+/// and from the card. The overview reads the contrast once and hands this
+/// down, as it does the rows.
+struct ChartContrast {
     let increasedContrast: Bool
 
     init(_ contrast: ColorSchemeContrast) {

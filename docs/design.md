@@ -15,7 +15,7 @@ segment also has a labeled legend row and a table row, which is what makes
 the three light hues below 3:1 on white acceptable. Muted text has its own
 color, 4.6:1 or more on every surface.
 
-With Increase Contrast on, `ChartTones` draws the charts stronger: faded
+With Increase Contrast on, `ChartContrast` draws the charts stronger: faded
 segments (not selected, waiting, measuring, not measured, cleaned) keep
 more of their color, the ring's segments sit further apart, and each block
 takes an edge in a deeper shade of its hue, 3:1 or more against the card
