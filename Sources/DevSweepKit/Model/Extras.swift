@@ -180,7 +180,7 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
     /// The download macOS keeps for it, which simctl's size leaves out and
     /// `simctl runtime delete` removes with it; counted in `kilobytes`. Nil
     /// when it has none of its own, or the scan doesn't count it.
-    public var downloadKilobytes: Int64?
+    public let downloadKilobytes: Int64?
     /// `YYYY-MM-DD`, nil when never used.
     public var lastUsedDay: String?
     /// Whole days since last use, nil when never used or the date doesn't parse.
@@ -213,6 +213,21 @@ public struct SimulatorRuntime: Sendable, Identifiable, Equatable, Codable {
 
     public var title: String {
         "\(self.platform) \(self.version) (\(self.build))"
+    }
+
+    /// The same runtime with the download macOS keeps for it counted in its size.
+    func counting(downloadKilobytes download: Int64) -> SimulatorRuntime {
+        SimulatorRuntime(
+            id: self.id,
+            identifier: self.identifier,
+            platform: self.platform,
+            version: self.version,
+            build: self.build,
+            kilobytes: self.kilobytes + download,
+            lastUsedDay: self.lastUsedDay,
+            daysSinceUsed: self.daysSinceUsed,
+            simulatorCount: self.simulatorCount,
+            downloadKilobytes: download)
     }
 
     /// The command that removes it. DevSweep shows it; it never runs it unasked.

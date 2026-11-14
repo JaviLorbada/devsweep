@@ -8,17 +8,17 @@ import Foundation
 /// lists them.
 struct SimctlRuntimeList: Sendable {
     struct Runtime: Decodable, Sendable {
-        var runtimeIdentifier: String?
+        let runtimeIdentifier: String?
         /// As JavaScript's `value || '?'` would print it, nil when it would
         /// print `?`.
-        var version: String?
-        var build: String?
-        var sizeBytes: Double?
-        var lastUsedAt: String?
+        let version: String?
+        let build: String?
+        let sizeBytes: Double?
+        let lastUsedAt: String?
         /// The image simctl mounts.
-        var path: String?
+        let path: String?
         /// The download macOS keeps apart for a runtime it copied elsewhere.
-        var parentImagePath: String?
+        let parentImagePath: String?
 
         private enum Field: String, CodingKey {
             case runtimeIdentifier, version, build, sizeBytes, lastUsedAt, path, parentImagePath
@@ -55,7 +55,7 @@ struct SimctlDeviceList: Sendable {
     private let counts: [String: Int]
 
     private struct Devices: Decodable {
-        var devices: [String: Lossy<[Ignored]>]?
+        let devices: [String: Lossy<[Ignored]>]?
     }
 
     /// A simulator, counted and not read.

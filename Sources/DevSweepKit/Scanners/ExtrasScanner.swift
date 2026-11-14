@@ -56,11 +56,7 @@ enum ExtrasScanner {
         return runtimes.map { runtime in
             guard let folder = downloads[runtime.id] else { return runtime }
             let kilobytes = context.measurer.measure(folder).kilobytes
-            guard kilobytes > 0 else { return runtime }
-            var counted = runtime
-            counted.downloadKilobytes = kilobytes
-            counted.kilobytes += kilobytes
-            return counted
+            return kilobytes > 0 ? runtime.counting(downloadKilobytes: kilobytes) : runtime
         }
     }
 
