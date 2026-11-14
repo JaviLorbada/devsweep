@@ -24,9 +24,10 @@ gets a line under Unreleased as it lands.
 - Three more items, listed and cleaned per project like `.build` folders:
   `node_modules` next to a `package.json`, CocoaPods' `Pods` next to a
   `Podfile.lock`, and Cargo's `target` next to a `Cargo.toml`. Folders git
-  tracks stay, and so does one inside another. The app never ticks them on
-  its own; `devsweep --run` deletes them with the rest unless you `--skip`
-  them.
+  tracks stay. A build folder inside another, like a `node_modules` in
+  Gradle's `build` folder, counts as part of the outer one, so nothing is
+  counted twice. The app never ticks them on its own; `devsweep --run`
+  deletes them with the rest unless you `--skip` them.
 
 ## 0.6.0
 
