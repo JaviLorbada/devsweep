@@ -33,6 +33,34 @@ CI also builds with warnings as errors, in debug and in release, and
 CodeQL scans the Swift code on each push and weekly. Every Action is
 pinned to a commit, with its release in a comment.
 
+## When CI fails
+
+A failing test shows where you look first, not deep in a log:
+
+- **On its line.** An annotation in the pull request's Files tab, titled with
+  the suite and the test: what was expected, and what came instead.
+- **On the run's summary page.** A table of every failure, each linked to its
+  line, in short lines: what was expected, and what came instead. When
+  both sides are text of several lines, such as the report, what came
+  instead is the first line that differs. A green run says how many tests
+  passed; a run that crashes says so, with the crash's message.
+
+The tests run with `--quiet`, so their log is the failures and the totals.
+`Scripts/test_report.sh` writes the annotations and the table from Swift
+Testing's event stream, and folds every value Swift Testing listed into the
+report step's log, a group per failure. It needs only jq, which macOS has. It
+reads version 6.4 of the event stream and fails, saying so, on any other: a
+new Xcode in CI that changes the format means changing `ci.yml` and the script
+together. To read a run the same way on your Mac:
+
+```sh
+swift test --parallel --quiet --event-stream-output-path /tmp/tests.jsonl --event-stream-version 6.4
+Scripts/test_report.sh /tmp/tests.jsonl
+```
+
+The bats suite and the comparison print little enough to read as they are.
+The comparison runs even when the bats suite fails, so both say what differs.
+
 ## Lint and format
 
 `make format` rewrites `Sources` and `Tests` with `.swiftformat`; `make lint`
