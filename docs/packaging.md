@@ -50,11 +50,31 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
   into a PNG as Finder shows it, with Icon Composer's renderer: `AppIcon.png`
   for the social preview, and the README's `readme-light.png` and
   `readme-dark.png` at 256 pixels.
+- **Sparkle**, which updates the app, goes in `Contents/Frameworks`, copied
+  with `ditto` so its symlinks stay, and the executable gets the rpath
+  `@executable_path/../Frameworks` to find it there. Its XPC services are
+  left out, as only a sandboxed app uses them, and so are its headers and
+  module map, as Xcode leaves them out. Its license is in
+  `THIRD_PARTY_NOTICES.txt`, which goes in `Contents/Resources` beside
+  DevSweep's `LICENSE`.
+- **Updates**: the app people download gets `SUFeedURL`, the appcast the
+  release workflow attaches to each release, and `SUPublicEDKey`, the key
+  its updates are signed with, both from `version.env`. A development build
+  gets no feed, so it never offers to replace itself with a release;
+  `FEED_URL=<url>` gives either build another one, such as a local appcast to
+  try an update with. `SUEnableAutomaticChecks` is left out, so Sparkle asks
+  on the second launch whether to check automatically, and
+  `SUEnableSystemProfiling` is off.
 - **The signature** is ad hoc with the hardened runtime, enough to run the app
   on this Mac. When `DEVELOPER_ID_APPLICATION` names a Developer ID Application
   identity in the keychain, the script signs with it and a secure timestamp
-  instead; `Scripts/sign-and-notarize.sh` then notarizes and staples. App
-  Sandbox stays off: the app has to read and clean other tools' caches.
+  instead; `Scripts/sign-and-notarize.sh` then notarizes and staples. Either
+  way it signs inside out: Sparkle's `Autoupdate` and `Updater.app`, then its
+  framework, then the app. The hardened runtime loads only frameworks signed
+  by the app's own team, which an ad hoc signature has none of, so an ad hoc
+  build is signed with `com.apple.security.cs.disable-library-validation`; a
+  Developer ID build needs no entitlements. App Sandbox stays off: the app
+  has to read and clean other tools' caches.
 
 The bundle is put together in a temp folder and replaces the one in `build/`
 only once it is signed, so a failed build or signature leaves the previous

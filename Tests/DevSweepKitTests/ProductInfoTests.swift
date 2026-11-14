@@ -36,6 +36,15 @@ struct ProductInfoTests {
         #expect(format.string(from: date) == build, "\(build) isn't a real date and time")
     }
 
+    @Test func `the app looks for updates in the appcast of the repository's latest release`() throws {
+        let file = try versionFile()
+        #expect(
+            file["UPDATE_FEED_URL"] == ProductInfo.repository.absoluteString + "/releases/latest/download/appcast.xml")
+        // An Ed25519 public key, as Sparkle's generate_keys prints it.
+        let key = try #require(file["UPDATE_PUBLIC_KEY"])
+        #expect(Data(base64Encoded: key)?.count == 32)
+    }
+
     @Test func `the About window and Help menu link to the repository the README names`() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent()

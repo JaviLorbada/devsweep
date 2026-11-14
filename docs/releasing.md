@@ -88,7 +88,8 @@ Locally, the same happens with `make release` when
 `security find-identity -v -p codesigning` prints it), `ASC_KEY_ID`,
 `ASC_ISSUER_ID` and `ASC_PRIVATE_KEY_P8` (the `.p8`'s path) are set. App
 Sandbox stays off, and no entitlements are needed: the app reads other
-tools' caches and runs simctl and brew.
+tools' caches and runs simctl and brew. Sparkle's helpers and framework,
+inside the app, are signed with the same identity before it.
 
 ## Updates
 

@@ -11,6 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.6.0"),
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.1"),
     ],
     targets: [
         .target(name: "DevSweepKit"),
@@ -21,7 +22,13 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
-        .executableTarget(name: "DevSweepApp", dependencies: ["DevSweepKit"]),
+        .executableTarget(
+            name: "DevSweepApp",
+            dependencies: [
+                "DevSweepKit",
+                .product(name: "Sparkle", package: "Sparkle"),
+            ]
+        ),
         .testTarget(name: "DevSweepKitTests", dependencies: ["DevSweepKit"], resources: [.copy("Fixtures")]),
         .testTarget(name: "DevSweepAppTests", dependencies: ["DevSweepApp", "DevSweepKit"]),
     ]
