@@ -106,18 +106,13 @@ private struct RuntimeRow: View {
             .rowControl()
             .frame(width: self.columns == .compact ? 28 : 118)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .tableRowSelection(selected)
-        .contentShape(Rectangle())
-        .onTapGesture { self.runtimes.select(self.runtime) }
-        .focusable()
-        .onKeyPress(.space) { self.runtimes.select(self.runtime); return .handled }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            "\(self.runtime.title), \(SizeText.of(kilobytes: self.runtime.kilobytes))\(reason.map { ", \($0)" } ?? "")")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.runtimes.select(self.runtime) }
+        .selectableRow(
+            selected: selected,
+            label: "\(self.runtime.title), \(SizeText.of(kilobytes: self.runtime.kilobytes))"
+                + (reason.map { ", \($0)" } ?? ""))
+        {
+            self.runtimes.select(self.runtime)
+        }
     }
 }
 
@@ -173,16 +168,16 @@ struct RuntimeDetails: View {
                     .font(.callout.weight(.medium))
                     .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
-            Section(reason == nil ? "Usage" : "Why it is flagged") {
+            InspectorSection(reason == nil ? "Usage" : "Why it is flagged") {
                 Text(RuntimeWords.usage(self.runtime, staleDays: self.runtimes.staleDays))
             }
             if let size = RuntimeWords.size(self.runtime) {
-                Section("Size") { Text(size) }
+                InspectorSection("Size") { Text(size) }
             }
-            Section("What happens") {
+            InspectorSection("What happens") {
                 Text(RuntimeWords.whatHappens(self.runtime))
             }
-            Section("Runs") {
+            InspectorSection("Runs") {
                 Text(self.runtime.removalCommand)
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
@@ -192,26 +187,6 @@ struct RuntimeDetails: View {
         .padding(.top, WindowLayout.inspectorTopPadding)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-    }
-
-    private struct Section<Content: View>: View {
-        let title: String
-        @ViewBuilder let content: Content
-
-        init(_ title: String, @ViewBuilder content: () -> Content) {
-            self.title = title
-            self.content = content()
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 5) {
-                Eyebrow(text: self.title)
-                self.content
-                    .font(.callout)
-                    .foregroundStyle(.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 }
 

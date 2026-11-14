@@ -104,18 +104,13 @@ private struct WorktreeRow: View {
             .rowControl()
             .frame(width: self.columns == .compact ? 28 : 128)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .tableRowSelection(selected)
-        .contentShape(Rectangle())
-        .onTapGesture { self.worktrees.select(self.worktree) }
-        .focusable()
-        .onKeyPress(.space) { self.worktrees.select(self.worktree); return .handled }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            "\(self.worktree.name), \(SizeText.of(kilobytes: self.worktree.kilobytes))\(kept.map { ", \($0)" } ?? "")")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.worktrees.select(self.worktree) }
+        .selectableRow(
+            selected: selected,
+            label: "\(self.worktree.name), \(SizeText.of(kilobytes: self.worktree.kilobytes))"
+                + (kept.map { ", \($0)" } ?? ""))
+        {
+            self.worktrees.select(self.worktree)
+        }
     }
 
     private func askToRemove() {
@@ -174,23 +169,23 @@ struct WorktreeDetails: View {
                     .font(.callout.weight(.medium))
                     .foregroundStyle(kept == nil ? AnyShapeStyle(.orange) : AnyShapeStyle(.muted))
             }
-            Section("Repository") {
+            InspectorSection("Repository") {
                 Text("\(self.worktree.repositoryName), " + (self.worktree.branch.map { "branch \($0)" } ?? "detached"))
                 Text(self.scan.tilde(self.worktree.repository))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
             }
-            Section("Where") {
+            InspectorSection("Where") {
                 Text(self.scan.tilde(self.worktree.path))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
                 Button("Reveal in Finder") { Finder.reveal([self.worktree.path]) }
                     .buttonStyle(.link)
             }
-            Section(kept == nil ? "What happens" : "Why it stays") {
+            InspectorSection(kept == nil ? "What happens" : "Why it stays") {
                 Text(WorktreeWords.whatHappens(self.worktree))
             }
-            Section("Runs") {
+            InspectorSection("Runs") {
                 Text(self.scan.policy.map { self.worktree.removalCommand(policy: $0) } ?? "")
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
@@ -200,26 +195,6 @@ struct WorktreeDetails: View {
         .padding(.top, WindowLayout.inspectorTopPadding)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-    }
-
-    private struct Section<Content: View>: View {
-        let title: String
-        @ViewBuilder let content: Content
-
-        init(_ title: String, @ViewBuilder content: () -> Content) {
-            self.title = title
-            self.content = content()
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 5) {
-                Eyebrow(text: self.title)
-                self.content
-                    .font(.callout)
-                    .foregroundStyle(.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
     }
 }
 
