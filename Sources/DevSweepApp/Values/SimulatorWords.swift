@@ -2,12 +2,13 @@ import DevSweepKit
 
 /// The words the Simulators screen uses.
 enum SimulatorWords {
-    /// "98 days unused", for a stale simulator; nil for one that isn't.
-    static func badge(_ simulator: Simulator) -> String? {
-        guard simulator.isStale, let days = simulator.daysSinceUsed else {
+    /// "98 days unused", for a simulator flagged after `staleDays`; nil for
+    /// one that isn't.
+    static func badge(_ simulator: Simulator, staleDays: Int) -> String? {
+        guard simulator.flagReason(staleDays: staleDays) != nil, let days = simulator.daysSinceUsed else {
             return nil
         }
-        return "\(days) days unused"
+        return days == 1 ? "1 day unused" : "\(days) days unused"
     }
 
     /// "iOS 27.1", and "iOS 27.1, for previews" for one Xcode made on its own.
@@ -31,10 +32,10 @@ enum SimulatorWords {
         }
     }
 
-    /// "looks unused" for a stale one, otherwise simctl's state in words:
+    /// "looks unused" for a flagged one, otherwise simctl's state in words:
     /// "booted", "shut down".
-    static func status(_ simulator: Simulator) -> String {
-        if simulator.isStale {
+    static func status(_ simulator: Simulator, staleDays: Int) -> String {
+        if simulator.flagReason(staleDays: staleDays) != nil {
             return "looks unused"
         }
         return simulator.state == "Shutdown" ? "shut down" : simulator.state.lowercased()

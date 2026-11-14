@@ -5,11 +5,12 @@ import Testing
 @Suite("Simulator words")
 struct SimulatorWordsTests {
     @Test
-    func `a stale simulator's badge says how long it has gone unused`() {
-        #expect(SimulatorWords.badge(sampleSimulators[2]) == "98 days unused")
-        #expect(SimulatorWords.badge(sampleSimulators[3]) == "30 days unused")
-        #expect(SimulatorWords.badge(sampleSimulators[0]) == nil)
-        #expect(SimulatorWords.badge(sampleSimulators[5]) == nil, "never used")
+    func `a flagged simulator's badge says how long it has gone unused`() {
+        #expect(SimulatorWords.badge(sampleSimulators[2], staleDays: 90) == "98 days unused")
+        #expect(SimulatorWords.badge(sampleSimulators[3], staleDays: 90) == nil)
+        #expect(SimulatorWords.badge(sampleSimulators[3], staleDays: 30) == "30 days unused")
+        #expect(SimulatorWords.badge(sampleSimulators[0], staleDays: 1) == "1 day unused")
+        #expect(SimulatorWords.badge(sampleSimulators[5], staleDays: 0) == nil, "never used")
     }
 
     @Test
@@ -28,11 +29,12 @@ struct SimulatorWordsTests {
 
     @Test
     func `its status is how it looks, then simctl's state in words`() {
-        #expect(SimulatorWords.status(sampleSimulators[2]) == "looks unused")
-        #expect(SimulatorWords.status(sampleSimulators[0]) == "booted")
-        #expect(SimulatorWords.status(sampleSimulators[5]) == "shut down")
-        #expect(SimulatorWords.status(sampleSimulator("Odd", state: "Shutting Down", kilobytes: 1, daysAgo: nil))
-            == "shutting down")
+        #expect(SimulatorWords.status(sampleSimulators[2], staleDays: 90) == "looks unused")
+        #expect(SimulatorWords.status(sampleSimulators[1], staleDays: 90) == "shut down")
+        #expect(SimulatorWords.status(sampleSimulators[0], staleDays: 90) == "booted")
+        #expect(SimulatorWords.status(sampleSimulators[5], staleDays: 90) == "shut down")
+        let odd = sampleSimulator("Odd", state: "Shutting Down", kilobytes: 1, daysAgo: nil)
+        #expect(SimulatorWords.status(odd, staleDays: 90) == "shutting down")
     }
 
     @Test

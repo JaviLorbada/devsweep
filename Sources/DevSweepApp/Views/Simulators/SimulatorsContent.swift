@@ -10,7 +10,7 @@ struct SimulatorsContent: View {
         VStack(alignment: .leading, spacing: 14) {
             SimulatorsCard(
                 title: "Simulators",
-                note: "flagged after \(Simulator.staleDays) days unused",
+                note: "flagged after \(self.simulators.staleDays) days unused",
                 simulators: self.simulators.simulators,
                 empty: self.scan.isLoadingExtras ? "Listing simulators…" : "No simulators found.")
             SimulatorsCard(

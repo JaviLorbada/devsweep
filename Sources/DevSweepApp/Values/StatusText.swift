@@ -104,16 +104,17 @@ enum StatusText {
         return "\(SizeText.of(kilobytes: kilobytes)) in \(count). \(ProductInfo.name) never removes these on its own."
     }
 
-    /// What the simulators take, and what the stale ones among them hold.
-    static func simulators(_ simulators: [Simulator]?, isLoading: Bool) -> String {
+    /// What the simulators take, and what the ones flagged after `staleDays`
+    /// among them hold.
+    static func simulators(_ simulators: [Simulator]?, staleDays: Int, isLoading: Bool) -> String {
         guard let simulators else {
             return isLoading ? "Listing simulators" : ""
         }
         let count = simulators.count == 1 ? "1 simulator" : "\(simulators.count) simulators"
         let total = SizeText.of(kilobytes: simulators.reduce(0) { $0 + $1.kilobytes })
-        let stale = simulators.filter(\.isStale)
+        let stale = simulators.filter { $0.flagReason(staleDays: staleDays) != nil }
         let staleSize = SizeText.of(kilobytes: stale.reduce(0) { $0 + $1.kilobytes })
-        let unused = "unused for \(Simulator.staleDays) days"
+        let unused = "unused for \(staleDays) days"
         let held = switch stale.count {
         case 0: ""
         case 1: "; the one \(unused) holds \(staleSize)"

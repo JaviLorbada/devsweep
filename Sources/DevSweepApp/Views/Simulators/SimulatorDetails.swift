@@ -4,9 +4,10 @@ import SwiftUI
 /// What the inspector says about one simulator.
 struct SimulatorDetails: View {
     let simulator: Simulator
+    let staleDays: Int
 
     var body: some View {
-        let stale = self.simulator.isStale
+        let stale = self.simulator.flagReason(staleDays: self.staleDays) != nil
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 7) {
                 Dot(color: stale ? .orange : .secondary.opacity(0.6))
@@ -17,7 +18,7 @@ struct SimulatorDetails: View {
                 Text(SizeText.of(kilobytes: self.simulator.kilobytes))
                     .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
-                Text(SimulatorWords.status(self.simulator))
+                Text(SimulatorWords.status(self.simulator, staleDays: self.staleDays))
                     .font(.callout.weight(.medium))
                     .foregroundStyle(stale ? AnyShapeStyle(.orange) : AnyShapeStyle(.muted))
             }

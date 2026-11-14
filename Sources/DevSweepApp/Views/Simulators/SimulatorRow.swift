@@ -10,7 +10,7 @@ struct SimulatorRow: View {
     let largest: Double
 
     var body: some View {
-        let badge = SimulatorWords.badge(self.simulator)
+        let badge = SimulatorWords.badge(self.simulator, staleDays: self.simulators.staleDays)
         let selected = self.window.screen == .simulators && self.simulators.current?.id == self.simulator.id
         let tint: Color = badge == nil ? .secondary.opacity(0.6) : .orange
         HStack(spacing: 12) {

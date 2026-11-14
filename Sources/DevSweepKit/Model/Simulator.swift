@@ -17,9 +17,6 @@ public struct Simulator: Sendable, Identifiable, Equatable, Codable {
         }
     }
 
-    /// Unused for this many days, a simulator is stale.
-    public static let staleDays = 30
-
     /// Its UDID.
     public let id: String
     public let name: String
@@ -55,9 +52,13 @@ public struct Simulator: Sendable, Identifiable, Equatable, Codable {
         self.deviceSet = deviceSet
     }
 
-    /// Unused for `staleDays` or more. One never used isn't: it holds little.
-    public var isStale: Bool {
-        (self.daysSinceUsed ?? 0) >= Self.staleDays
+    /// Why it looks unused, or nil when it doesn't: not used for `staleDays`
+    /// or more. One never used isn't flagged, since it holds little.
+    public func flagReason(staleDays: Int) -> String? {
+        guard let days = self.daysSinceUsed, days >= staleDays else {
+            return nil
+        }
+        return "Not used in \(days) days"
     }
 
     public var isBooted: Bool {

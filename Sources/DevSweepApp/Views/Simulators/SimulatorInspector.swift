@@ -9,7 +9,7 @@ struct SimulatorInspector: View {
             // Scrolls, so the column never asks the window for the height of
             // its text: at a small width that would be thousands of points.
             ScrollView {
-                SimulatorDetails(simulator: simulator)
+                SimulatorDetails(simulator: simulator, staleDays: self.simulators.staleDays)
             }
         } else {
             ContentUnavailableView(

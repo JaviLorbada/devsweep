@@ -103,7 +103,7 @@ final class AppCoordinator {
         self.overview = OverviewViewModel(window: window, scan: scan, cleaning: cleaning, apps: runningApps)
         self.xcodes = XcodesViewModel(scan: scan)
         self.runtimes = RuntimesViewModel(scan: scan, preferences: preferences)
-        self.simulators = SimulatorsViewModel(scan: scan)
+        self.simulators = SimulatorsViewModel(scan: scan, preferences: preferences)
         self.worktrees = WorktreesViewModel(scan: scan)
         self.android = AndroidViewModel(window: window, scan: scan, preferences: preferences)
 

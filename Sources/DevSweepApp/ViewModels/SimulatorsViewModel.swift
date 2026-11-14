@@ -9,9 +9,16 @@ final class SimulatorsViewModel {
     /// The simulator selected, by its UDID.
     private(set) var selectedID: String?
     private let scan: any Listings
+    private let preferences: Preferences
 
-    init(scan: any Listings) {
+    init(scan: any Listings, preferences: Preferences) {
         self.scan = scan
+        self.preferences = preferences
+    }
+
+    /// Days unused before a simulator is flagged: the setting runtimes use.
+    var staleDays: Int {
+        self.preferences.staleDays
     }
 
     /// The simulators Xcode and Simulator show, the largest first.
@@ -25,11 +32,13 @@ final class SimulatorsViewModel {
         self.all.filter { $0.deviceSet != .default }
     }
 
-    /// The selected simulator, or the first stale one, or the first, in the
-    /// order the screen lists them.
+    /// The selected simulator, or the first flagged one, or the first, in
+    /// the order the screen lists them.
     var current: Simulator? {
         let listed = self.simulators + self.previewsAndTests
-        return listed.first { $0.id == self.selectedID } ?? listed.first(where: \.isStale) ?? listed.first
+        return listed.first { $0.id == self.selectedID }
+            ?? listed.first { $0.flagReason(staleDays: self.staleDays) != nil }
+            ?? listed.first
     }
 
     func select(_ simulator: Simulator) {
@@ -37,7 +46,10 @@ final class SimulatorsViewModel {
     }
 
     var subtitle: String {
-        StatusText.simulators(self.scan.extras?.simulators, isLoading: self.scan.isLoadingExtras)
+        StatusText.simulators(
+            self.scan.extras?.simulators,
+            staleDays: self.staleDays,
+            isLoading: self.scan.isLoadingExtras)
     }
 
     private var all: [Simulator] {

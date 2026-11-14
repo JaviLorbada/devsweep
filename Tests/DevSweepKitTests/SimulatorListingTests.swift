@@ -40,12 +40,14 @@ struct SimulatorListingTests {
     }
 
     @Test
-    func `a simulator unused for 30 days or more is stale, and one never used is not`() {
+    func `a simulator is flagged once unused for the days given, and one never used is not`() {
         let simulators = ExtrasScanner.simulators(self.lists, now: self.now)
-        #expect(Simulator.staleDays == 30)
-        // The preview device was last used exactly 30 days ago.
-        #expect(simulators.filter(\.isStale).map(\.name) == ["iPhone Air", "iPhone 17 Pro"])
-        #expect(simulators.first { $0.daysSinceUsed == nil }?.isStale == false)
+        let flagged = { (days: Int) in simulators.filter { $0.flagReason(staleDays: days) != nil }.map(\.name) }
+        // The preview device was last used exactly 30 days ago, the iPhone Air 98.
+        #expect(flagged(30) == ["iPhone Air", "iPhone 17 Pro"])
+        #expect(flagged(90) == ["iPhone Air"])
+        #expect(simulators[1].flagReason(staleDays: 90) == "Not used in 98 days")
+        #expect(simulators.first { $0.daysSinceUsed == nil }?.flagReason(staleDays: 0) == nil)
     }
 
     @Test
