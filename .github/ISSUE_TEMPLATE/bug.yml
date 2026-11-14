@@ -44,6 +44,12 @@ body:
       placeholder: "26.1"
     validations:
       required: true
+  - type: input
+    id: architecture
+    attributes:
+      label: Architecture
+      description: arm64 on Apple silicon, x86_64 on Intel.
+      placeholder: "arm64"
   - type: textarea
     id: report
     attributes:

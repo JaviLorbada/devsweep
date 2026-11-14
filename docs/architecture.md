@@ -78,6 +78,7 @@ The app adds its own:
 | The last scan | `ScanMemoryStore` (kit) | `ScanStore`, a JSON file in Application Support | `InMemoryScanStore`, or the file in a temp home |
 | Notifications | `NotificationPoster` | `UserNotificationPoster` | `SilentNotificationPoster`, a recording poster |
 | Quitting Xcode and Simulator | `AppQuitting` | `WorkspaceAppQuitter`, as choosing Quit would | `FakeDeveloperApps`, which also says what runs |
+| Opening a page in the browser | `LinkOpening` | `WorkspaceLinkOpener`, the default browser | `RecordingLinkOpener`, which keeps the links |
 
 No Swift test puts a stub on `PATH`; stubs on `PATH` live only in the bats
 suite, which runs the built binary as a user would.
@@ -128,7 +129,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications · quitting"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
 
@@ -139,6 +140,7 @@ flowchart TB
   Models -.-> Values
   Models -->|"async calls, scan events back"| Engine
   Models --> Seams
+  Views -->|"the Help menu's links"| Seams
   CLI --> Engine
   Engine --> Rules
   Rules --> Deps
@@ -217,13 +219,13 @@ The app's folders follow those kinds, and its tests use the same ones.
 
 | Folder | What's in it |
 |---|---|
-| `App` | `DevSweepApp` (the scenes and the menus), `AppCoordinator`, the daily scan and the growth check. |
+| `App` | `DevSweepApp` (the scenes and the menus), `HelpCommands` (the Help menu), `AppCoordinator`, the daily scan and the growth check. |
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
-| `Values` | `Tally`, `StatusText`, `CleanPrompt`, the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), `WindowLayout`'s sizes. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), `WindowLayout`'s sizes. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
-| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder. |
+| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
 
 ### A scan
