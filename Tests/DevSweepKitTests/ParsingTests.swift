@@ -26,6 +26,27 @@ struct CommandLineOptionTests {
     }
 
     @Test
+    func `devsweep --version prints the version and build, as About writes them`() {
+        #expect(CommandLineOptions.check(["--version"]) == .version)
+        #expect(CommandLineOptions.check(["--run", "--version", "--nope"]) == .version)
+        #expect(CommandLineOptions
+            .check(["--nope", "--version"]) == .failure("Unknown option: --nope (see devsweep --help)"))
+        #expect(CommandLineOptions.check(["-v"]) == .failure("Unknown option: -v (see devsweep --help)"))
+        #expect(CommandLineOptions.versionText == "devsweep \(ProductInfo.version) (\(ProductInfo.build))\n")
+        #expect(CommandLineOptions.usage()
+            .contains("  -h, --help       Show this help\n  --version        Show the version\n\nItems:\n"))
+    }
+
+    @Test
+    func `devclean has no --version, as the script has none`() {
+        #expect(CommandLineOptions
+            .check(["--version"], command: .original) ==
+            .failure("Unknown option: --version (see devclean --help)"))
+        #expect(!CommandLineOptions.usage(.original).contains("--version"))
+        #expect(CommandLineOptions.usage(.original).contains("  -h, --help       Show this help\n\nItems:\n"))
+    }
+
+    @Test
     func `--skip and --projects take the next argument whatever it is`() {
         #expect(CommandLineOptions
             .check(["--skip", "--run"], command: .original) == .options(CommandLineOptions(skip: "--run")))

@@ -337,6 +337,9 @@ func devclean(
     case .help:
         terminal.write(CommandLineOptions.usage(.original))
         return SessionResult(status: 0, terminal: terminal)
+    case .version:
+        terminal.write(CommandLineOptions.versionText)
+        return SessionResult(status: 0, terminal: terminal)
     case let .failure(message):
         terminal.warn(message)
         return SessionResult(status: 1, terminal: terminal)

@@ -142,6 +142,7 @@ devsweep                          # report only
 devsweep --run                    # clean the items in the report, after asking
 devsweep --skip homebrew,npm-cache --projects ~/Code:~/Work
 devsweep --help
+devsweep --version                # the version and build, for a bug report
 ```
 
 `DEVSWEEP_PROJECT_DIRS` and `DEVSWEEP_APPLICATIONS_DIRS` set the project and

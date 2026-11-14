@@ -38,6 +38,9 @@ struct DevSweepCommand: AsyncParsableCommand {
         case .help:
             terminal.write(CommandLineOptions.usage(Self.commandName))
             Darwin.exit(0)
+        case .version:
+            terminal.write(CommandLineOptions.versionText)
+            Darwin.exit(0)
         case let .failure(message):
             terminal.warn(message)
             Darwin.exit(1)

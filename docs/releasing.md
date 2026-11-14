@@ -11,7 +11,9 @@ the signing secrets are set, and publishes a GitHub release with notes from
    section, `## 0.5.0`, and leave Unreleased empty.
 2. **Version.** Set `MARKETING_VERSION` in `version.env`, and `BUILD_NUMBER` to
    the date and time in UTC, `date -u +%Y%m%d%H%M`: `202611131041` says when
-   a build was cut, where a count wouldn't.
+   a build was cut, where a count wouldn't. Set the same two in
+   `Sources/DevSweepKit/Support/ProductInfo.swift`, `version` and `build`,
+   which `devsweep --version` prints; a test fails until they match.
 3. **Checks.** `make lint test` and `make acceptance DOTFILES=<dotfiles checkout>`.
    Commit.
 4. **Rehearse.** Run the Release workflow by hand; it is a dry run by default:

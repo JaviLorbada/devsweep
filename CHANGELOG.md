@@ -10,6 +10,8 @@ gets a line under Unreleased as it lands.
   GitHub in your browser, with DevSweep's version filled in, and for a
   problem the macOS version too. DevSweep sends nothing itself: you read
   the form and decide whether to submit it.
+- `devsweep --version` prints the version and build, as the About window
+  writes them, for the bug form's "DevSweep version".
 
 ## 0.6.0
 
