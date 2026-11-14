@@ -28,6 +28,8 @@ final class AppCoordinator {
     let runtimes: RuntimesViewModel
     let worktrees: WorktreesViewModel
     let android: AndroidViewModel
+    /// Opens the Help menu's pages in the browser.
+    let links: any LinkOpening
     private let notifier: NotificationPoster
 
     /// Everything is live unless a test says otherwise.
@@ -35,17 +37,20 @@ final class AppCoordinator {
     ///   - store: where the last scan is kept; the home's own file when nil.
     ///   - dependencies: the kit's side effects; `Dependencies.live` when nil.
     ///   - quitter: quits Xcode and Simulator; as choosing Quit would when nil.
+    ///   - links: opens the Help menu's pages; the default browser when nil.
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         store: (any ScanMemoryStore)? = nil,
         preferences: Preferences? = nil,
         notifier: NotificationPoster = UserNotificationPoster(),
         dependencies: Dependencies? = nil,
-        quitter: (any AppQuitting)? = nil)
+        quitter: (any AppQuitting)? = nil,
+        links: (any LinkOpening)? = nil)
     {
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
         self.notifier = notifier
+        self.links = links ?? WorkspaceLinkOpener()
         let workspaceApps = WorkspaceRunningApps()
         // Opened from Finder, the app gets launchd's short PATH, without
         // Homebrew, so Homebrew's usual places go after it. A PATH given on

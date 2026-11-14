@@ -45,7 +45,10 @@ struct DevSweepApp: App {
         .defaultSize(width: 1280, height: 860)
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
-        .commands { AppCommands(scan: self.app.scan, window: self.app.window) }
+        .commands {
+            AppCommands(scan: self.app.scan, window: self.app.window)
+            HelpCommands(links: self.app.links)
+        }
 
         Window("About \(BuildIdentity.current.appName)", id: "about") {
             AboutView()
@@ -99,26 +102,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 /// The menu bar's commands: About, Scan Again in the File menu, the chart
-/// and the inspector in the View menu, and the project's pages and its tip
-/// jar under Help.
-/// Template items that would do nothing, such as New Window and a Help book
-/// there is none of, are replaced; the Edit menu stays for text fields.
+/// and the inspector in the View menu; `HelpCommands` has the Help menu.
+/// Template items that would do nothing, such as New Window, are replaced;
+/// the Edit menu stays for text fields.
 struct AppCommands: Commands {
     let scan: ScanModel
     let window: WindowViewModel
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.openURL) private var openURL
 
     /// What choosing the inspector's item does, as a menu item whose title
     /// changes says it, rather than "Toggle Inspector".
     static func inspectorTitle(shown: Bool) -> String {
         shown ? "Hide Inspector" : "Show Inspector"
     }
-
-    /// In title case, as menu items are written.
-    static let reportProblemTitle = "Report a Problem"
-    /// Opens the tip jar.
-    static let supportTitle = "Support \(ProductInfo.name)"
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
@@ -141,12 +137,6 @@ struct AppCommands: Commands {
             Divider()
             Button(Self.inspectorTitle(shown: self.window.inspectorShown)) { self.window.toggleInspector() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
-        }
-        CommandGroup(replacing: .help) {
-            Button("\(ProductInfo.name) on GitHub") { self.openURL(ProductInfo.repository) }
-            Button(Self.reportProblemTitle) { self.openURL(ProductInfo.issues) }
-            Divider()
-            Button(Self.supportTitle) { self.openURL(ProductInfo.tipJar) }
         }
     }
 }
