@@ -124,6 +124,31 @@ struct SimulatorListingTests {
     }
 
     @Test
+    func `without simctl the app's scan lists no simulators and asks simctl nothing`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        tools.simctlInstalled = false
+        tools.stubRuntimes()
+        tools.stubDeviceSets()
+        var config = try engine(home, tools).config
+        config.includeSimulators = true
+        let extras = try await Engine(config: config, tools: tools.tools).extras()
+        #expect(extras.simulators.isEmpty)
+        #expect(!tools.log.calls.contains { $0.hasPrefix("xcrun simctl") })
+    }
+
+    @Test
+    func `simulators of one size go by name, then by UDID`() {
+        let list = SimctlDeviceList(Data(#"""
+        { "devices": { "R": [
+          { "udid": "B", "name": "iPhone", "dataPathSize": 1024 },
+          { "udid": "C", "name": "iPad", "dataPathSize": 1024 },
+          { "udid": "A", "name": "iPhone", "dataPathSize": 1024 },
+          { "udid": "D", "name": "Apple TV", "dataPathSize": 2048 } ] } }
+        """#.utf8))
+        #expect(ExtrasScanner.simulators([.default: list], now: self.now).map(\.id) == ["D", "C", "A", "B"])
+    }
+
+    @Test
     func `each device set is listed by the name simctl gives it`() async {
         let runner = RecordingRunner(output: "{}")
         let simctl = LiveSimctlClient(runner: runner)
