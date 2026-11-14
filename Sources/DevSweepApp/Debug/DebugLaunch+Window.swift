@@ -283,8 +283,9 @@ extension DebugLaunch {
 
     /// Draws the window with that number, one of this app's, as `capture`
     /// does a window. With `over`, that part of the screen instead: the
-    /// window over this app's windows below it, which a menu's glass needs
-    /// to look as it does on screen. Other apps' windows are left out.
+    /// window over every window below it, any app's, which a menu's glass
+    /// needs to look as it does on screen. The menu opens over this app's
+    /// window, which hides the others behind it there.
     @MainActor
     static func capture(windowNumber number: Int, over area: CGRect? = nil, to path: String) -> Bool {
         typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
