@@ -37,9 +37,14 @@ The same goes for the items the script doesn't have: `cocoapods-pods`,
 its help and `--skip` name them. Under the script's name it skips them
 (`Item.known(by:)`), `--skip` rejects them with the script's error and its
 list of items, and the help leaves them out, so no search for them runs and
-the report is the script's. Its searches for `.build` and `build` folders
-still look inside `.venv` and `target` folders, as the script's `find` does;
-only the searches for the other languages' folders keep out of each other's.
+the report is the script's.
+
+As `devsweep`, every search for build folders also keeps out of every other
+build folder (`.build`, `build`, `target`, `.venv`, `node_modules`, `Pods`),
+so a folder inside another counts once, as part of the outer one: a
+`node_modules` in Gradle's `build` folder, or a `.build` in Cargo's
+`target`. Under the script's name the searches are the script's `find`,
+which looks inside them (`ScanConfig.outermostBuildFolders`).
 
 The whole run, from preflight to "Done.", is `CommandLineSession` in the
 kit, writing to a `Terminal`; the binary gives it standard input and output

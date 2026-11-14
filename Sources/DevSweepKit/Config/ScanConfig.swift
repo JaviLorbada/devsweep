@@ -19,6 +19,11 @@ public struct ScanConfig: Sendable {
     /// folders with the extras. Run under the original script's name the tool
     /// runs no git for them, so its report and tool calls stay the script's.
     public var includeWorktrees: Bool
+    /// Whether a project search keeps out of every build folder but the one
+    /// it looks for, so a folder inside another counts only as part of the
+    /// outer one. Run under the original script's name the searches are the
+    /// script's `find`, which looks inside them.
+    public var outermostBuildFolders: Bool
     /// The environment the scan runs in. Git's `GIT_DIR` and `GIT_WORK_TREE`
     /// come from here.
     public var environment: [String: String]
@@ -32,6 +37,7 @@ public struct ScanConfig: Sendable {
         includeExtras: Bool = true,
         includeAndroid: Bool = false,
         includeWorktrees: Bool = false,
+        outermostBuildFolders: Bool = true,
         environment: [String: String] = [:])
     {
         self.home = home
@@ -42,6 +48,7 @@ public struct ScanConfig: Sendable {
         self.includeExtras = includeExtras
         self.includeAndroid = includeAndroid
         self.includeWorktrees = includeWorktrees
+        self.outermostBuildFolders = outermostBuildFolders
         self.environment = environment
     }
 
@@ -69,6 +76,7 @@ public struct ScanConfig: Sendable {
             skipped: skipped.union(Set(Item.allCases).subtracting(Item.known(by: command))),
             includeExtras: includeExtras,
             includeWorktrees: includeExtras && command == .product,
+            outermostBuildFolders: command == .product,
             environment: environment)
     }
 

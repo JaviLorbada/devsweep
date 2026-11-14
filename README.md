@@ -92,9 +92,10 @@ report it privately, as [SECURITY.md](SECURITY.md) describes.
 | `tool-caches` | CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox downloads; Playwright MCP's browser profiles stay | `~/Library/Caches` |
 
 Project folders default to `~/Developer`, `~/Development`, `~/dev`,
-`~/Documents/Workspace` and `~/Projects`; Settings changes them. A
-`node_modules`, `Pods` or `target` folder inside another one, or inside a
-Python `.venv`, belongs to that folder and isn't listed on its own.
+`~/Documents/Workspace` and `~/Projects`; Settings changes them. A build
+folder inside another one, like a `node_modules` in Gradle's `build` folder
+or a `.build` in Cargo's `target`, or one inside a Python `.venv`, belongs
+to the folder around it and isn't listed on its own.
 
 ## Install
 

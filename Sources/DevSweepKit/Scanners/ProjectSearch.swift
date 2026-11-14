@@ -1,35 +1,40 @@
-/// Finds folders by name in the project folders, once per name.
+/// Finds folders by name in the project folders, once per name. It never
+/// follows symlinks, and never descends into a match, `~/Library` or a
+/// pruned folder.
 ///
-/// Like `find ROOT \( -path ~/Library -o -name .git -o -name node_modules -o
-/// -name Pods -o -name DerivedData \) -prune -o -type d -name NAME -prune -print`:
-/// never follows symlinks, never descends into a match.
+/// Run under the original script's name it is the script's `find ROOT \(
+/// -path ~/Library -o -name .git -o -name node_modules -o -name Pods -o -name
+/// DerivedData \) -prune -o -type d -name NAME -prune -print`. As devsweep it
+/// also keeps out of every other build folder, so a folder inside another,
+/// like a node_modules in Gradle's build folder, counts only as part of it.
 actor ProjectSearch {
     let roots: [String]
     let library: String
+    /// Never descended into. A search for one of them still finds it.
+    let pruned: Set<String>
     /// One search per name; a second caller for the same name waits for the
     /// first, while searches for other names run at the same time.
     private var searches: [String: Task<[String], Never>] = [:]
 
-    /// Never descended into, as by the bash script's find. A search for one
-    /// of them still finds it.
+    /// What the bash script's find never descends into.
     static let prunedNames: Set<String> = [".git", "node_modules", "Pods", "DerivedData"]
 
-    /// Folders other languages' tools fill with installed packages and build
-    /// output. A search for one never descends into any of them, so one
-    /// inside another, like a package's own node_modules in a Python
-    /// environment, is never listed: it belongs to the folder around it.
-    static let toolFolderNames: Set<String> = ["node_modules", ".venv", "target", "Pods"]
+    /// Folders of build output and installed packages: the ones the searches
+    /// look for, and Python's `.venv`, which no item lists but whose insides
+    /// belong to it.
+    static let buildFolderNames: Set<String> = [".build", "build", "target", ".venv", "node_modules", "Pods"]
 
-    init(roots: [String], homeReal: String) {
+    init(roots: [String], homeReal: String, outermostBuildFolders: Bool = true) {
         self.roots = roots
         self.library = "\(homeReal)/Library"
+        self.pruned = outermostBuildFolders ? Self.prunedNames.union(Self.buildFolderNames) : Self.prunedNames
     }
 
     func folders(named name: String) async -> [String] {
         let search = self.searches[name] ?? {
-            let roots = roots, library = library
+            let roots = roots, library = library, pruned = pruned
             let search = Task {
-                Self.walk(roots: roots, library: library, name: name)
+                Self.walk(roots: roots, library: library, pruned: pruned, name: name)
             }
             self.searches[name] = search
             return search
@@ -37,9 +42,7 @@ actor ProjectSearch {
         return await withTaskCancellationHandler { await search.value } onCancel: { search.cancel() }
     }
 
-    private static func walk(roots: [String], library: String, name: String) -> [String] {
-        let isToolFolder = self.toolFolderNames.contains(name)
-        let pruned = isToolFolder ? self.prunedNames.union(self.toolFolderNames) : self.prunedNames
+    private static func walk(roots: [String], library: String, pruned: Set<String>, name: String) -> [String] {
         var found: [String] = []
         for root in roots {
             FileTree.walk(root) { entry in

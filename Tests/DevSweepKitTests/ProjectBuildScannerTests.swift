@@ -33,7 +33,7 @@ struct ProjectBuildScannerTests {
     }
 
     @Test(arguments: kinds)
-    func `a folder inside another language's folder belongs to it, and isn't listed`(
+    func `a folder inside another build folder belongs to it, and isn't listed`(
         _ kind: (item: Item, folder: String, file: String)) async throws
     {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
@@ -41,7 +41,7 @@ struct ProjectBuildScannerTests {
         home.fill("\(p)/App/\(kind.folder)")
         home.touch("\(p)/App/\(kind.folder)/dependency/\(kind.file)")
         home.fill("\(p)/App/\(kind.folder)/dependency/\(kind.folder)")
-        for outer in ["node_modules", ".venv", "target", "Pods"] {
+        for outer in [".build", "build", "target", ".venv", "node_modules", "Pods"] {
             home.touch("\(p)/Tool/\(outer)/lib/dependency/\(kind.file)")
             home.fill("\(p)/Tool/\(outer)/lib/dependency/\(kind.folder)")
         }
@@ -49,6 +49,29 @@ struct ProjectBuildScannerTests {
         let engine = try engine(home, tools)
         let result = try #require(await collect(engine).result(kind.item))
         #expect(result.paths == ["\(engine.policy.homeReal)/Workspace/App/\(kind.folder)"])
+    }
+
+    @Test
+    func `devsweep counts a build folder inside another item's once, as part of the outer one`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
+        // Kotlin Multiplatform: npm installs into Gradle's build folder.
+        home.touch("\(p)/kmp/build.gradle.kts")
+        home.fill("\(p)/kmp/build")
+        home.touch("\(p)/kmp/build/js/package.json")
+        home.fill("\(p)/kmp/build/js/node_modules")
+        // A Rust project that builds a Swift package into its target folder.
+        home.touch("\(p)/rust/Cargo.toml")
+        home.fill("\(p)/rust/target")
+        home.touch("\(p)/rust/target/swift/Package.swift")
+        home.fill("\(p)/rust/target/swift/.build")
+
+        let engine = try engine(home, tools)
+        let events = await collect(engine)
+        let projects = "\(engine.policy.homeReal)/Workspace"
+        #expect(events.result(.gradleBuilds)?.paths == ["\(projects)/kmp/build"])
+        #expect(events.result(.nodeModules)?.paths == [])
+        #expect(events.result(.cargoBuilds)?.paths == ["\(projects)/rust/target"])
+        #expect(events.result(.swiftpmBuilds)?.paths == [])
     }
 
     @Test(arguments: kinds)

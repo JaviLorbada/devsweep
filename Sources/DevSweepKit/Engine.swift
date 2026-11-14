@@ -85,7 +85,10 @@ public struct Engine: Sendable {
             config: self.config,
             policy: self.policy,
             dependencies: self.dependencies,
-            projects: ProjectSearch(roots: folders.roots, homeReal: self.policy.homeReal),
+            projects: ProjectSearch(
+                roots: folders.roots,
+                homeReal: self.policy.homeReal,
+                outermostBuildFolders: self.config.outermostBuildFolders),
             measurer: self.measurer,
             concurrentFolders: options.concurrentFolders,
             warn: { continuation.yield(.warning($0)) })
