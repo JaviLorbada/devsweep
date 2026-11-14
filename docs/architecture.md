@@ -219,7 +219,7 @@ The app's folders follow those kinds, and its tests use the same ones.
 
 | Folder | What's in it |
 |---|---|
-| `App` | `DevSweepApp` (the scenes and the menus), `HelpCommands` (the Help menu), `AppCoordinator`, the daily scan and the growth check. |
+| `App` | `DevSweepApp` (the scenes), `AppCommands` and `HelpCommands` (the menus), `AppCoordinator`, the daily scan and the growth check. |
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
