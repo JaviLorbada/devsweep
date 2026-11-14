@@ -117,6 +117,57 @@ extension DebugLaunch {
         exit(0)
     }
 
+    /// Opens the menu bar's menu titled `title`, such as Help, near the
+    /// window's top-left corner, captures it over the window and quits.
+    /// The menu keeps macOS's appearance, light or dark, whatever the app's. Opened there, it
+    /// holds the same items as it does under the menu bar.
+    @MainActor
+    static func captureMenu(_ title: String, to output: String?) -> Never {
+        guard let menu = self.menu(titled: title), let content = self.mainWindow?.contentView else {
+            self.trace("no menu \(title)")
+            exit(0)
+        }
+        // An open menu runs a loop of its own until it closes, so the capture
+        // waits on a timer that runs in that loop too.
+        let timer = Timer(timeInterval: 1, repeats: false) { _ in
+            MainActor.assumeIsolated {
+                if let output {
+                    self.trace(self.captureOpenMenu(to: output) ? "captured \(output)" : "capture failed")
+                }
+                self.menu(titled: title)?.cancelTracking()
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        self.trace("opening the \(title) menu")
+        // Far enough in for the window to be all there is around it.
+        let corner = NSPoint(x: 160, y: content.isFlipped ? 120 : content.bounds.height - 120)
+        menu.popUp(positioning: nil, at: corner, in: content)
+        exit(0)
+    }
+
+    /// The menu bar's menu with that title.
+    @MainActor
+    static func menu(titled title: String) -> NSMenu? {
+        NSApplication.shared.mainMenu?.items.first { $0.title == title }?.submenu
+    }
+
+    /// Captures the menu this app has open: its window at the menu level.
+    @MainActor
+    static func captureOpenMenu(to path: String) -> Bool {
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let level = Int(CGWindowLevelForKey(.popUpMenuWindow))
+        let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] ?? []
+        let menu = windows.first { window in
+            window[kCGWindowOwnerPID as String] as? pid_t == pid && window[kCGWindowLayer as String] as? Int == level
+        }
+        guard let number = menu?[kCGWindowNumber as String] as? Int,
+              let bounds = (menu?[kCGWindowBounds as String] as? NSDictionary)
+                  .flatMap({ CGRect(dictionaryRepresentation: $0 as CFDictionary) })
+        else { return false }
+        // The bounds hold its shadow, so the window shows around it.
+        return self.capture(windowNumber: number, over: bounds, to: path)
+    }
+
     @MainActor
     static func findStatusButton(in view: NSView?) -> NSButton? {
         guard let view else { return nil }
@@ -227,14 +278,28 @@ extension DebugLaunch {
     /// is written: drawing the views instead leaves out most of SwiftUI's.
     @MainActor
     static func capture(_ window: NSWindow, to path: String) -> Bool {
+        self.capture(windowNumber: window.windowNumber, to: path)
+    }
+
+    /// Draws the window with that number, one of this app's, as `capture`
+    /// does a window. With `over`, that part of the screen instead: the
+    /// window over this app's windows below it, which a menu's glass needs
+    /// to look as it does on screen. Other apps' windows are left out.
+    @MainActor
+    static func capture(windowNumber number: Int, over area: CGRect? = nil, to path: String) -> Bool {
         typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
         guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage")
         else { return false }
         let createImage = unsafeBitCast(symbol, to: CreateImage.self)
-        guard let windowNumber = UInt32(exactly: window.windowNumber) else { return false }
-        // Including just this window; ignoring its shadow, at full resolution.
-        guard let image = createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue()
-        else { return false }
+        guard let windowNumber = UInt32(exactly: number) else { return false }
+        // Just this window, or it and those below it; ignoring its shadow,
+        // at full resolution.
+        let image = if let area {
+            createImage(area, 1 << 2 | 1 << 3, windowNumber, 1 << 3)?.takeRetainedValue()
+        } else {
+            createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue()
+        }
+        guard let image else { return false }
         let bitmap = NSBitmapImageRep(cgImage: image)
         if self.isEmpty(bitmap) {
             self.trace("the window server gave an empty image: the window isn't drawn while the screen is locked")
