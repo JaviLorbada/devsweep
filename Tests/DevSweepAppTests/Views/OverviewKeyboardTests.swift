@@ -4,44 +4,63 @@ import SwiftUI
 import Testing
 @testable import DevSweepApp
 
-/// The overview by keyboard, with the Mac's Keyboard navigation setting as
-/// it comes, off: Tab stops at each row, largest first, and selects it, and
-/// Space marks the row focused.
+/// The overview by keyboard, with Keyboard navigation off, as a Mac comes:
+/// Tab stops only at what takes focus of its own, the rows and the
+/// inspector's lines. With it on, every button is a stop too, so these
+/// tests are skipped.
 @MainActor
-@Suite("Overview keyboard")
+@Suite(
+    "Overview keyboard",
+    .enabled("Keyboard navigation is off, as a Mac comes") {
+        await MainActor.run { !NSApplication.shared.isFullKeyboardAccessEnabled }
+    })
 struct OverviewKeyboardTests {
     @Test
     func `Tab moves through the rows largest first, selecting each, and Space marks the one focused`() async {
         let home = TemporaryHome()
         let app = makeApp(home: home)
         app.showResults(sampleResults)
+        app.overview.select(nil)
         let ordered = app.scan.tally.ordered.map(\.item)
         let window = self.window(OverviewContent().environment(models: app))
-        try? await Task.sleep(for: .milliseconds(200))
+        defer { window.close() }
 
-        // The first Tab enters the window's key view loop at the first row.
-        // AppKit then turns each Tab into a move to the next key view,
-        // which the test asks for directly: SwiftUI leaves a synthetic Tab
-        // event to the window once it has focus.
-        self.press("\t", keyCode: 48, in: window)
-        var selected: [Item?] = []
-        for _ in 0..<3 {
-            try? await Task.sleep(for: .milliseconds(100))
-            selected.append(app.overview.selection)
-            window.selectNextKeyView(nil)
+        for item in ordered[0...3] {
+            await self.tab(in: window)
+            await waitUntil { app.overview.selection == item }
+            #expect(app.overview.selection == item)
         }
-        #expect(selected == Array(ordered.prefix(3)))
-        try? await Task.sleep(for: .milliseconds(100))
-        #expect(app.overview.selection == ordered[3])
-        self.press(" ", keyCode: 49, in: window)
+        self.space(in: window)
+        await waitUntil { !app.marks.marked.isEmpty }
         #expect(app.marks.marked == [ordered[3]])
-        self.press(" ", keyCode: 49, in: window)
+        self.space(in: window)
+        await waitUntil { app.marks.marked.isEmpty }
         #expect(app.marks.marked.isEmpty)
 
-        // Shift-Tab goes back.
+        // Shift-Tab goes back, as AppKit's previous key view.
         window.selectPreviousKeyView(nil)
-        try? await Task.sleep(for: .milliseconds(100))
+        await waitUntil { app.overview.selection == ordered[2] }
         #expect(app.overview.selection == ordered[2])
+    }
+
+    @Test
+    func `in the inspector, Tab stops at each line and Space ticks it`() async {
+        let home = TemporaryHome()
+        let app = makeApp(home: home)
+        app.showResults(sampleResults)
+        let window = self.window(ItemInspector().environment(models: app))
+        defer { window.close() }
+
+        await self.tab(in: window)
+        self.space(in: window)
+        await waitUntil { !app.marks.markedParts(of: .derivedData).isEmpty }
+        // The largest project, then the shared compilation cache.
+        #expect(app.marks.markedParts(of: .derivedData) == [.folder("/dd/P1")])
+
+        await self.tab(in: window)
+        self.space(in: window)
+        await waitUntil { app.marks.markedParts(of: .derivedData).count == 2 }
+        #expect(app.marks.markedParts(of: .derivedData) == [.folder("/dd/P1"), .compilationCache])
     }
 
     private func window(_ view: some View) -> NSWindow {
@@ -52,7 +71,22 @@ struct OverviewKeyboardTests {
         window.contentView = host
         window.orderFront(nil)
         host.layoutSubtreeIfNeeded()
+        // As a click in the window does.
+        window.makeFirstResponder(host)
         return window
+    }
+
+    /// What Tab does: AppKit moves focus to the next key view. The tests ask
+    /// for it directly, since a synthetic Tab event reaches SwiftUI only
+    /// while it already has focus. Returns once focus has moved.
+    private func tab(in window: NSWindow) async {
+        let before = window.firstResponder
+        window.selectNextKeyView(nil)
+        await waitUntil { window.firstResponder !== before }
+    }
+
+    private func space(in window: NSWindow) {
+        self.press(" ", keyCode: 49, in: window)
     }
 
     private func press(_ key: String, keyCode: UInt16, in window: NSWindow) {

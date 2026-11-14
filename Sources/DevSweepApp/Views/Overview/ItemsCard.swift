@@ -4,8 +4,10 @@ import SwiftUI
 /// The eleven items, largest first: mark, color, name, a proportional bar,
 /// size and what can be done with it.
 struct ItemsCard: View {
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
+    @Environment(CleaningModel.self) private var cleaning
 
     /// The bar is the first column to go when the center column narrows.
     static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
@@ -45,13 +47,25 @@ struct ItemsCard: View {
             .frame(height: Self.headerHeight)
 
             ForEach(rows) { row in
+                let marked = row.isLive && self.marks.marked.contains(row.item)
                 Divider().opacity(0.6)
                 ItemRow(
                     row: row,
                     largest: largest,
-                    spoken: SpokenText.row(row, marked: self.marks.marked.contains(row.item), in: self.scan.tally),
-                    showsBar: showsBar)
+                    marked: marked,
+                    canClean: row.isLive && !self.scan.isScanning && !self.scan.isCleaning,
+                    spoken: SpokenText.row(row, marked: marked, in: self.scan.tally),
+                    showsBar: showsBar,
+                    clean: { self.clean(row.item) })
             }
+        }
+    }
+
+    /// What a row's Clean does, by its button or VoiceOver's action.
+    private func clean(_ item: Item) {
+        self.overview.select(item)
+        Task {
+            await self.cleaning.requestClean([item])
         }
     }
 
@@ -67,16 +81,18 @@ struct ItemsCard: View {
 /// press marks it, focusing it selects it, and its actions select and clean it.
 struct ItemRow: View {
     @Environment(OverviewViewModel.self) private var overview
-    @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
-    @Environment(CleaningModel.self) private var cleaning
     @Environment(\.appearsActive) private var appearsActive
     @Environment(\.colorSchemeContrast) private var contrast
     @FocusState private var focused: Bool
     let row: ScanRow
     let largest: Double
+    /// Whether it is ticked; never while it has nothing to clean.
+    let marked: Bool
+    let canClean: Bool
     let spoken: SpokenText
     var showsBar = true
+    let clean: () -> Void
 
     var body: some View {
         let selected = self.overview.selection == self.row.item
@@ -85,7 +101,7 @@ struct ItemRow: View {
         let emphasized = selected && self.appearsActive
         HStack(spacing: 12) {
             Toggle("Mark \(self.row.item.name) for cleaning", isOn: Binding(
-                get: { self.isMarked },
+                get: { self.marked },
                 set: { self.marks.setMarked(self.row.item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
@@ -131,7 +147,7 @@ struct ItemRow: View {
                 .frame(width: 64, alignment: .trailing)
                 .contentTransition(.numericText())
 
-            RowAction(row: self.row)
+            RowAction(row: self.row, canClean: self.canClean, clean: self.clean)
                 .frame(width: 84)
         }
         .padding(.horizontal, 14)
@@ -164,14 +180,6 @@ struct ItemRow: View {
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
     }
 
-    private var isMarked: Bool {
-        self.marks.marked.contains(self.row.item) && self.row.isLive
-    }
-
-    private var canClean: Bool {
-        self.row.isLive && !self.scan.isScanning && !self.scan.isCleaning
-    }
-
     /// A toggle while it can be marked; selected while the inspector shows it.
     private func traits(selected: Bool) -> AccessibilityTraits {
         let toggle: AccessibilityTraits = self.row.isLive ? .isToggle : []
@@ -182,15 +190,7 @@ struct ItemRow: View {
         guard self.row.isLive else {
             return
         }
-        self.marks.setMarked(self.row.item, !self.isMarked)
-    }
-
-    /// What the row's Clean button does.
-    private func clean() {
-        self.overview.select(self.row.item)
-        Task {
-            await self.cleaning.requestClean([self.row.item])
-        }
+        self.marks.toggle(self.row.item)
     }
 
     private var name: some View {
@@ -234,10 +234,9 @@ struct ItemRow: View {
 
 /// The trailing cell of a row: what can be done now, or what is happening.
 struct RowAction: View {
-    @Environment(OverviewViewModel.self) private var overview
-    @Environment(ScanModel.self) private var scan
-    @Environment(CleaningModel.self) private var cleaning
     let row: ScanRow
+    let canClean: Bool
+    let clean: () -> Void
 
     var body: some View {
         switch self.row.state {
@@ -259,15 +258,12 @@ struct RowAction: View {
                 .foregroundStyle(.green)
         case .measured:
             if self.row.isLive {
-                Button("Clean") {
-                    self.overview.select(self.row.item)
-                    Task {
-                        await self.cleaning.requestClean([self.row.item])
-                    }
-                }
-                .controlSize(.small)
-                .rowControl()
-                .disabled(self.scan.isScanning || self.scan.isCleaning)
+                Button("Clean", action: self.clean)
+                    .controlSize(.small)
+                    .rowControl()
+                    .disabled(!self.canClean)
+                    // The row is the stop; VoiceOver has Clean as the row's action.
+                    .focusable(false)
             }
         }
     }

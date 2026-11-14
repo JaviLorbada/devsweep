@@ -54,6 +54,17 @@ struct MarksModelTests {
     }
 
     @Test
+    func `toggling an item ticks it, toggling it again unticks it, and counts as a change`() {
+        let marks = MarksModel(scan: self.scan)
+        marks.toggle(.npmCache)
+        #expect(marks.marked == [.npmCache])
+        marks.toggle(.npmCache)
+        #expect(marks.marked.isEmpty)
+        marks.applyDefaults()
+        #expect(marks.marked.isEmpty, "the defaults don't undo a change")
+    }
+
+    @Test
     func `Mark All ticks everything with something to clean, and Mark None nothing`() {
         let marks = MarksModel(scan: self.scan)
         marks.markAll()

@@ -240,8 +240,16 @@ struct PartsList: View {
                 .padding(.leading, indent)
         }
         .padding(.vertical, 4)
-        // One element a line, read in the list's order: pressing it ticks
-        // the part, or opens the line that sums the rest.
+        .contentShape(Rectangle())
+        // One Tab stop a line, where it does something: Space ticks the
+        // part, or opens the line that sums the rest.
+        .focusable(self.selectable || line.part == nil)
+        .onKeyPress(.space) {
+            self.press(line)
+            return .handled
+        }
+        // One element a line, read in the list's order: pressing it does
+        // what Space does.
         .accessibilityElement(children: .ignore)
         .spoken(SpokenText.line(
             line.name,
@@ -282,6 +290,8 @@ struct PartsList: View {
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .disabled(self.scan.isCleaning || self.scan.isScanning)
+                // The line is the stop, so the box isn't a second one.
+                .focusable(false)
                 .frame(width: Self.checkboxWidth - 8, alignment: .leading)
         } else {
             Color.clear.frame(width: Self.checkboxWidth - 8)
@@ -298,6 +308,8 @@ struct PartsList: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // The line is the stop, so the button isn't a second one.
+        .focusable(false)
         .help(self
             .isDerivedData ? "Show each project, to clean it on its own" : "Show each folder, to clean it on its own")
     }
