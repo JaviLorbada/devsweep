@@ -28,15 +28,25 @@ public struct ProcessOutput: Sendable {
 public protocol ProcessRunning: Sendable {
     /// The executable `name` resolves to through `PATH`, like `command -v`.
     func locate(_ name: String) -> String?
-    /// Runs `name` found through `PATH` with standard input and error closed.
-    /// With `passthrough`, its output goes to this process's standard output
-    /// and error instead of being captured. Nil when it can't be found or started.
-    func run(_ name: String, _ arguments: [String], passthrough: Bool) async -> ProcessOutput?
+    /// Runs `name` found through `PATH` with standard error closed, and
+    /// standard input closed or reading `input`. With `passthrough`, its
+    /// output goes to this process's standard output and error instead of
+    /// being captured. Nil when it can't be found or started.
+    func run(_ name: String, _ arguments: [String], input: Data?, passthrough: Bool) async -> ProcessOutput?
 }
 
 extension ProcessRunning {
     public func run(_ name: String, _ arguments: [String]) async -> ProcessOutput? {
-        await self.run(name, arguments, passthrough: false)
+        await self.run(name, arguments, input: nil, passthrough: false)
+    }
+
+    public func run(_ name: String, _ arguments: [String], passthrough: Bool) async -> ProcessOutput? {
+        await self.run(name, arguments, input: nil, passthrough: passthrough)
+    }
+
+    /// Runs `name` with `input` on its standard input, as a here-document gives it.
+    public func run(_ name: String, _ arguments: [String], input: Data) async -> ProcessOutput? {
+        await self.run(name, arguments, input: input, passthrough: false)
     }
 }
 
@@ -66,7 +76,7 @@ public struct LiveProcessRunner: ProcessRunning {
         return nil
     }
 
-    public func run(_ name: String, _ arguments: [String], passthrough: Bool) async -> ProcessOutput? {
+    public func run(_ name: String, _ arguments: [String], input: Data?, passthrough: Bool) async -> ProcessOutput? {
         guard let executable = locate(name) else { return nil }
         let environment = environment
         return await withCheckedContinuation { continuation in
@@ -75,7 +85,8 @@ public struct LiveProcessRunner: ProcessRunning {
                 process.executableURL = URL(fileURLWithPath: executable)
                 process.arguments = arguments
                 process.environment = environment
-                process.standardInput = FileHandle.nullDevice
+                let inputPipe = input.map { _ in Pipe() }
+                process.standardInput = inputPipe ?? FileHandle.nullDevice
                 let pipe = Pipe()
                 if !passthrough {
                     process.standardOutput = pipe
@@ -86,6 +97,17 @@ public struct LiveProcessRunner: ProcessRunning {
                 } catch {
                     continuation.resume(returning: nil)
                     return
+                }
+                if let inputPipe, let input {
+                    // Written from another thread, so a large input can't
+                    // block on a full pipe while its output goes unread. A
+                    // tool that exits without reading it, as a test's stub
+                    // may, makes the write fail rather than raise SIGPIPE.
+                    _ = fcntl(inputPipe.fileHandleForWriting.fileDescriptor, F_SETNOSIGPIPE, 1)
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        try? inputPipe.fileHandleForWriting.write(contentsOf: input)
+                        try? inputPipe.fileHandleForWriting.close()
+                    }
                 }
                 let data = passthrough ? Data() : pipe.fileHandleForReading.readDataToEndOfFile()
                 process.waitUntilExit()
