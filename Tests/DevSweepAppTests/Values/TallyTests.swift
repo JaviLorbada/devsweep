@@ -90,4 +90,18 @@ struct TallyTests {
         #expect(sampleAndroid.sdkKilobytes == 9_000_000 + 120_000 + 150_000 + 900_000 + 6_000_000)
         #expect(sampleAndroid.gradleCachesKilobytes == 4_000_000)
     }
+
+    @Test
+    func `a share of the total is in whole percent, rounded, and none while nothing counts`() {
+        let rows = tally([
+            row(.derivedData, .measured, kilobytes: 663),
+            row(.npmCache, .measured, kilobytes: 335),
+            row(.homebrew, .measured, kilobytes: 2),
+        ])
+        #expect(rows.percent(of: 663) == 66)
+        #expect(rows.percent(of: 335) == 34)
+        #expect(rows.percent(of: 2) == 0)
+        #expect(rows.percent(of: rows.kilobytes(of: .xcode)) == 66)
+        #expect(tally([row(.npmCache, .waiting, kilobytes: 0)]).percent(of: 0) == nil)
+    }
 }

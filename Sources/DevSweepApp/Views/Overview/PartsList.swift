@@ -240,6 +240,31 @@ struct PartsList: View {
                 .padding(.leading, indent)
         }
         .padding(.vertical, 4)
+        // One element a line, read in the list's order: pressing it ticks
+        // the part, or opens the line that sums the rest.
+        .accessibilityElement(children: .ignore)
+        .spoken(SpokenText.line(line.name, kilobytes: line.kilobytes, status: line.status, marked: self.marked(line)))
+        .accessibilityAddTraits(line.part == nil ? .isButton : self.selectable ? .isToggle : [])
+        .accessibilityAction { self.press(line) }
+    }
+
+    /// Whether the line's part is ticked; nil when it can't be.
+    private func marked(_ line: Line) -> Bool? {
+        guard self.selectable, let part = line.part else {
+            return nil
+        }
+        return self.marks.markedParts(of: self.result.item).contains(part)
+    }
+
+    /// What pressing a line does, as clicking its box or its name would.
+    private func press(_ line: Line) {
+        guard let part = line.part else {
+            return self.toggleAll()
+        }
+        guard let marked = self.marked(line), !self.scan.isCleaning, !self.scan.isScanning else {
+            return
+        }
+        self.marks.setMarked(part, of: self.result.item, !marked)
     }
 
     @ViewBuilder

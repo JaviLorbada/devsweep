@@ -49,9 +49,11 @@ struct RingChart: View {
                 .allowsHitTesting(false)
             }
             .frame(width: diameter, height: diameter)
+            // One element that sums the chart up, holding a button for each
+            // segment. A group has no value VoiceOver reads, so the summary
+            // is its label.
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Reclaimable space")
-            .accessibilityValue(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
+            .accessibilityLabel(SpokenText.summary(self.scan.tally, isScanning: self.scan.isScanning))
             .accessibilityChildren { self.segmentElements }
             .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.scan.tally.reclaimableKilobytes)
             .animation(Motion.animation(.easeInOut(duration: 0.25)), value: self.overview.selection)
@@ -61,27 +63,22 @@ struct RingChart: View {
         }
     }
 
-    /// Each family, then its items, with their sizes, as VoiceOver reads the ring.
+    /// Each family, then its items, clockwise as the ring draws them, each
+    /// with its size and share.
     private var segmentElements: some View {
-        ForEach(Family.allCases) { family in
+        let tally = self.scan.tally
+        return ForEach(Family.allCases) { family in
             Rectangle()
-                .accessibilityLabel(self.familyLabel(family))
+                .spoken(SpokenText.family(family, in: tally))
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { self.overview.pick(family) }
-            ForEach(family.items.filter { self.scan.rows[$0] != nil }) { item in
-                let row = self.scan.rows[item]
+            ForEach(family.items.compactMap { self.scan.rows[$0] }) { row in
                 Rectangle()
-                    .accessibilityLabel("\(item.name), \(row.map { SizeText.of(kilobytes: $0.shownKilobytes) } ?? "")")
-                    .accessibilityAddTraits(self.overview.selection == item ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityAction { self.overview.select(item) }
+                    .spoken(SpokenText.item(row, in: tally))
+                    .accessibilityAddTraits(self.overview.selection == row.item ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction { self.overview.select(row.item) }
             }
         }
-    }
-
-    /// "Xcode, 143 MB", or "not measured" before the scan reaches it.
-    private func familyLabel(_ family: Family) -> String {
-        let size = self.scan.tally.measuredKilobytes(of: family).map { SizeText.of(kilobytes: $0) }
-        return "\(family.name), \(size ?? "not measured")"
     }
 
     private func select(_ id: String) {
@@ -216,7 +213,6 @@ struct FamilyLegend: View {
     var showsShare = true
 
     var body: some View {
-        let total = Double(max(scan.tally.reclaimableKilobytes, 1))
         VStack(alignment: .leading, spacing: 10) {
             GeometryReader { proxy in
                 let shares = self.scan.tally.familyChartShares
@@ -248,9 +244,7 @@ struct FamilyLegend: View {
                             Text(family.name).fontWeight(.medium).lineLimit(1)
                             Spacer(minLength: 4)
                             if self.showsShare {
-                                Text(self.scan.tally
-                                    .reclaimableKilobytes > 0 && measured ?
-                                    "\(Int((Double(kilobytes) / total * 100).rounded()))%" : "")
+                                Text(measured ? self.scan.tally.percent(of: kilobytes).map { "\($0)%" } ?? "" : "")
                                     .font(.callout)
                                     .foregroundStyle(.muted)
                                     .frame(width: 44, alignment: .trailing)
@@ -266,6 +260,7 @@ struct FamilyLegend: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .spoken(SpokenText.family(family, in: self.scan.tally))
                 }
             }
         }

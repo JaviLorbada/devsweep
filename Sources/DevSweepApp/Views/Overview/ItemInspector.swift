@@ -76,6 +76,7 @@ struct ItemDetails: View {
             }
             Text(row.shownResult?.label ?? row.item.name)
                 .font(.title3.weight(.semibold))
+                .accessibilityAddTraits(.isHeader)
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text(self.heroSize(row))
                     .font(.largeTitle.weight(.bold))
@@ -85,6 +86,9 @@ struct ItemDetails: View {
                     .font(.callout.weight(.medium))
                     .foregroundStyle(row.state == .cleaned ? AnyShapeStyle(.green) : AnyShapeStyle(.muted))
             }
+            // "204.8 GB, reclaimable", as one element.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(self.heroSize(row)), \(self.stateWord(row))")
         }
     }
 

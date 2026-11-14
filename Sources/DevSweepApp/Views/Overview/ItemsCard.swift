@@ -30,7 +30,7 @@ struct ItemsCard: View {
         let largest = Double(max(rows.map(\.shownKilobytes).max() ?? 1, 1))
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("Items").fontWeight(.semibold).layoutPriority(1)
+                Text("Items").fontWeight(.semibold).layoutPriority(1).accessibilityAddTraits(.isHeader)
                 Text(self.note)
                     .font(.callout)
                     .foregroundStyle(.muted)
@@ -46,7 +46,11 @@ struct ItemsCard: View {
 
             ForEach(rows) { row in
                 Divider().opacity(0.6)
-                ItemRow(row: row, largest: largest, showsBar: showsBar)
+                ItemRow(
+                    row: row,
+                    largest: largest,
+                    spoken: SpokenText.row(row, marked: self.marks.marked.contains(row.item), in: self.scan.tally),
+                    showsBar: showsBar)
             }
         }
     }
@@ -58,12 +62,19 @@ struct ItemsCard: View {
     }
 }
 
+/// One item: its mark, name, bar, size and action. For VoiceOver and the
+/// keyboard it is one element, as a table row is: Space or VoiceOver's
+/// press marks it, focusing it selects it, and its actions select and clean it.
 struct ItemRow: View {
     @Environment(OverviewViewModel.self) private var overview
+    @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
+    @Environment(CleaningModel.self) private var cleaning
     @Environment(\.appearsActive) private var appearsActive
+    @FocusState private var focused: Bool
     let row: ScanRow
     let largest: Double
+    let spoken: SpokenText
     var showsBar = true
 
     var body: some View {
@@ -73,36 +84,33 @@ struct ItemRow: View {
         let emphasized = selected && self.appearsActive
         HStack(spacing: 12) {
             Toggle("Mark \(self.row.item.name) for cleaning", isOn: Binding(
-                get: { self.marks.marked.contains(self.row.item) && self.row.isLive },
+                get: { self.isMarked },
                 set: { self.marks.setMarked(self.row.item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .disabled(!self.row.isLive)
+                // The row takes the keyboard's focus and Space, so the box
+                // isn't a second stop.
+                .focusable(false)
 
             Dot(color: emphasized ? .white : Palette.color(self.row.item))
 
-            Button {
-                self.overview.select(self.row.item)
-            } label: {
-                HStack(spacing: 0) {
-                    // The family shows whole or not at all: cut down beside a
-                    // long name in a narrow window, it was a stray letter.
-                    ViewThatFits(in: .horizontal) {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            self.name
-                            Text(self.row.item.family.name)
-                                .font(.caption)
-                                .foregroundStyle(.muted)
-                                .lineLimit(1)
-                        }
+            HStack(spacing: 0) {
+                // The family shows whole or not at all: cut down beside a
+                // long name in a narrow window, it was a stray letter.
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
                         self.name
+                        Text(self.row.item.family.name)
+                            .font(.caption)
+                            .foregroundStyle(.muted)
+                            .lineLimit(1)
                     }
-                    Spacer(minLength: 0)
+                    self.name
                 }
-                .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
+            .frame(maxHeight: .infinity)
 
             if self.showsBar {
                 ThinBar(
@@ -130,12 +138,58 @@ struct ItemRow: View {
         .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { self.overview.select(self.row.item) }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            "\(self.row.result?.label ?? self.row.item.name), "
-                + "\(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .focusable()
+        .focused(self.$focused)
+        .onChange(of: self.focused) { _, focused in
+            if focused {
+                self.overview.select(self.row.item)
+            }
+        }
+        .onKeyPress(.space) {
+            self.toggleMark()
+            return .handled
+        }
+        .accessibilityElement(children: .ignore)
+        .spoken(self.spoken)
+        .accessibilityAddTraits(self.traits(selected: selected))
+        .accessibilityAction { self.toggleMark() }
+        // SwiftUI lists the last added first: Select, then Clean.
+        .accessibilityActions {
+            if self.canClean {
+                Button("Clean") { self.clean() }
+            }
+        }
+        .accessibilityAction(named: "Select") { self.overview.select(self.row.item) }
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
+    }
+
+    private var isMarked: Bool {
+        self.marks.marked.contains(self.row.item) && self.row.isLive
+    }
+
+    private var canClean: Bool {
+        self.row.isLive && !self.scan.isScanning && !self.scan.isCleaning
+    }
+
+    /// A toggle while it can be marked; selected while the inspector shows it.
+    private func traits(selected: Bool) -> AccessibilityTraits {
+        let toggle: AccessibilityTraits = self.row.isLive ? .isToggle : []
+        return selected ? toggle.union(.isSelected) : toggle
+    }
+
+    private func toggleMark() {
+        guard self.row.isLive else {
+            return
+        }
+        self.marks.setMarked(self.row.item, !self.isMarked)
+    }
+
+    /// What the row's Clean button does.
+    private func clean() {
+        self.overview.select(self.row.item)
+        Task {
+            await self.cleaning.requestClean([self.row.item])
+        }
     }
 
     private var name: some View {
@@ -169,18 +223,6 @@ struct ItemRow: View {
             } else {
                 SizeText.of(kilobytes: self.row.kilobytes)
             }
-        }
-    }
-}
-
-enum RowWords {
-    /// What VoiceOver says for a row with no size yet.
-    static func state(_ row: ScanRow) -> String {
-        switch row.state {
-        case .waiting: "waiting"
-        case .measuring: "measuring"
-        case .notMeasured: "not measured"
-        default: ""
         }
     }
 }

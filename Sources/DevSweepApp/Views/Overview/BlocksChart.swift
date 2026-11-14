@@ -11,16 +11,21 @@ struct BlocksChart: View {
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
             VStack(alignment: .leading, spacing: 14) {
+                let total = SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes)
+                let word = self.scan.isScanning ? (self.scan.tally.showsPrevious ? "updating" : "found so far") :
+                    "reclaimable"
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
+                    Text(total)
                         .font(.largeTitle.weight(.bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
-                    Text(self.scan
-                        .isScanning ? (self.scan.tally.showsPrevious ? "updating" : "found so far") : "reclaimable")
+                    Text(word)
                         .font(.callout)
                         .foregroundStyle(.muted)
                 }
+                // "618.5 GB, reclaimable", as one element.
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(total), \(word)")
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Family.allCases) { family in
                         Button {
@@ -39,6 +44,7 @@ struct BlocksChart: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .spoken(SpokenText.family(family, in: self.scan.tally))
                     }
                 }
             }
@@ -130,11 +136,21 @@ private struct TreemapCells: View {
             }
             ForEach(BlocksChart.drawnCells(cells), id: \.id) { cell in
                 if let row = scan.rows[cell.id] {
-                    TreemapCell(row: row, frame: cell.frame, selected: self.overview.selection == cell.id)
+                    TreemapCell(
+                        row: row,
+                        frame: cell.frame,
+                        selected: self.overview.selection == cell.id,
+                        spoken: SpokenText.item(row, in: self.scan.tally))
+                        // VoiceOver reads them largest first, as the list does,
+                        // wherever the treemap puts them.
+                        .accessibilitySortPriority(Double(rows.count - (rows.firstIndex { $0.item == cell.id } ?? 0)))
                 }
             }
         }
         .frame(width: self.size.width, height: self.size.height, alignment: .topLeading)
+        // A group has no value VoiceOver reads, so the summary is its label.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(SpokenText.summary(self.scan.tally, isScanning: self.scan.isScanning))
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: cells.map(\.frame))
     }
 }
@@ -144,6 +160,7 @@ private struct TreemapCell: View {
     let row: ScanRow
     let frame: CGRect
     let selected: Bool
+    let spoken: SpokenText
 
     var body: some View {
         let color = Palette.color(self.row.item)
@@ -181,9 +198,7 @@ private struct TreemapCell: View {
         .help(
             "\(self.row.item.name), "
                 + "\(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
-        .accessibilityLabel(
-            "\(self.row.item.name), "
-                + "\(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
+        .spoken(self.spoken)
         .accessibilityAddTraits(self.selected ? .isSelected : [])
         .offset(x: self.frame.minX, y: self.frame.minY)
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
