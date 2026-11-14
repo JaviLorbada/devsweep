@@ -43,8 +43,28 @@ jobs:
       - name: Xcode 27.2
         run: sudo xcode-select -s /Applications/Xcode_27.2.app
       - run: xcodebuild -version && swift --version
-      - name: Test, with warnings as errors
-        run: swift test --parallel -Xswiftc -warnings-as-errors
+      # Built on its own, at the usual verbosity: under --quiet, SwiftPM prints
+      # "Build failed" without the compiler's errors.
+      - name: Build, with warnings as errors
+        run: swift build --build-tests -Xswiftc -warnings-as-errors
+      # Quiet prints the failures and the totals, not a line or two per test.
+      # Every event also goes to a file, in a schema pinned by version, for the
+      # report. The time limit turns a hang into a failure the report can name.
+      - name: Test
+        timeout-minutes: 10
+        shell: bash # With pipefail, so tee can't hide a failure.
+        run: >
+          swift test --skip-build --parallel --quiet
+          --event-stream-output-path "$RUNNER_TEMP/tests.jsonl"
+          --event-stream-version 6.4
+          2>&1 | tee "$RUNNER_TEMP/tests.log"
+      # Each failure as an annotation on its line, and a table on the run's
+      # summary page. It runs when the tests fail, which is when it matters,
+      # and fails itself only when it can't read the events, as after a new
+      # Xcode changes their format.
+      - name: Report the tests
+        if: ${{ !cancelled() }}
+        run: Scripts/test_report.sh "$RUNNER_TEMP/tests.jsonl" "$RUNNER_TEMP/tests.log"
       - name: Release build, as a release ships it
         run: swift build -c release -Xswiftc -warnings-as-errors
 
@@ -68,5 +88,7 @@ jobs:
       - run: brew install bats-core
       - name: The bats suite against the Swift binary
         run: Scripts/bats.sh "$PWD/dotfiles"
+      # Even when the bats suite failed, so both say what differs.
       - name: The script and the binary side by side
+        if: ${{ !cancelled() }}
         run: RUN=1 Scripts/compare.sh "$PWD/dotfiles"
