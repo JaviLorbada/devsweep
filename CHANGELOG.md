@@ -7,9 +7,9 @@ gets a line under Unreleased as it lands.
 ## Unreleased
 
 - Help > Report a Problem… and Suggest an Idea… open the issue forms on
-  GitHub in your browser, with DevSweep's version and the macOS version
-  filled in. DevSweep sends nothing itself: you read the form and decide
-  whether to submit it.
+  GitHub in your browser, with DevSweep's version filled in, and for a
+  problem the macOS version too. DevSweep sends nothing itself: you read
+  the form and decide whether to submit it.
 
 ## 0.6.0
 
