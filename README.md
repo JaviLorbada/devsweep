@@ -22,7 +22,8 @@ Apple silicon.
 ## What it does
 
 - **Shows where the space went:** Xcode's DerivedData, old Device Support,
-  SwiftPM, Homebrew, npm, Gradle and more, as a ring or as blocks.
+  SwiftPM, Homebrew, npm, Gradle, your projects' `node_modules`, Pods and
+  Cargo `target` folders, and more, as a ring or as blocks.
 - **Cleans what you mark**, to the Trash by default, with Put Back.
 - **Cleans part of an item:** tick single DerivedData projects or build
   folders, and keep the rest.
@@ -50,6 +51,11 @@ built to err on the side of keeping things.
   since the scan is skipped with a warning.
 - **Never what git tracks.** Build folders are removed only when git provably
   tracks nothing in them. Any doubt keeps the folder.
+- **Your projects' installs are yours to tick.** `node_modules`, Pods and
+  Cargo `target` folders never start ticked in the app: a project needs
+  `npm install`, `pod install` or a full build before it runs again. On the
+  command line, `--run` deletes them with the rest of the report; add
+  `--skip node-modules,cocoapods-pods,cargo-builds` to keep them.
 - **Not while Xcode runs.** Cleaning the Xcode items waits until Xcode and
   Simulator have quit; DevSweep asks to quit them for you.
 - **Worktrees only with nothing to lose.** DevSweep removes a git worktree
@@ -78,12 +84,17 @@ report it privately, as [SECURITY.md](SECURITY.md) describes.
 | `swiftpm-builds` | `.build` folders next to a `Package.swift` | your project folders |
 | `xcode-builds` | `build` folders holding Xcode output | your project folders |
 | `gradle-builds` | `build` folders next to a Gradle build file | your project folders |
+| `cocoapods-pods` | `Pods` folders next to a `Podfile.lock` | your project folders |
+| `cargo-builds` | `target` folders next to a `Cargo.toml` | your project folders |
+| `node-modules` | `node_modules` folders next to a `package.json` | your project folders |
 | `npm-cache` | npm's download cache | `~/.npm/_cacache`, `~/.npm/_npx` |
 | `homebrew` | Old versions and downloads | removed by `brew cleanup` |
 | `tool-caches` | CocoaPods, Carthage, Sourcery, Playwright and JetBrains Toolbox downloads; Playwright MCP's browser profiles stay | `~/Library/Caches` |
 
 Project folders default to `~/Developer`, `~/Development`, `~/dev`,
-`~/Documents/Workspace` and `~/Projects`; Settings changes them.
+`~/Documents/Workspace` and `~/Projects`; Settings changes them. A
+`node_modules`, `Pods` or `target` folder inside another one, or inside a
+Python `.venv`, belongs to that folder and isn't listed on its own.
 
 ## Install
 

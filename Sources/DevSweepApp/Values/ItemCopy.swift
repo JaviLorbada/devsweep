@@ -14,6 +14,9 @@ extension Item {
         case .swiftpmBuilds: ".build folders"
         case .xcodeBuilds: "Xcode build folders"
         case .gradleBuilds: "Gradle build folders"
+        case .cocoapodsPods: "Pods folders"
+        case .cargoBuilds: "Cargo target folders"
+        case .nodeModules: "node_modules"
         case .npmCache: "npm cache"
         case .homebrew: "Homebrew"
         case .toolCaches: "Tool caches"
@@ -51,6 +54,15 @@ extension Item {
                 + "again when needed."
         case .gradleBuilds:
             "Build output next to a Gradle file. Gradle rebuilds it on the next build."
+        case .cocoapodsPods:
+            "Libraries CocoaPods installed for an Xcode project. Folders tracked in git are skipped. Run pod "
+                + "install to get them back from the Podfile.lock; the project doesn't build until then."
+        case .cargoBuilds:
+            "Build output of Rust projects. Folders tracked in git are skipped. Comes back on the next cargo build, "
+                + "which compiles every dependency again."
+        case .nodeModules:
+            "Packages installed for a JavaScript project. Folders tracked in git are skipped. Run npm install, or "
+                + "yarn or pnpm, to get them back; the project doesn't run until then."
         }
     }
 
@@ -62,7 +74,20 @@ extension Item {
     /// Whether the inspector lists its folders to tick one by one, as it
     /// does DerivedData's parts.
     var cleansByFolder: Bool {
-        self == .swiftpmBuilds || self == .xcodeBuilds || self == .gradleBuilds
+        switch self {
+        case .swiftpmBuilds, .xcodeBuilds, .gradleBuilds, .cocoapodsPods, .cargoBuilds, .nodeModules: true
+        default: false
+        }
+    }
+
+    /// Whether a scan's defaults may tick it. Other languages' build folders
+    /// never start ticked: each project needs its install or build again
+    /// before it runs, so cleaning them is a choice to make.
+    var canStartTicked: Bool {
+        switch self {
+        case .cocoapodsPods, .cargoBuilds, .nodeModules: false
+        default: true
+        }
     }
 
     /// Whether Xcode builds into it, so cleaning part of it while Xcode is

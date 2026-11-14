@@ -47,7 +47,8 @@ public struct ScanConfig: Sendable {
 
     /// The configuration the bash script derives from its environment:
     /// `HOME`, `<PREFIX>_PROJECT_DIRS` and `<PREFIX>_APPLICATIONS_DIRS`, the prefix being the command name's, with
-    /// `--projects` taking precedence. Empty variables count as unset.
+    /// `--projects` taking precedence. Empty variables count as unset. The
+    /// items the command doesn't know are skipped too.
     public static func fromEnvironment(
         _ environment: [String: String],
         projects: String? = nil,
@@ -65,7 +66,7 @@ public struct ScanConfig: Sendable {
             home: home,
             projectDirectories: self.splitList(projectList),
             applicationsDirectories: self.splitList(applicationsList),
-            skipped: skipped,
+            skipped: skipped.union(Set(Item.allCases).subtracting(Item.known(by: command))),
             includeExtras: includeExtras,
             includeWorktrees: includeExtras && command == .product,
             environment: environment)
@@ -84,12 +85,12 @@ public struct ScanConfig: Sendable {
     }
 
     /// Parses `--skip`: whitespace is ignored, so "a, b" and "a,b" mean the same.
-    /// Throws for the first id that isn't an item.
-    public static func parseSkip(_ value: String) throws(PreflightError) -> Set<Item> {
+    /// Throws for the first id that isn't an item `command` knows.
+    public static func parseSkip(_ value: String, command: CommandName = .product) throws(PreflightError) -> Set<Item> {
         let compact = String(value.unicodeScalars.filter { !" \t\n\u{0B}\u{0C}\r".unicodeScalars.contains($0) })
         var items = Set<Item>()
         for id in compact.split(separator: ",", omittingEmptySubsequences: true) {
-            guard let item = Item(rawValue: String(id)) else {
+            guard let item = Item(rawValue: String(id)), Item.known(by: command).contains(item) else {
                 throw .unknownItem(String(id))
             }
             items.insert(item)

@@ -66,7 +66,15 @@ struct CommandLineOptionTests {
         #expect(PreflightError.unknownItem("x").description
             ==
             "Unknown item 'x'. Items: derived-data simulators device-installs device-support swiftpm-cache "
+            + "swiftpm-builds xcode-builds gradle-builds cocoapods-pods cargo-builds node-modules npm-cache homebrew "
+            + "tool-caches")
+        #expect(PreflightError.unknownItem("x").description(for: .original)
+            ==
+            "Unknown item 'x'. Items: derived-data simulators device-installs device-support swiftpm-cache "
             + "swiftpm-builds xcode-builds gradle-builds npm-cache homebrew tool-caches")
+        #expect(throws: PreflightError.unknownItem("node-modules")) {
+            try ScanConfig.parseSkip("node-modules", command: .original)
+        }
     }
 
     @Test

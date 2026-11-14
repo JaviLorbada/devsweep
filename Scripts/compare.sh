@@ -89,6 +89,15 @@ make_home() {
   mkdir -p "$ws/Tracked"; touch "$ws/Tracked/Package.swift"; fill "$ws/Tracked/.build"
   git -C "$ws/Tracked" init -q; git -C "$ws/Tracked" add -f .build/file
 
+  # Other languages' folders, which only devsweep lists: as devclean, the
+  # binary leaves them alone, as the script does, and still searches inside
+  # target folders for the script's build folders.
+  mkdir -p "$ws/web"; touch "$ws/web/package.json"; fill "$ws/web/node_modules"
+  touch "$ws/P3/Podfile.lock"; fill "$ws/P3/Pods"
+  mkdir -p "$ws/ferris"; touch "$ws/ferris/Cargo.toml"; fill "$ws/ferris/target"
+  mkdir -p "$ws/ferris/target/bridge"; touch "$ws/ferris/target/bridge/Package.swift"
+  fill "$ws/ferris/target/bridge/.build"
+
   # Xcodes
   local app
   for app in "Xcode.app 27.0 27A266a" "Xcode-27.1.app 27.1 27A9269"; do

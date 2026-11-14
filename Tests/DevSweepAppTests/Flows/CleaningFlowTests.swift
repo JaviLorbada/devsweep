@@ -251,4 +251,47 @@ struct FolderCleaningFlowTests {
         #expect(FileManager.default.fileExists(atPath: atlas))
         #expect(app.scan.rows[.swiftpmBuilds]?.result == before)
     }
+
+    @Test(arguments: [true, false])
+    func `ticked node_modules folders go, to the Trash when it's on, and the others stay`(
+        moveToTrash: Bool) async throws
+    {
+        let home = TemporaryHome()
+        let projects = "\(home.path)/Workspace"
+        for (name, kilobytes) in [("web", 256), ("docs", 64), ("site", 32)] {
+            write(kilobytes, to: "\(projects)/\(name)/node_modules/react")
+            FileManager.default.createFile(atPath: "\(projects)/\(name)/package.json", contents: Data())
+        }
+        let app = await scannedApp(home: home, projectFolders: projects)
+        let before = try #require(app.scan.rows[.nodeModules]?.result)
+        #expect(!app.marks.marked.contains(.nodeModules), "never ticked by default")
+        #expect(PartsList.listsFolders(before))
+        let folder = { (name: String) in try #require(before.paths.first { $0.hasSuffix("/\(name)/node_modules") }) }
+        let web = try folder("web"), docs = try folder("docs"), site = try folder("site")
+        #expect(PartsList.folderNames(before.paths)[web] == "web")
+
+        app.cleaning.moveToTrash = moveToTrash
+        app.marks.setMarked(.folder(web), of: .nodeModules, true)
+        app.marks.setMarked(.folder(docs), of: .nodeModules, true)
+        await app.cleaning.requestCleanParts(of: .nodeModules)
+        if !moveToTrash {
+            for _ in 0..<100 where app.cleaning.pendingClean == nil {
+                try? await Task.sleep(for: .milliseconds(20))
+            }
+            let pending = try #require(app.cleaning.pendingClean, "deleting for good asks first")
+            await app.cleaning.confirmClean(pending)
+        }
+        for _ in 0..<200 where app.cleaning.lastPartsClean(of: .nodeModules) == nil {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+
+        #expect(!FileManager.default.fileExists(atPath: web))
+        #expect(!FileManager.default.fileExists(atPath: docs))
+        #expect(FileManager.default.fileExists(atPath: "\(site)/react/blob"))
+        let trashed = (try? FileManager.default.contentsOfDirectory(atPath: "\(home.root)/Trash")) ?? []
+        #expect(trashed.sorted() == (moveToTrash ? ["node_modules", "node_modules 2"] : []))
+        let left = try #require(app.scan.rows[.nodeModules]?.result)
+        #expect(left.paths == [site])
+        #expect(left.label == "node_modules folders (1)")
+    }
 }

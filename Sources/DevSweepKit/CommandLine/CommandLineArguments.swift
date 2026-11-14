@@ -82,9 +82,15 @@ public struct CommandLineOptions: Sendable, Equatable {
     }
 
     /// The help text, naming the command as it was run. Only devsweep lists
-    /// `--version`; the script's help is the script's.
+    /// `--version` and the items the script doesn't have; the script's help is
+    /// the script's.
     public static func usage(_ command: CommandName = .product) -> String {
         let version = command == .product ? "\n  --version        Show the version" : ""
+        let otherLanguages = command == .product
+            ? "\n  cocoapods-pods   Pods folders next to a Podfile.lock"
+            + "\n  cargo-builds     target folders next to a Cargo.toml"
+            + "\n  node-modules     node_modules folders next to a package.json"
+            : ""
         return """
         Usage: \(command.name) [--run [--yes]] [--skip ITEMS] [--projects DIRS]
 
@@ -112,7 +118,7 @@ public struct CommandLineOptions: Sendable, Equatable {
           swiftpm-builds   .build folders next to a Package.swift
           xcode-builds     build folders with Xcode output, next to an Xcode
                            project, workspace or Package.swift
-          gradle-builds    build folders next to a Gradle build file
+          gradle-builds    build folders next to a Gradle build file\(otherLanguages)
           npm-cache        npm's download cache
           homebrew         Old Homebrew versions and downloads
           tool-caches      CocoaPods, Carthage, Sourcery, Playwright and

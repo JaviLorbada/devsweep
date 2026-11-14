@@ -18,7 +18,7 @@ public enum PreflightError: Error, Sendable, Equatable, CustomStringConvertible 
         case .badHome:
             "HOME must be your home folder."
         case let .unknownItem(id):
-            "Unknown item '\(id)'. Items: \(Item.idList)"
+            "Unknown item '\(id)'. Items: \(Item.idList(for: command))"
         }
     }
 }

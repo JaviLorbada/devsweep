@@ -46,7 +46,7 @@ public enum CommandLineSession {
         do throws(PreflightError) {
             // The script's preflight order: root and HOME first, then --skip.
             _ = try PathPolicy.preflight(home: environment["HOME"] ?? "", effectiveUserID: effectiveUserID)
-            let skipped = try ScanConfig.parseSkip(options.skip ?? "")
+            let skipped = try ScanConfig.parseSkip(options.skip ?? "", command: command)
             let config = ScanConfig.fromEnvironment(
                 environment,
                 projects: options.projects,

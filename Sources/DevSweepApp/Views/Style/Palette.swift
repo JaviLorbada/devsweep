@@ -21,7 +21,10 @@ enum Palette {
         case .swiftpmCache: Color(light: 0xC94A1C, dark: 0xD95926)
         case .swiftpmBuilds: Color(light: 0xEB6834, dark: 0xEE9A74)
         case .homebrew: Color(light: 0x1BAF7A, dark: 0x199E70)
+        case .nodeModules: Color(light: 0xC68206, dark: 0xA46B04)
         case .npmCache: Color(light: 0xEDA100, dark: 0xC98500)
+        case .cargoBuilds: Color(light: 0x792247, dark: 0x99335A)
+        case .cocoapodsPods: Color(light: 0xA03361, dark: 0xB73F6E)
         case .toolCaches: Color(light: 0xC9497C, dark: 0xD55181)
         case .gradleBuilds: Color(light: 0xE87BA4, dark: 0xEA9DBD)
         }

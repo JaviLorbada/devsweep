@@ -32,6 +32,15 @@ As `devsweep` the tool also takes `--version`, and its help lists it; the
 script has none, so under its name `--version` is an unknown option and the
 help is the script's.
 
+The same goes for the items the script doesn't have: `cocoapods-pods`,
+`cargo-builds` and `node-modules`. As `devsweep` the tool lists them, and
+its help and `--skip` name them. Under the script's name it skips them
+(`Item.known(by:)`), `--skip` rejects them with the script's error and its
+list of items, and the help leaves them out, so no search for them runs and
+the report is the script's. Its searches for `.build` and `build` folders
+still look inside `.venv` and `target` folders, as the script's `find` does;
+only the searches for the other languages' folders keep out of each other's.
+
 The whole run, from preflight to "Done.", is `CommandLineSession` in the
 kit, writing to a `Terminal`; the binary gives it standard input and output
 and the tests a buffer, so the tests exercise the code the binary runs.

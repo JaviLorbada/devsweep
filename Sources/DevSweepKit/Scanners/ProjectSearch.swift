@@ -10,7 +10,15 @@ actor ProjectSearch {
     /// first, while searches for other names run at the same time.
     private var searches: [String: Task<[String], Never>] = [:]
 
+    /// Never descended into, as by the bash script's find. A search for one
+    /// of them still finds it.
     static let prunedNames: Set<String> = [".git", "node_modules", "Pods", "DerivedData"]
+
+    /// Folders other languages' tools fill with installed packages and build
+    /// output. A search for one never descends into any of them, so one
+    /// inside another, like a package's own node_modules in a Python
+    /// environment, is never listed: it belongs to the folder around it.
+    static let toolFolderNames: Set<String> = ["node_modules", ".venv", "target", "Pods"]
 
     init(roots: [String], homeReal: String) {
         self.roots = roots
@@ -30,20 +38,22 @@ actor ProjectSearch {
     }
 
     private static func walk(roots: [String], library: String, name: String) -> [String] {
+        let isToolFolder = self.toolFolderNames.contains(name)
+        let pruned = isToolFolder ? self.prunedNames.union(self.toolFolderNames) : self.prunedNames
         var found: [String] = []
         for root in roots {
             FileTree.walk(root) { entry in
                 if Task.isCancelled {
                     return .stop
                 }
-                if entry.path.bytesEqual(library) || self.prunedNames.contains(entry.name) {
+                if entry.path.bytesEqual(library) {
                     return .skipChildren
                 }
                 if entry.kind == .directory || entry.kind == .unreadable, entry.name == name {
                     found.append(entry.path)
                     return .skipChildren
                 }
-                return .proceed
+                return pruned.contains(entry.name) ? .skipChildren : .proceed
             }
         }
         return found
