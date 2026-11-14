@@ -38,15 +38,15 @@ struct RingChart: View {
                     self.select($0)
                 }
                 .frame(width: diameter * 0.7, height: diameter * 0.7)
+                let total = SpokenText.total(self.scan.tally, isScanning: self.scan.isScanning)
                 VStack(spacing: 2) {
-                    Text(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
+                    Text(total.label)
                         .font(.system(size: diameter < 200 ? 22 : 30, weight: .bold))
                         .monospacedDigit()
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                         .contentTransition(.numericText())
-                    Text(self.scan
-                        .isScanning ? (self.scan.tally.showsPrevious ? "updating" : "found so far") : "reclaimable")
+                    Text(total.value)
                         .font(diameter < 200 ? .caption : .callout)
                         .foregroundStyle(.muted)
                 }
@@ -68,21 +68,16 @@ struct RingChart: View {
         }
     }
 
-    /// Each family, then its items, clockwise as the ring draws them, each
-    /// with its size and share.
+    /// Each item clockwise, as the outer ring draws them, with its size and
+    /// share. The families are the legend's, read after the ring.
     private var segmentElements: some View {
         let tally = self.scan.tally
-        return ForEach(Family.allCases) { family in
+        let rows = Family.allCases.flatMap { $0.items.compactMap { self.scan.rows[$0] } }
+        return ForEach(rows) { row in
             Rectangle()
-                .spoken(SpokenText.family(family, in: tally))
-                .accessibilityAddTraits(.isButton)
-                .accessibilityAction { self.overview.pick(family) }
-            ForEach(family.items.compactMap { self.scan.rows[$0] }) { row in
-                Rectangle()
-                    .spoken(SpokenText.item(row, in: tally))
-                    .accessibilityAddTraits(self.overview.selection == row.item ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityAction { self.overview.select(row.item) }
-            }
+                .spoken(SpokenText.item(row, in: tally))
+                .accessibilityAddTraits(self.overview.selection == row.item ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAction { self.overview.select(row.item) }
         }
     }
 

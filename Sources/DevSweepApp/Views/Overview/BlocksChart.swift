@@ -11,21 +11,18 @@ struct BlocksChart: View {
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
             VStack(alignment: .leading, spacing: 14) {
-                let total = SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes)
-                let word = self.scan.isScanning ? (self.scan.tally.showsPrevious ? "updating" : "found so far") :
-                    "reclaimable"
+                let total = SpokenText.total(self.scan.tally, isScanning: self.scan.isScanning)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(total)
+                    Text(total.label)
                         .font(.largeTitle.weight(.bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
-                    Text(word)
+                    Text(total.value)
                         .font(.callout)
                         .foregroundStyle(.muted)
                 }
-                // "618.5 GB, reclaimable", as one element.
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(total), \(word)")
+                // The chart's summary says it.
+                .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Family.allCases) { family in
                         Button {
@@ -54,6 +51,11 @@ struct BlocksChart: View {
                 TreemapCells(size: proxy.size)
             }
         }
+        // One element that sums the chart up, holding the families and then
+        // the blocks, largest first. A group has no value VoiceOver reads, so
+        // the summary is its label.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(SpokenText.summary(self.scan.tally, isScanning: self.scan.isScanning))
     }
 
     /// The gap around each cell.
@@ -149,9 +151,6 @@ private struct TreemapCells: View {
             }
         }
         .frame(width: self.size.width, height: self.size.height, alignment: .topLeading)
-        // A group has no value VoiceOver reads, so the summary is its label.
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(SpokenText.summary(self.scan.tally, isScanning: self.scan.isScanning))
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: cells.map(\.frame))
     }
 }

@@ -20,6 +20,11 @@ struct AccessibilityTree {
         let children: [Element]
         fileprivate let object: NSObject
 
+        /// A heading, which VoiceOver can jump between.
+        var isHeading: Bool {
+            self.role == "AXHeading"
+        }
+
         /// Itself and everything inside it, depth first: the order VoiceOver reads them.
         var all: [Element] {
             [self] + self.children.flatMap(\.all)

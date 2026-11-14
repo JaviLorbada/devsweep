@@ -243,7 +243,12 @@ struct PartsList: View {
         // One element a line, read in the list's order: pressing it ticks
         // the part, or opens the line that sums the rest.
         .accessibilityElement(children: .ignore)
-        .spoken(SpokenText.line(line.name, kilobytes: line.kilobytes, status: line.status, marked: self.marked(line)))
+        .spoken(SpokenText.line(
+            line.name,
+            detail: line.detail,
+            kilobytes: line.kilobytes,
+            status: line.status,
+            marked: self.marked(line)))
         .accessibilityAddTraits(line.part == nil ? .isButton : self.selectable ? .isToggle : [])
         .accessibilityAction { self.press(line) }
     }

@@ -69,7 +69,8 @@ struct ItemDetails: View {
     }
 
     private func header(_ row: ScanRow) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let headline = SpokenText.headline(row)
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 7) {
                 Dot(color: Palette.color(row.item.family))
                 Eyebrow(text: row.item.family.name)
@@ -78,17 +79,18 @@ struct ItemDetails: View {
                 .font(.title3.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
             HStack(alignment: .firstTextBaseline, spacing: 10) {
-                Text(self.heroSize(row))
+                // A dash until there is a size, a question mark when it can't be known.
+                Text(headline.label.isEmpty ? (row.sizeKnown ? "–" : "?") : headline.label)
                     .font(.largeTitle.weight(.bold))
                     .monospacedDigit()
                     .contentTransition(.numericText())
-                Text(self.stateWord(row))
+                Text(headline.value)
                     .font(.callout.weight(.medium))
                     .foregroundStyle(row.state == .cleaned ? AnyShapeStyle(.green) : AnyShapeStyle(.muted))
             }
-            // "204.8 GB, reclaimable", as one element.
+            // "204.8 GB, reclaimable" as one element; "waiting" alone, not the dash.
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(self.heroSize(row)), \(self.stateWord(row))")
+            .accessibilityLabel(headline.sentence)
         }
     }
 
@@ -129,35 +131,6 @@ struct ItemDetails: View {
                 Button("Reveal in Finder") { Finder.reveal(paths) }
                     .buttonStyle(.link)
                     .font(.callout)
-            }
-        }
-    }
-
-    private func heroSize(_ row: ScanRow) -> String {
-        switch row.state {
-        case .waiting: row.showsPrevious ? SizeText.of(kilobytes: row.shownKilobytes) : "–"
-        case .notMeasured: "–"
-        case .measuring: SizeText.of(bytes: row.progressBytes)
-        case .measured: !row.sizeKnown && row.kilobytes == 0 ? "?" : SizeText.of(kilobytes: row.kilobytes)
-        case .cleaning: SizeText.of(kilobytes: row.leftKilobytes)
-        case .cleaned: SizeText.of(kilobytes: row.kilobytes)
-        }
-    }
-
-    private func stateWord(_ row: ScanRow) -> String {
-        switch row.state {
-        case .waiting: row.showsPrevious ? "last scan, waiting" : "waiting"
-        case .measuring: "measuring"
-        case .notMeasured: "not measured"
-        case .cleaning: row.cleaningProgress == nil ? "cleaning" : "left to delete"
-        case .cleaned: row.canPutBack ? "in Trash" : "deleted"
-        case .measured:
-            if !row.sizeKnown {
-                "size unknown"
-            } else if row.result?.isEmpty ?? true {
-                "nothing to clean"
-            } else {
-                "reclaimable"
             }
         }
     }
