@@ -186,10 +186,14 @@ stubs="$work/stubs"
 mkdir -p "$stubs"
 now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 # iOS 18.5 lives in the Cryptex folder and has a download of its own, as an
-# older runtime can: small here, since the app measures what is on disk.
+# older runtime can, as big as a real one: 9.1 GB in APFS clones of one 64 MB
+# file. They share their blocks on disk, yet each counts, as du counts them.
 download="$work/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime/c0d3fd05.asset"
 mkdir -p "$download/AssetData"
 dd if=/dev/zero of="$download/AssetData/044-89849-100.dmg" bs=1048576 count=64 2>/dev/null
+for part in $(seq 1 135); do
+  cp -c "$download/AssetData/044-89849-100.dmg" "$download/AssetData/part-$part"
+done
 cat > "$work/runtimes.json" <<EOF
 {
   "6A1B2C3D-0000-4000-8000-000000000001": { "build": "24B5055e", "version": "27.1", "sizeBytes": 9019431321,
