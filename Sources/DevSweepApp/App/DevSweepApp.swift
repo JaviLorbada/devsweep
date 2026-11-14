@@ -5,17 +5,34 @@ import SwiftUI
 @main
 struct DevSweepApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
-    @State private var app = AppCoordinator(notifier: Self.notifier)
+    @State private var app = AppCoordinator(notifier: Self.notifier, updater: Self.updater)
 
     /// Development runs, with or without a fake home, never ask to notify.
     private static var notifier: NotificationPoster {
+        self.isDevelopmentRun ? SilentNotificationPoster() : UserNotificationPoster()
+    }
+
+    /// Sparkle, in a build with a feed. Development runs show the update
+    /// controls without checking anything.
+    private static var updater: (any AppUpdating)? {
         #if DEBUG
-        let environment = ProcessInfo.processInfo.environment
-        if DebugLaunch.isRequested || environment["DEVSWEEP_SNAPSHOT"] != nil || environment["DEVSWEEP_SKIP"] != nil {
-            return SilentNotificationPoster()
+        if self.isDevelopmentRun {
+            return StandInUpdater()
         }
         #endif
-        return UserNotificationPoster()
+        return SparkleUpdater.forThisBuild()
+    }
+
+    /// A development run that captures, probes or skips items, on a fake
+    /// home or the real one.
+    private static var isDevelopmentRun: Bool {
+        #if DEBUG
+        let environment = ProcessInfo.processInfo.environment
+        return DebugLaunch.isRequested || environment["DEVSWEEP_SNAPSHOT"] != nil
+            || environment["DEVSWEEP_SKIP"] != nil
+        #else
+        return false
+        #endif
     }
 
     init() {
@@ -46,7 +63,7 @@ struct DevSweepApp: App {
         .windowResizability(.contentMinSize)
         .defaultLaunchBehavior(.presented)
         .commands {
-            AppCommands(scan: self.app.scan, window: self.app.window)
+            AppCommands(scan: self.app.scan, window: self.app.window, updates: self.app.updates)
             HelpCommands(links: self.app.links)
         }
 
