@@ -150,7 +150,7 @@ struct ToolOutputParsingTests {
         let devices = Data(#"{ "devices": { "com.apple.CoreSimulator.SimRuntime.iOS-27-0": [ {}, {}, {} ] } }"#.utf8)
         let now = try #require(JavaScriptDate.parse("2026-10-21T12:00:00Z")
             .map { Date(timeIntervalSince1970: $0 / 1000) })
-        let parsed = ExtrasScanner.parseRuntimes(runtimes, devices: devices, now: now)
+        let parsed = ExtrasScanner.runtimes(SimctlRuntimeList(runtimes), devices: SimctlDeviceList(devices), now: now)
         #expect(parsed.map(\.id) == ["B", "A", "V", "X", "T", "W"])
         #expect(parsed[0].kilobytes == 2)
         #expect(parsed[0].simulatorCount == 3)
@@ -164,12 +164,31 @@ struct ToolOutputParsingTests {
         #expect(parsed[5].flagReason(staleDays: 90) == "No simulators")
     }
 
+    func runtimes(_ runtimes: String, devices: String = "") -> [SimulatorRuntime] {
+        ExtrasScanner.runtimes(
+            SimctlRuntimeList(Data(runtimes.utf8)),
+            devices: SimctlDeviceList(Data(devices.utf8)),
+            now: Date())
+    }
+
     @Test
     func `broken runtime JSON lists nothing`() {
-        #expect(ExtrasScanner.parseRuntimes(Data("nope".utf8), devices: Data(), now: Date()).isEmpty)
-        #expect(ExtrasScanner.parseRuntimes(Data("[]".utf8), devices: Data(), now: Date()).isEmpty)
-        #expect(ExtrasScanner
-            .parseRuntimes(Data(#"{"A": {"version": "1"}}"#.utf8), devices: Data("x".utf8), now: Date()).count == 1)
+        #expect(self.runtimes("nope").isEmpty)
+        #expect(self.runtimes("[]").isEmpty)
+        #expect(self.runtimes(#"{"A": {"version": "1"}}"#, devices: "x").map(\.simulatorCount) == [0])
+    }
+
+    @Test
+    func `a runtime that isn't an object is left out, and a field of another type counts as missing`() {
+        let runtimes = self.runtimes(
+            #"{ "A": 5, "B": { "version": 27, "build": 0, "sizeBytes": "big", "lastUsedAt": 3 }, "C": [] }"#,
+            devices: #"{ "devices": { "": [ {} ], "other": "x" } }"#)
+        #expect(runtimes.map(\.id) == ["B"])
+        #expect(runtimes[0].version == "27")
+        #expect(runtimes[0].build == "?")
+        #expect(runtimes[0].kilobytes == 0)
+        #expect(runtimes[0].lastUsedDay == nil)
+        #expect(runtimes[0].simulatorCount == 1)
     }
 
     @Test(arguments: [
