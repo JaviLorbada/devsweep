@@ -33,7 +33,7 @@ body:
     id: devsweep-version
     attributes:
       label: DevSweep version
-      description: From its About window, or the release you downloaded.
+      description: From the app's About window, or `devsweep --version` for the command line.
     validations:
       required: true
   - type: input

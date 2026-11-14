@@ -154,6 +154,8 @@ run_one() {
     # Both run as devclean, so both read the script's variables.
     export DEVCLEAN_PROJECT_DIRS="$home/Workspace:$home/Missing" DEVCLEAN_APPLICATIONS_DIRS="$home/Applications"
     export PATH="$work/stubs:$PATH"
+    # An empty log for a run that calls no tool, so the two still compare.
+    : > "$STUB_LOG"
     set +e
     "$program" "$@" > "$work/$label.out" 2> "$work/$label.err"
     echo "$?" > "$work/$label.status"
@@ -185,6 +187,14 @@ echo "free space seen: bash '$(grep '^  Free space now' "$work/bash-report.out" 
   "swift '$(grep '^  Free space now' "$work/swift-report.out" | tr -s ' ')'" >&2
 sed -i '' -E 's/^(  Free space now +).*/\1(varies)/' "$work/bash-report.out" "$work/swift-report.out"
 compare report || failed=1
+
+# Under the script's name, --help is the script's and --version, which only
+# devsweep has, the script's "Unknown option".
+for option in help version; do
+  run_one "bash-$option" "$script" "$work/home" "--$option"
+  run_one "swift-$option" "$binary" "$work/home" "--$option"
+  compare "$option" || failed=1
+done
 
 if [[ -n "${RUN:-}" ]]; then
   # Built from scratch rather than copied: cp makes sparse copies, which du

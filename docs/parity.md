@@ -17,9 +17,9 @@ Three layers, all in CI. [development.md](development.md) has the commands.
    repository and run against the Swift binary: 57 of 57 pass. This is the
    acceptance test.
 3. **Side by side**: the bash script and the binary run against the same
-   fake home with the same stubs on `PATH`, and their output, exit status,
-   tool calls and the folders left after `--run` are compared. They are
-   identical.
+   fake home with the same stubs on `PATH`, for the report, `--help`,
+   `--version` and `--run`, and their output, exit status, tool calls and
+   the folders left after `--run` are compared. They are identical.
 
 ## How the tool matches the script
 
@@ -28,6 +28,9 @@ script's. Arguments are read with the script's own rules first (left to
 right, the first unknown option fails, `--help` wins only if nothing before
 it failed, `--skip` and `--projects` take the next argument whatever it is),
 then handed to swift-argument-parser, which keeps the script's exact errors.
+As `devsweep` the tool also takes `--version`, and its help lists it; the
+script has none, so under its name `--version` is an unknown option and the
+help is the script's.
 
 The whole run, from preflight to "Done.", is `CommandLineSession` in the
 kit, writing to a `Terminal`; the binary gives it standard input and output

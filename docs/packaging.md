@@ -28,8 +28,9 @@ The script builds the `DevSweepApp` executable and wraps it in a bundle:
 
 - **Info.plist** gets the bundle id, name and version from `version.env`:
   `PRODUCT_NAME`, `BUNDLE_ID`, `MARKETING_VERSION` and `BUILD_NUMBER`. Change
-  them there, never in the plist. `ProductInfo.swift` holds the same names for
-  the code, and a test fails when the two disagree.
+  them there, never in the plist. `ProductInfo.swift` holds the same names and
+  version for the code, and a test fails when the two disagree. The command
+  line tool has no Info.plist; `devsweep --version` prints them from there.
 - **Which build it is** goes in the plist too: `DevSweepCommit`, the short
   commit; `DevSweepTreeDirty`, whether the tree had uncommitted changes;
   `DevSweepReleaseSigned`, whether it was signed with a Developer ID; and

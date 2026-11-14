@@ -17,12 +17,13 @@ struct ProductInfoTests {
         return values
     }
 
-    @Test func `the names in the code match version.env`() throws {
+    @Test func `the names and version in the code match version.env`() throws {
         let file = try versionFile()
         #expect(file["PRODUCT_NAME"] == ProductInfo.name)
         #expect(file["CLI_NAME"] == ProductInfo.cliName)
         #expect(file["BUNDLE_ID"] == ProductInfo.bundleIdentifier)
-        #expect(file["MARKETING_VERSION"]?.isEmpty == false)
+        #expect(file["MARKETING_VERSION"] == ProductInfo.version, "Set ProductInfo.version to version.env's")
+        #expect(file["BUILD_NUMBER"] == ProductInfo.build, "Set ProductInfo.build to version.env's")
     }
 
     @Test func `the build number is the date and time the release was cut`() throws {

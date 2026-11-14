@@ -14,6 +14,7 @@ public struct CommandLineOptions: Sendable, Equatable {
 
     public enum Outcome: Sendable, Equatable {
         case help
+        case version
         case failure(String)
         case options(CommandLineOptions)
     }
@@ -21,6 +22,8 @@ public struct CommandLineOptions: Sendable, Equatable {
     /// Reads arguments left to right, as the script did: the first unknown
     /// option fails, `--help` wins only if nothing before it failed, and
     /// `--skip` and `--projects` take the next argument whatever it is.
+    /// `--version` is devsweep's alone, and wins as `--help` does; the script
+    /// has none, so under its name it is an unknown option, as there.
     public static func check(_ arguments: [String], command: CommandName = .product) -> Outcome {
         var options = CommandLineOptions()
         var index = 0
@@ -37,6 +40,8 @@ public struct CommandLineOptions: Sendable, Equatable {
                 if argument == "--skip" { options.skip = arguments[index] } else { options.projects = arguments[index] }
             case "-h", "--help":
                 return .help
+            case "--version" where command == .product:
+                return .version
             default:
                 return .failure("Unknown option: \(argument) (see \(command.name) --help)")
             }
@@ -56,9 +61,17 @@ public struct CommandLineOptions: Sendable, Equatable {
         return arguments
     }
 
-    /// The help text, naming the command as it was run.
+    /// What `devsweep --version` prints: the version and build, as About
+    /// writes them.
+    public static var versionText: String {
+        "\(CommandName.product.name) \(ProductInfo.version) (\(ProductInfo.build))\n"
+    }
+
+    /// The help text, naming the command as it was run. Only devsweep lists
+    /// `--version`; the script's help is the script's.
     public static func usage(_ command: CommandName = .product) -> String {
-        """
+        let version = command == .product ? "\n  --version        Show the version" : ""
+        return """
         Usage: \(command.name) [--run [--yes]] [--skip ITEMS] [--projects DIRS]
 
         Shows how much space developer caches take up. With --run, deletes them.
@@ -73,7 +86,7 @@ public struct CommandLineOptions: Sendable, Equatable {
           --projects DIRS  Colon-separated folders to search for build folders.
                            Default: $\(command.variable("PROJECT_DIRS")) if set, otherwise
                            ~/Developer:~/Development:~/dev:~/Documents/Workspace:~/Projects
-          -h, --help       Show this help
+          -h, --help       Show this help\(version)
 
         Items:
           derived-data     Xcode DerivedData, including the compilation cache

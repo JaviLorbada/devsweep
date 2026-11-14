@@ -1,7 +1,7 @@
 import Foundation
 
-/// The product's names, in one place with `version.env`, so a new name is a
-/// change to these two files.
+/// The product's names and version, in one place with `version.env`, so a new
+/// name or version is a change to these two files.
 public enum ProductInfo {
     /// The app's name, in the menu bar, the window and the text.
     public static let name = "DevSweep"
@@ -19,15 +19,13 @@ public enum ProductInfo {
     /// The app's UserDefaults domain: its bundle's standard defaults.
     public static let defaultsSuite = bundleIdentifier
 
-    /// The version the bundle was packaged with, from `version.env`.
-    public static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
-    }
+    /// The version, as in `version.env`; a test keeps the two equal. The
+    /// command line tool has no Info.plist to read it from, so the app's
+    /// About and `devsweep --version` both read it here.
+    public static let version = "0.6.0"
 
-    /// The build number the bundle was packaged with, from `version.env`.
-    public static var build: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "dev"
-    }
+    /// The build number, as in `version.env`: when the release was cut, in UTC.
+    public static let build = "202611141450"
 
     /// Where the project lives; the About window and the Help menu link here.
     public static let repository = URL(string: "https://github.com/JaviLorbada/devsweep")!
