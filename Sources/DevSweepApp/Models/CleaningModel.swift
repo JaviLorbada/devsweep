@@ -17,7 +17,7 @@ final class CleaningModel: CleaningTotals {
     /// A clean waiting on an answer, which the window asks.
     private(set) var pendingClean: PendingClean?
     /// What the window says after a clean that left something alone.
-    private(set) var notice: CleanNotice?
+    private(set) var cleanNotice: CleanNotice?
     private(set) var trashedThisSession: Int64 = 0
     private(set) var deletedThisSession: Int64 = 0
     /// Each item's last parts clean, which the inspector reports and can put
@@ -43,8 +43,8 @@ final class CleaningModel: CleaningTotals {
         self.pendingClean = nil
     }
 
-    func dismissNotice() {
-        self.notice = nil
+    func dismissCleanNotice() {
+        self.cleanNotice = nil
     }
 
     /// A new scan: the last parts cleans no longer match the rows.
@@ -107,7 +107,7 @@ final class CleaningModel: CleaningTotals {
         if await self.apps.quit(apps) {
             self.confirmOrClean(pending.items, parts: pending.parts, afterAlert: true)
         } else {
-            self.notice = .notQuit(apps)
+            self.cleanNotice = .notQuit(apps)
         }
     }
 
@@ -226,7 +226,7 @@ final class CleaningModel: CleaningTotals {
         if parts.contains(where: { $0.needsXcodeClosed(in: item) }) {
             await self.apps.refresh()
             if !self.apps.running.isEmpty {
-                self.notice = .appsOpen(self.apps.running)
+                self.cleanNotice = .appsOpen(self.apps.running)
                 return
             }
         }
@@ -278,7 +278,7 @@ final class CleaningModel: CleaningTotals {
         guard let notice else {
             return
         }
-        self.notice = notice
+        self.cleanNotice = notice
     }
 
     // MARK: Put Back

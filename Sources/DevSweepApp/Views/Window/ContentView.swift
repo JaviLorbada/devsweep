@@ -175,15 +175,15 @@ struct ContentView: View {
                 .environment(self.scan)
         }
         .alert(
-            self.cleaning.notice?.title ?? "",
+            self.cleaning.cleanNotice?.title ?? "",
             isPresented: Binding(
-                get: { self.cleaning.notice != nil },
+                get: { self.cleaning.cleanNotice != nil },
                 set: {
                     if !$0 {
-                        self.cleaning.dismissNotice()
+                        self.cleaning.dismissCleanNotice()
                     }
                 }),
-            presenting: self.cleaning.notice)
+            presenting: self.cleaning.cleanNotice)
         { _ in
             Button("OK") {}
         } message: { notice in
