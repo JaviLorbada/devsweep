@@ -213,10 +213,10 @@ struct CleaningModelTests {
 
         await cleaning.requestCleanParts(of: .derivedData)
         await waitUntil { cleaning.lastPartsClean(of: .derivedData) != nil }
-        let clean = try #require(cleaning.lastPartsClean(of: .derivedData))
+        let partsClean = try #require(cleaning.lastPartsClean(of: .derivedData))
         let projectKilobytes = before.kilobytes(of: .folder(project))
-        #expect(clean.summary == "1 project")
-        #expect(clean.kilobytes == projectKilobytes)
+        #expect(partsClean.summary == "1 project")
+        #expect(partsClean.kilobytes == projectKilobytes)
         #expect(rows.rows[.derivedData]?.result?.kilobytes == before.kilobytes - projectKilobytes)
         #expect(self.marks.markedParts(of: .derivedData).isEmpty)
         #expect(cleaning.trashedThisSession == projectKilobytes)

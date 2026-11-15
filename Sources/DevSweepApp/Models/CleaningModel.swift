@@ -238,16 +238,16 @@ final class CleaningModel: CleaningTotals {
         let outcome = await self.countingDown(item) {
             await cleaner.clean(parts, of: result, mode: mode, progress: $0)
         }
-        let clean = PartsClean(outcome: outcome, before: result)
-        self.scan.finishCleaningParts(item, left: clean.left)
-        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) { self.marks.cleaned(clean.parts, of: item) }
-        if !clean.parts.isEmpty {
-            if clean.canPutBack {
-                self.trashedThisSession += clean.kilobytes
+        let partsClean = PartsClean(outcome: outcome, before: result)
+        self.scan.finishCleaningParts(item, left: partsClean.left)
+        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) { self.marks.cleaned(partsClean.parts, of: item) }
+        if !partsClean.parts.isEmpty {
+            if partsClean.canPutBack {
+                self.trashedThisSession += partsClean.kilobytes
             } else {
-                self.deletedThisSession += clean.kilobytes
+                self.deletedThisSession += partsClean.kilobytes
             }
-            self.partsCleans[item] = clean
+            self.partsCleans[item] = partsClean
         }
         self.scan.endCleaning(warnings: outcome.outcome.warnings)
         self.show(.leftAlone(outcome.outcome.warnings))
@@ -302,13 +302,13 @@ final class CleaningModel: CleaningTotals {
 
     /// Moves what the last parts clean of `item` put in the Trash back where it was.
     func putBackParts(of item: Item) async {
-        guard let clean = self.partsCleans[item], clean.canPutBack, let result = self.scan.rows[item]?.result,
+        guard let partsClean = self.partsCleans[item], partsClean.canPutBack, let result = self.scan.rows[item]?.result,
               let cleaner = self.scan.beginCleaning()
         else {
             return
         }
-        let putBack = await cleaner.putBack(clean.outcome.outcome)
-        let whole = clean.restoring(putBack, into: result)
+        let putBack = await cleaner.putBack(partsClean.outcome.outcome)
+        let whole = partsClean.restoring(putBack, into: result)
         self.scan.putBackParts(item, whole: whole)
         self.trashedThisSession = max(0, self.trashedThisSession - (whole.kilobytes - result.kilobytes))
         self.partsCleans[item] = nil

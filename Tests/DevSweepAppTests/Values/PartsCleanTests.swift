@@ -16,7 +16,7 @@ struct PartsCleanTests {
     }
 
     /// `parts` cleaned to the Trash, but for the folders in `failed`.
-    func clean(_ parts: [ItemPart: [String]], failed: [String] = []) -> PartsClean {
+    func partsClean(_ parts: [ItemPart: [String]], failed: [String] = []) -> PartsClean {
         var outcome = CleanOutcome(item: .derivedData, mode: .trash)
         for folder in parts.values.flatMap(\.self) {
             if failed.contains(folder) {
@@ -30,26 +30,26 @@ struct PartsCleanTests {
 
     @Test
     func `a project cleaned on its own says what went, what it took and what is left`() {
-        let clean = self.clean([.folder(self.project): [self.project]])
-        #expect(clean.parts == [.folder(self.project)])
-        #expect(clean.left == self.before.removing([.folder(self.project)]))
-        #expect(clean.kilobytes == self.before.kilobytes(of: .folder(self.project)))
-        #expect(clean.summary == "1 project")
-        #expect(clean.canPutBack)
+        let partsClean = self.partsClean([.folder(self.project): [self.project]])
+        #expect(partsClean.parts == [.folder(self.project)])
+        #expect(partsClean.left == self.before.removing([.folder(self.project)]))
+        #expect(partsClean.kilobytes == self.before.kilobytes(of: .folder(self.project)))
+        #expect(partsClean.summary == "1 project")
+        #expect(partsClean.canPutBack)
     }
 
     @Test
     func `a folder that failed takes nothing`() {
-        let clean = self.clean([.folder(self.project): [self.project]], failed: [self.project])
-        #expect(clean.parts.isEmpty)
-        #expect(clean.left == self.before)
-        #expect(clean.kilobytes == 0)
+        let partsClean = self.partsClean([.folder(self.project): [self.project]], failed: [self.project])
+        #expect(partsClean.parts.isEmpty)
+        #expect(partsClean.left == self.before)
+        #expect(partsClean.kilobytes == 0)
     }
 
     @Test
     func `putting it back makes the item whole again`() {
-        let clean = self.clean([.folder(self.project): [self.project]])
+        let partsClean = self.partsClean([.folder(self.project): [self.project]])
         let putBack = PutBackOutcome(restored: [self.project], failed: [])
-        #expect(clean.restoring(putBack, into: clean.left) == self.before)
+        #expect(partsClean.restoring(putBack, into: partsClean.left) == self.before)
     }
 }
