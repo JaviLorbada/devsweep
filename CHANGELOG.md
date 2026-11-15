@@ -6,6 +6,12 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+## 0.7.0
+
+DevSweep updates itself from this version on, and finds your projects'
+`node_modules`, Pods and Cargo `target` folders. Download this one by hand:
+the versions before it have no updater.
+
 - Help > Report a Problem… and Suggest an Idea… open the issue forms on
   GitHub in your browser, with DevSweep's version filled in, and for a
   problem the macOS version too. DevSweep sends nothing itself: you read
