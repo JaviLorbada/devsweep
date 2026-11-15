@@ -210,22 +210,16 @@ final class CleaningModel: CleaningTotals {
         let outcome = await self.countingDown(item) {
             await cleaner.clean(parts, of: result, mode: mode, progress: $0)
         }
-        let cleaned = outcome.cleaned
-        let left = result.removing(cleaned)
-        let freed = result.kilobytes - left.kilobytes
-        self.scan.finishCleaningParts(item, left: left)
-        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) { self.marks.cleaned(cleaned, of: item) }
-        if !cleaned.isEmpty {
-            if outcome.outcome.canPutBack {
-                self.trashedThisSession += freed
+        let clean = PartsClean(outcome: outcome, before: result)
+        self.scan.finishCleaningParts(item, left: clean.left)
+        withAnimation(Motion.animation(.easeInOut(duration: 0.4))) { self.marks.cleaned(clean.parts, of: item) }
+        if !clean.parts.isEmpty {
+            if clean.canPutBack {
+                self.trashedThisSession += clean.kilobytes
             } else {
-                self.deletedThisSession += freed
+                self.deletedThisSession += clean.kilobytes
             }
-            self.partsCleans[item] = PartsClean(
-                outcome: outcome,
-                before: result,
-                kilobytes: freed,
-                summary: CleanPrompt.partsSummary(cleaned, in: item))
+            self.partsCleans[item] = clean
         }
         self.scan.endCleaning(warnings: outcome.outcome.warnings)
         self.show(.leftAlone(outcome.outcome.warnings))
@@ -280,29 +274,11 @@ final class CleaningModel: CleaningTotals {
               let cleaner = self.scan.beginCleaning()
         else { return }
         let putBack = await cleaner.putBack(clean.outcome.outcome)
-        let restored = clean.outcome.restored(by: putBack)
-        let whole = result.restoring(restored, from: clean.before)
+        let whole = clean.restoring(putBack, into: result)
         self.scan.putBackParts(item, whole: whole)
         self.trashedThisSession = max(0, self.trashedThisSession - (whole.kilobytes - result.kilobytes))
         self.partsCleans[item] = nil
         self.scan.endCleaning(warnings: [])
         self.show(.notPutBack(putBack.failed.map(self.scan.tilde)))
-    }
-}
-
-extension CleaningModel {
-    /// A clean of some parts of an item, which the inspector reports.
-    struct PartsClean {
-        let outcome: PartsCleanOutcome
-        /// The item's result before, to put parts back as they were measured.
-        let before: ItemResult
-        /// What it took from the item's size.
-        let kilobytes: Int64
-        /// "2 projects", "3 folders".
-        let summary: String
-
-        var canPutBack: Bool {
-            self.outcome.outcome.canPutBack
-        }
     }
 }

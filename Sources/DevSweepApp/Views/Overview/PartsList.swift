@@ -271,7 +271,7 @@ struct PartsList: View {
     }
 
     /// "Moved 2 projects to the Trash, 25.2 GB. Put Back"
-    private func lastClean(_ clean: CleaningModel.PartsClean) -> some View {
+    private func lastClean(_ clean: PartsClean) -> some View {
         let size = SizeText.of(kilobytes: clean.kilobytes)
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(clean
