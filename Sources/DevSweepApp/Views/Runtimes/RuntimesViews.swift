@@ -258,7 +258,9 @@ struct RemoveRuntimeSheet: View {
                 }
                 .keyboardShortcut(.cancelAction)
                 Button("Remove Runtime", role: .destructive) {
-                    Task { await self.runtimes.remove(self.runtime) }
+                    Task {
+                        await self.runtimes.remove(self.runtime)
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.runtimes.removal.isRemoving)
@@ -274,8 +276,12 @@ enum RuntimeWords {
     /// "144 days unused, no simulators": the flag, short enough for a badge.
     static func badge(_ runtime: SimulatorRuntime, staleDays: Int) -> String {
         var parts: [String] = []
-        if let days = runtime.daysSinceUsed, days >= staleDays { parts.append("\(days) days unused") }
-        if runtime.simulatorCount == 0 { parts.append("no simulators") }
+        if let days = runtime.daysSinceUsed, days >= staleDays {
+            parts.append("\(days) days unused")
+        }
+        if runtime.simulatorCount == 0 {
+            parts.append("no simulators")
+        }
         return parts.joined(separator: ", ")
     }
 
@@ -301,7 +307,9 @@ enum RuntimeWords {
     /// "8.2 GB runtime and 9.1 GB download", for a runtime with a download of
     /// its own; nil for one without.
     static func parts(_ runtime: SimulatorRuntime) -> String? {
-        guard let download = runtime.downloadKilobytes else { return nil }
+        guard let download = runtime.downloadKilobytes else {
+            return nil
+        }
         return "\(SizeText.of(kilobytes: runtime.kilobytes - download)) runtime and "
             + "\(SizeText.of(kilobytes: download)) download"
     }
@@ -309,7 +317,9 @@ enum RuntimeWords {
     /// What its size is made of, for a runtime with a download of its own;
     /// nil for one without.
     static func size(_ runtime: SimulatorRuntime) -> String? {
-        guard let download = runtime.downloadKilobytes else { return nil }
+        guard let download = runtime.downloadKilobytes else {
+            return nil
+        }
         return "\(SizeText.of(kilobytes: runtime.kilobytes - download)) is the runtime, and "
             + "\(SizeText.of(kilobytes: download)) a download macOS keeps for it in /System/Library/AssetsV2, "
             + "which simctl leaves out of its size. Removing the runtime removes both."

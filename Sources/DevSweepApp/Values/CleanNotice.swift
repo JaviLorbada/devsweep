@@ -30,13 +30,17 @@ struct CleanNotice: Identifiable {
 
     /// What a clean left alone, a line each; nil when it left nothing.
     static func leftAlone(_ problems: [String]) -> CleanNotice? {
-        guard !problems.isEmpty else { return nil }
+        guard !problems.isEmpty else {
+            return nil
+        }
         return CleanNotice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
     }
 
     /// The folders a put back couldn't move back; nil when there are none.
     static func notPutBack(_ folders: [String]) -> CleanNotice? {
-        guard !folders.isEmpty else { return nil }
+        guard !folders.isEmpty else {
+            return nil
+        }
         return CleanNotice(
             title: "Some folders couldn't be put back",
             message: "Something now stands where they were, or the folder that held them changed. They are still "

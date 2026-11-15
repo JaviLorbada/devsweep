@@ -63,7 +63,9 @@ public struct LiveFileSystem: FileSystemAccess {
     public func modificationTime(_ path: String) -> Int { FileSystem.modificationTime(path) }
     public func contents(of path: String) -> Data? { FileManager.default.contents(atPath: path) }
     public func remove(_ path: String, progress: @escaping @Sendable (Int64) -> Void) throws {
-        if TreeRemover.remove(path, progress: progress) || !FileSystem.existsOrIsSymlink(path) { return }
+        if TreeRemover.remove(path, progress: progress) || !FileSystem.existsOrIsSymlink(path) {
+            return
+        }
         // Whatever the fast walk couldn't remove, FileManager tries again,
         // and says why when it can't either.
         try FileManager.default.removeItem(atPath: path)

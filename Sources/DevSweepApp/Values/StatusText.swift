@@ -29,7 +29,9 @@ enum StatusText {
         trashedKilobytes: Int64,
         deletedKilobytes: Int64) -> String
     {
-        if let startupError = facts.startupError { return startupError }
+        if let startupError = facts.startupError {
+            return startupError
+        }
         if facts.isScanning {
             let progress = "Scanning, \(facts.measured) of \(facts.items) items measured"
             if let previousScanDate = facts.previousScanDate, facts.showsPrevious {
@@ -58,7 +60,9 @@ enum StatusText {
     /// "Last scanned 3 hours ago." under the menu bar panel's totals, or
     /// what is happening.
     static func menuBar(_ facts: Facts) -> String {
-        if facts.isScanning { return "Scanning, \(facts.measured) of \(facts.items) items measured." }
+        if facts.isScanning {
+            return "Scanning, \(facts.measured) of \(facts.items) items measured."
+        }
         if let lastScan = facts.lastScan {
             return "Last scanned \(self.relative(lastScan, to: facts.now)). Scans again a day later while "
                 + "\(ProductInfo.name) runs."
@@ -71,7 +75,9 @@ enum StatusText {
 
     /// "just now", "3 minutes ago", "yesterday".
     static func relative(_ date: Date, to now: Date) -> String {
-        if now.timeIntervalSince(date) < 60 { return "just now" }
+        if now.timeIntervalSince(date) < 60 {
+            return "just now"
+        }
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
         formatter.dateTimeStyle = .named
@@ -90,40 +96,52 @@ enum StatusText {
     // MARK: Subtitles
 
     static func runtimes(_ runtimes: [SimulatorRuntime]?, isLoading: Bool) -> String {
-        guard let runtimes else { return isLoading ? "Listing runtimes" : "" }
+        guard let runtimes else {
+            return isLoading ? "Listing runtimes" : ""
+        }
         let count = runtimes.count == 1 ? "1 runtime" : "\(runtimes.count) runtimes"
         let kilobytes = runtimes.reduce(0) { $0 + $1.kilobytes }
         return "\(SizeText.of(kilobytes: kilobytes)) in \(count). \(ProductInfo.name) never removes these on its own."
     }
 
     static func xcodes(_ xcodes: [InstalledXcode]?, isLoading: Bool) -> String {
-        guard let xcodes else { return isLoading ? "Listing Xcodes" : "" }
+        guard let xcodes else {
+            return isLoading ? "Listing Xcodes" : ""
+        }
         let count = xcodes.count == 1 ? "1 Xcode" : "\(xcodes.count) Xcodes"
         let kilobytes = xcodes.reduce(0) { $0 + $1.kilobytes }
         return "\(SizeText.of(kilobytes: kilobytes)) in \(count). \(ProductInfo.name) never removes these."
     }
 
     static func androidStudios(_ android: AndroidReport?, isLoading: Bool) -> String {
-        guard let android else { return isLoading ? "Listing Android Studio" : "" }
+        guard let android else {
+            return isLoading ? "Listing Android Studio" : ""
+        }
         let count = android.studios.count == 1 ? "1 install" : "\(android.studios.count) installs"
         return "\(SizeText.of(kilobytes: android.studiosKilobytes)) in \(count). \(ProductInfo.name) never "
             + "removes these."
     }
 
     static func androidSDK(_ android: AndroidReport?, isLoading: Bool) -> String {
-        guard let android else { return isLoading ? "Listing the SDK and emulators" : "" }
+        guard let android else {
+            return isLoading ? "Listing the SDK and emulators" : ""
+        }
         return "\(SizeText.of(kilobytes: android.sdkKilobytes)) in the SDK and emulators. "
             + "\(ProductInfo.name) never removes these."
     }
 
     static func gradleCaches(_ android: AndroidReport?, isLoading: Bool) -> String {
-        guard let android else { return isLoading ? "Listing Gradle's caches" : "" }
+        guard let android else {
+            return isLoading ? "Listing Gradle's caches" : ""
+        }
         return "\(SizeText.of(kilobytes: android.gradleCachesKilobytes)) in ~/.gradle. \(ProductInfo.name) "
             + "never removes these."
     }
 
     static func worktrees(_ worktrees: [GitWorktree]?, isLoading: Bool) -> String {
-        guard let worktrees else { return isLoading ? "Listing worktrees" : "" }
+        guard let worktrees else {
+            return isLoading ? "Listing worktrees" : ""
+        }
         return WorktreeWords.summary(worktrees)
     }
 }

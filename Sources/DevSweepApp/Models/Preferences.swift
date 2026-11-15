@@ -105,7 +105,9 @@ final class Preferences {
         if !home.isEmpty, folder == home || folder.hasPrefix(home + "/") {
             folder = "~" + folder.dropFirst(home.count)
         }
-        guard !self.projectFolders.contains(folder) else { return }
+        guard !self.projectFolders.contains(folder) else {
+            return
+        }
         self.projectFolders.append(folder)
     }
 

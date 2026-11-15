@@ -18,7 +18,9 @@ public enum ItemPart: Hashable, Sendable {
     /// project's folder can go while Xcode works on another, and any other
     /// folder needs Xcode closed only when its whole item does.
     public func needsXcodeClosed(in item: Item) -> Bool {
-        guard case .folder = self else { return true }
+        guard case .folder = self else {
+            return true
+        }
         return item != .derivedData && item.needsXcodeClosed
     }
 }
@@ -72,8 +74,12 @@ extension ItemResult {
     /// What a part takes: from DerivedData's breakdown, or the folder's own
     /// size when the scan measured each folder.
     public func kilobytes(of part: ItemPart) -> Int64 {
-        if let derivedData { return derivedData.kilobytes(of: part) }
-        guard case let .folder(path) = part else { return 0 }
+        if let derivedData {
+            return derivedData.kilobytes(of: part)
+        }
+        guard case let .folder(path) = part else {
+            return 0
+        }
         return self.folderKilobytes?[path] ?? 0
     }
 
@@ -120,7 +126,9 @@ public struct PartsCleanOutcome: Sendable {
     public var cleaned: Set<ItemPart> {
         let kept = Set(self.outcome.failed + self.outcome.skipped)
         return Set(self.paths.filter { part, folders in
-            if case .folder = part, folders.isEmpty { return false }
+            if case .folder = part, folders.isEmpty {
+                return false
+            }
             return !folders.contains(where: kept.contains)
         }.keys)
     }
@@ -154,7 +162,9 @@ extension Engine {
     }
 
     func paths(of parts: Set<ItemPart>, in result: ItemResult) -> [ItemPart: [String]] {
-        guard let first = result.paths.first else { return [:] }
+        guard let first = result.paths.first else {
+            return [:]
+        }
         let isDerivedData = result.item == .derivedData
         var paths: [ItemPart: [String]] = [:]
         for part in parts {

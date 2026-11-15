@@ -39,13 +39,17 @@ final class FakeListings: Listings {
 
     func removeRuntime(_ runtime: SimulatorRuntime) async -> Bool {
         self.askedToRemove.append(runtime.id)
-        if self.removes { self.extras?.runtimes.removeAll { $0.id == runtime.id } }
+        if self.removes {
+            self.extras?.runtimes.removeAll { $0.id == runtime.id }
+        }
         return self.removes
     }
 
     func removeWorktree(_ worktree: GitWorktree) async -> Bool {
         self.askedToRemove.append(worktree.path)
-        if self.removes { self.extras?.worktrees.removeAll { $0.path == worktree.path } }
+        if self.removes {
+            self.extras?.worktrees.removeAll { $0.path == worktree.path }
+        }
         return self.removes
     }
 }
@@ -69,7 +73,9 @@ final class FakeScanRows: ScanRows {
     }
 
     func beginCleaning() -> (any Cleaner)? {
-        guard !self.isScanning, !self.isCleaning else { return nil }
+        guard !self.isScanning, !self.isCleaning else {
+            return nil
+        }
         self.isCleaning = true
         self.cleansBegun += 1
         return self.cleaner
@@ -217,7 +223,9 @@ final class FakeRunningApps: RunningApps {
 
     func quit(_ apps: [DeveloperApp]) async -> Bool {
         self.askedToQuit.append(apps)
-        if self.quits { self.running.subtract(apps) }
+        if self.quits {
+            self.running.subtract(apps)
+        }
         return self.quits
     }
 }
@@ -266,7 +274,9 @@ final class FakeDeveloperApps: RunningAppsChecking, AppQuitting, @unchecked Send
     func quit(_ apps: [DeveloperApp]) async -> Bool {
         self.state.withLock { state in
             state.asked.append(apps)
-            if state.quits { state.running.subtract(apps) }
+            if state.quits {
+                state.running.subtract(apps)
+            }
             return state.quits
         }
     }

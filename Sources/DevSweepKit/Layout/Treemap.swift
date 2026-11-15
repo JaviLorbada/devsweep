@@ -14,7 +14,9 @@ public enum Treemap {
     public static func squarify<ID: Hashable>(_ weights: [(id: ID, weight: Double)], in size: CGSize) -> [Cell<ID>] {
         let positive = weights.filter { $0.weight > 0 }
         let total = positive.reduce(0) { $0 + $1.weight }
-        guard total > 0, size.width > 0, size.height > 0 else { return [] }
+        guard total > 0, size.width > 0, size.height > 0 else {
+            return []
+        }
 
         let scale = Double(size.width * size.height) / total
         var remaining = positive.map { (id: $0.id, area: $0.weight * scale) }[...]
@@ -74,7 +76,9 @@ public enum Treemap {
                 row = []
             }
         }
-        if !row.isEmpty { place(row) }
+        if !row.isEmpty {
+            place(row)
+        }
         return cells
     }
 }

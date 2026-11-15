@@ -78,7 +78,9 @@ public enum CommandLineSession {
             case let .warning(message):
                 terminal.warn(message)
             case let .finished(result):
-                if !result.isEmpty { found.append(result) }
+                if !result.isEmpty {
+                    found.append(result)
+                }
                 terminal.write(Report.row(result, style: style))
             case let .done(totalBytes, _):
                 // Finder's figure, asked for here rather than by the scan,
@@ -176,8 +178,12 @@ public struct StandardTerminal: Terminal {
             let written = bytes[offset...].withUnsafeBufferPointer {
                 Darwin.write(descriptor, $0.baseAddress, $0.count)
             }
-            if written < 0, errno == EINTR { continue }
-            if written <= 0 { return }
+            if written < 0, errno == EINTR {
+                continue
+            }
+            if written <= 0 {
+                return
+            }
             offset += written
         }
     }

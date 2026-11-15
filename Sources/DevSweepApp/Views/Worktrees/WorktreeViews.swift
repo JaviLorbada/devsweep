@@ -264,7 +264,9 @@ struct RemoveWorktreeSheet: View {
                 }
                 .keyboardShortcut(.cancelAction)
                 Button("Remove Worktree", role: .destructive) {
-                    Task { await self.worktrees.remove(self.worktree) }
+                    Task {
+                        await self.worktrees.remove(self.worktree)
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(self.worktrees.removal.isRemoving)

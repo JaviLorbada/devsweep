@@ -75,7 +75,9 @@ struct CenterHeader: View {
         @Bindable var window = self.window
         return VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 10) {
-                if !self.sidebarHidden { self.titleText }
+                if !self.sidebarHidden {
+                    self.titleText
+                }
                 Spacer(minLength: 0)
                 GlassEffectContainer(spacing: 10) {
                     HStack(spacing: 10) {
@@ -171,7 +173,9 @@ struct ScanCapsule: View {
     /// "Measuring DerivedData", "Measuring DerivedData and 2 more".
     var capsuleText: String {
         let measuring = self.scan.tally.measuringItems
-        guard let first = measuring.last else { return "Listing Xcodes and runtimes" }
+        guard let first = measuring.last else {
+            return "Listing Xcodes and runtimes"
+        }
         return measuring.count == 1 ? "Measuring \(first.shortName)" : "Measuring \(first.shortName) and "
             + "\(measuring.count - 1) more"
     }
@@ -252,7 +256,9 @@ struct ChartStylePicker: View {
     }
 
     private var thumbFrame: CGRect? {
-        guard var frame = self.segmentFrames[self.selection] else { return nil }
+        guard var frame = self.segmentFrames[self.selection] else {
+            return nil
+        }
         if let dragX, let nearest = self.nearest(to: dragX), let width = self.segmentFrames[nearest]?.width {
             let frames = self.segmentFrames.values
             let leading = frames.map(\.minX).min() ?? 0

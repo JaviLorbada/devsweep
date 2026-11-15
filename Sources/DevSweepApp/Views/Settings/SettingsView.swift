@@ -131,7 +131,9 @@ private struct FolderSettings: View {
         panel.prompt = "Add"
         let home = self.scan.home ?? NSHomeDirectory()
         panel.directoryURL = URL(fileURLWithPath: home)
-        guard panel.runModal() == .OK else { return }
+        guard panel.runModal() == .OK else {
+            return
+        }
         for url in panel.urls {
             self.preferences.addProjectFolder(url.path(percentEncoded: false).removingTrailingSlash, home: home)
         }

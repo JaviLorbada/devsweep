@@ -36,7 +36,9 @@ enum DerivedDataParts {
     /// what tells apart copies of one project, and what you see in Finder.
     /// The project's own name when it sits at the top of the disk.
     nonisolated static func displayName(_ project: DerivedDataProject) -> String {
-        guard let slash = project.name.lastIndex(of: "/") else { return project.name }
+        guard let slash = project.name.lastIndex(of: "/") else {
+            return project.name
+        }
         let folder = project.name[..<slash]
         return folder.isEmpty ? String(project.name[project.name.index(after: slash)...]) : String(folder)
     }
@@ -89,7 +91,9 @@ struct PartsList: View {
     }
 
     var lines: [Line] {
-        if let breakdown = result.derivedData { return self.lines(breakdown) }
+        if let breakdown = result.derivedData {
+            return self.lines(breakdown)
+        }
         let folders = self.result.paths
             .map { (path: $0, kilobytes: self.result.folderKilobytes?[$0] ?? 0) }
             .sorted { $0.kilobytes > $1.kilobytes }
@@ -200,7 +204,9 @@ struct PartsList: View {
         let indent = self.selectable ? Self.checkboxWidth : 0
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 8) {
-                if self.selectable { self.checkbox(line) }
+                if self.selectable {
+                    self.checkbox(line)
+                }
                 if line.part == nil {
                     self.showAll(line)
                 } else {
@@ -278,9 +284,11 @@ struct PartsList: View {
                 .canPutBack ? "Moved \(clean.summary) to the Trash, \(size)." : "Deleted \(clean.summary), \(size).")
                 .foregroundStyle(.muted)
             if clean.canPutBack {
-                Button("Put Back") { Task { await self.cleaning.putBackParts(of: self.result.item) } }
-                    .buttonStyle(.link)
-                    .disabled(self.scan.isCleaning)
+                Button("Put Back") { Task {
+                    await self.cleaning.putBackParts(of: self.result.item)
+                } }
+                .buttonStyle(.link)
+                .disabled(self.scan.isCleaning)
             }
         }
         .font(.caption)

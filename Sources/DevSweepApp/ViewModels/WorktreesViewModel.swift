@@ -43,7 +43,9 @@ final class WorktreesViewModel {
             failure: "Git didn't remove it. It may have changed since it was listed, or hold a submodule; run the "
                 + "command in Terminal to see why.",
             remove: self.scan.removeWorktree)
-        if removed { self.selectedPath = nil }
+        if removed {
+            self.selectedPath = nil
+        }
     }
 
     /// The git command that removes `worktree`, to run in Terminal.

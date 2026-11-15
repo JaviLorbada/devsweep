@@ -44,7 +44,9 @@ struct ScanRow: Identifiable {
     /// to the Trash takes no time and has none.
     var cleaningProgress: Double? {
         let total = self.cleaningKilobytes ?? self.kilobytes
-        guard self.state == .cleaning, self.removedBytes > 0, total > 0 else { return nil }
+        guard self.state == .cleaning, self.removedBytes > 0, total > 0 else {
+            return nil
+        }
         return min(1, Double(self.removedBytes / 1024) / Double(total))
     }
 

@@ -34,10 +34,14 @@ enum FileTree {
     }
 
     static func walk(_ root: String, _ visit: (Entry) -> Decision) {
-        guard let rootCopy = strdup(root) else { return }
+        guard let rootCopy = strdup(root) else {
+            return
+        }
         defer { free(rootCopy) }
         var arguments: [UnsafeMutablePointer<CChar>?] = [rootCopy, nil]
-        guard let stream = fts_open(&arguments, FTS_PHYSICAL | FTS_NOCHDIR, nil) else { return }
+        guard let stream = fts_open(&arguments, FTS_PHYSICAL | FTS_NOCHDIR, nil) else {
+            return
+        }
         defer { fts_close(stream) }
 
         while let node = fts_read(stream) {

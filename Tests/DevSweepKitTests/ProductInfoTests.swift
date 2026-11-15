@@ -12,7 +12,9 @@ struct ProductInfoTests {
         var values: [String: String] = [:]
         for line in text.split(separator: "\n") where !line.hasPrefix("#") {
             let parts = line.split(separator: "=", maxSplits: 1).map(String.init)
-            if parts.count == 2 { values[parts[0]] = parts[1] }
+            if parts.count == 2 {
+                values[parts[0]] = parts[1]
+            }
         }
         return values
     }

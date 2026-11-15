@@ -43,7 +43,9 @@ struct ScanTests {
         home.fill(home.path("Library/Caches/org.swift.swiftpm"))
         let events = try await collect(engine(home, tools, skipped: [.homebrew]))
 
-        guard case let .projectFolders(folders) = events.first else { Issue.record("no project folders first"); return }
+        guard case let .projectFolders(folders) = events.first else {
+            Issue.record("no project folders first"); return
+        }
         #expect(folders.found == ["~/Workspace"])
         let kinds = events.map { event -> String in
             switch event {
@@ -70,7 +72,9 @@ struct ScanTests {
                 false
             }
         })
-        guard case let .done(total, _) = events[events.count - 2] else { Issue.record("no done"); return }
+        guard case let .done(total, _) = events[events.count - 2] else {
+            Issue.record("no done"); return
+        }
         #expect(total == 4096)
     }
 
@@ -78,7 +82,9 @@ struct ScanTests {
     func `without extras the scan ends at done`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let events = try await collect(engine(home, tools, includeExtras: false))
-        guard case .done = events.last else { Issue.record("last event is not done"); return }
+        guard case .done = events.last else {
+            Issue.record("last event is not done"); return
+        }
         #expect(!tools.log.contains("xcrun simctl runtime list -j"))
         #expect(!tools.log.contains("xcode-select -p"))
     }
@@ -176,7 +182,9 @@ struct ScanTests {
             var count = 0
             for await event in engine.scan() {
                 count += 1
-                if case .started(.derivedData) = event { break }
+                if case .started(.derivedData) = event {
+                    break
+                }
             }
             return count
         }

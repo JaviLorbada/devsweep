@@ -72,7 +72,9 @@ extension NSBitmapImageRep {
     /// The relative luminance of the pixel at a point, as WCAG defines it.
     func luminance(atPoint point: CGPoint, scale: CGFloat) -> Double {
         guard let color = colorAt(x: Int(point.x * scale), y: Int(point.y * scale))?.usingColorSpace(.sRGB)
-        else { return 0 }
+        else {
+            return 0
+        }
         func linear(_ value: CGFloat) -> Double {
             value <= 0.040_45 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
         }

@@ -311,14 +311,18 @@ enum AndroidWords {
     static func usage(_ entry: AndroidEntry, staleDays: Int) -> String? {
         switch entry.kind {
         case .emulator:
-            guard let days = entry.daysUnused(), let used = entry.lastUsed else { return nil }
+            guard let days = entry.daysUnused(), let used = entry.lastUsed else {
+                return nil
+            }
             return "Its disk images last changed \(DayFormat.utc(used)), \(days == 1 ? "1 day" : "\(days) days") ago. "
                 + "Running an emulator changes them, so it is flagged after \(staleDays) days."
         case .systemImage:
             let count = entry.emulatorCount ?? 0
             let emulators = count == 0 ? "No emulator runs on it." : count == 1 ? "1 emulator runs on "
                 + "it." : "\(count) emulators run on it."
-            guard let days = entry.daysUnused() else { return emulators }
+            guard let days = entry.daysUnused() else {
+                return emulators
+            }
             return "\(emulators) It or an emulator on it last changed \(days == 1 ? "1 day" : "\(days) days") ago; "
                 + "it is flagged after \(staleDays) days."
         case .studio:

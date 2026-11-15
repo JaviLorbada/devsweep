@@ -96,8 +96,12 @@ extension KeyedDecodingContainer {
     /// A string or a number as JavaScript's `value || '?'` prints it, nil
     /// when it would print `?`: empty, zero, missing or of another type.
     fileprivate func text(_ key: Key) -> String? {
-        if let string = self.value(String.self, key) { return string.isEmpty ? nil : string }
-        if let number = self.value(Double.self, key) { return number == 0 ? nil : NSNumber(value: number).stringValue }
+        if let string = self.value(String.self, key) {
+            return string.isEmpty ? nil : string
+        }
+        if let number = self.value(Double.self, key) {
+            return number == 0 ? nil : NSNumber(value: number).stringValue
+        }
         return nil
     }
 }

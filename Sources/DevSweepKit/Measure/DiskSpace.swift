@@ -28,7 +28,9 @@ public struct DiskSpace: Sendable, Equatable {
     /// shows, which takes some milliseconds.
     public static func of(_ path: String, includingPurgeable: Bool = false) -> DiskSpace? {
         var info = statfs()
-        guard statfs(path, &info) == 0 else { return nil }
+        guard statfs(path, &info) == 0 else {
+            return nil
+        }
         let blockSize = Int64(info.f_bsize)
         return DiskSpace(
             totalKilobytes: Int64(info.f_blocks) * blockSize / 1024,

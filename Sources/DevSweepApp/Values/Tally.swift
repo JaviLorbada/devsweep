@@ -64,7 +64,9 @@ struct Tally {
     /// The family's size once anything is known about it, nil before.
     func measuredKilobytes(of family: Family) -> Int64? {
         let known = family.items.contains { item in
-            guard let row = self.byItem[item] else { return false }
+            guard let row = self.byItem[item] else {
+                return false
+            }
             return row.wasMeasured || row.isCounting || row.showsPrevious
         }
         return known ? self.kilobytes(of: family) : nil
@@ -110,7 +112,9 @@ struct Tally {
         case .measuring where row.progressBytes > 0:
             return Double(row.progressBytes / 1024)
         case .waiting, .measuring:
-            if let previous = row.previous { return Double(max(previous.kilobytes, 1)) }
+            if let previous = row.previous {
+                return Double(max(previous.kilobytes, 1))
+            }
             let measured = self.rows.filter(\.wasMeasured)
             let total = measured.reduce(0) { $0 + Double($1.kilobytes) }
             return measured.isEmpty || total == 0 ? 1 : total / Double(measured.count)

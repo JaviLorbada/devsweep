@@ -69,7 +69,9 @@ private struct XcodeRow: View {
             // title truncates. Nothing in a row may insist on its full width.
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(self.xcode.title).fontWeight(.medium).lineLimit(1).layoutPriority(2)
-                if self.xcode.isSelected { Badge(text: "selected", color: .accentColor).layoutPriority(2) }
+                if self.xcode.isSelected {
+                    Badge(text: "selected", color: .accentColor).layoutPriority(2)
+                }
                 if self.columns != .compact {
                     Text(self.scan.tilde(self.xcode.path))
                         .font(.caption.monospaced())

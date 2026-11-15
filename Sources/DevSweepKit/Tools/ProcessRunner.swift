@@ -77,7 +77,9 @@ public struct LiveProcessRunner: ProcessRunning {
     }
 
     public func run(_ name: String, _ arguments: [String], input: Data?, passthrough: Bool) async -> ProcessOutput? {
-        guard let executable = locate(name) else { return nil }
+        guard let executable = locate(name) else {
+            return nil
+        }
         let environment = environment
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {

@@ -29,7 +29,11 @@ final class MarksModel: Marking {
 
     func setMarked(_ item: Item, _ isMarked: Bool) {
         self.touched = true
-        if isMarked { self.marked.insert(item) } else { self.marked.remove(item) }
+        if isMarked {
+            self.marked.insert(item)
+        } else {
+            self.marked.remove(item)
+        }
     }
 
     /// Ticks everything with something to clean.
@@ -53,7 +57,9 @@ final class MarksModel: Marking {
     /// The three biggest items start ticked, unless the marks were changed
     /// during the scan.
     func applyDefaults() {
-        guard !self.touched else { return }
+        guard !self.touched else {
+            return
+        }
         self.marked = Set(self.scan.tally.live.prefix(3).map(\.item))
     }
 

@@ -21,7 +21,9 @@ enum TreeRemover {
     /// far, from any of the threads.
     static func remove(_ path: String, progress: (@Sendable (Int64) -> Void)? = nil) -> Bool {
         let base = open(FileSystem.dirname(path), O_RDONLY | O_DIRECTORY | O_CLOEXEC)
-        guard base >= 0 else { return false }
+        guard base >= 0 else {
+            return false
+        }
         defer { close(base) }
         let removal = Removal(base: base, progress: progress)
         removal.push([.list(Removal.Directory(path: FileSystem.basename(path), parent: nil))])
@@ -95,7 +97,9 @@ private final class Removal: Sendable {
     func work() {
         while true {
             self.ready.wait()
-            guard let next = queue.withLock({ $0.stack.popLast() }) else { return }
+            guard let next = queue.withLock({ $0.stack.popLast() }) else {
+                return
+            }
             self.run(next)
             let over = self.queue.withLock {
                 $0.outstanding -= 1
@@ -177,8 +181,12 @@ private final class Removal: Sendable {
         var subdirectories: [String] = []
         while true {
             let count = getattrlistbulk(fd, &list, buffer, size, 0)
-            if count < 0 { self.fail() }
-            guard count > 0 else { break }
+            if count < 0 {
+                self.fail()
+            }
+            guard count > 0 else {
+                break
+            }
             // Each entry: its length, the attributes returned, then each
             // attribute in order. The name's offset counts from its own field.
             var entry = buffer

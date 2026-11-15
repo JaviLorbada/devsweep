@@ -49,7 +49,9 @@ public struct PathPolicy: Sendable {
         home: String,
         effectiveUserID: uid_t = geteuid()) throws(PreflightError) -> PathPolicy
     {
-        guard effectiveUserID != 0 else { throw .runningAsRoot }
+        guard effectiveUserID != 0 else {
+            throw .runningAsRoot
+        }
         return try PathPolicy(home: home)
     }
 
@@ -80,7 +82,9 @@ public struct PathPolicy: Sendable {
 
     /// Shortens a path under `$HOME` to `~/...`, comparing against `$HOME` as given.
     public func tilde(_ path: String) -> String {
-        if path.bytesEqual(self.home) { return "~" }
+        if path.bytesEqual(self.home) {
+            return "~"
+        }
         if path.hasBytePrefix(self.home + "/") {
             return "~" + String(decoding: path.utf8.dropFirst(self.home.utf8.count), as: UTF8.self)
         }
@@ -89,7 +93,9 @@ public struct PathPolicy: Sendable {
 
     /// Replaces a leading `~` with `$HOME`, like `${path/#\~/$HOME}`.
     public func expandTilde(_ path: String) -> String {
-        guard path.utf8.first == UInt8(ascii: "~") else { return path }
+        guard path.utf8.first == UInt8(ascii: "~") else {
+            return path
+        }
         return self.home + String(decoding: path.utf8.dropFirst(), as: UTF8.self)
     }
 
@@ -101,7 +107,9 @@ public struct PathPolicy: Sendable {
 
     /// Where a project folder really is. The home folder itself counts as inside.
     public func resolveProjectFolder(_ entry: String) -> ProjectFolder {
-        guard let real = FileSystem.physicalDirectory(expandTilde(entry)) else { return .missing }
+        guard let real = FileSystem.physicalDirectory(expandTilde(entry)) else {
+            return .missing
+        }
         return self.isInsideOrHome(real) ? .inside(real) : .outside
     }
 

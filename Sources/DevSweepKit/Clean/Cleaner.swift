@@ -56,15 +56,21 @@ extension Engine {
         case .simulators:
             let succeeded = await tools.simctl.deleteUnavailable()
             outcome.toolSucceeded = succeeded
-            if !succeeded { outcome.warnings.append("Couldn't delete unavailable simulators.") }
+            if !succeeded {
+                outcome.warnings.append("Couldn't delete unavailable simulators.")
+            }
         case .homebrew:
             let succeeded = await tools.brew.cleanup()
             outcome.toolSucceeded = succeeded
-            if !succeeded { outcome.warnings.append("brew cleanup failed. Run it yourself to see why.") }
+            if !succeeded {
+                outcome.warnings.append("brew cleanup failed. Run it yourself to see why.")
+            }
         default:
             for path in result.paths {
                 // Already gone, e.g. inside a folder deleted earlier in this run.
-                guard FileSystem.existsOrIsSymlink(path) else { continue }
+                guard FileSystem.existsOrIsSymlink(path) else {
+                    continue
+                }
                 // The list holds resolved paths, so any change since the scan
                 // (like a folder swapped for a symlink) makes this check fail.
                 guard policy.stillSafe(path) else {
@@ -116,7 +122,9 @@ extension Engine {
     public func putBack(_ outcome: CleanOutcome) async -> PutBackOutcome {
         var result = PutBackOutcome()
         for removed in outcome.removed {
-            guard let trashed = removed.trashed else { continue }
+            guard let trashed = removed.trashed else {
+                continue
+            }
             let parent = FileSystem.dirname(removed.original)
             let parentIntact = FileSystem.physicalDirectory(parent)
                 .map { $0.bytesEqual(parent) && policy.isInsideOrHome($0) } ?? false
@@ -147,7 +155,9 @@ private final class Tally: Sendable {
     }
 
     @Sendable func report(_ current: Int64) {
-        guard let progress else { return }
+        guard let progress else {
+            return
+        }
         // Threads report out of order now and then; the total only grows,
         // and goes out under the lock so it arrives in order too.
         self.bytes.withLock {

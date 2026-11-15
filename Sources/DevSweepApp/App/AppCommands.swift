@@ -42,7 +42,11 @@ struct AppCommands: Commands {
             ForEach(WindowViewModel.ChartStyle.allCases) { style in
                 Toggle(style.rawValue, isOn: Binding(
                     get: { self.window.screen == .overview && self.window.chartStyle == style },
-                    set: { if $0 { self.window.showChart(style) } }))
+                    set: {
+                        if $0 {
+                            self.window.showChart(style)
+                        }
+                    }))
                     .keyboardShortcut(style == .ring ? "1" : "2")
             }
             Divider()

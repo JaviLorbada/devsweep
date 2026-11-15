@@ -16,7 +16,9 @@ public struct DeviceSupportScanner: Scanner {
             let folder = "\(context.home)/Library/Developer/Xcode/\(system) DeviceSupport"
             for name in context.files.globNames(folder) {
                 let path = "\(folder)/\(name)"
-                guard context.files.isDirectory(path), !context.files.isSymlink(path) else { continue }
+                guard context.files.isDirectory(path), !context.files.isSymlink(path) else {
+                    continue
+                }
                 entries.append(Entry(
                     system: system,
                     name: name,
@@ -50,9 +52,13 @@ public struct DeviceSupportScanner: Scanner {
 
         for entry in entries {
             // A tab or newline would have broken the script's rows; keep such folders.
-            if entry.name.contains("\t") || entry.name.contains("\n") { continue }
+            if entry.name.contains("\t") || entry.name.contains("\n") {
+                continue
+            }
             let tokens = entry.name.split(whereSeparator: { $0 == " " || $0 == "\t" || $0 == "\n" }).map(String.init)
-            guard let first = tokens.first else { continue }
+            guard let first = tokens.first else {
+                continue
+            }
             let device: String
             let version: String
             let build: String
@@ -67,7 +73,9 @@ public struct DeviceSupportScanner: Scanner {
             } else {
                 continue
             }
-            if !build.isEmpty, !(build.hasPrefix("(") && build.hasSuffix(")") && build.count > 2) { continue }
+            if !build.isEmpty, !(build.hasPrefix("(") && build.hasSuffix(")") && build.count > 2) {
+                continue
+            }
 
             let parts = version.split(separator: ".").map { Int($0) ?? Int.max }
             func part(_ index: Int) -> Int { index < parts.count ? parts[index] : 0 }

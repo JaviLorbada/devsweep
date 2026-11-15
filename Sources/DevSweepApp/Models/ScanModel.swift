@@ -103,20 +103,26 @@ final class ScanModel: ScanResults, Listings, ScanRows {
     // MARK: Scanning
 
     func scan() {
-        guard !self.isScanning, !self.isCleaning else { return }
+        guard !self.isScanning, !self.isCleaning else {
+            return
+        }
         // Preferences changed since the last scan apply from this one.
         (self.engine, self.startupError) = Self.makeEngine(
             preferences: self.preferences,
             environment: self.environment,
             dependencies: self.dependencies)
-        guard let engine else { return }
+        guard let engine else {
+            return
+        }
         // What was on screen becomes the dimmed "last scan" until replaced.
         self.rows = Dictionary(uniqueKeysWithValues: engine.items.map { item in
             var row = ScanRow(item: item)
             row.previous = self.rows[item]?.result ?? self.rows[item]?.previous
             return (item, row)
         })
-        if self.lastScan != nil { self.previousScanDate = self.lastScan }
+        if self.lastScan != nil {
+            self.previousScanDate = self.lastScan
+        }
         self.scanOrder = engine.items
         self.warnings = []
         self.isScanning = true
@@ -150,7 +156,9 @@ final class ScanModel: ScanResults, Listings, ScanRows {
 
     /// Lists the Xcodes, runtimes and worktrees again.
     func refreshExtras() async {
-        guard let engine else { return }
+        guard let engine else {
+            return
+        }
         self.isLoadingExtras = true
         let fresh = await engine.extras()
         withAnimation(Motion.animation()) { self.extras = fresh }
@@ -160,18 +168,26 @@ final class ScanModel: ScanResults, Listings, ScanRows {
     /// Removes a runtime through simctl, then lists the extras again.
     /// Whether simctl removed it.
     func removeRuntime(_ runtime: SimulatorRuntime) async -> Bool {
-        guard let engine else { return false }
+        guard let engine else {
+            return false
+        }
         let removed = await engine.removeRuntime(runtime)
-        if removed { await self.extrasChanged() }
+        if removed {
+            await self.extrasChanged()
+        }
         return removed
     }
 
     /// Removes a worktree with git, then lists the extras again. Whether git
     /// removed it.
     func removeWorktree(_ worktree: GitWorktree) async -> Bool {
-        guard let engine else { return false }
+        guard let engine else {
+            return false
+        }
         let removed = await engine.removeWorktree(worktree)
-        if removed { await self.extrasChanged() }
+        if removed {
+            await self.extrasChanged()
+        }
         return removed
     }
 
@@ -237,7 +253,9 @@ final class ScanModel: ScanResults, Listings, ScanRows {
     /// Once the items, the extras and Android Studio are all in: the timing,
     /// and a copy of the results for the next launch.
     private func finishTiming() {
-        guard let timing = self.stopwatch?.timing else { return }
+        guard let timing = self.stopwatch?.timing else {
+            return
+        }
         self.scanTiming = timing
         self.saveScan()
         self.onFinished?()
@@ -246,7 +264,9 @@ final class ScanModel: ScanResults, Listings, ScanRows {
     private func finishScan() {
         self.isLoadingExtras = false
         self.isLoadingAndroid = false
-        guard self.isScanning else { return }
+        guard self.isScanning else {
+            return
+        }
         // Stopped before the end: what wasn't reached stays unmeasured.
         withAnimation(Motion.animation()) {
             for item in self.scanOrder where !(self.rows[item]?.wasMeasured ?? false) {
@@ -317,7 +337,9 @@ extension ScanModel {
 
     /// What `parts` of `item` take, as this scan measured them.
     func kilobytes(of parts: Set<ItemPart>, in item: Item) -> Int64 {
-        guard let result = self.rows[item]?.result else { return 0 }
+        guard let result = self.rows[item]?.result else {
+            return 0
+        }
         return parts.reduce(0) { $0 + result.kilobytes(of: $1) }
     }
 }
@@ -327,7 +349,9 @@ extension ScanModel {
 extension ScanModel {
     /// Shows the last launch's scan of this home, dimmed, until this one replaces it.
     private func restorePreviousScan() {
-        guard let engine, let saved = store?.load(home: engine.policy.homeReal) else { return }
+        guard let engine, let saved = store?.load(home: engine.policy.homeReal) else {
+            return
+        }
         for result in saved.results {
             self.rows[result.item]?.previous = result
         }
@@ -339,9 +363,13 @@ extension ScanModel {
     /// Keeps this scan's results for the next launch. Cleaned items are kept
     /// as found nothing, since they are gone.
     private func saveScan() {
-        guard let engine, let store else { return }
+        guard let engine, let store else {
+            return
+        }
         let results: [ItemResult] = self.scanOrder.compactMap { item in
-            guard let row = rows[item], var result = row.result, row.wasMeasured else { return nil }
+            guard let row = rows[item], var result = row.result, row.wasMeasured else {
+                return nil
+            }
             if row.state == .cleaned {
                 result.paths = []
                 result.kilobytes = 0
@@ -349,7 +377,9 @@ extension ScanModel {
             }
             return result
         }
-        guard results.count == self.scanOrder.count else { return }
+        guard results.count == self.scanOrder.count else {
+            return
+        }
         let scan = SavedScan(
             date: lastScan ?? Date(),
             home: engine.policy.homeReal,
@@ -368,7 +398,9 @@ extension ScanModel {
     /// Takes the rows for a clean or a put back, and hands back the engine to
     /// do it with: nil while scanning or cleaning, or with no home to clean in.
     func beginCleaning() -> (any Cleaner)? {
-        guard let engine, !self.isScanning, !self.isCleaning else { return nil }
+        guard let engine, !self.isScanning, !self.isCleaning else {
+            return nil
+        }
         self.isCleaning = true
         return engine
     }
@@ -463,7 +495,9 @@ extension ScanModel {
     /// Puts the rows back to the moment `measured` items were done.
     func rewindScan(toMeasured measured: Int) {
         for (index, item) in self.scanOrder.enumerated() where index >= measured {
-            guard var row = rows[item] else { continue }
+            guard var row = rows[item] else {
+                continue
+            }
             row.previous = row.result
             row.progressBytes = index == measured ? row.kilobytes * 1024 / 3 : 0
             row.state = index == measured ? .measuring : .waiting

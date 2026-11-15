@@ -75,7 +75,9 @@ public struct GitWorktree: Sendable, Identifiable, Equatable, Codable {
     /// folder of its own: `fix-login/App` rather than `App`.
     public var name: String {
         let folder = FileSystem.basename(self.path)
-        guard folder == self.repositoryName else { return folder }
+        guard folder == self.repositoryName else {
+            return folder
+        }
         return "\(FileSystem.basename(FileSystem.dirname(self.path)))/\(folder)"
     }
 
@@ -86,11 +88,21 @@ public struct GitWorktree: Sendable, Identifiable, Equatable, Codable {
 
     /// Why DevSweep keeps it, or nil when it may be removed.
     public var keptBecause: String? {
-        if self.isLocked { return "Locked" }
-        guard let changes else { return "Couldn't check it for changes" }
-        if changes == 1 { return "1 change not committed" }
-        if changes > 1 { return "\(changes) changes not committed" }
-        if !self.commitsKept { return "Commits on no branch" }
+        if self.isLocked {
+            return "Locked"
+        }
+        guard let changes else {
+            return "Couldn't check it for changes"
+        }
+        if changes == 1 {
+            return "1 change not committed"
+        }
+        if changes > 1 {
+            return "\(changes) changes not committed"
+        }
+        if !self.commitsKept {
+            return "Commits on no branch"
+        }
         return nil
     }
 
@@ -104,7 +116,9 @@ public struct GitWorktree: Sendable, Identifiable, Equatable, Codable {
     /// "kite, branch main, last commit 2026-10-21", as the report prints it.
     public var note: String {
         var note = "\(self.repositoryName), " + (self.branch.map { "branch \($0)" } ?? "detached")
-        if let lastCommit { note += ", last commit \(DayFormat.utc(lastCommit))" }
+        if let lastCommit {
+            note += ", last commit \(DayFormat.utc(lastCommit))"
+        }
         return note
     }
 }
@@ -127,7 +141,9 @@ enum ShellWord {
     /// quoted when it has to be.
     static func path(_ path: String, policy: PathPolicy) -> String {
         let short = policy.tilde(path)
-        if short.hasPrefix("~/"), self.isPlain(short.dropFirst(2)) { return short }
+        if short.hasPrefix("~/"), self.isPlain(short.dropFirst(2)) {
+            return short
+        }
         return self.quoted(path)
     }
 }
@@ -162,7 +178,9 @@ public struct InstalledXcode: Sendable, Identifiable, Equatable, Codable {
     /// "opened 2026-10-20, selected", as the report prints it.
     public var note: String {
         var note = self.lastOpened.map { "opened \(DayFormat.utc($0))" } ?? "last opened unknown"
-        if self.isSelected { note += ", selected" }
+        if self.isSelected {
+            note += ", selected"
+        }
         return note
     }
 }

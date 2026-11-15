@@ -144,7 +144,9 @@ struct AndroidTests {
         let app = try Engine(config: config, tools: tools.tools)
         var reports = 0
         for await event in app.scan(.interactive) {
-            if case .android = event { reports += 1 }
+            if case .android = event {
+                reports += 1
+            }
         }
         #expect(reports == 1)
     }

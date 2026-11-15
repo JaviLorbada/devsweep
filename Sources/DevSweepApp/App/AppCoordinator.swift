@@ -107,12 +107,16 @@ final class AppCoordinator {
 
         self.wire()
         workspaceApps.onChange = { [weak runningApps] in
-            Task { await runningApps?.refresh() }
+            Task {
+                await runningApps?.refresh()
+            }
         }
         Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(30))
-                guard let self else { return }
+                guard let self else {
+                    return
+                }
                 self.tick(now: Date())
             }
         }
@@ -121,15 +125,23 @@ final class AppCoordinator {
     /// What a scan's start and end set off in the other models.
     private func wire() {
         self.scan.onStart = { [weak self] in
-            guard let self else { return }
+            guard let self else {
+                return
+            }
             self.marks.reset()
             self.cleaning.reset()
-            Task { await self.runningApps.refresh() }
+            Task {
+                await self.runningApps.refresh()
+            }
         }
         self.scan.onItemsMeasured = { [weak self] stopped in
-            guard let self else { return }
+            guard let self else {
+                return
+            }
             self.marks.applyDefaults()
-            if !stopped { self.overview.selectFirstIfNone() }
+            if !stopped {
+                self.overview.selectFirstIfNone()
+            }
         }
         self.scan.onFinished = { [weak self] in
             self?.checkGrowth()
@@ -140,9 +152,13 @@ final class AppCoordinator {
     /// in a development build, then a screenshot or a debug run when asked.
     func windowAppeared() async {
         #if DEBUG
-        if DebugLaunch.isRequested { FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8)) }
+        if DebugLaunch.isRequested {
+            FileHandle.standardError.write(Data("debug launch: window appeared\n".utf8))
+        }
         #endif
-        if self.preferences.scanOnLaunch { self.scan.scan() }
+        if self.preferences.scanOnLaunch {
+            self.scan.scan()
+        }
         #if DEBUG
         await Snapshotter.runIfAsked(self)
         await DebugLaunch.run(self)
@@ -168,9 +184,14 @@ final class AppCoordinator {
         guard let alert = GrowthCheck.derivedData(
             previousKilobytes: derivedData?.previous?.kilobytes,
             currentKilobytes: derivedData?.result?.kilobytes,
-            thresholdGigabytes: self.preferences.derivedDataGrowthGigabytes) else { return }
+            thresholdGigabytes: self.preferences.derivedDataGrowthGigabytes)
+        else {
+            return
+        }
         let notifier = self.notifier
-        Task { await notifier.post(title: alert.title, body: alert.body) }
+        Task {
+            await notifier.post(title: alert.title, body: alert.body)
+        }
     }
 
     // MARK: Without scanning, for tests and screenshots

@@ -22,7 +22,9 @@ enum ExtrasScanner {
             let folder = context.policy.expandTilde(directory)
             for name in context.files.globNames(folder) where FileSystem.matches(name, pattern: "Xcode*.app") {
                 let app = "\(folder)/\(name)"
-                guard context.files.isDirectory(app), !context.files.isSymlink(app) else { continue }
+                guard context.files.isDirectory(app), !context.files.isSymlink(app) else {
+                    continue
+                }
                 let isSelected = selectedReal
                     .map { FileSystem.physicalDirectory(app)?.bytesEqual($0) ?? false } ?? false
                 result.append(InstalledXcode(
@@ -47,12 +49,17 @@ enum ExtrasScanner {
     static func runtimes(in context: ScanContext, now: Date) async -> [SimulatorRuntime] {
         let simctl = context.tools.simctl
         guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(),
-              !runtimesData.isEmpty else { return [] }
+              !runtimesData.isEmpty
+        else {
+            return []
+        }
         let list = SimctlRuntimeList(runtimesData)
         let devices = await SimctlDeviceList(simctl.devicesJSON() ?? Data())
         let downloads = self.downloads(list)
         return self.runtimes(list, devices: devices, now: now).map { runtime in
-            guard let folder = downloads[runtime.id] else { return runtime }
+            guard let folder = downloads[runtime.id] else {
+                return runtime
+            }
             let kilobytes = context.measurer.measure(folder).kilobytes
             return kilobytes > 0 ? runtime.counting(downloadKilobytes: kilobytes) : runtime
         }
@@ -118,9 +125,13 @@ enum ExtrasScanner {
         // A stable sort, like JavaScript's.
         return parsed.enumerated().sorted { a, b in
             let platform = a.element.platform.caseInsensitiveCompare(b.element.platform)
-            if platform != .orderedSame { return platform == .orderedAscending }
+            if platform != .orderedSame {
+                return platform == .orderedAscending
+            }
             let version = b.element.version.compare(a.element.version, options: .numeric)
-            if version != .orderedSame { return version == .orderedAscending }
+            if version != .orderedSame {
+                return version == .orderedAscending
+            }
             return a.offset < b.offset
         }.map(\.element)
     }
@@ -157,7 +168,9 @@ enum JSONKeyOrder {
                 let start = index
                 index += 1
                 while index < bytes.count, bytes[index] != UInt8(ascii: "\"") {
-                    if bytes[index] == UInt8(ascii: "\\") { index += 1 }
+                    if bytes[index] == UInt8(ascii: "\\") {
+                        index += 1
+                    }
                     index += 1
                 }
                 if expectingKey, depth == 1,
@@ -183,7 +196,9 @@ enum JavaScriptDate {
     static func parse(_ text: String) -> Double? {
         // swiftlint:disable:next line_length
         let pattern = #/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|[+-]\d{2}:\d{2})?)?$/#
-        guard let match = text.wholeMatch(of: pattern) else { return nil }
+        guard let match = text.wholeMatch(of: pattern) else {
+            return nil
+        }
         var parts = DateComponents()
         parts.year = Int(match.1)
         parts.month = Int(match.2)
@@ -202,13 +217,17 @@ enum JavaScriptDate {
                 let sign = zone.hasPrefix("-") ? -1 : 1
                 let hours = Int(zone.dropFirst().prefix(2)) ?? 0
                 let minutes = Int(zone.suffix(2)) ?? 0
-                guard let offset = TimeZone(secondsFromGMT: sign * (hours * 3600 + minutes * 60)) else { return nil }
+                guard let offset = TimeZone(secondsFromGMT: sign * (hours * 3600 + minutes * 60)) else {
+                    return nil
+                }
                 calendar.timeZone = offset
             }
         } else {
             calendar.timeZone = .current
         }
-        guard let date = calendar.date(from: parts) else { return nil }
+        guard let date = calendar.date(from: parts) else {
+            return nil
+        }
         var milliseconds = (date.timeIntervalSince1970 * 1000).rounded()
         if let fraction = match.7 {
             milliseconds += Double(String(fraction.prefix(3)).padding(toLength: 3, withPad: "0", startingAt: 0)) ?? 0

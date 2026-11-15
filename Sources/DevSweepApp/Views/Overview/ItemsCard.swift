@@ -214,7 +214,9 @@ struct RowAction: View {
             if self.row.isLive {
                 Button("Clean") {
                     self.overview.select(self.row.item)
-                    Task { await self.cleaning.requestClean([self.row.item]) }
+                    Task {
+                        await self.cleaning.requestClean([self.row.item])
+                    }
                 }
                 .controlSize(.small)
                 .rowControl()

@@ -50,7 +50,9 @@ final class RuntimesViewModel {
             failure: "simctl couldn't remove it. Run the command in Terminal to see why; a simulator using it may "
                 + "still be running.",
             remove: self.scan.removeRuntime)
-        if removed { self.selectedID = nil }
+        if removed {
+            self.selectedID = nil
+        }
     }
 
     var subtitle: String {

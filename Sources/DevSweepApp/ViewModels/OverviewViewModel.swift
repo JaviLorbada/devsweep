@@ -37,7 +37,9 @@ final class OverviewViewModel {
 
     /// Selects the biggest item when nothing is selected, as a scan ends.
     func selectFirstIfNone() {
-        if self.selection == nil { self.selection = self.scan.tally.ordered.first?.item }
+        if self.selection == nil {
+            self.selection = self.scan.tally.ordered.first?.item
+        }
     }
 
     /// What the scan found, whether Xcode and Simulator are open, and what

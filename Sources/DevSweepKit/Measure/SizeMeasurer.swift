@@ -62,7 +62,9 @@ public struct SizeMeasurer: Sendable {
         FileTree.walk(path) { entry in
             visited += 1
             if visited.isMultiple(of: self.progressInterval) {
-                if shouldStop() { return .stop }
+                if shouldStop() {
+                    return .stop
+                }
                 progress?((blocks + 1) / 2 * 1024)
             }
             switch entry.kind {
@@ -71,12 +73,18 @@ public struct SizeMeasurer: Sendable {
             case .directoryPost:
                 blocks += Int64(entry.status?.st_blocks ?? 0)
             case .unreadable, .error:
-                if entry.level == 0 { readable = false }
+                if entry.level == 0 {
+                    readable = false
+                }
             case .other:
-                guard let status = entry.status else { break }
+                guard let status = entry.status else {
+                    break
+                }
                 if status.st_nlink > 1 {
                     let id = FileID(device: status.st_dev, inode: status.st_ino)
-                    if !seenLinks.insert(id).inserted { break }
+                    if !seenLinks.insert(id).inserted {
+                        break
+                    }
                 }
                 blocks += Int64(status.st_blocks)
             }

@@ -26,7 +26,9 @@ final class Removal<Thing: Identifiable> {
     /// it stays open with `failure`. Whether it was removed.
     @discardableResult
     func run(_ thing: Thing, failure: String, remove: @MainActor (Thing) async -> Bool) async -> Bool {
-        guard !self.isRemoving else { return false }
+        guard !self.isRemoving else {
+            return false
+        }
         self.isRemoving = true
         self.error = nil
         let removed = await remove(thing)
