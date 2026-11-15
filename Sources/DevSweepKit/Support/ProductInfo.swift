@@ -22,10 +22,10 @@ public enum ProductInfo {
     /// The version, as in `version.env`; a test keeps the two equal. The
     /// command line tool has no Info.plist to read it from, so the app's
     /// About and `devsweep --version` both read it here.
-    public static let version = "0.6.0"
+    public static let version = "0.7.0"
 
     /// The build number, as in `version.env`: when the release was cut, in UTC.
-    public static let build = "202611141450"
+    public static let build = "202611152110"
 
     /// Where the project lives; the About window and the Help menu link here.
     public static let repository = URL(string: "https://github.com/JaviLorbada/devsweep")!
