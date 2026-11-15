@@ -21,6 +21,8 @@ struct SettingsView: View {
             minHeight: SettingsLayout.minimumHeight,
             idealHeight: SettingsLayout.idealHeight,
             maxHeight: .infinity)
+        // These sizes alone leave Settings' edges fixed.
+        .background(ResizableWindow())
     }
 }
 
