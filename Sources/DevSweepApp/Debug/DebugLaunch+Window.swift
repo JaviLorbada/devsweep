@@ -59,27 +59,32 @@ extension DebugLaunch {
     /// Opens Settings, makes it `height` points tall when given, as dragging
     /// its bottom edge would, switches to a tab, scrolls it down `scroll`
     /// points when given, captures it and quits. It says how big Settings is
-    /// once on the tab.
+    /// once on the tab, and whether a person could resize it.
     @MainActor
     static func captureSettings(tab: String, height: Double?, scroll: Double?, to output: String?) async -> Never {
         let main = self.mainWindow
+        // The Settings window is the one with a toolbar; the status item has a window too.
+        func settingsWindow() -> NSWindow? {
+            NSApplication.shared.windows.first { $0.isVisible && $0 !== main && $0.toolbar != nil }
+        }
+        // Without the zoom macOS opens windows with, which says nothing when
+        // it ends: captured during it, Settings comes out a little small.
+        // Registered, so not kept.
+        UserDefaults.standard.register(defaults: ["NSAutomaticWindowAnimationsEnabled": false])
         // The app menu's Settings… item, as ⌘, would choose it.
         if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
            let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," })
         {
             menu.performActionForItem(at: index)
         }
-        try? await Task.sleep(for: .seconds(1))
-        // The Settings window is the one with a toolbar; the status item has a window too.
-        if let settings = NSApplication.shared.windows
-            .first(where: { $0.isVisible && $0 !== main && $0.toolbar != nil })
-        {
+        await self.wait { settingsWindow() != nil }
+        if let settings = settingsWindow() {
             if let height {
                 var frame = settings.frame
                 frame.origin.y += frame.height - height
                 frame.size.height = height
+                // Resized there and then: nothing to wait for.
                 settings.setFrame(frame, display: true)
-                try? await Task.sleep(for: .milliseconds(500))
             }
             // Settings tabs are toolbar items.
             if let item = settings.toolbar?.items.first(where: { $0.label == tab }), let action = item.action {
@@ -89,15 +94,22 @@ extension DebugLaunch {
             } else {
                 self.trace("no tab \(tab)")
             }
-            try? await Task.sleep(for: .seconds(1))
+            // SwiftUI titles the window after the tab once it shows it.
+            await self.wait { settings.title == tab }
+            settings.layoutIfNeeded()
             self.trace(
-                "settings \(Int(settings.frame.width))x\(Int(settings.frame.height)) min "
-                    + "\(Int(settings.minSize.width))x\(Int(settings.minSize.height))")
+                "settings \(settings.title) \(Int(settings.frame.width))x\(Int(settings.frame.height)), min "
+                    + "\(Int(settings.minSize.width))x\(Int(settings.minSize.height)), "
+                    + (settings.styleMask.contains(.resizable) ? "resizable" : "not resizable")
+                    + " by hand, on a \(Int(settings.backingScaleFactor))x screen")
             if let scroll {
                 self.trace(self.scrollCenter(by: scroll, in: settings))
-                try? await Task.sleep(for: .milliseconds(500))
             }
             if let output {
+                // Drawn now and handed to the window server, which otherwise
+                // gets the scroll only as the run loop turns.
+                settings.displayIfNeeded()
+                CATransaction.flush()
                 self.trace(self.capture(settings, to: output) ? "captured \(output)" : "capture failed")
             }
         }
@@ -376,6 +388,16 @@ extension DebugLaunch {
             }
         }
         return true
+    }
+
+    /// Waits until `isDone` holds, checking every 50 milliseconds, for at
+    /// most `limit`: for what AppKit and SwiftUI finish without saying so.
+    @MainActor
+    static func wait(atMost limit: Duration = .seconds(5), until isDone: () -> Bool) async {
+        let deadline = ContinuousClock.now + limit
+        while !isDone(), ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(50))
+        }
     }
 
     /// Waits until the window's width has not changed for half a second.
