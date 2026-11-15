@@ -80,6 +80,10 @@ struct DevSweepApp: App {
             SettingsView()
                 .environment(models: self.app)
         }
+        // Settings opens at this size each launch. Without it SwiftUI opens
+        // it 900 by 450, whatever the content's ideal size.
+        .defaultSize(width: SettingsLayout.width, height: SettingsLayout.windowHeight)
+        .windowResizability(.contentMinSize)
 
         MenuBarExtra(isInserted: Binding(
             get: { self.app.preferences.showInMenuBar },

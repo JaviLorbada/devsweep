@@ -12,7 +12,15 @@ struct SettingsView: View {
             Tab("Folders", systemImage: "folder") { FolderSettings() }
             Tab("Items", systemImage: "checklist") { ItemSettings() }
         }
-        .frame(width: 540)
+        // A fixed ideal size, as the main window has, so no change in a tab
+        // makes SwiftUI animate the window to a new one.
+        .frame(
+            minWidth: SettingsLayout.width,
+            idealWidth: SettingsLayout.width,
+            maxWidth: .infinity,
+            minHeight: SettingsLayout.minimumHeight,
+            idealHeight: SettingsLayout.idealHeight,
+            maxHeight: .infinity)
     }
 }
 

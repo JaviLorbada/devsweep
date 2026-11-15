@@ -19,6 +19,8 @@ gets a line under Unreleased as it lands.
   latest release, sending only the app's version, and it is the only
   connection DevSweep makes. Versions before this one have no updater:
   download this one by hand, and it updates itself from here on.
+- Settings resizes from its edges, and opens tall enough to show General
+  whole. A tab taller than the window scrolls, as before.
 
 ## 0.6.0
 
