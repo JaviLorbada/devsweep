@@ -67,7 +67,7 @@ final class CleaningModel: CleaningTotals {
         await self.apps.refresh()
         let open = self.apps.open
         if items.contains(where: \.needsXcodeClosed), !open.isEmpty {
-            self.pendingClean = PendingClean(items: items, stage: .quitApps(open), kilobytes: self.kilobytes(of: items))
+            self.pendingClean = PendingClean(items: items, stage: .quitApps(open), rows: self.scan.rows)
         } else {
             self.confirmOrClean(items)
         }
@@ -104,13 +104,8 @@ final class CleaningModel: CleaningTotals {
     /// Goes on with the items, or the parts, that don't need Xcode closed.
     func cleanSkippingXcodeItems(_ pending: PendingClean) {
         self.pendingClean = nil
-        if let item = pending.items.first, !pending.parts.isEmpty {
-            let rest = pending.parts.filter { !$0.needsXcodeClosed(in: item) }
-            if !rest.isEmpty { self.confirmOrClean(pending.items, parts: rest, afterAlert: true) }
-            return
-        }
-        let rest = pending.items.filter { !$0.needsXcodeClosed }
-        if !rest.isEmpty { self.confirmOrClean(rest, afterAlert: true) }
+        guard let others = pending.others else { return }
+        self.confirmOrClean(others.items, parts: others.parts, afterAlert: true)
     }
 
     func confirmClean(_ pending: PendingClean) async {
@@ -140,10 +135,7 @@ final class CleaningModel: CleaningTotals {
                 if let item = items.first, !parts.isEmpty {
                     self.pendingClean = self.partsQuestion(parts, of: item, stage: .confirm)
                 } else {
-                    self.pendingClean = PendingClean(
-                        items: items,
-                        stage: .confirm,
-                        kilobytes: self.kilobytes(of: items))
+                    self.pendingClean = PendingClean(items: items, stage: .confirm, rows: self.scan.rows)
                 }
             }
         } else if let item = items.first, !parts.isEmpty {
@@ -151,11 +143,6 @@ final class CleaningModel: CleaningTotals {
         } else {
             Task { await self.performClean(items) }
         }
-    }
-
-    /// What cleaning `items` whole would take.
-    private func kilobytes(of items: [Item]) -> Int64 {
-        items.compactMap { self.scan.rows[$0]?.kilobytes }.reduce(0, +)
     }
 
     /// The question about cleaning `parts` of `item`.
@@ -303,44 +290,7 @@ final class CleaningModel: CleaningTotals {
     }
 }
 
-/// The question a clean waits on, and a parts clean the inspector reports.
 extension CleaningModel {
-    /// A clean waiting on an answer: quit Xcode first, or confirm.
-    struct PendingClean: Identifiable {
-        enum Stage {
-            case quitApps([DeveloperApp])
-            case confirm
-        }
-
-        let id = UUID()
-        let items: [Item]
-        let stage: Stage
-        /// What the clean would take, as the scan measured it: the items, or
-        /// just the parts.
-        var kilobytes: Int64 = 0
-        /// Parts of the item to clean instead of the whole of it.
-        var parts: Set<ItemPart> = []
-        /// What the question calls those parts: "DerivedData for Atlas",
-        /// "App-1/.build and App-2/.build", "5 .build folders".
-        var partsSubject = ""
-        /// Whether that subject takes "go" rather than "goes".
-        var partsPlural = false
-        /// Those of them that need Xcode closed, by name.
-        var blockedPartNames: [String] = []
-        /// Asked while Xcode is open, which may have the project open.
-        var xcodeOpen = false
-        /// The project to close in Xcode, for one part; empty for several.
-        var xcodeName = ""
-
-        /// Whether some of it can be cleaned with Xcode and Simulator open.
-        var hasOthers: Bool {
-            guard let item = self.items.first, !self.parts.isEmpty else {
-                return self.items.contains { !$0.needsXcodeClosed }
-            }
-            return self.parts.contains { !$0.needsXcodeClosed(in: item) }
-        }
-    }
-
     /// A clean of some parts of an item, which the inspector reports.
     struct PartsClean {
         let outcome: PartsCleanOutcome
