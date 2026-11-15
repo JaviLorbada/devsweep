@@ -166,9 +166,9 @@ struct PartsCleaningFlowTests {
             try? await Task.sleep(for: .milliseconds(20))
         }
 
-        let clean = try #require(app.cleaning.lastPartsClean(of: .derivedData))
-        #expect(clean.summary == "1 project")
-        #expect(clean.canPutBack)
+        let partsClean = try #require(app.cleaning.lastPartsClean(of: .derivedData))
+        #expect(partsClean.summary == "1 project")
+        #expect(partsClean.canPutBack)
         #expect(!FileManager.default.fileExists(atPath: atlas))
         #expect(try FileManager.default.fileExists(atPath: self.project("Fieldwork", in: app)))
         let left = try #require(app.scan.rows[.derivedData]?.result)

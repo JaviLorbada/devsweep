@@ -181,8 +181,8 @@ struct PartsList: View {
         let largest = Double(max(lines.map(\.kilobytes).max() ?? 1, 1))
         VStack(alignment: .leading, spacing: 6) {
             Eyebrow(text: self.isDerivedData ? "Inside" : "Folders")
-            if self.selectable, let clean = self.cleaning.lastPartsClean(of: self.result.item) {
-                self.lastClean(clean)
+            if self.selectable, let partsClean = self.cleaning.lastPartsClean(of: self.result.item) {
+                self.lastClean(partsClean)
             }
             ForEach(lines) { line in
                 self.line(line, largest: largest)
@@ -277,13 +277,15 @@ struct PartsList: View {
     }
 
     /// "Moved 2 projects to the Trash, 25.2 GB. Put Back"
-    private func lastClean(_ clean: PartsClean) -> some View {
-        let size = SizeText.of(kilobytes: clean.kilobytes)
+    private func lastClean(_ partsClean: PartsClean) -> some View {
+        let size = SizeText.of(kilobytes: partsClean.kilobytes)
+        let sentence = partsClean.canPutBack
+            ? "Moved \(partsClean.summary) to the Trash, \(size)."
+            : "Deleted \(partsClean.summary), \(size)."
         return HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(clean
-                .canPutBack ? "Moved \(clean.summary) to the Trash, \(size)." : "Deleted \(clean.summary), \(size).")
+            Text(sentence)
                 .foregroundStyle(.muted)
-            if clean.canPutBack {
+            if partsClean.canPutBack {
                 Button("Put Back") {
                     Task {
                         await self.cleaning.putBackParts(of: self.result.item)
