@@ -47,7 +47,7 @@ struct CleaningModelTests {
         await cleaning.requestClean([.derivedData])
         let pending = try #require(cleaning.pendingClean)
         await cleaning.quitAppsAndClean(pending)
-        #expect(cleaning.notice?.title == "Xcode didn't quit")
+        #expect(cleaning.cleanNotice?.title == "Xcode didn't quit")
         #expect(cleaning.pendingClean == nil)
         #expect(self.rows.cleansBegun == 0)
     }
@@ -138,8 +138,8 @@ struct CleaningModelTests {
             cleaner: FakeCleaner(failing: ["/Users/someone/npm-cache"]))
         let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps(), moveToTrash: true)
         await cleaning.requestClean([.npmCache])
-        await waitUntil { cleaning.notice != nil }
-        #expect(cleaning.notice?.title == "Some things were left alone")
+        await waitUntil { cleaning.cleanNotice != nil }
+        #expect(cleaning.cleanNotice?.title == "Some things were left alone")
         #expect(rows.rows[.npmCache]?.state == .measured)
         #expect(cleaning.trashedThisSession == 0)
         #expect(self.marks.cleanedItems.isEmpty)
@@ -158,8 +158,8 @@ struct CleaningModelTests {
         await cleaning.confirmClean(confirm)
         #expect(self.rows.cleaner.cleaned == [.npmCache])
         #expect(self.rows.rows[.derivedData]?.state == .measured)
-        #expect(cleaning.notice?.message.hasPrefix("Skipped ") == true)
-        #expect(cleaning.notice?.message.hasSuffix("Xcode is open.") == true)
+        #expect(cleaning.cleanNotice?.message.hasPrefix("Skipped ") == true)
+        #expect(cleaning.cleanNotice?.message.hasSuffix("Xcode is open.") == true)
     }
 
     @Test
@@ -171,7 +171,7 @@ struct CleaningModelTests {
 
         self.rows.isScanning = true
         await cleaning.confirmClean(confirm)
-        #expect(cleaning.notice?.title == "Nothing was cleaned")
+        #expect(cleaning.cleanNotice?.title == "Nothing was cleaned")
         #expect(self.rows.cleaner.cleaned.isEmpty)
         #expect(self.rows.rows[.npmCache]?.state == .measured)
     }

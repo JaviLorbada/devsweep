@@ -46,7 +46,7 @@ enum Snapshotter {
             await app.cleaning.confirmClean(PendingClean(
                 items: app.marks.markedRows.map(\.item),
                 stage: .confirm))
-            app.cleaning.dismissNotice()
+            app.cleaning.dismissCleanNotice()
             if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "putback" {
                 await app.cleaning.putBack(.swiftpmCache)
                 app.overview.select(.swiftpmCache)
