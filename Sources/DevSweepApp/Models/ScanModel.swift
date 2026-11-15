@@ -50,10 +50,7 @@ final class ScanModel: ScanResults, Listings, ScanRows {
     private let environment: [String: String]
     private let dependencies: Dependencies
     private let store: (any ScanMemoryStore)?
-    @ObservationIgnored private var scanStarted: ContinuousClock.Instant?
-    @ObservationIgnored private var itemsDone: Double?
-    @ObservationIgnored private var extrasDone: Double?
-    @ObservationIgnored private var androidDone: Double?
+    @ObservationIgnored private var stopwatch: ScanStopwatch?
     /// Progress that arrived since the screen last showed it.
     @ObservationIgnored private var pendingProgress: [Item: Int64] = [:]
     @ObservationIgnored private var progressFlush: Task<Void, Never>?
@@ -125,10 +122,9 @@ final class ScanModel: ScanResults, Listings, ScanRows {
         self.isScanning = true
         self.isLoadingExtras = engine.config.includeExtras
         self.isLoadingAndroid = engine.config.includeAndroid
-        self.scanStarted = .now
-        self.itemsDone = nil
-        self.extrasDone = nil
-        self.androidDone = nil
+        self.stopwatch = ScanStopwatch(
+            waitsForExtras: engine.config.includeExtras,
+            waitsForAndroid: engine.config.includeAndroid)
         self.scanTiming = nil
         self.onStart?()
 
@@ -209,7 +205,7 @@ final class ScanModel: ScanResults, Listings, ScanRows {
                 self.rows[result.item]?.state = .measured
             }
         case .done:
-            self.itemsDone = self.secondsSinceScanStarted
+            self.stopwatch = self.stopwatch?.lap(.items)
             self.diskSpace = self.engine?.diskSpace()
             self.lastScan = Date()
             self.now = Date()
@@ -220,12 +216,12 @@ final class ScanModel: ScanResults, Listings, ScanRows {
         case let .extras(extras):
             withAnimation(Motion.animation()) { self.extras = extras }
             self.isLoadingExtras = false
-            self.extrasDone = self.secondsSinceScanStarted
+            self.stopwatch = self.stopwatch?.lap(.extras)
             self.finishTiming()
         case let .android(report):
             withAnimation(Motion.animation()) { self.android = report }
             self.isLoadingAndroid = false
-            self.androidDone = self.secondsSinceScanStarted
+            self.stopwatch = self.stopwatch?.lap(.android)
             self.finishTiming()
         }
     }
@@ -238,20 +234,11 @@ final class ScanModel: ScanResults, Listings, ScanRows {
         self.pendingProgress = [:]
     }
 
-    private var secondsSinceScanStarted: Double? {
-        self.scanStarted.map { start in
-            let elapsed = ContinuousClock.now - start
-            return Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
-        }
-    }
-
     /// Once the items, the extras and Android Studio are all in: the timing,
     /// and a copy of the results for the next launch.
     private func finishTiming() {
-        guard let itemsDone,
-              extrasDone != nil || !(engine?.config.includeExtras ?? false),
-              androidDone != nil || !(engine?.config.includeAndroid ?? false) else { return }
-        self.scanTiming = (itemsDone, max(itemsDone, self.extrasDone ?? 0, self.androidDone ?? 0))
+        guard let timing = self.stopwatch?.timing else { return }
+        self.scanTiming = timing
         self.saveScan()
         self.onFinished?()
     }
