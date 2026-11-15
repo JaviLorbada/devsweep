@@ -79,6 +79,16 @@ extension DebugLaunch {
         }
         await self.wait { settingsWindow() != nil }
         if let settings = settingsWindow() {
+            // On the sharpest screen, so the capture comes out at full
+            // resolution whichever screen has the person's focus.
+            if let screen = NSScreen.screens.max(by: { $0.backingScaleFactor < $1.backingScaleFactor }),
+               settings.screen != screen
+            {
+                let area = screen.visibleFrame
+                settings.setFrameOrigin(NSPoint(
+                    x: area.midX - settings.frame.width / 2,
+                    y: area.midY - settings.frame.height / 2))
+            }
             if let height {
                 var frame = settings.frame
                 frame.origin.y += frame.height - height
