@@ -298,6 +298,9 @@ sequenceDiagram
     Cleaning->>Marks: cleaned(item), no longer ticked
   end
   Cleaning->>Scan: endCleaning(warnings:), kept for the next launch
+  opt something was skipped or couldn't be removed
+    Cleaning-->>Window: cleanNotice, what was left alone
+  end
 ```
 
 ### Layout
