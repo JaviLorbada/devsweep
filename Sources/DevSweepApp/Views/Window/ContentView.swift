@@ -142,9 +142,11 @@ struct ContentView: View {
         { pending in
             switch pending.stage {
             case .quitApps:
-                Button("Quit and Clean") { Task {
-                    await self.cleaning.quitAppsAndClean(pending)
-                } }
+                Button("Quit and Clean") {
+                    Task {
+                        await self.cleaning.quitAppsAndClean(pending)
+                    }
+                }
                 if pending.hasOthers {
                     Button("Clean the Others") { self.cleaning.cleanSkippingXcodeItems(pending) }
                 }
