@@ -41,7 +41,7 @@ enum Snapshotter {
         case "cleaned", "putback":
             // The confirmed step directly: never the quit prompt, which would
             // ask the real Xcode to quit.
-            await app.cleaning.confirmClean(CleaningModel.PendingClean(
+            await app.cleaning.confirmClean(PendingClean(
                 items: app.marks.markedRows.map(\.item),
                 stage: .confirm))
             app.cleaning.dismissNotice()
