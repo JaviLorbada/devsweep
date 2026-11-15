@@ -284,9 +284,11 @@ struct PartsList: View {
                 .canPutBack ? "Moved \(clean.summary) to the Trash, \(size)." : "Deleted \(clean.summary), \(size).")
                 .foregroundStyle(.muted)
             if clean.canPutBack {
-                Button("Put Back") { Task {
-                    await self.cleaning.putBackParts(of: self.result.item)
-                } }
+                Button("Put Back") {
+                    Task {
+                        await self.cleaning.putBackParts(of: self.result.item)
+                    }
+                }
                 .buttonStyle(.link)
                 .disabled(self.scan.isCleaning)
             }
