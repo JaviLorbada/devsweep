@@ -45,7 +45,8 @@ import SwiftUI
 ///   shows it, into that file and quits. An app may capture its own windows
 ///   without screen recording permission.
 /// - `DEVSWEEP_SETTINGS=Folders` instead opens Settings on that tab, captures
-///   it there and quits; with `DEVSWEEP_SCROLL`, scrolled down that far.
+///   it there and quits; with `DEVSWEEP_SCROLL`, scrolled down that far, and
+///   with `DEVSWEEP_HEIGHT=900`, made that tall before the tab is shown.
 /// - `DEVSWEEP_MENU=1` instead opens the menu bar item's panel, captures it
 ///   there and quits; `DEVSWEEP_MENU=item` captures the item itself, as the
 ///   menu bar shows it. `DEVSWEEP_MENU=Help`, or any menu's title, opens
@@ -80,6 +81,7 @@ enum DebugLaunch {
         if let tab = environment["DEVSWEEP_SETTINGS"], !tab.isEmpty {
             await self.captureSettings(
                 tab: tab,
+                height: environment["DEVSWEEP_HEIGHT"].flatMap(Double.init),
                 scroll: environment["DEVSWEEP_SCROLL"].flatMap(Double.init),
                 to: environment["DEVSWEEP_CAPTURE"])
         }

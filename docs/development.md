@@ -76,6 +76,7 @@ from a script on a fake home, without screen recording permission:
 WIDTH=1280 Scripts/snapshot.sh build/snapshots overview runtimes-light
 SELECT=swiftpm-builds PRESS="and 2 more" WIDTH=1280 Scripts/snapshot.sh build/snapshots overview
 SETTINGS=Folders WIDTH=1280 Scripts/snapshot.sh build/snapshots settings
+SETTINGS=Items HEIGHT=1000 WIDTH=1280 Scripts/snapshot.sh build/snapshots settings
 MENU=1 WIDTH=1280 Scripts/snapshot.sh build/snapshots menu
 MENU=Help WIDTH=1280 Scripts/snapshot.sh build/snapshots help-menu-light
 CHART=blocks WIDTH=1280 Scripts/snapshot.sh build/snapshots overview
