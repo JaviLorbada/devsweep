@@ -89,37 +89,49 @@ enum CleanPrompt {
         xcodeOpen: Bool,
         stage: PendingClean.Stage) -> PendingClean
     {
-        var question = PendingClean(items: [item], stage: stage, parts: parts)
         guard let result else {
-            return question
+            return PendingClean(items: [item], stage: stage, parts: parts)
         }
-        question.kilobytes = parts.reduce(0) { $0 + result.kilobytes(of: $1) }
         let sorted = parts.sorted { a, b in
             let (sizeA, sizeB) = (result.kilobytes(of: a), result.kilobytes(of: b))
             return sizeA != sizeB ? sizeA > sizeB : a.sentenceName(in: result) < b.sentenceName(in: result)
         }
-        if item == .derivedData, self.allProjects(parts) {
+        let subject = self.partsSubject(sorted, of: item, in: result)
+        return PendingClean(
+            items: [item],
+            stage: stage,
+            kilobytes: parts.reduce(0) { $0 + result.kilobytes(of: $1) },
+            parts: parts,
+            partsSubject: subject.text,
+            partsPlural: subject.plural,
+            blockedPartNames: sorted.filter { $0.needsXcodeClosed(in: item) }.map { $0.sentenceName(in: result) },
+            xcodeOpen: item.xcodeBuildsInto && xcodeOpen,
+            xcodeName: parts.count == 1 ? sorted[0].listName(in: result) : "")
+    }
+
+    /// What the question calls `sorted`, the parts largest first, and
+    /// whether that takes "go" rather than "goes".
+    private static func partsSubject(
+        _ sorted: [ItemPart],
+        of item: Item,
+        in result: ItemResult) -> (text: String, plural: Bool)
+    {
+        if item == .derivedData, self.allProjects(sorted) {
             let names = sorted.map { $0.listName(in: result) }
             let which = names.count <= 3 ? self.names(names) : "\(names.count) projects"
-            question.partsSubject = "DerivedData for \(which)"
-        } else if parts.count <= 3 {
-            question.partsSubject = self.names(sorted.map { $0.sentenceName(in: result) })
-            question.partsPlural = parts.count > 1
-        } else {
-            // ".build folders", "build folders": what the item's folders are called.
-            let folders = result.paths.first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
-            question.partsSubject = item == .derivedData
-                ? "\(parts.count) parts of DerivedData" : "\(parts.count) \(folders) folders"
-            question.partsPlural = true
+            return ("DerivedData for \(which)", false)
         }
-        question.blockedPartNames = sorted.filter { $0.needsXcodeClosed(in: item) }.map { $0.sentenceName(in: result) }
-        question.xcodeOpen = item.xcodeBuildsInto && xcodeOpen
-        question.xcodeName = parts.count == 1 ? sorted[0].listName(in: result) : ""
-        return question
+        if sorted.count <= 3 {
+            return (self.names(sorted.map { $0.sentenceName(in: result) }), sorted.count > 1)
+        }
+        // ".build folders", "build folders": what the item's folders are called.
+        let folders = result.paths.first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
+        let text = item == .derivedData ? "\(sorted.count) parts of DerivedData" : "\(sorted.count) \(folders) folders"
+        return (text, true)
     }
 
     /// Whether every part is a project's folder.
-    private static func allProjects(_ parts: Set<ItemPart>) -> Bool {
+    private static func allProjects(_ parts: some Sequence<ItemPart>) -> Bool {
         parts.allSatisfy {
             if case .folder = $0 {
                 true
