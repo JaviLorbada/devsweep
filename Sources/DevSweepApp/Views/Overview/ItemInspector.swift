@@ -176,13 +176,17 @@ struct InspectorAction: View {
             let parts = "\(CleanPrompt.partsSummary(marked, in: item)), "
                 + SizeText.of(kilobytes: self.scan.kilobytes(of: marked, in: item))
             self.wide(Button("Clean \(parts)") {
-                Task { await self.cleaning.requestCleanParts(of: item) }
+                Task {
+                    await self.cleaning.requestCleanParts(of: item)
+                }
             }
             .buttonStyle(.prominentAction)
             .disabled(self.scan.isScanning || self.scan.isCleaning))
         case .measured where self.row.isLive:
             self.wide(Button("Clean \(self.row.item.shortName)") {
-                Task { await self.cleaning.requestClean([self.row.item]) }
+                Task {
+                    await self.cleaning.requestClean([self.row.item])
+                }
             }
             .buttonStyle(.prominentAction)
             .disabled(self.scan.isScanning || self.scan.isCleaning))
@@ -190,7 +194,9 @@ struct InspectorAction: View {
             self.wide(Button("Cleaning") {}.buttonStyle(.glass).disabled(true))
         case .cleaned where self.row.canPutBack:
             self.wide(Button("Put Back") {
-                Task { await self.cleaning.putBack(self.row.item) }
+                Task {
+                    await self.cleaning.putBack(self.row.item)
+                }
             }
             .buttonStyle(.glass)
             .disabled(self.scan.isCleaning)

@@ -108,7 +108,9 @@ struct RingChart: View {
     private func outerSegments(_ shares: [Item: Double]) -> [Ring.Segment] {
         Family.allCases.flatMap { family in
             family.items.compactMap { item -> Ring.Segment? in
-                guard let row = scan.rows[item] else { return nil }
+                guard let row = scan.rows[item] else {
+                    return nil
+                }
                 return Ring.Segment(id: item.rawValue, weight: shares[item] ?? 0, color: self.color(for: row))
             }
         }
@@ -150,7 +152,9 @@ struct RingChart: View {
         case .cleaning, .cleaned:
             return Palette.cleaned
         case .measured:
-            if self.overview.selection == nil || self.overview.selection == row.item { return Palette.color(row.item) }
+            if self.overview.selection == nil || self.overview.selection == row.item {
+                return Palette.color(row.item)
+            }
             return Palette.color(row.item).opacity(0.42)
         }
     }
@@ -185,12 +189,16 @@ struct Ring: View {
         .chartLegend(.hidden)
         .chartAngleSelection(value: self.$selectedValue)
         .onChange(of: self.selectedValue) { _, value in
-            guard let value else { return }
+            guard let value else {
+                return
+            }
             var running = 0.0
             for segment in drawn {
                 running += segment.weight
                 if value <= running {
-                    if segment.id != "empty" { self.onSelect(segment.id) }
+                    if segment.id != "empty" {
+                        self.onSelect(segment.id)
+                    }
                     break
                 }
             }

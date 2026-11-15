@@ -61,9 +61,13 @@ final class CleaningModel: CleaningTotals {
     /// Starts cleaning `items`: asks to quit Xcode and Simulator when an Xcode
     /// item needs them closed, and asks to confirm anything that can't be put back.
     func requestClean(_ items: [Item]) async {
-        guard !self.scan.isScanning, !self.isCleaning else { return }
+        guard !self.scan.isScanning, !self.isCleaning else {
+            return
+        }
         let items = items.filter { self.scan.rows[$0]?.isLive ?? false }
-        guard !items.isEmpty else { return }
+        guard !items.isEmpty else {
+            return
+        }
         await self.apps.refresh()
         let open = self.apps.open
         if items.contains(where: \.needsXcodeClosed), !open.isEmpty {
@@ -78,9 +82,13 @@ final class CleaningModel: CleaningTotals {
     /// can go while Xcode is open, after a question when Xcode builds into
     /// the item, since it may have the project open.
     func requestCleanParts(of item: Item) async {
-        guard !self.scan.isScanning, !self.isCleaning, self.scan.rows[item]?.isLive == true else { return }
+        guard !self.scan.isScanning, !self.isCleaning, self.scan.rows[item]?.isLive == true else {
+            return
+        }
         let parts = self.marks.markedParts(of: item)
-        guard !parts.isEmpty else { return }
+        guard !parts.isEmpty else {
+            return
+        }
         await self.apps.refresh()
         let open = self.apps.open
         if parts.contains(where: { $0.needsXcodeClosed(in: item) }), !open.isEmpty {
@@ -93,7 +101,9 @@ final class CleaningModel: CleaningTotals {
     /// Quits Xcode and Simulator, then goes on with the clean.
     func quitAppsAndClean(_ pending: PendingClean) async {
         self.pendingClean = nil
-        guard case let .quitApps(apps) = pending.stage else { return }
+        guard case let .quitApps(apps) = pending.stage else {
+            return
+        }
         if await self.apps.quit(apps) {
             self.confirmOrClean(pending.items, parts: pending.parts, afterAlert: true)
         } else {
@@ -104,7 +114,9 @@ final class CleaningModel: CleaningTotals {
     /// Goes on with the items, or the parts, that don't need Xcode closed.
     func cleanSkippingXcodeItems(_ pending: PendingClean) {
         self.pendingClean = nil
-        guard let others = pending.others else { return }
+        guard let others = pending.others else {
+            return
+        }
         self.confirmOrClean(others.items, parts: others.parts, afterAlert: true)
     }
 
@@ -131,7 +143,9 @@ final class CleaningModel: CleaningTotals {
     private func confirmOrClean(_ items: [Item], parts: Set<ItemPart> = [], afterAlert: Bool = false) {
         if self.needsConfirmation(items, parts: parts) {
             Task {
-                if afterAlert { try? await Task.sleep(for: .milliseconds(300)) }
+                if afterAlert {
+                    try? await Task.sleep(for: .milliseconds(300))
+                }
                 if let item = items.first, !parts.isEmpty {
                     self.pendingClean = self.partsQuestion(parts, of: item, stage: .confirm)
                 } else {
@@ -139,9 +153,13 @@ final class CleaningModel: CleaningTotals {
                 }
             }
         } else if let item = items.first, !parts.isEmpty {
-            Task { await self.performClean(parts, of: item) }
+            Task {
+                await self.performClean(parts, of: item)
+            }
         } else {
-            Task { await self.performClean(items) }
+            Task {
+                await self.performClean(items)
+            }
         }
     }
 
@@ -158,12 +176,16 @@ final class CleaningModel: CleaningTotals {
     // MARK: Cleaning
 
     private func performClean(_ items: [Item]) async {
-        guard let cleaner = self.scan.beginCleaning() else { return self.show(.rowsTaken) }
+        guard let cleaner = self.scan.beginCleaning() else {
+            return self.show(.rowsTaken)
+        }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         var problems: [String] = []
 
         for item in items {
-            guard let row = self.scan.rows[item], row.isLive, let result = row.result else { continue }
+            guard let row = self.scan.rows[item], row.isLive, let result = row.result else {
+                continue
+            }
             // Xcode may have been opened since the question was asked.
             if item.needsXcodeClosed {
                 await self.apps.refresh()
@@ -194,8 +216,12 @@ final class CleaningModel: CleaningTotals {
     }
 
     private func performClean(_ parts: Set<ItemPart>, of item: Item) async {
-        guard !self.scan.isScanning, !self.isCleaning else { return self.show(.rowsTaken) }
-        guard let row = self.scan.rows[item], row.isLive, let result = row.result else { return }
+        guard !self.scan.isScanning, !self.isCleaning else {
+            return self.show(.rowsTaken)
+        }
+        guard let row = self.scan.rows[item], row.isLive, let result = row.result else {
+            return
+        }
         // Xcode may have been opened since the question was asked.
         if parts.contains(where: { $0.needsXcodeClosed(in: item) }) {
             await self.apps.refresh()
@@ -204,7 +230,9 @@ final class CleaningModel: CleaningTotals {
                 return
             }
         }
-        guard let cleaner = self.scan.beginCleaning() else { return self.show(.rowsTaken) }
+        guard let cleaner = self.scan.beginCleaning() else {
+            return self.show(.rowsTaken)
+        }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         self.scan.startCleaning(item, kilobytes: parts.reduce(0) { $0 + result.kilobytes(of: $1) })
         let outcome = await self.countingDown(item) {
@@ -247,7 +275,9 @@ final class CleaningModel: CleaningTotals {
 
     /// Shows `notice`, when there is one.
     private func show(_ notice: CleanNotice?) {
-        guard let notice else { return }
+        guard let notice else {
+            return
+        }
         self.notice = notice
     }
 
@@ -258,7 +288,9 @@ final class CleaningModel: CleaningTotals {
     func putBack(_ item: Item) async {
         guard let row = self.scan.rows[item], row.canPutBack, let outcome = row.outcome,
               let cleaner = self.scan.beginCleaning()
-        else { return }
+        else {
+            return
+        }
         let result = await cleaner.putBack(outcome)
         if !result.restored.isEmpty {
             self.scan.putBack(item)
@@ -272,7 +304,9 @@ final class CleaningModel: CleaningTotals {
     func putBackParts(of item: Item) async {
         guard let clean = self.partsCleans[item], clean.canPutBack, let result = self.scan.rows[item]?.result,
               let cleaner = self.scan.beginCleaning()
-        else { return }
+        else {
+            return
+        }
         let putBack = await cleaner.putBack(clean.outcome.outcome)
         let whole = clean.restoring(putBack, into: result)
         self.scan.putBackParts(item, whole: whole)

@@ -122,7 +122,9 @@ struct OverviewFooter: View {
             Button(self.marks.markedRows
                 .isEmpty ? "Clean marked" : "Clean \(SizeText.of(kilobytes: self.marks.markedKilobytes))")
             {
-                Task { await cleaning.requestClean(self.marks.markedRows.map(\.item)) }
+                Task {
+                    await cleaning.requestClean(self.marks.markedRows.map(\.item))
+                }
             }
             .buttonStyle(.prominentAction)
             .controlSize(.large)

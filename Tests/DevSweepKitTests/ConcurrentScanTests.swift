@@ -81,7 +81,9 @@ struct ConcurrentScanTests {
         let (home, tools) = self.richHome()
         var started: [Item] = []
         for await event in try engine(home, tools).scan(.interactive) {
-            if case let .started(item) = event { started.append(item) }
+            if case let .started(item) = event {
+                started.append(item)
+            }
         }
         #expect(Set(started) == Set(Item.allCases))
         // The first four start together, so their order among themselves is the scheduler's.
@@ -123,7 +125,9 @@ struct ConcurrentScanTests {
             var count = 0
             for await _ in engine.scan(.interactive) {
                 count += 1
-                if count == 3 { break }
+                if count == 3 {
+                    break
+                }
             }
             return count
         }

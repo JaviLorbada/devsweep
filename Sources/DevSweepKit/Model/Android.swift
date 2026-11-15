@@ -104,7 +104,10 @@ public struct AndroidEntry: Sendable, Codable, Equatable, Identifiable {
     /// emulators are flagged, after `staleDays` without a change on disk.
     public func flagReason(staleDays: Int, now: Date = Date()) -> String? {
         guard self.kind == .systemImage || self.kind == .emulator, let days = daysUnused(now: now),
-              days >= staleDays else { return nil }
+              days >= staleDays
+        else {
+            return nil
+        }
         return "Not used in \(days) days"
     }
 }

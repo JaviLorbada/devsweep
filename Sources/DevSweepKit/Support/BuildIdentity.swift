@@ -42,7 +42,9 @@ public struct BuildIdentity: Equatable, Sendable {
     /// "Built from 506cc8c.", for the status line of a build not signed for
     /// release, so a development build can be told apart at a glance.
     public var statusNote: String? {
-        guard !self.releaseSigned else { return nil }
+        guard !self.releaseSigned else {
+            return nil
+        }
         return self.commitDescription.map { "Built from \($0)." }
     }
 }

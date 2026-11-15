@@ -47,7 +47,9 @@ public struct Engine: Sendable {
     /// The developer apps that are running and would have to quit before the
     /// Xcode items can be cleaned. Empty when those items are all skipped.
     public func runningAppsBlockingClean() async -> [DeveloperApp] {
-        guard !self.config.skipsEverythingXcodeUses else { return [] }
+        guard !self.config.skipsEverythingXcodeUses else {
+            return []
+        }
         var running: [DeveloperApp] = []
         for app in DeveloperApp.allCases where await self.tools.runningApps.isRunning(app) {
             running.append(app)
@@ -101,13 +103,19 @@ public struct Engine: Sendable {
 
         var totalKilobytes: Int64 = 0
         for item in self.ordered(options) {
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                return
+            }
             continuation.yield(.started(item))
             let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
                 continuation.yield(.progress(item, bytes: bytes))
             }
-            if Task.isCancelled { return }
-            if !result.isEmpty { totalKilobytes += result.kilobytes }
+            if Task.isCancelled {
+                return
+            }
+            if !result.isEmpty {
+                totalKilobytes += result.kilobytes
+            }
             continuation.yield(.finished(result))
         }
 
@@ -144,20 +152,28 @@ public struct Engine: Sendable {
                 switch job {
                 case .extras:
                     let extras = await ExtrasScanner.scan(in: context)
-                    if !Task.isCancelled { continuation.yield(.extras(extras)) }
+                    if !Task.isCancelled {
+                        continuation.yield(.extras(extras))
+                    }
                 case .android:
                     let report = await AndroidScanner().scan(in: context)
-                    if !Task.isCancelled { continuation.yield(.android(report)) }
+                    if !Task.isCancelled {
+                        continuation.yield(.android(report))
+                    }
                 case let .item(item):
                     continuation.yield(.started(item))
                     let result = await Scanners.scanner(for: item).scan(in: context) { bytes in
                         continuation.yield(.progress(item, bytes: bytes))
                     }
-                    guard !Task.isCancelled else { return }
+                    guard !Task.isCancelled else {
+                        return
+                    }
                     continuation.yield(.finished(result))
                     let (finished, total) = progress.withLock { state in
                         state.finished += 1
-                        if !result.isEmpty { state.kilobytes += result.kilobytes }
+                        if !result.isEmpty {
+                            state.kilobytes += result.kilobytes
+                        }
                         return (state.finished, state.kilobytes)
                     }
                     if finished == order.count {
@@ -167,11 +183,15 @@ public struct Engine: Sendable {
                 }
             }
             for _ in 0..<options.concurrentItems {
-                guard let job = pending.next() else { break }
+                guard let job = pending.next() else {
+                    break
+                }
                 group.addTask { await perform(job) }
             }
             while await group.next() != nil {
-                if Task.isCancelled { group.cancelAll(); continue }
+                if Task.isCancelled {
+                    group.cancelAll(); continue
+                }
                 if let job = pending.next() {
                     group.addTask { await perform(job) }
                 }
@@ -192,7 +212,9 @@ public struct Engine: Sendable {
     /// Bytes free on the home folder's volume as Finder shows them, or as
     /// `df` does when that figure can't be read: what the report says.
     public func freeBytes() async -> Int64 {
-        if let bytes = await self.tools.freeSpace.availableBytes(on: self.config.home) { return bytes }
+        if let bytes = await self.tools.freeSpace.availableBytes(on: self.config.home) {
+            return bytes
+        }
         return (DiskSpace.of(self.config.home)?.availableKilobytes ?? 0) * 1024
     }
 
@@ -221,7 +243,9 @@ public struct Engine: Sendable {
     /// the command the report shows. A scan never calls this; only an explicit
     /// request does. Ids that simctl could read as an option are refused.
     public func removeRuntime(_ runtime: SimulatorRuntime) async -> Bool {
-        guard !runtime.id.isEmpty, !runtime.id.hasPrefix("-") else { return false }
+        guard !runtime.id.isEmpty, !runtime.id.hasPrefix("-") else {
+            return false
+        }
         return await self.tools.simctl.deleteRuntime(runtime.id)
     }
 
@@ -240,9 +264,13 @@ public struct Engine: Sendable {
                   .first(where: { FileSystem.physicalDirectory($0.path)?.bytesEqual(real) ?? false }),
               !entry.isLocked, !entry.isPrunable,
               let status = await git.status(in: entry.path), status.isEmpty
-        else { return false }
+        else {
+            return false
+        }
         if entry.branch == nil {
-            guard let refs = await git.refsContainingHead(in: entry.path), !refs.isEmpty else { return false }
+            guard let refs = await git.refsContainingHead(in: entry.path), !refs.isEmpty else {
+                return false
+            }
         }
         // The path as git lists it, which is how git finds the worktree.
         return await git.removeWorktree(entry.path, from: worktree.repository)

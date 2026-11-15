@@ -13,11 +13,17 @@ enum WorktreeScanner {
         var seen: Set<String> = []
         var worktrees: [GitWorktree] = []
         for repository in repositories {
-            if Task.isCancelled { break }
-            guard let listing = await context.tools.git.worktreeList(in: repository) else { continue }
+            if Task.isCancelled {
+                break
+            }
+            guard let listing = await context.tools.git.worktreeList(in: repository) else {
+                continue
+            }
             // The first entry is always the repository's main working copy.
             for entry in self.parse(listing).dropFirst() where !entry.isPrunable {
-                guard let real = context.policy.safePath(entry.path), seen.insert(real).inserted else { continue }
+                guard let real = context.policy.safePath(entry.path), seen.insert(real).inserted else {
+                    continue
+                }
                 await worktrees.append(self.describe(
                     entry,
                     real: real,
@@ -41,17 +47,29 @@ enum WorktreeScanner {
         var seen: Set<String> = []
         for root in roots {
             FileTree.walk(root) { entry in
-                if Task.isCancelled { return .stop }
-                guard entry.kind == .directory else { return .proceed }
-                if entry.path.bytesEqual(library) || pruned.contains(entry.name) { return .skipChildren }
+                if Task.isCancelled {
+                    return .stop
+                }
+                guard entry.kind == .directory else {
+                    return .proceed
+                }
+                if entry.path.bytesEqual(library) || pruned.contains(entry.name) {
+                    return .skipChildren
+                }
                 let dotGit = "\(entry.path)/.git"
-                guard !FileSystem.isSymlink(dotGit) else { return .proceed }
+                guard !FileSystem.isSymlink(dotGit) else {
+                    return .proceed
+                }
                 if FileSystem.isDirectory(dotGit) {
-                    if seen.insert(entry.path).inserted { found.append(entry.path) }
+                    if seen.insert(entry.path).inserted {
+                        found.append(entry.path)
+                    }
                     return .skipChildren
                 }
                 if let repository = self.repository(ofWorktree: entry.path) {
-                    if let real = policy.safePath(repository), seen.insert(real).inserted { found.append(real) }
+                    if let real = policy.safePath(repository), seen.insert(real).inserted {
+                        found.append(real)
+                    }
                     return .skipChildren
                 }
                 return .proceed
@@ -66,14 +84,20 @@ enum WorktreeScanner {
     /// folder. That is `<repository>/.git`, or the repository itself when it
     /// is bare. Nil for any other `.git` file, a submodule's for one.
     static func repository(ofWorktree folder: String) -> String? {
-        guard let line = self.firstLine(of: "\(folder)/.git"), line.hasPrefix("gitdir: ") else { return nil }
+        guard let line = self.firstLine(of: "\(folder)/.git"), line.hasPrefix("gitdir: ") else {
+            return nil
+        }
         let named = String(line.dropFirst("gitdir: ".count))
         let gitFolder = named.hasPrefix("/") ? named : "\(folder)/\(named)"
-        guard FileSystem.basename(FileSystem.dirname(gitFolder)) == "worktrees" else { return nil }
+        guard FileSystem.basename(FileSystem.dirname(gitFolder)) == "worktrees" else {
+            return nil
+        }
         let common = self.firstLine(of: "\(gitFolder)/commondir")
             .map { $0.hasPrefix("/") ? $0 : "\(gitFolder)/\($0)" }
             ?? FileSystem.dirname(FileSystem.dirname(gitFolder))
-        guard let real = FileSystem.physicalDirectory(common) else { return nil }
+        guard let real = FileSystem.physicalDirectory(common) else {
+            return nil
+        }
         return FileSystem.basename(real) == ".git" ? FileSystem.dirname(real) : real
     }
 
@@ -82,7 +106,9 @@ enum WorktreeScanner {
         guard FileSystem.isRegularFile(path), !FileSystem.isSymlink(path),
               let data = FileManager.default.contents(atPath: path),
               let text = String(data: data, encoding: .utf8)
-        else { return nil }
+        else {
+            return nil
+        }
         return text.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false).first
             .map { String($0.hasSuffix("\r") ? $0.dropLast() : $0) }
     }
@@ -92,7 +118,9 @@ enum WorktreeScanner {
     /// two differ when `HOME` goes through a symlink. The prefix is compared
     /// and dropped as bytes: a letter like ö takes two.
     static func fromHome(_ path: String, policy: PathPolicy) -> String {
-        guard !policy.home.bytesEqual(policy.homeReal), path.hasBytePrefix(policy.homeReal + "/") else { return path }
+        guard !policy.home.bytesEqual(policy.homeReal), path.hasBytePrefix(policy.homeReal + "/") else {
+            return path
+        }
         return policy.home + path.removingPrefix(policy.homeReal)
     }
 

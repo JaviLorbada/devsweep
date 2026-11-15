@@ -98,13 +98,18 @@ public struct LiveSimctlClient: SimctlClient {
     }
 
     public func unavailableDevicesListing() async -> String {
-        guard let output = await runner.run("xcrun", ["simctl", "list", "devices", "unavailable"]) else { return "" }
+        guard let output = await runner.run("xcrun", ["simctl", "list", "devices", "unavailable"]) else {
+            return ""
+        }
         return String(decoding: output.standardOutput, as: UTF8.self)
     }
 
     public func runtimesJSON() async -> Data? {
         guard let output = await runner.run("xcrun", ["simctl", "runtime", "list", "-j"]),
-              output.succeeded else { return nil }
+              output.succeeded
+        else {
+            return nil
+        }
         return output.standardOutput
     }
 
@@ -135,7 +140,9 @@ public struct LiveBrewClient: BrewClient {
     }
 
     public func cleanupDryRun() async -> String {
-        guard let output = await runner.run("brew", ["cleanup", "--prune=all", "--dry-run"]) else { return "" }
+        guard let output = await runner.run("brew", ["cleanup", "--prune=all", "--dry-run"]) else {
+            return ""
+        }
         return String(decoding: output.standardOutput, as: UTF8.self)
     }
 
@@ -202,7 +209,9 @@ public struct LiveGitClient: GitClient {
     }
 
     private func text(_ arguments: [String]) async -> String? {
-        guard let output = await runner.run("git", arguments), output.succeeded else { return nil }
+        guard let output = await runner.run("git", arguments), output.succeeded else {
+            return nil
+        }
         return output.text
     }
 }

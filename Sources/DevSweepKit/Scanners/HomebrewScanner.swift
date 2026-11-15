@@ -45,7 +45,9 @@ public struct HomebrewScanner: Scanner {
         }
         // awk's printf "%d" of kb + 0.5: rounded, halves up.
         let rounded = result + 0.5
-        guard rounded.isFinite, rounded >= 1, rounded < Double(Int64.max) else { return 0 }
+        guard rounded.isFinite, rounded >= 1, rounded < Double(Int64.max) else {
+            return 0
+        }
         return Int64(rounded)
     }
 
@@ -63,7 +65,9 @@ public struct HomebrewScanner: Scanner {
         if scalars.first == "." {
             fraction = String(String.UnicodeScalarView(scalars.dropFirst().prefix(while: { ("0"..."9").contains($0) })))
         }
-        guard !whole.isEmpty || !fraction.isEmpty else { return 0 }
+        guard !whole.isEmpty || !fraction.isEmpty else {
+            return 0
+        }
         let value = Double("\(whole.isEmpty ? "0" : whole).\(fraction.isEmpty ? "0" : fraction)") ?? 0
         return negative ? -value : value
     }

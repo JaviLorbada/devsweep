@@ -13,9 +13,13 @@ public struct FixedFoldersScanner: Scanner {
     public func collect(in context: ScanContext) async -> [String] {
         context.existing(self.relativePaths.flatMap { relative -> [String] in
             let path = "\(context.home)/\(relative)"
-            guard let kept = self.keptInside[relative] else { return [path] }
+            guard let kept = self.keptInside[relative] else {
+                return [path]
+            }
             let names = context.files.childNames(path)
-            guard names.contains(where: { $0.hasPrefix(kept) }) else { return [path] }
+            guard names.contains(where: { $0.hasPrefix(kept) }) else {
+                return [path]
+            }
             return names.filter { !$0.hasPrefix(kept) }.map { "\(path)/\($0)" }
         })
     }

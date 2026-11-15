@@ -25,7 +25,9 @@ final class AndroidViewModel {
 
     /// What the Android screen showing lists, in the order it shows them.
     var entries: [AndroidEntry] {
-        guard let android = self.scan.android else { return [] }
+        guard let android = self.scan.android else {
+            return []
+        }
         switch self.window.screen {
         case .androidStudios: return android.studios
         case .androidSDK:

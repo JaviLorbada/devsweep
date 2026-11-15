@@ -159,6 +159,10 @@ extension Screen {
     /// Lets a non-optional selection drive a List, which wants an optional one.
     var optional: Screen? {
         get { self }
-        set { if let newValue { self = newValue } }
+        set {
+            if let newValue {
+                self = newValue
+            }
+        }
     }
 }

@@ -26,10 +26,15 @@
 --wrapparameters before-first
 --wrapcollections before-first
 --closingparen same-line
+# An if or guard body goes on lines of its own, as does the work a Task or
+# MainActor.assumeIsolated runs. A closure that only returns a value, such
+# as a Binding's get or a map, stays on one line.
+--enable wrapGuardStatementBodies,wrapClosureBodies
+--wrap-closure-bodies Task,Task.detached,MainActor.assumeIsolated
 
 # Rules left off
 --disable redundantSendable # Keep explicit concurrency contracts visible
---disable wrapIfStatementBodies,wrapFunctionBodies # Retain compact guards and simple test fixtures
+--disable wrapFunctionBodies # Keep one-line computed properties and test helpers
 --disable swiftTestingTestCaseNames,redundantSwiftTestingSuite # Test names are backticked sentences
 
 # Other

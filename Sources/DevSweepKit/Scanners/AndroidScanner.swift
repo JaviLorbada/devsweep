@@ -63,7 +63,9 @@ struct AndroidScanner: ListingScanner {
             let folder = context.policy.expandTilde(directory)
             for name in context.files.globNames(folder) where FileSystem.matches(name, pattern: "Android Studio*.app") {
                 let app = "\(folder)/\(name)"
-                guard context.files.isDirectory(app), !context.files.isSymlink(app) else { continue }
+                guard context.files.isDirectory(app), !context.files.isSymlink(app) else {
+                    continue
+                }
                 let info = "\(app)/Contents/Info.plist"
                 let version = PropertyList.string(at: info, key: "CFBundleShortVersionString")
                 result.append(AndroidEntry(
@@ -114,7 +116,9 @@ struct AndroidScanner: ListingScanner {
                         kilobytes: 0))
                 }
             default:
-                guard let part = context.policy.safePath(path) else { continue }
+                guard let part = context.policy.safePath(path) else {
+                    continue
+                }
                 result.append(AndroidEntry(
                     kind: .sdkPart,
                     path: part,
@@ -190,7 +194,10 @@ struct AndroidScanner: ListingScanner {
     /// An emulator's `image.sysdir.1` names its system image relative to the SDK.
     func emulatorUses(_ emulator: AndroidEntry, image: AndroidEntry, sdk: String?) -> Bool {
         guard let sdk,
-              let sysdir = Properties.read("\(emulator.path)/config.ini")["image.sysdir.1"] else { return false }
+              let sysdir = Properties.read("\(emulator.path)/config.ini")["image.sysdir.1"]
+        else {
+            return false
+        }
         return image.path == "\(sdk)/\(sysdir.removingSuffix("/"))"
     }
 
@@ -211,7 +218,9 @@ struct AndroidScanner: ListingScanner {
                 let versions = context.files.globNames("\(folder)/dists").map {
                     $0.removingPrefix("gradle-").removingSuffix("-bin").removingSuffix("-all")
                 }
-                if !versions.isEmpty { detail = versions.joined(separator: ", ") }
+                if !versions.isEmpty {
+                    detail = versions.joined(separator: ", ")
+                }
             }
             return AndroidEntry(
                 kind: .gradleCache,
@@ -243,7 +252,9 @@ struct AndroidScanner: ListingScanner {
     private func safeChildren(of folder: String, context: ScanContext) -> [String] {
         context.files.globNames(folder).compactMap { name in
             let path = "\(folder)/\(name)"
-            guard context.files.isDirectory(path) else { return nil }
+            guard context.files.isDirectory(path) else {
+                return nil
+            }
             return context.policy.safePath(path)
         }
     }
@@ -257,13 +268,20 @@ struct AndroidScanner: ListingScanner {
 enum Properties {
     static func read(_ path: String) -> [String: String] {
         guard let data = FileManager.default.contents(atPath: path),
-              let text = String(data: data, encoding: .utf8) else { return [:] }
+              let text = String(data: data, encoding: .utf8)
+        else {
+            return [:]
+        }
         var values: [String: String] = [:]
         for line in text.split(whereSeparator: \.isNewline) {
-            guard !line.hasPrefix("#"), let equals = line.firstIndex(of: "=") else { continue }
+            guard !line.hasPrefix("#"), let equals = line.firstIndex(of: "=") else {
+                continue
+            }
             let key = line[..<equals].trimmingCharacters(in: .whitespaces)
             let value = line[line.index(after: equals)...].trimmingCharacters(in: .whitespaces)
-            if !key.isEmpty, values[key] == nil { values[key] = value }
+            if !key.isEmpty, values[key] == nil {
+                values[key] = value
+            }
         }
         return values
     }

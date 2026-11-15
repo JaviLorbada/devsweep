@@ -14,7 +14,9 @@ enum CleanPrompt {
     }
 
     static func message(for pending: PendingClean, moveToTrash: Bool) -> String {
-        if !pending.parts.isEmpty { return self.partsMessage(for: pending, moveToTrash: moveToTrash) }
+        if !pending.parts.isEmpty {
+            return self.partsMessage(for: pending, moveToTrash: moveToTrash)
+        }
         switch pending.stage {
         case let .quitApps(apps):
             let blocked = pending.items.filter(\.needsXcodeClosed).map(\.shortName)
@@ -31,7 +33,9 @@ enum CleanPrompt {
             var message = "\(names(byTool.map(\.shortName))) \(byTool.count == 1 ? "is" : "are") removed by "
                 + "\(self.names(byTool.map { $0 == .simulators ? "simctl" : "brew" })), so "
                 + "\(byTool.count == 1 ? "it" : "they") can't be put back."
-            if !rest.isEmpty { message += " The rest moves to the Trash." }
+            if !rest.isEmpty {
+                message += " The rest moves to the Trash."
+            }
             return message
         }
     }
@@ -86,7 +90,9 @@ enum CleanPrompt {
         stage: PendingClean.Stage) -> PendingClean
     {
         var question = PendingClean(items: [item], stage: stage, parts: parts)
-        guard let result else { return question }
+        guard let result else {
+            return question
+        }
         question.kilobytes = parts.reduce(0) { $0 + result.kilobytes(of: $1) }
         let sorted = parts.sorted { a, b in
             let (sizeA, sizeB) = (result.kilobytes(of: a), result.kilobytes(of: b))

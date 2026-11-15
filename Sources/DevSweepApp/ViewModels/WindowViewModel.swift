@@ -50,7 +50,9 @@ final class WindowViewModel: Navigation {
     private(set) var overviewFooterHeight: CGFloat = 0
 
     var inspectorPlacement: InspectorPlacement {
-        guard self.wantsInspector else { return .hidden }
+        guard self.wantsInspector else {
+            return .hidden
+        }
         return self.inspectorHasRoom ? .docked : .floating
     }
 
@@ -74,7 +76,9 @@ final class WindowViewModel: Navigation {
         let hasRoom = self.inspectorHasRoom
             ? width >= WindowLayout.inspectorHideBelow
             : width >= WindowLayout.inspectorShowFrom
-        if hasRoom != self.inspectorHasRoom { self.inspectorHasRoom = hasRoom }
+        if hasRoom != self.inspectorHasRoom {
+            self.inspectorHasRoom = hasRoom
+        }
     }
 
     /// The overview measured its footer.

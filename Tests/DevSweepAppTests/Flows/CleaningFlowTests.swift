@@ -100,7 +100,9 @@ struct CleaningFlowTests {
             try? await Task.sleep(for: .milliseconds(20))
         }
         let pending = try #require(app.cleaning.pendingClean)
-        let cleaning = Task { await app.cleaning.confirmClean(pending) }
+        let cleaning = Task {
+            await app.cleaning.confirmClean(pending)
+        }
         for _ in 0..<200 where (app.scan.rows[.npmCache]?.removedBytes ?? 0) == 0 {
             try? await Task.sleep(for: .milliseconds(20))
         }

@@ -72,8 +72,12 @@ extension FeedbackLink.About {
     /// "26.1 (25B78)". A beta's build tells it from the release.
     static func macOS(_ version: OperatingSystemVersion, build: String?) -> String {
         var text = "\(version.majorVersion).\(version.minorVersion)"
-        if version.patchVersion > 0 { text += ".\(version.patchVersion)" }
-        if let build { text += " (\(build))" }
+        if version.patchVersion > 0 {
+            text += ".\(version.patchVersion)"
+        }
+        if let build {
+            text += " (\(build))"
+        }
         return text
     }
 
@@ -83,7 +87,9 @@ extension FeedbackLink.About {
         guard let start = text.range(of: "(Build ")?.upperBound,
               let end = text[start...].firstIndex(of: ")"),
               start < end
-        else { return nil }
+        else {
+            return nil
+        }
         return String(text[start..<end])
     }
 }

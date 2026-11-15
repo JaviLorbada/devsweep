@@ -100,7 +100,9 @@ struct BlocksChart: View {
         cells.compactMap { cell in
             var drawn = cell
             drawn.frame = cell.frame.insetBy(dx: Self.cellInset, dy: Self.cellInset)
-            guard !drawn.frame.isNull, drawn.frame.width >= 1, drawn.frame.height >= 1 else { return nil }
+            guard !drawn.frame.isNull, drawn.frame.width >= 1, drawn.frame.height >= 1 else {
+                return nil
+            }
             return drawn
         }
     }

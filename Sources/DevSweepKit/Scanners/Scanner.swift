@@ -49,7 +49,9 @@ public struct ScanContext: Sendable {
             var results: [Measurement] = []
             var done: Int64 = 0
             for path in paths {
-                if Task.isCancelled { break }
+                if Task.isCancelled {
+                    break
+                }
                 let base = done * 1024
                 let measured = self.measurer.measure(path) { progress(base + $0) }
                 done += measured.kilobytes
@@ -76,7 +78,9 @@ public struct ScanContext: Sendable {
             var results = [Measurement?](repeating: nil, count: paths.count)
             while let (index, measured) = await group.next() {
                 results[index] = measured
-                if next < paths.count, !Task.isCancelled { add() }
+                if next < paths.count, !Task.isCancelled {
+                    add()
+                }
             }
             return results.compactMap(\.self)
         }

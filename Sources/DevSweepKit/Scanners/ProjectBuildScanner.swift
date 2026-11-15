@@ -14,7 +14,9 @@ public struct ProjectBuildScanner: Scanner {
     public func collect(in context: ScanContext) async -> [String] {
         var result: [String] = []
         for folder in await context.projects.folders(named: self.folderName) {
-            guard let real = context.policy.safePath(folder), qualifies(real) else { continue }
+            guard let real = context.policy.safePath(folder), qualifies(real) else {
+                continue
+            }
             if await GitTracking.isUntracked(
                 real,
                 environment: context.config.environment,
@@ -60,7 +62,9 @@ public struct ProjectBuildScanner: Scanner {
     /// sits next to a project, workspace or package, and holds Xcode's build
     /// output. A Gradle build folder never counts, so none is counted twice.
     static func isXcodeBuild(_ folder: String) -> Bool {
-        if self.isGradleBuild(folder) { return false }
+        if self.isGradleBuild(folder) {
+            return false
+        }
         let parent = FileSystem.dirname(folder)
         let besideProject = FileSystem.isRegularFile("\(parent)/Package.swift")
             || self.hasChild(parent, matching: ["*.xcodeproj", "*.xcworkspace"])

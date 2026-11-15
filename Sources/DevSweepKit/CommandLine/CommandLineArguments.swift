@@ -35,9 +35,15 @@ public struct CommandLineOptions: Sendable, Equatable {
             case "-y", "--yes":
                 options.yes = true
             case "--skip", "--projects":
-                guard index + 1 < arguments.count else { return .failure("Missing value for \(argument)") }
+                guard index + 1 < arguments.count else {
+                    return .failure("Missing value for \(argument)")
+                }
                 index += 1
-                if argument == "--skip" { options.skip = arguments[index] } else { options.projects = arguments[index] }
+                if argument == "--skip" {
+                    options.skip = arguments[index]
+                } else {
+                    options.projects = arguments[index]
+                }
             case "-h", "--help":
                 return .help
             case "--version" where command == .product:
@@ -54,10 +60,18 @@ public struct CommandLineOptions: Sendable, Equatable {
     /// values in their own argument.
     public var arguments: [String] {
         var arguments: [String] = []
-        if self.run { arguments.append("--run") }
-        if self.yes { arguments.append("--yes") }
-        if let skip { arguments += ["--skip", skip] }
-        if let projects { arguments += ["--projects", projects] }
+        if self.run {
+            arguments.append("--run")
+        }
+        if self.yes {
+            arguments.append("--yes")
+        }
+        if let skip {
+            arguments += ["--skip", skip]
+        }
+        if let projects {
+            arguments += ["--projects", projects]
+        }
         return arguments
     }
 

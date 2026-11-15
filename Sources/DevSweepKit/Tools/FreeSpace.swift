@@ -46,13 +46,17 @@ public struct OsascriptFreeSpace: FreeSpaceReading {
     /// and nothing else, as the script's `case` takes it.
     public func availableBytes(on path: String) async -> Int64? {
         guard let output = await runner.run("osascript", ["-l", "JavaScript", "-", path], input: Data(Self.script.utf8))
-        else { return nil }
+        else {
+            return nil
+        }
         return Self.bytes(output.text)
     }
 
     static func bytes(_ text: String) -> Int64? {
         guard !text.isEmpty, text.utf8.allSatisfy({ (UInt8(ascii: "0")...UInt8(ascii: "9")).contains($0) })
-        else { return nil }
+        else {
+            return nil
+        }
         return Int64(text)
     }
 }

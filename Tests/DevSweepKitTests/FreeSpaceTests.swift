@@ -89,7 +89,9 @@ private final class RecordingRunner: ProcessRunning, @unchecked Sendable {
     func run(_ name: String, _ arguments: [String], input: Data?, passthrough: Bool) async -> ProcessOutput? {
         self.lock.withLock {
             self.recordedCalls.append([name] + arguments)
-            if let input { self.recordedInputs.append(input) }
+            if let input {
+                self.recordedInputs.append(input)
+            }
         }
         return ProcessOutput(status: 0, standardOutput: Data(self.output.utf8))
     }

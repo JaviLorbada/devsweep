@@ -23,7 +23,9 @@ enum Snapshotter {
     @MainActor
     static func runIfAsked(_ app: AppCoordinator) async {
         let environment = ProcessInfo.processInfo.environment
-        guard let output = environment["DEVSWEEP_SNAPSHOT"] else { return }
+        guard let output = environment["DEVSWEEP_SNAPSHOT"] else {
+            return
+        }
         let dark = environment["DEVSWEEP_SNAPSHOT_APPEARANCE"] != "light"
         NSApplication.shared.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
 
@@ -55,7 +57,10 @@ enum Snapshotter {
             app.select(snapshotID: id)
         }
         if environment["DEVSWEEP_SNAPSHOT_SCREEN"] == "remove-runtime",
-           let runtime = app.runtimes.current { app.runtimes.removal.ask(runtime) }
+           let runtime = app.runtimes.current
+        {
+            app.runtimes.removal.ask(runtime)
+        }
         try? await Task.sleep(for: .milliseconds(600))
 
         let width = environment["DEVSWEEP_SNAPSHOT_WIDTH"].flatMap(Double.init) ?? 1280
@@ -304,7 +309,9 @@ extension AppCoordinator {
         } else if let worktree = self.scan.extras?.worktrees.first(where: { $0.name == id }) {
             self.worktrees.select(worktree)
         } else {
-            if let runtime = self.runtimes.runtimes.first(where: { $0.id == id }) { self.runtimes.select(runtime) }
+            if let runtime = self.runtimes.runtimes.first(where: { $0.id == id }) {
+                self.runtimes.select(runtime)
+            }
         }
     }
 }

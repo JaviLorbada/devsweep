@@ -359,7 +359,9 @@ extension String {
     func containsInOrder(_ parts: String...) -> Bool {
         var rest = self[...]
         for part in parts {
-            guard let range = rest.range(of: part) else { return false }
+            guard let range = rest.range(of: part) else {
+                return false
+            }
             rest = rest[range.upperBound...]
         }
         return true

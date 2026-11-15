@@ -133,12 +133,18 @@ struct ContentView: View {
             self.pendingTitle,
             isPresented: Binding(
                 get: { self.cleaning.pendingClean != nil },
-                set: { if !$0 { self.cleaning.dismissPendingClean() } }),
+                set: {
+                    if !$0 {
+                        self.cleaning.dismissPendingClean()
+                    }
+                }),
             presenting: self.cleaning.pendingClean)
         { pending in
             switch pending.stage {
             case .quitApps:
-                Button("Quit and Clean") { Task { await self.cleaning.quitAppsAndClean(pending) } }
+                Button("Quit and Clean") { Task {
+                    await self.cleaning.quitAppsAndClean(pending)
+                } }
                 if pending.hasOthers {
                     Button("Clean the Others") { self.cleaning.cleanSkippingXcodeItems(pending) }
                 }
@@ -148,7 +154,9 @@ struct ContentView: View {
                     self.cleaning.moveToTrash ? "Clean" : "Delete",
                     role: self.cleaning.moveToTrash ? nil : .destructive)
                 {
-                    Task { await self.cleaning.confirmClean(pending) }
+                    Task {
+                        await self.cleaning.confirmClean(pending)
+                    }
                 }
                 Button("Cancel", role: .cancel) {}
             }
@@ -168,7 +176,11 @@ struct ContentView: View {
             self.cleaning.notice?.title ?? "",
             isPresented: Binding(
                 get: { self.cleaning.notice != nil },
-                set: { if !$0 { self.cleaning.dismissNotice() } }),
+                set: {
+                    if !$0 {
+                        self.cleaning.dismissNotice()
+                    }
+                }),
             presenting: self.cleaning.notice)
         { _ in
             Button("OK") {}
@@ -176,7 +188,11 @@ struct ContentView: View {
             Text(notice.message)
         }
         #if DEBUG
-        .transformEnvironment(\.appearsActive) { if DebugLaunch.drawsActive { $0 = true } }
+        .transformEnvironment(\.appearsActive) {
+            if DebugLaunch.drawsActive {
+                $0 = true
+            }
+        }
         #endif
     }
 
@@ -287,21 +303,29 @@ struct WindowWidthReader: NSViewRepresentable {
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            if let observation { NotificationCenter.default.removeObserver(observation) }
+            if let observation {
+                NotificationCenter.default.removeObserver(observation)
+            }
             observation = nil
-            guard let window else { return }
+            guard let window else {
+                return
+            }
             self.observation = NotificationCenter.default.addObserver(
                 forName: NSWindow.didResizeNotification,
                 object: window,
                 queue: .main)
             { [weak self] _ in
-                MainActor.assumeIsolated { self?.report() }
+                MainActor.assumeIsolated {
+                    self?.report()
+                }
             }
             self.report()
         }
 
         private func report() {
-            if let width = window?.frame.width { self.onChange(width) }
+            if let width = window?.frame.width {
+                self.onChange(width)
+            }
         }
     }
 }

@@ -21,7 +21,9 @@ public enum ChartScale {
     public static func shares(_ sizes: [Double]) -> [Double] {
         var shares = sizes.map { _ in 0.0 }
         let positive = sizes.indices.filter { sizes[$0] > 0 }
-        guard !positive.isEmpty else { return shares }
+        guard !positive.isEmpty else {
+            return shares
+        }
         if Double(positive.count) * self.minimumShare >= 1 {
             for index in positive {
                 shares[index] = 1 / Double(positive.count)

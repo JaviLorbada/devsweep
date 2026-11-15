@@ -77,7 +77,9 @@ public struct DerivedDataScanner: Scanner {
     /// `sort -k1,1nr`: largest first, ties by the whole line in byte order.
     static func sorted(_ projects: [DerivedDataProject]) -> [DerivedDataProject] {
         projects.sorted { a, b in
-            if a.kilobytes != b.kilobytes { return a.kilobytes > b.kilobytes }
+            if a.kilobytes != b.kilobytes {
+                return a.kilobytes > b.kilobytes
+            }
             return "\(a.name)\t\(a.statusText)".utf8.lexicographicallyPrecedes("\(b.name)\t\(b.statusText)".utf8)
         }
     }
@@ -97,7 +99,9 @@ public struct DerivedDataScanner: Scanner {
         files: any FileSystemAccess = LiveFileSystem()) -> DerivedDataProject?
     {
         let plist = PropertyList.dictionary(at: "\(entry)/info.plist")
-        guard let workspace = plist?["WorkspacePath"] as? String, !workspace.isEmpty else { return nil }
+        guard let workspace = plist?["WorkspacePath"] as? String, !workspace.isEmpty else {
+            return nil
+        }
 
         let status: DerivedDataProject.Status
         if files.exists(workspace) {
@@ -125,12 +129,16 @@ public struct DerivedDataScanner: Scanner {
 /// Reads plists the way `plutil -extract KEY raw` does for the keys DevSweep needs.
 enum PropertyList {
     static func dictionary(at path: String) -> [String: Any]? {
-        guard let data = FileManager.default.contents(atPath: path) else { return nil }
+        guard let data = FileManager.default.contents(atPath: path) else {
+            return nil
+        }
         return (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any]
     }
 
     static func string(at path: String, key: String) -> String? {
-        guard let value = dictionary(at: path)?[key] as? String, !value.isEmpty else { return nil }
+        guard let value = dictionary(at: path)?[key] as? String, !value.isEmpty else {
+            return nil
+        }
         return value
     }
 

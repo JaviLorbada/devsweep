@@ -20,7 +20,9 @@ enum GitTracking {
         if (environment["GIT_DIR"] ?? "").isEmpty, (environment["GIT_WORK_TREE"] ?? "").isEmpty {
             var probe = parent
             while !FileSystem.existsOrIsSymlink("\(probe)/.git") {
-                if probe == "/" { return true }
+                if probe == "/" {
+                    return true
+                }
                 probe = FileSystem.dirname(probe)
             }
         }

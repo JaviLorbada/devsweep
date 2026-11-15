@@ -9,7 +9,9 @@ public struct SimulatorsScanner: Scanner {
     }
 
     public func collect(in context: ScanContext) async -> [String] {
-        guard context.tools.simctl.isAvailable else { return [] }
+        guard context.tools.simctl.isAvailable else {
+            return []
+        }
         let listing = await context.tools.simctl.unavailableDevicesListing()
         return context.existing(Self.deviceIDs(in: listing).map {
             "\(context.home)/Library/Developer/CoreSimulator/Devices/\($0)"
@@ -26,7 +28,9 @@ public struct SimulatorsScanner: Scanner {
         // Upper-case 8-4-4-4-12 hex between parentheses.
         let groups = [8, 4, 4, 4, 12]
         let length = 36
-        guard line.count >= length + 2 else { return nil }
+        guard line.count >= length + 2 else {
+            return nil
+        }
         var start = line.count - length - 2
         while start >= 0 {
             if line[start] == UInt8(ascii: "("), line[start + length + 1] == UInt8(ascii: ")") {
@@ -34,14 +38,18 @@ public struct SimulatorsScanner: Scanner {
                 var valid = true
                 for (number, size) in groups.enumerated() {
                     if number > 0 {
-                        if line[index] != UInt8(ascii: "-") { valid = false; break }
+                        if line[index] != UInt8(ascii: "-") {
+                            valid = false; break
+                        }
                         index += 1
                     }
                     for offset in 0..<size where !self.isUpperHex(line[index + offset]) {
                         valid = false
                         break
                     }
-                    if !valid { break }
+                    if !valid {
+                        break
+                    }
                     index += size
                 }
                 if valid {

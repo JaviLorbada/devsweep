@@ -16,7 +16,9 @@ struct WorkspaceAppQuitter: AppQuitting {
             .flatMap { NSRunningApplication.runningApplications(withBundleIdentifier: $0.bundleIdentifier) }
         running.forEach { $0.terminate() }
         for _ in 0..<60 {
-            if running.allSatisfy(\.isTerminated) { break }
+            if running.allSatisfy(\.isTerminated) {
+                break
+            }
             try? await Task.sleep(for: .milliseconds(250))
         }
         return running.allSatisfy(\.isTerminated)
@@ -36,8 +38,13 @@ final class WorkspaceRunningApps: RunningAppsChecking, @unchecked Sendable {
             self.observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] note in
                 let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
                 guard let id = app?.bundleIdentifier,
-                      DeveloperApp.allCases.contains(where: { $0.bundleIdentifier == id }) else { return }
-                MainActor.assumeIsolated { self?.onChange?() }
+                      DeveloperApp.allCases.contains(where: { $0.bundleIdentifier == id })
+                else {
+                    return
+                }
+                MainActor.assumeIsolated {
+                    self?.onChange?()
+                }
             })
         }
     }

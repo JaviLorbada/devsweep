@@ -122,7 +122,9 @@ extension PrimitiveButtonStyle where Self == ProminentActionStyle {
 /// light, as `.secondary` does.
 struct MutedStyle: ShapeStyle {
     func resolve(in environment: EnvironmentValues) -> Color {
-        if environment.backgroundProminence == .increased { return Color.white.opacity(0.85) }
+        if environment.backgroundProminence == .increased {
+            return Color.white.opacity(0.85)
+        }
         return Color(nsColor: NSColor(rgb: environment.colorScheme == .dark ? 0x9A9AA0 : 0x636368))
     }
 }

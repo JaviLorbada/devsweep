@@ -11,7 +11,9 @@ extension DebugLaunch {
     /// the window, each column's width or collapsed state, and every scroll
     /// view whose content is wider than the view showing it.
     static func probe(_ app: AppCoordinator) -> String {
-        guard let window = mainWindow, let content = window.contentView else { return "no window\n" }
+        guard let window = mainWindow, let content = window.contentView else {
+            return "no window\n"
+        }
         var lines: [String] = []
         let size = content.bounds.size
         lines
@@ -32,7 +34,9 @@ extension DebugLaunch {
             let frame = split.convert(split.bounds, to: nil)
             let fits = frame.minX >= -0.5 && frame.maxX <= size.width + 0.5 && frame.minY >= -0.5 && frame.maxY <= size
                 .height + 0.5
-            if !fits { problems += 1 }
+            if !fits {
+                problems += 1
+            }
             let columns = split.arrangedSubviews
                 .map {
                     split.isSubviewCollapsed($0) || $0.isHidden || $0.frame
@@ -83,9 +87,13 @@ extension DebugLaunch {
         var scrolls: [NSScrollView] = []
         self.collect(content, into: &scrolls)
         for scroll in scrolls where !scroll.isHidden && scroll.frame.width > 1 {
-            guard let document = scroll.documentView else { continue }
+            guard let document = scroll.documentView else {
+                continue
+            }
             let clipped = document.frame.width > scroll.contentView.bounds.width + 0.5
-            if clipped { problems += 1 }
+            if clipped {
+                problems += 1
+            }
             let frame = scroll.convert(scroll.bounds, to: nil)
             lines.append(String(
                 format: "scroll %@ at %.0f,%.0f %.0fx%.0f content %.0fx%.0f%@",
@@ -107,9 +115,13 @@ extension DebugLaunch {
     /// and which are disabled.
     static func menuLines() -> [String] {
         (NSApplication.shared.mainMenu?.items ?? []).compactMap { top in
-            guard let menu = top.submenu else { return nil }
+            guard let menu = top.submenu else {
+                return nil
+            }
             let items = menu.items.filter { !$0.isHidden }.map { item -> String in
-                if item.isSeparatorItem { return "|" }
+                if item.isSeparatorItem {
+                    return "|"
+                }
                 var text = item.title
                 if !item.keyEquivalent.isEmpty {
                     let flags = item.keyEquivalentModifierMask
@@ -130,16 +142,22 @@ extension DebugLaunch {
 
     /// SwiftUI hosting views a few levels down: one per column and toolbar.
     static func collectHosts(_ view: NSView, depth: Int, into found: inout [NSView]) {
-        guard depth < 14 else { return }
+        guard depth < 14 else {
+            return
+        }
         let name = String(describing: type(of: view))
-        if name.hasPrefix("NSHostingView") || name.hasPrefix("_NSCoreHostingView") { found.append(view) }
+        if name.hasPrefix("NSHostingView") || name.hasPrefix("_NSCoreHostingView") {
+            found.append(view)
+        }
         for child in view.subviews {
             self.collectHosts(child, depth: depth + 1, into: &found)
         }
     }
 
     static func collect<T: NSView>(_ view: NSView, into found: inout [T]) {
-        if let match = view as? T { found.append(match) }
+        if let match = view as? T {
+            found.append(match)
+        }
         for child in view.subviews {
             self.collect(child, into: &found)
         }

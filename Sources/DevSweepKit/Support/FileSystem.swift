@@ -37,24 +37,32 @@ enum FileSystem {
     /// Modification time in seconds, of the path itself (`stat -f %m`).
     static func modificationTime(_ path: String) -> Int {
         var info = stat()
-        guard lstat(path, &info) == 0 else { return 0 }
+        guard lstat(path, &info) == 0 else {
+            return 0
+        }
         return Int(info.st_mtimespec.tv_sec)
     }
 
     /// `cd -P -- path && pwd -P`: the directory with every symlink and `..`
     /// resolved, or nil when it isn't a directory you can enter.
     static func physicalDirectory(_ path: String) -> String? {
-        guard !path.isEmpty, let resolved = realpath(path, nil) else { return nil }
+        guard !path.isEmpty, let resolved = realpath(path, nil) else {
+            return nil
+        }
         defer { free(resolved) }
         let real = String(cString: resolved)
-        guard self.isDirectory(real), access(real, X_OK) == 0 else { return nil }
+        guard self.isDirectory(real), access(real, X_OK) == 0 else {
+            return nil
+        }
         return real
     }
 
     /// Names inside a directory, without `.` and `..`, in no particular order.
     /// Follows the directory itself when it is a symlink, like a glob does.
     static func childNames(_ directory: String) -> [String] {
-        guard let dir = opendir(directory) else { return [] }
+        guard let dir = opendir(directory) else {
+            return []
+        }
         defer { closedir(dir) }
         var names: [String] = []
         while let entry = readdir(dir) {
@@ -82,7 +90,9 @@ enum FileSystem {
         while trimmed.count > 1, trimmed.hasSuffix("/") {
             trimmed = trimmed.dropLast()
         }
-        if trimmed == "/" { return "/" }
+        if trimmed == "/" {
+            return "/"
+        }
         if let slash = trimmed.lastIndex(of: "/") {
             return String(trimmed[trimmed.index(after: slash)...])
         }
@@ -95,8 +105,12 @@ enum FileSystem {
         while trimmed.count > 1, trimmed.hasSuffix("/") {
             trimmed = trimmed.dropLast()
         }
-        if trimmed == "/" { return "/" }
-        guard let slash = trimmed.lastIndex(of: "/") else { return "." }
+        if trimmed == "/" {
+            return "/"
+        }
+        guard let slash = trimmed.lastIndex(of: "/") else {
+            return "."
+        }
         var parent = trimmed[..<slash]
         while parent.count > 1, parent.hasSuffix("/") {
             parent = parent.dropLast()
@@ -132,7 +146,9 @@ extension String {
 
     /// Strips one leading occurrence of `prefix`, like `${value#prefix}`.
     func removingPrefix(_ prefix: String) -> String {
-        guard self.hasBytePrefix(prefix) else { return self }
+        guard self.hasBytePrefix(prefix) else {
+            return self
+        }
         return String(decoding: Array(utf8.dropFirst(prefix.utf8.count)), as: UTF8.self)
     }
 
@@ -142,7 +158,9 @@ extension String {
         var used = 0
         for character in self {
             let size = character.utf8.count
-            if used + size > count { break }
+            if used + size > count {
+                break
+            }
             result.append(character)
             used += size
         }

@@ -68,9 +68,13 @@ enum DebugLaunch {
     @MainActor
     static func run(_ app: AppCoordinator) async {
         let environment = ProcessInfo.processInfo.environment
-        guard self.isRequested else { return }
+        guard self.isRequested else {
+            return
+        }
         await self.setUpWindow(environment)
-        guard await self.waitForScan(app) else { return }
+        guard await self.waitForScan(app) else {
+            return
+        }
         await self.applyScreen(app, environment)
         await self.resizeInTurn(environment)
         if let tab = environment["DEVSWEEP_SETTINGS"], !tab.isEmpty {
@@ -98,10 +102,14 @@ enum DebugLaunch {
                 .trace(
                     "app menu \(appName), window title \(window.title), process \(ProcessInfo.processInfo.processName)")
             self.trace(self.capture(window, to: output) ? "captured \(output)" : "capture failed")
-            if (environment["DEVSWEEP_PROBE"] ?? "").isEmpty { exit(0) }
+            if (environment["DEVSWEEP_PROBE"] ?? "").isEmpty {
+                exit(0)
+            }
         }
         self.trace("probing")
-        guard let output = environment["DEVSWEEP_PROBE"], !output.isEmpty else { return }
+        guard let output = environment["DEVSWEEP_PROBE"], !output.isEmpty else {
+            return
+        }
         try? self.probe(app).write(toFile: output, atomically: true, encoding: .utf8)
         exit(0)
     }
@@ -201,7 +209,9 @@ enum DebugLaunch {
         case "scanning": app.rewindScan(toMeasured: 5)
         default: break
         }
-        if let id = environment["DEVSWEEP_SELECT"], !id.isEmpty { app.select(snapshotID: id) }
+        if let id = environment["DEVSWEEP_SELECT"], !id.isEmpty {
+            app.select(snapshotID: id)
+        }
         switch environment["DEVSWEEP_CHART"] {
         case "blocks": app.window.chartStyle = .blocks
         case "ring": app.window.chartStyle = .ring
@@ -225,7 +235,9 @@ enum DebugLaunch {
         if let clicks = environment["DEVSWEEP_CLICK"], !clicks.isEmpty, let window = mainWindow {
             for pair in clicks.split(separator: ";") {
                 let numbers = pair.split(separator: ",").compactMap { Double($0) }
-                guard numbers.count == 2 else { continue }
+                guard numbers.count == 2 else {
+                    continue
+                }
                 try? await Task.sleep(for: .seconds(1))
                 self.trace(self.click(at: CGPoint(x: numbers[0], y: numbers[1]), in: window))
                 try? await Task.sleep(for: .seconds(1))
