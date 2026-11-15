@@ -56,10 +56,12 @@ extension DebugLaunch {
         }
     }
 
-    /// Opens Settings on a tab, scrolls it down `scroll` points when given,
-    /// captures it and quits.
+    /// Opens Settings, makes it `height` points tall when given, as dragging
+    /// its bottom edge would, switches to a tab, scrolls it down `scroll`
+    /// points when given, captures it and quits. It says how big Settings is
+    /// once on the tab.
     @MainActor
-    static func captureSettings(tab: String, scroll: Double?, to output: String?) async -> Never {
+    static func captureSettings(tab: String, height: Double?, scroll: Double?, to output: String?) async -> Never {
         let main = self.mainWindow
         // The app menu's Settings… item, as ⌘, would choose it.
         if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
@@ -72,6 +74,13 @@ extension DebugLaunch {
         if let settings = NSApplication.shared.windows
             .first(where: { $0.isVisible && $0 !== main && $0.toolbar != nil })
         {
+            if let height {
+                var frame = settings.frame
+                frame.origin.y += frame.height - height
+                frame.size.height = height
+                settings.setFrame(frame, display: true)
+                try? await Task.sleep(for: .milliseconds(500))
+            }
             // Settings tabs are toolbar items.
             if let item = settings.toolbar?.items.first(where: { $0.label == tab }), let action = item.action {
                 settings.toolbar?.selectedItemIdentifier = item.itemIdentifier
@@ -81,6 +90,9 @@ extension DebugLaunch {
                 self.trace("no tab \(tab)")
             }
             try? await Task.sleep(for: .seconds(1))
+            self.trace(
+                "settings \(Int(settings.frame.width))x\(Int(settings.frame.height)) min "
+                    + "\(Int(settings.minSize.width))x\(Int(settings.minSize.height))")
             if let scroll {
                 self.trace(self.scrollCenter(by: scroll, in: settings))
                 try? await Task.sleep(for: .milliseconds(500))

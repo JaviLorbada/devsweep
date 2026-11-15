@@ -21,8 +21,9 @@
 #   SELECT=derived-data selects an item (or a runtime id, or an Xcode by its
 #   folder's name), CHART=blocks picks the chart, SCROLL=200 scrolls the
 #   center panel down that many points, SETTINGS=General captures that
-#   Settings tab instead, scrolled by SCROLL too, and ACTIVE=1 draws the
-#   window as active when it can't be, as while the screen is locked. MENU=1
+#   Settings tab instead, scrolled by SCROLL too and made HEIGHT tall when
+#   given, and ACTIVE=1 draws the window as active when it can't be, as
+#   while the screen is locked. MENU=1
 #   captures the menu bar item's panel instead, and MENU=Help, or any menu's
 #   title, that menu of the menu bar, open over the window, in macOS's own
 #   appearance whatever the screen's name asks for. CLICK="x,y;x,y"
@@ -261,7 +262,7 @@ for screen in "${screens[@]}"; do
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
       DEVSWEEP_CAPTURE="$out/$name.png" DEVSWEEP_SCREEN="$screen" DEVSWEEP_APPEARANCE="$appearance" \
       DEVSWEEP_SELECT="${SELECT:-$select}" DEVSWEEP_ACTIVE="${ACTIVE:-}" DEVSWEEP_CHART="${CHART:-}" DEVSWEEP_SCROLL="${SCROLL:-}" \
-      DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_PERFORM="${PERFORM:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_MENU="${MENU:-}" \
+      DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_PERFORM="${PERFORM:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_HEIGHT="${HEIGHT:-}" DEVSWEEP_MENU="${MENU:-}" \
       DEVSWEEP_CLICK="${CLICK:-}" DEVSWEEP_THEN_WIDTHS="${THEN_WIDTHS:-}" DEVSWEEP_PROBE="${PROBE:+$out/$name.txt}" \
       DEVSWEEP_SIDEBAR_TIMING="${SIDEBAR_TIMING:-}" DEVSWEEP_SIDEBAR_WIDTH="${SIDEBAR_WIDTH:-}" DEVSWEEP_SIDEBAR="${SIDEBAR:-}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"$log" &
