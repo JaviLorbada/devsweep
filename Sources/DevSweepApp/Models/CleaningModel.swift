@@ -17,7 +17,7 @@ final class CleaningModel: CleaningTotals {
     /// A clean waiting on an answer, which the window asks.
     private(set) var pendingClean: PendingClean?
     /// What the window says after a clean that left something alone.
-    private(set) var notice: Notice?
+    private(set) var notice: CleanNotice?
     private(set) var trashedThisSession: Int64 = 0
     private(set) var deletedThisSession: Int64 = 0
     /// Each item's last parts clean, which the inspector reports and can put
@@ -97,10 +97,7 @@ final class CleaningModel: CleaningTotals {
         if await self.apps.quit(apps) {
             self.confirmOrClean(pending.items, parts: pending.parts, afterAlert: true)
         } else {
-            self.notice = Notice(
-                title: "\(apps.map(\.rawValue).joined(separator: " and ")) didn't quit",
-                message: "Nothing was cleaned. Quit them yourself, for example after saving your work, and clean "
-                    + "again.")
+            self.notice = .notQuit(apps)
         }
     }
 
@@ -174,7 +171,7 @@ final class CleaningModel: CleaningTotals {
     // MARK: Cleaning
 
     private func performClean(_ items: [Item]) async {
-        guard let cleaner = self.scan.beginCleaning() else { return self.reportRowsTaken() }
+        guard let cleaner = self.scan.beginCleaning() else { return self.show(.rowsTaken) }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         var problems: [String] = []
 
@@ -206,21 +203,21 @@ final class CleaningModel: CleaningTotals {
         }
 
         self.scan.endCleaning(warnings: problems)
-        self.report(problems)
+        self.show(.leftAlone(problems))
     }
 
     private func performClean(_ parts: Set<ItemPart>, of item: Item) async {
-        guard !self.scan.isScanning, !self.isCleaning else { return self.reportRowsTaken() }
+        guard !self.scan.isScanning, !self.isCleaning else { return self.show(.rowsTaken) }
         guard let row = self.scan.rows[item], row.isLive, let result = row.result else { return }
         // Xcode may have been opened since the question was asked.
         if parts.contains(where: { $0.needsXcodeClosed(in: item) }) {
             await self.apps.refresh()
             if !self.apps.running.isEmpty {
-                self.notice = Notice(title: "Nothing was cleaned", message: self.apps.sentence)
+                self.notice = .appsOpen(self.apps.running)
                 return
             }
         }
-        guard let cleaner = self.scan.beginCleaning() else { return self.reportRowsTaken() }
+        guard let cleaner = self.scan.beginCleaning() else { return self.show(.rowsTaken) }
         let mode: CleanMode = self.moveToTrash ? .trash : .delete
         self.scan.startCleaning(item, kilobytes: parts.reduce(0) { $0 + result.kilobytes(of: $1) })
         let outcome = await self.countingDown(item) {
@@ -244,7 +241,7 @@ final class CleaningModel: CleaningTotals {
                 summary: CleanPrompt.partsSummary(cleaned, in: item))
         }
         self.scan.endCleaning(warnings: outcome.outcome.warnings)
-        self.report(outcome.outcome.warnings)
+        self.show(.leftAlone(outcome.outcome.warnings))
     }
 
     /// Runs a clean with `item`'s row counting down as it reports. The
@@ -267,17 +264,10 @@ final class CleaningModel: CleaningTotals {
         return outcome
     }
 
-    /// A scan, or another clean, took the rows between the question and the
-    /// answer, so nothing was cleaned: said, not silently dropped.
-    private func reportRowsTaken() {
-        self.notice = Notice(
-            title: "Nothing was cleaned",
-            message: "A scan started before you answered. Clean again once it's done.")
-    }
-
-    private func report(_ problems: [String]) {
-        guard !problems.isEmpty else { return }
-        self.notice = Notice(title: "Some things were left alone", message: problems.joined(separator: "\n"))
+    /// Shows `notice`, when there is one.
+    private func show(_ notice: CleanNotice?) {
+        guard let notice else { return }
+        self.notice = notice
     }
 
     // MARK: Put Back
@@ -294,7 +284,7 @@ final class CleaningModel: CleaningTotals {
             self.trashedThisSession = max(0, self.trashedThisSession - row.kilobytes)
         }
         self.scan.endCleaning(warnings: [])
-        self.reportPutBackFailures(result.failed)
+        self.show(.notPutBack(result.failed.map(self.scan.tilde)))
     }
 
     /// Moves what the last parts clean of `item` put in the Trash back where it was.
@@ -309,20 +299,11 @@ final class CleaningModel: CleaningTotals {
         self.trashedThisSession = max(0, self.trashedThisSession - (whole.kilobytes - result.kilobytes))
         self.partsCleans[item] = nil
         self.scan.endCleaning(warnings: [])
-        self.reportPutBackFailures(putBack.failed)
-    }
-
-    private func reportPutBackFailures(_ failed: [String]) {
-        guard !failed.isEmpty else { return }
-        self.notice = Notice(
-            title: "Some folders couldn't be put back",
-            message: "Something now stands where they were, or the folder that held them changed. They are still "
-                + "in the Trash:\n"
-                + failed.map(self.scan.tilde).joined(separator: "\n"))
+        self.show(.notPutBack(putBack.failed.map(self.scan.tilde)))
     }
 }
 
-/// The questions a clean waits on, and what the window says after.
+/// The question a clean waits on, and a parts clean the inspector reports.
 extension CleaningModel {
     /// A clean waiting on an answer: quit Xcode first, or confirm.
     struct PendingClean: Identifiable {
@@ -358,12 +339,6 @@ extension CleaningModel {
             }
             return self.parts.contains { !$0.needsXcodeClosed(in: item) }
         }
-    }
-
-    struct Notice: Identifiable {
-        let id = UUID()
-        let title: String
-        let message: String
     }
 
     /// A clean of some parts of an item, which the inspector reports.
