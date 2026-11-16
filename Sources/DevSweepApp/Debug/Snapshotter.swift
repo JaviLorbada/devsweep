@@ -61,7 +61,8 @@ enum Snapshotter {
         {
             app.runtimes.removal.ask(runtime)
         }
-        try? await Task.sleep(for: .milliseconds(600))
+        // ImageRenderer draws the models as they are now, without animating:
+        // nothing to wait for.
 
         let width = environment["DEVSWEEP_SNAPSHOT_WIDTH"].flatMap(Double.init) ?? 1280
         // `about` and `menubar` draw the About window's content and the menu

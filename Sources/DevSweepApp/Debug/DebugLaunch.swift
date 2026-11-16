@@ -38,7 +38,7 @@ import SwiftUI
 ///   button does, and traces the sidebar column's width every few
 ///   milliseconds while it animates, then shows it again.
 /// - `DEVSWEEP_THEN_WIDTHS=900,1400` then resizes to each width in turn.
-/// - `DEVSWEEP_PROBE=/path/report.txt` then waits a few seconds, writes
+/// - `DEVSWEEP_PROBE=/path/report.txt` then, once the window is steady, writes
 ///   whether the content fits the window (split views, columns, scroll views,
 ///   read from the view hierarchy, no screen recording needed), and quits.
 /// - `DEVSWEEP_CAPTURE=/path/window.png` then draws the window, as the screen
@@ -72,12 +72,19 @@ enum DebugLaunch {
         guard self.isRequested else {
             return
         }
+        // Without the zoom macOS opens windows with, which says nothing when
+        // it ends: captured during it, a window comes out a little small.
+        // Registered, so not kept.
+        UserDefaults.standard.register(defaults: ["NSAutomaticWindowAnimationsEnabled": false])
         await self.setUpWindow(environment)
         guard await self.waitForScan(app) else {
             return
         }
         await self.applyScreen(app, environment)
         await self.resizeInTurn(environment)
+        if let window = self.mainWindow {
+            await self.waitForSteadyDrawing(of: window)
+        }
         if let tab = environment["DEVSWEEP_SETTINGS"], !tab.isEmpty {
             await self.captureSettings(
                 tab: tab,
@@ -95,7 +102,7 @@ enum DebugLaunch {
             // Drawn as the key window, so controls don't show their inactive look.
             NSApplication.shared.activate()
             window.makeKeyAndOrderFront(nil)
-            try? await Task.sleep(for: .milliseconds(500))
+            await self.waitForSteadyDrawing(of: window)
             self.trace(
                 "capturing; key window \(window.isKeyWindow), on screen \(window.occlusionState.contains(.visible)), "
                     + "scan button enabled \(app.scan.canScan)")
@@ -143,8 +150,8 @@ enum DebugLaunch {
         {
             var splits: [NSSplitView] = []
             self.collect(content, into: &splits)
+            // Moved there and then: nothing to wait for.
             splits.first?.setPosition(width, ofDividerAt: 0)
-            try? await Task.sleep(for: .milliseconds(500))
             self.trace("sidebar \(Int(splits.first?.arrangedSubviews.first?.frame.width ?? 0)) wide")
         }
         if let wanted = environment["DEVSWEEP_SIDEBAR"], ["hidden", "shown"].contains(wanted),
@@ -155,9 +162,9 @@ enum DebugLaunch {
             let hidden = splits.first.map { split in
                 split.arrangedSubviews.first.map { split.isSubviewCollapsed($0) || $0.isHidden } ?? false
             } ?? false
-            if hidden != (wanted == "hidden") {
+            if hidden != (wanted == "hidden"), let split = splits.first {
                 NSApplication.shared.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: nil)
-                try? await Task.sleep(for: .seconds(1))
+                await self.waitForSidebar(in: split, hidden: wanted == "hidden")
             }
             self.trace("sidebar \(wanted), window \(Int(self.mainWindow?.frame.width ?? 0)) wide")
         }
@@ -219,14 +226,21 @@ enum DebugLaunch {
         case "ring": app.window.chartStyle = .ring
         default: break
         }
+        // snapshot.sh makes the app active once the scan is done, as a Dock
+        // click would: macOS won't let it activate itself while the person
+        // works in another app.
+        await self.wait { NSApplication.shared.isActive || self.drawsActive }
+        // Each step below starts once the window is steady: SwiftUI animates
+        // the chart, the selection and the inspector, and AppKit the sidebar,
+        // without saying when they end.
         if let label = environment["DEVSWEEP_PRESS"], !label.isEmpty, let window = mainWindow {
-            try? await Task.sleep(for: .seconds(1))
+            await self.waitForSteadyDrawing(of: window)
             self.trace(self.press(label, in: window) ? "pressed \(label)" : "found nothing labeled \(label)")
         }
         if let path = environment["DEVSWEEP_PERFORM"], !path.isEmpty {
             let before = Set(NSApplication.shared.windows.filter(\.isVisible).map(ObjectIdentifier.init))
+            // Done once it returns: a window the item opens is up by then.
             self.trace(self.perform(menuPath: path) ? "chose \(path)" : "no menu item \(path)")
-            try? await Task.sleep(for: .seconds(1))
             let visible = NSApplication.shared.windows.filter(\.isVisible)
             self.opened = visible.first { !before.contains(ObjectIdentifier($0)) && $0.contentView != nil }
             self.trace("windows: \(visible.map { "\"\($0.title)\"" }.joined(separator: ", "))")
@@ -240,9 +254,10 @@ enum DebugLaunch {
                 guard numbers.count == 2 else {
                     continue
                 }
-                try? await Task.sleep(for: .seconds(1))
+                await self.waitForSteadyDrawing(of: window)
                 self.trace(self.click(at: CGPoint(x: numbers[0], y: numbers[1]), in: window))
-                try? await Task.sleep(for: .seconds(1))
+                // Traced once the click has done what it does.
+                await self.waitForSteadyDrawing(of: window)
                 self.trace(
                     "inspector \(app.window.inspectorPlacement.rawValue) (wanted \(app.window.wantsInspector), "
                         + "room \(app.window.inspectorHasRoom)), window \(Int(window.frame.width)) wide, "
@@ -250,14 +265,17 @@ enum DebugLaunch {
             }
         }
         if environment["DEVSWEEP_SIDEBAR_TIMING"] == "1", let window = mainWindow {
-            try? await Task.sleep(for: .seconds(1))
+            await self.waitForSteadyDrawing(of: window)
             await self.trace(self.sidebarTiming(in: window))
         }
         if let points = environment["DEVSWEEP_SCROLL"].flatMap(Double.init), let window = mainWindow {
-            try? await Task.sleep(for: .seconds(1))
+            await self.waitForSteadyDrawing(of: window)
             self.trace(self.scrollCenter(by: points, in: window))
+            // The scroll shows the overlay scroller, which fades out within a
+            // second, 0.8 seconds as measured; only AppKit's private state
+            // says when it has gone.
+            try? await Task.sleep(for: .seconds(1))
         }
-        try? await Task.sleep(for: .seconds(3))
     }
 }
 #endif
