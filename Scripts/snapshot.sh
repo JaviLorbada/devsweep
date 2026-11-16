@@ -37,6 +37,8 @@
 #   README's screenshots. WORKTREES=none makes no
 #   worktrees, and PROJECT_FOLDERS='("~/.agents/worktrees")' sets the
 #   project folders, ~/Developer otherwise, where the repository is.
+#   CLONE=1 clones a dependency with git into dashboard's node_modules, a
+#   repository that keeps the folder.
 #   The debug build is build/debug/DevSweep Dev.app, apart from the one you open.
 #   While you work in another app, macOS won't let the app activate itself,
 #   and its window would draw inactive; so once the scan is done the script
@@ -122,6 +124,10 @@ make_home() {
     blob "$ws/$1/node_modules/react/blob" "$2"
     printf '{ "private": true }\n' > "$ws/$1/package.json"
   done
+  if [[ -n "${CLONE:-}" ]]; then
+    blob "$ws/dashboard/node_modules/chart-kit/blob" 2
+    HOME="$home" git -C "$ws/dashboard/node_modules/chart-kit" init -q
+  fi
   blob "$ws/Recipes/Pods/Alamofire/blob" 4
   touch "$ws/Recipes/Podfile.lock"
   blob "$ws/ferris/target/debug/deps/blob" 7
