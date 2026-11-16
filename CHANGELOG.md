@@ -12,6 +12,13 @@ gets a line under Unreleased as it lands.
   SwiftPM's own clones in `.build/checkouts` and `.build/repositories`,
   and in `.build/index-build` where SourceKit-LSP indexes, don't count:
   `swift package resolve` clones them again.
+- The Overview works with VoiceOver, the keyboard and Increase Contrast.
+  VoiceOver reads each ring segment, block and row once, with its size
+  and share of the total, and the chart as a whole in a sentence; pressing
+  a row marks it. Tab moves through the rows, largest first, and the
+  inspector's lines, and Space marks the one focused. With Increase
+  Contrast the charts' faded parts and edges draw stronger, and quieter
+  text darkens.
 
 ## 0.7.0
 

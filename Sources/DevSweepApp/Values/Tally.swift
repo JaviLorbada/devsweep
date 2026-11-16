@@ -52,6 +52,16 @@ struct Tally {
         self.counted.filter { $0.item.family == family }.reduce(0) { $0 + $1.shownKilobytes }
     }
 
+    /// A size's share of the total on screen, in whole percent, as the
+    /// legend writes it and VoiceOver says it; nil while nothing counts.
+    func percent(of kilobytes: Int64) -> Int? {
+        let total = self.reclaimableKilobytes
+        guard total > 0 else {
+            return nil
+        }
+        return Int((Double(kilobytes) / Double(total) * 100).rounded())
+    }
+
     /// What each family takes of the legend's bar: the sum of its items'
     /// shares, with small items drawn larger (`ChartScale`), as the ring's
     /// inner circle draws it once the scan is done.

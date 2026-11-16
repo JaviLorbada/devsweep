@@ -37,6 +37,12 @@ final class MarksModel: Marking {
         }
     }
 
+    /// Ticks the item, or unticks it if it is ticked: Space and VoiceOver's
+    /// press on its row.
+    func toggle(_ item: Item) {
+        self.setMarked(item, !self.marked.contains(item))
+    }
+
     /// Ticks everything with something to clean.
     func markAll() {
         self.touched = true

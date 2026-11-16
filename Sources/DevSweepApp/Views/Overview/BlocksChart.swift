@@ -7,20 +7,23 @@ import SwiftUI
 struct BlocksChart: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
+    let contrast: ChartContrast
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
             VStack(alignment: .leading, spacing: 14) {
+                let total = SpokenText.total(self.scan.tally, isScanning: self.scan.isScanning)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(SizeText.of(kilobytes: self.scan.tally.reclaimableKilobytes))
+                    Text(total.label)
                         .font(.largeTitle.weight(.bold))
                         .monospacedDigit()
                         .contentTransition(.numericText())
-                    Text(self.scan
-                        .isScanning ? (self.scan.tally.showsPrevious ? "updating" : "found so far") : "reclaimable")
+                    Text(total.value)
                         .font(.callout)
                         .foregroundStyle(.muted)
                 }
+                // The chart's summary says it.
+                .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(Family.allCases) { family in
                         Button {
@@ -39,15 +42,21 @@ struct BlocksChart: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .spoken(SpokenText.family(family, in: self.scan.tally))
                     }
                 }
             }
             .frame(width: 150)
 
             GeometryReader { proxy in
-                TreemapCells(size: proxy.size)
+                TreemapCells(size: proxy.size, contrast: self.contrast)
             }
         }
+        // One element that sums the chart up, holding the families and then
+        // the blocks, largest first. A group has no value VoiceOver reads, so
+        // the summary is its label.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(SpokenText.summary(self.scan.tally, isScanning: self.scan.isScanning))
     }
 
     /// The gap around each cell.
@@ -112,6 +121,7 @@ private struct TreemapCells: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     let size: CGSize
+    let contrast: ChartContrast
 
     var body: some View {
         let rows = self.scan.tally.ordered
@@ -122,7 +132,7 @@ private struct TreemapCells: View {
         ZStack(alignment: .topLeading) {
             if cells.isEmpty {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Palette.placeholder)
+                    .fill(self.contrast.placeholder)
                     .overlay {
                         Text(self.scan.isScanning ? "Measuring…" : "Nothing to clean")
                             .foregroundStyle(.muted)
@@ -130,7 +140,15 @@ private struct TreemapCells: View {
             }
             ForEach(BlocksChart.drawnCells(cells), id: \.id) { cell in
                 if let row = scan.rows[cell.id] {
-                    TreemapCell(row: row, frame: cell.frame, selected: self.overview.selection == cell.id)
+                    TreemapCell(
+                        row: row,
+                        frame: cell.frame,
+                        selected: self.overview.selection == cell.id,
+                        spoken: SpokenText.item(row, in: self.scan.tally),
+                        contrast: self.contrast)
+                        // VoiceOver reads them largest first, as the list does,
+                        // wherever the treemap puts them.
+                        .accessibilitySortPriority(Double(rows.count - (rows.firstIndex { $0.item == cell.id } ?? 0)))
                 }
             }
         }
@@ -144,6 +162,8 @@ private struct TreemapCell: View {
     let row: ScanRow
     let frame: CGRect
     let selected: Bool
+    let spoken: SpokenText
+    let contrast: ChartContrast
 
     var body: some View {
         let color = Palette.color(self.row.item)
@@ -172,18 +192,16 @@ private struct TreemapCell: View {
             .frame(width: max(self.frame.width, 0), height: max(self.frame.height, 0), alignment: .topLeading)
             .background(color.opacity(self.selected ? 0.55 : 0.3), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(
-                self.selected ? color : color.opacity(0.6),
-                lineWidth: 1))
-            .opacity(self.row.isLive ? 1 : 0.5)
+                self.contrast.blockEdge(self.row.item, selected: self.selected),
+                lineWidth: self.contrast.blockEdgeWidth))
+            .opacity(self.row.isLive ? 1 : self.contrast.pending)
             .contentShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
         .help(
             "\(self.row.item.name), "
                 + "\(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
-        .accessibilityLabel(
-            "\(self.row.item.name), "
-                + "\(SizeText.of(kilobytes: self.row.shownKilobytes))\(self.row.showsPrevious ? ", last scan" : "")")
+        .spoken(self.spoken)
         .accessibilityAddTraits(self.selected ? .isSelected : [])
         .offset(x: self.frame.minX, y: self.frame.minY)
         .transition(.opacity.combined(with: .scale(scale: 0.9)))

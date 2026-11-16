@@ -4,8 +4,11 @@ import SwiftUI
 /// The eleven items, largest first: mark, color, name, a proportional bar,
 /// size and what can be done with it.
 struct ItemsCard: View {
+    @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
+    @Environment(CleaningModel.self) private var cleaning
+    let contrast: ChartContrast
 
     /// The bar is the first column to go when the center column narrows.
     static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
@@ -30,7 +33,7 @@ struct ItemsCard: View {
         let largest = Double(max(rows.map(\.shownKilobytes).max() ?? 1, 1))
         return VStack(spacing: 0) {
             HStack(spacing: 10) {
-                Text("Items").fontWeight(.semibold).layoutPriority(1)
+                Text("Items").fontWeight(.semibold).layoutPriority(1).accessibilityAddTraits(.isHeader)
                 Text(self.note)
                     .font(.callout)
                     .foregroundStyle(.muted)
@@ -45,9 +48,26 @@ struct ItemsCard: View {
             .frame(height: Self.headerHeight)
 
             ForEach(rows) { row in
+                let marked = row.isLive && self.marks.marked.contains(row.item)
                 Divider().opacity(0.6)
-                ItemRow(row: row, largest: largest, showsBar: showsBar)
+                ItemRow(
+                    row: row,
+                    largest: largest,
+                    marked: marked,
+                    canClean: row.isLive && !self.scan.isScanning && !self.scan.isCleaning,
+                    spoken: SpokenText.row(row, marked: marked, in: self.scan.tally),
+                    contrast: self.contrast,
+                    showsBar: showsBar,
+                    clean: { self.clean(row.item) })
             }
+        }
+    }
+
+    /// What a row's Clean does, by its button or VoiceOver's action.
+    private func clean(_ item: Item) {
+        self.overview.select(item)
+        Task {
+            await self.cleaning.requestClean([item])
         }
     }
 
@@ -58,13 +78,23 @@ struct ItemsCard: View {
     }
 }
 
+/// One item: its mark, name, bar, size and action. For VoiceOver and the
+/// keyboard it is one element, as a table row is: Space or VoiceOver's
+/// press marks it, focusing it selects it, and its actions select and clean it.
 struct ItemRow: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(MarksModel.self) private var marks
     @Environment(\.appearsActive) private var appearsActive
+    @FocusState private var focused: Bool
     let row: ScanRow
     let largest: Double
+    /// Whether it is ticked; never while it has nothing to clean.
+    let marked: Bool
+    let canClean: Bool
+    let spoken: SpokenText
+    let contrast: ChartContrast
     var showsBar = true
+    let clean: () -> Void
 
     var body: some View {
         let selected = self.overview.selection == self.row.item
@@ -73,36 +103,33 @@ struct ItemRow: View {
         let emphasized = selected && self.appearsActive
         HStack(spacing: 12) {
             Toggle("Mark \(self.row.item.name) for cleaning", isOn: Binding(
-                get: { self.marks.marked.contains(self.row.item) && self.row.isLive },
+                get: { self.marked },
                 set: { self.marks.setMarked(self.row.item, $0) }))
                 .toggleStyle(.checkbox)
                 .labelsHidden()
                 .disabled(!self.row.isLive)
+                // The row takes the keyboard's focus and Space, so the box
+                // isn't a second stop.
+                .focusable(false)
 
             Dot(color: emphasized ? .white : Palette.color(self.row.item))
 
-            Button {
-                self.overview.select(self.row.item)
-            } label: {
-                HStack(spacing: 0) {
-                    // The family shows whole or not at all: cut down beside a
-                    // long name in a narrow window, it was a stray letter.
-                    ViewThatFits(in: .horizontal) {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
-                            self.name
-                            Text(self.row.item.family.name)
-                                .font(.caption)
-                                .foregroundStyle(.muted)
-                                .lineLimit(1)
-                        }
+            HStack(spacing: 0) {
+                // The family shows whole or not at all: cut down beside a
+                // long name in a narrow window, it was a stray letter.
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
                         self.name
+                        Text(self.row.item.family.name)
+                            .font(.caption)
+                            .foregroundStyle(.muted)
+                            .lineLimit(1)
                     }
-                    Spacer(minLength: 0)
+                    self.name
                 }
-                .frame(maxHeight: .infinity)
-                .contentShape(Rectangle())
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
+            .frame(maxHeight: .infinity)
 
             if self.showsBar {
                 ThinBar(
@@ -122,7 +149,7 @@ struct ItemRow: View {
                 .frame(width: 64, alignment: .trailing)
                 .contentTransition(.numericText())
 
-            RowAction(row: self.row)
+            RowAction(row: self.row, canClean: self.canClean, clean: self.clean)
                 .frame(width: 84)
         }
         .padding(.horizontal, 14)
@@ -130,12 +157,42 @@ struct ItemRow: View {
         .tableRowSelection(selected)
         .contentShape(Rectangle())
         .onTapGesture { self.overview.select(self.row.item) }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            "\(self.row.result?.label ?? self.row.item.name), "
-                + "\(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .focusable()
+        .focused(self.$focused)
+        .onChange(of: self.focused) { _, focused in
+            if focused {
+                self.overview.select(self.row.item)
+            }
+        }
+        .onKeyPress(.space) {
+            self.toggleMark()
+            return .handled
+        }
+        .accessibilityElement(children: .ignore)
+        .spoken(self.spoken)
+        .accessibilityAddTraits(self.traits(selected: selected))
+        .accessibilityAction { self.toggleMark() }
+        // SwiftUI lists the last added first: Select, then Clean.
+        .accessibilityActions {
+            if self.canClean {
+                Button("Clean") { self.clean() }
+            }
+        }
+        .accessibilityAction(named: "Select") { self.overview.select(self.row.item) }
         .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
+    }
+
+    /// A toggle while it can be marked; selected while the inspector shows it.
+    private func traits(selected: Bool) -> AccessibilityTraits {
+        let toggle: AccessibilityTraits = self.row.isLive ? .isToggle : []
+        return selected ? toggle.union(.isSelected) : toggle
+    }
+
+    private func toggleMark() {
+        guard self.row.isLive else {
+            return
+        }
+        self.marks.toggle(self.row.item)
     }
 
     private var name: some View {
@@ -146,9 +203,9 @@ struct ItemRow: View {
 
     private var barColor: Color {
         switch self.row.state {
-        case .cleaned, .cleaning: Palette.cleaned
-        case .measuring: Palette.color(self.row.item).opacity(0.6)
-        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(0.25)
+        case .cleaned, .cleaning: self.contrast.cleaned
+        case .measuring: Palette.color(self.row.item).opacity(self.contrast.measuring)
+        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(self.contrast.lastScan)
         case .measured: Palette.color(self.row.item)
         }
     }
@@ -173,24 +230,11 @@ struct ItemRow: View {
     }
 }
 
-enum RowWords {
-    /// What VoiceOver says for a row with no size yet.
-    static func state(_ row: ScanRow) -> String {
-        switch row.state {
-        case .waiting: "waiting"
-        case .measuring: "measuring"
-        case .notMeasured: "not measured"
-        default: ""
-        }
-    }
-}
-
 /// The trailing cell of a row: what can be done now, or what is happening.
 struct RowAction: View {
-    @Environment(OverviewViewModel.self) private var overview
-    @Environment(ScanModel.self) private var scan
-    @Environment(CleaningModel.self) private var cleaning
     let row: ScanRow
+    let canClean: Bool
+    let clean: () -> Void
 
     var body: some View {
         switch self.row.state {
@@ -212,15 +256,12 @@ struct RowAction: View {
                 .foregroundStyle(.green)
         case .measured:
             if self.row.isLive {
-                Button("Clean") {
-                    self.overview.select(self.row.item)
-                    Task {
-                        await self.cleaning.requestClean([self.row.item])
-                    }
-                }
-                .controlSize(.small)
-                .rowControl()
-                .disabled(self.scan.isScanning || self.scan.isCleaning)
+                Button("Clean", action: self.clean)
+                    .controlSize(.small)
+                    .rowControl()
+                    .disabled(!self.canClean)
+                    // The row is the stop; VoiceOver has Clean as the row's action.
+                    .focusable(false)
             }
         }
     }
