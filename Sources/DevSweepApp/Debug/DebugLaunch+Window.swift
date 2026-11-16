@@ -51,7 +51,7 @@ extension DebugLaunch {
             frame.size.width = width
             window.setFrame(frame, display: true)
             await self.waitForSteadyWidth()
-            try? await Task.sleep(for: .seconds(1))
+            await self.waitForSteadyDrawing(of: window)
             self.trace("then \(Int(window.frame.width)) wide")
         }
     }
@@ -67,10 +67,6 @@ extension DebugLaunch {
         func settingsWindow() -> NSWindow? {
             NSApplication.shared.windows.first { $0.isVisible && $0 !== main && $0.toolbar != nil }
         }
-        // Without the zoom macOS opens windows with, which says nothing when
-        // it ends: captured during it, Settings comes out a little small.
-        // Registered, so not kept.
-        UserDefaults.standard.register(defaults: ["NSAutomaticWindowAnimationsEnabled": false])
         // The app menu's Settings… item, as ⌘, would choose it.
         if let menu = NSApplication.shared.mainMenu?.items.first?.submenu,
            let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," })
@@ -151,12 +147,19 @@ extension DebugLaunch {
             }
             exit(0)
         }
+        // The panel is the window that wasn't there before the click.
+        func openedPanel() -> NSWindow? {
+            NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
+        }
         let button = self.findStatusButton(in: statusWindow?.contentView)
         button?.performClick(nil)
-        try? await Task.sleep(for: .seconds(1))
-        let panel = NSApplication.shared.windows.first { $0.isVisible && !before.contains(ObjectIdentifier($0)) }
+        if button != nil {
+            await self.wait { openedPanel() != nil }
+        }
+        let panel = openedPanel()
         self.trace(button == nil ? "no status item" : panel == nil ? "no panel" : "opened the menu bar panel")
         if let panel, let output {
+            await self.waitForSteadyDrawing(of: panel)
             self.trace(self.capture(panel, to: output) ? "captured \(output)" : "capture failed")
         }
         exit(0)
@@ -293,7 +296,7 @@ extension DebugLaunch {
         }
         var splits: [NSSplitView] = []
         self.collect(content, into: &splits)
-        guard let split = splits.first, let column = split.arrangedSubviews.first else {
+        guard let split = splits.first, !split.arrangedSubviews.isEmpty else {
             return "no split view"
         }
         let toggle = #selector(NSSplitViewController.toggleSidebar(_:))
@@ -306,11 +309,11 @@ extension DebugLaunch {
             samples.append(String(
                 format: "%.3f:%.0f",
                 ProcessInfo.processInfo.systemUptime - start,
-                split.isSubviewCollapsed(column) && column.isHidden ? 0 : column.frame.width))
+                self.sidebarWidth(in: split)))
             try? await Task.sleep(for: .milliseconds(8))
         }
         NSApplication.shared.sendAction(toggle, to: nil, from: nil)
-        try? await Task.sleep(for: .seconds(1))
+        await self.waitForSidebar(in: split, hidden: false)
         return "sidebar width while hiding: " + samples.joined(separator: " ")
     }
 
@@ -357,23 +360,7 @@ extension DebugLaunch {
     /// window, which hides the others behind it there.
     @MainActor
     static func capture(windowNumber number: Int, over area: CGRect? = nil, to path: String) -> Bool {
-        typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
-        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage")
-        else {
-            return false
-        }
-        let createImage = unsafeBitCast(symbol, to: CreateImage.self)
-        guard let windowNumber = UInt32(exactly: number) else {
-            return false
-        }
-        // Just this window, or it and those below it; ignoring its shadow,
-        // at full resolution.
-        let image = if let area {
-            createImage(area, 1 << 2 | 1 << 3, windowNumber, 1 << 3)?.takeRetainedValue()
-        } else {
-            createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue()
-        }
-        guard let image else {
+        guard let image = self.image(ofWindow: number, over: area) else {
             return false
         }
         let bitmap = NSBitmapImageRep(cgImage: image)
@@ -385,6 +372,26 @@ extension DebugLaunch {
             return false
         }
         return (try? png.write(to: URL(fileURLWithPath: path))) != nil
+    }
+
+    /// The window with that number as the window server composites it, or
+    /// that part of the screen, as `capture` draws them.
+    @MainActor
+    static func image(ofWindow number: Int, over area: CGRect? = nil) -> CGImage? {
+        typealias CreateImage = @convention(c) (CGRect, UInt32, UInt32, UInt32) -> Unmanaged<CGImage>?
+        guard let symbol = dlsym(UnsafeMutableRawPointer(bitPattern: -2), "CGWindowListCreateImage"),
+              let windowNumber = UInt32(exactly: number)
+        else {
+            return nil
+        }
+        let createImage = unsafeBitCast(symbol, to: CreateImage.self)
+        // Just this window, or it and those below it; ignoring its shadow,
+        // at full resolution.
+        return if let area {
+            createImage(area, 1 << 2 | 1 << 3, windowNumber, 1 << 3)?.takeRetainedValue()
+        } else {
+            createImage(.null, 1 << 3, windowNumber, 1 << 0 | 1 << 3)?.takeRetainedValue()
+        }
     }
 
     /// Whether every pixel on a coarse grid is fully transparent.
@@ -408,6 +415,51 @@ extension DebugLaunch {
         while !isDone(), ContinuousClock.now < deadline {
             try? await Task.sleep(for: .milliseconds(50))
         }
+    }
+
+    /// Waits until `measure` reads the same twice in a row, a check apart:
+    /// for what animates without saying when it ends.
+    @MainActor
+    static func waitForSteady<Value: Equatable>(_ measure: () -> Value) async {
+        var last: Value?
+        await self.wait {
+            let now = measure()
+            defer {
+                last = now
+            }
+            return now == last
+        }
+    }
+
+    /// Waits until the window server shows the window the same twice in a
+    /// row: SwiftUI's animations and AppKit's have ended.
+    @MainActor
+    static func waitForSteadyDrawing(of window: NSWindow) async {
+        await self.waitForSteady {
+            // Drawn now and handed to the window server, which otherwise
+            // gets it only as the run loop turns.
+            window.displayIfNeeded()
+            CATransaction.flush()
+            return self.image(ofWindow: window.windowNumber)?.dataProvider?.data as Data?
+        }
+    }
+
+    /// Waits for the split view to finish hiding or showing the sidebar:
+    /// until the column is gone, or back and no longer growing. The window's
+    /// drawing can't tell while a scan is changing it.
+    @MainActor
+    static func waitForSidebar(in split: NSSplitView, hidden: Bool) async {
+        await self.wait { (self.sidebarWidth(in: split) == 0) == hidden }
+        await self.waitForSteady { self.sidebarWidth(in: split) }
+    }
+
+    /// The sidebar column's width: none once it is collapsed and hidden.
+    @MainActor
+    static func sidebarWidth(in split: NSSplitView) -> CGFloat {
+        guard let column = split.arrangedSubviews.first else {
+            return 0
+        }
+        return split.isSubviewCollapsed(column) && column.isHidden ? 0 : column.frame.width
     }
 
     /// Waits until the window's width has not changed for half a second.
