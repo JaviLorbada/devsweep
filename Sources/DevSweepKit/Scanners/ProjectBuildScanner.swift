@@ -1,7 +1,8 @@
 /// Build folders in the project folders: `.build` next to a `Package.swift`,
 /// `build` folders Xcode wrote, `build` folders next to a Gradle file, and
 /// other languages' folders next to their project's file. Each is listed
-/// only when git provably tracks nothing in it.
+/// only when git provably tracks nothing in it, and it holds no git
+/// repository.
 public struct ProjectBuildScanner: Scanner {
     public let item: Item
     let folderName: String
@@ -29,6 +30,30 @@ public struct ProjectBuildScanner: Scanner {
             }
         }
         return result
+    }
+
+    /// Lists and measures, one walk per folder. A folder holding a git
+    /// repository stops its walk there, and is kept with a warning.
+    public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
+        let folders = await collect(in: context).sortedUniqueBytewise()
+        let search = context.config.keepsFoldersWithRepositories ? RepositorySearch() : nil
+        let sizes = await context.measure(folders, search: search, progress: progress)
+        let measured = Array(zip(folders, sizes))
+        for (folder, measurement) in measured {
+            if let repository = measurement.repository {
+                context.warn(Self.kept(folder, holding: repository, policy: context.policy))
+            }
+        }
+        let listed = measured.filter { $0.1.repository == nil }
+        return await self.result(listed.map(\.0), measured: listed.map(\.1), in: context)
+    }
+
+    /// Why a folder holding a git repository is kept.
+    static func kept(_ folder: String, holding repository: String, policy: PathPolicy) -> String {
+        let reason = repository.bytesEqual(folder)
+            ? "it is a git repository"
+            : "it holds a git repository, \(repository.removingPrefix("\(folder)/"))"
+        return "Skipped \(policy.tilde(folder)): \(reason)."
     }
 
     public static let swiftpm = ProjectBuildScanner(

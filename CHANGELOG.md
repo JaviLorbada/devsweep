@@ -6,6 +6,10 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+- A build folder that holds a git repository, like a dependency cloned
+  into `node_modules`, is kept with a warning. Your project's repository
+  ignores the folder, so it can't see that clone's edits or commits.
+
 ## 0.7.0
 
 DevSweep updates itself from this version on, and finds your projects'

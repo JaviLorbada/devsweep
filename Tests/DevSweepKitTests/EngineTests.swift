@@ -33,6 +33,16 @@ extension [ScanEvent] {
     }
 
     func result(_ item: Item) -> ItemResult? { self.results.first { $0.item == item } }
+
+    var warnings: [String] {
+        compactMap {
+            if case let .warning(message) = $0 {
+                message
+            } else {
+                nil
+            }
+        }
+    }
 }
 
 @Suite("Scanning")

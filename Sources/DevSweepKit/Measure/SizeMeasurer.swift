@@ -8,10 +8,14 @@ public struct Measurement: Sendable, Equatable {
     /// False when the folder itself could not be read, for example because macOS
     /// denied access to another app's container. The size is then unknown, not zero.
     public var readable: Bool
+    /// The git repository a `RepositorySearch` found, where the walk stopped:
+    /// the folder is kept, so its size counts nothing.
+    public var repository: String?
 
-    public init(kilobytes: Int64, readable: Bool = true) {
+    public init(kilobytes: Int64, readable: Bool = true, repository: String? = nil) {
         self.kilobytes = kilobytes
         self.readable = readable
+        self.repository = repository
     }
 }
 
@@ -31,19 +35,35 @@ public struct SizeMeasurer: Sendable {
 
     /// Measures one path. `progress` receives the running total in bytes.
     public func measure(_ path: String, progress: ((Int64) -> Void)? = nil) -> Measurement {
-        self.measure(path, shouldStop: { Task.isCancelled }, progress: progress)
+        self.measure(path, search: nil, progress: progress)
+    }
+
+    /// Measures one path, unless `search` finds a git repository in it: the
+    /// walk stops there, and the measurement names it and counts nothing.
+    func measure(_ path: String, search: RepositorySearch?, progress: ((Int64) -> Void)?) -> Measurement {
+        self.measure(path, search: search, shouldStop: { Task.isCancelled }, progress: progress)
     }
 
     /// Measures one path on a GCD thread, so a long walk doesn't hold one of
     /// the few threads Swift concurrency runs tasks on. Cancelling the calling
     /// task stops the walk.
     public func measureOffPool(_ path: String, progress: (@Sendable (Int64) -> Void)? = nil) async -> Measurement {
+        await self.measureOffPool(path, search: nil, progress: progress)
+    }
+
+    /// `measureOffPool`, stopping at a git repository `search` finds.
+    func measureOffPool(
+        _ path: String,
+        search: RepositorySearch?,
+        progress: (@Sendable (Int64) -> Void)?) async -> Measurement
+    {
         let stop = Mutex(false)
         return await withTaskCancellationHandler {
             await withCheckedContinuation { continuation in
                 DispatchQueue.global(qos: .userInitiated).async {
                     continuation.resume(returning: self.measure(
                         path,
+                        search: search,
                         shouldStop: { stop.withLock { $0 } },
                         progress: progress))
                 }
@@ -53,13 +73,23 @@ public struct SizeMeasurer: Sendable {
         }
     }
 
-    func measure(_ path: String, shouldStop: () -> Bool, progress: ((Int64) -> Void)?) -> Measurement {
+    func measure(
+        _ path: String,
+        search: RepositorySearch? = nil,
+        shouldStop: () -> Bool,
+        progress: ((Int64) -> Void)?) -> Measurement
+    {
         var blocks: Int64 = 0
         var seenLinks = Set<FileID>()
         var visited = 0
         var readable = true
+        var repository: String?
 
         FileTree.walk(path) { entry in
+            if let found = search?.repository(at: entry, in: path) {
+                repository = found
+                return .stop
+            }
             visited += 1
             if visited.isMultiple(of: self.progressInterval) {
                 if shouldStop() {
@@ -91,6 +121,10 @@ public struct SizeMeasurer: Sendable {
             return .proceed
         }
 
+        if let repository {
+            progress?(0)
+            return Measurement(kilobytes: 0, repository: repository)
+        }
         let kilobytes = (blocks + 1) / 2
         progress?(kilobytes * 1024)
         return Measurement(kilobytes: kilobytes, readable: readable)

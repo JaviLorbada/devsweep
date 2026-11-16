@@ -61,6 +61,10 @@ built to err on the side of keeping things.
   since the scan is skipped with a warning.
 - **Never what git tracks.** Build folders are removed only when git provably
   tracks nothing in them. Any doubt keeps the folder.
+- **Never a repository inside.** A build folder that holds a git
+  repository, like a dependency cloned into `node_modules`, is kept with a
+  warning: your project's repository ignores the folder, so it can't see
+  that clone's edits or commits.
 - **Your projects' installs are yours to tick.** `node_modules`, Pods and
   Cargo `target` folders never start ticked in the app: a project needs
   `npm install`, `pod install` or a full build before it runs again. On the

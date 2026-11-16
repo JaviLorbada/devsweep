@@ -27,6 +27,13 @@ later without touching the command line's items.
 directory, not itself a symlink, and resolves strictly inside the resolved
 home folder, checked when it is listed and again right before it goes.
 
+Build folders in projects have two more checks. `GitTracking` lists one
+only when git provably tracks nothing in it. `RepositorySearch` keeps one
+that holds a git repository, a `.git` of any kind at any depth, since the
+project's repository ignores the folder and can't see that clone's edits or
+commits. It runs inside the measurer's walk, which stops at the first `.git`,
+so no folder is walked twice.
+
 Deleting for good goes through `TreeRemover`, about twice as fast as
 `FileManager` on a DerivedData folder: four threads share the walk, and each
 directory's files go in the order of their inode numbers, which APFS
