@@ -19,6 +19,16 @@ Apple silicon.
   <img alt="The DevSweep window: a ring of what each cache holds, the items to clean, and the inspector for DerivedData" src="docs/screenshot-light.png">
 </picture>
 
+## Why
+
+DevSweep began as `devclean`, a bash script in my dotfiles for when Xcode's
+leftovers filled the disk. Then every branch got its own worktree, and
+every worktree its own `.build` and DerivedData. On my Mac today DevSweep
+finds 64 GB it can give back, 35 GB of it in twelve `.build` folders. It
+also shows an iOS 18.5 simulator runtime taking 18 GB on its own. It moves
+what you pick to the Trash, where Put Back can restore it, and never
+touches what git tracks.
+
 ## What it does
 
 - **Shows where the space went:** Xcode's DerivedData, old Device Support,
