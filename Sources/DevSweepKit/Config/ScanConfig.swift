@@ -24,6 +24,10 @@ public struct ScanConfig: Sendable {
     /// outer one. Run under the original script's name the searches are the
     /// script's `find`, which looks inside them.
     public var outermostBuildFolders: Bool
+    /// Whether a build folder that holds a git repository is kept, with a
+    /// warning. Run under the original script's name the folders are the
+    /// script's, which lists them.
+    public var keepsFoldersWithRepositories: Bool
     /// The environment the scan runs in. Git's `GIT_DIR` and `GIT_WORK_TREE`
     /// come from here.
     public var environment: [String: String]
@@ -38,6 +42,7 @@ public struct ScanConfig: Sendable {
         includeAndroid: Bool = false,
         includeWorktrees: Bool = false,
         outermostBuildFolders: Bool = true,
+        keepsFoldersWithRepositories: Bool = true,
         environment: [String: String] = [:])
     {
         self.home = home
@@ -49,6 +54,7 @@ public struct ScanConfig: Sendable {
         self.includeAndroid = includeAndroid
         self.includeWorktrees = includeWorktrees
         self.outermostBuildFolders = outermostBuildFolders
+        self.keepsFoldersWithRepositories = keepsFoldersWithRepositories
         self.environment = environment
     }
 
@@ -77,6 +83,7 @@ public struct ScanConfig: Sendable {
             includeExtras: includeExtras,
             includeWorktrees: includeExtras && command == .product,
             outermostBuildFolders: command == .product,
+            keepsFoldersWithRepositories: command == .product,
             environment: environment)
     }
 

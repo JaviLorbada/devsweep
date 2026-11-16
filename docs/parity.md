@@ -46,6 +46,11 @@ so a folder inside another counts once, as part of the outer one: a
 `target`. Under the script's name the searches are the script's `find`,
 which looks inside them (`ScanConfig.outermostBuildFolders`).
 
+As `devsweep`, a build folder that holds a git repository is kept with a
+warning, found while the folder is measured. Under the script's name the
+folders are the script's, which lists them
+(`ScanConfig.keepsFoldersWithRepositories`).
+
 The whole run, from preflight to "Done.", is `CommandLineSession` in the
 kit, writing to a `Terminal`; the binary gives it standard input and output
 and the tests a buffer, so the tests exercise the code the binary runs.

@@ -43,8 +43,13 @@ public struct ScanContext: Sendable {
     }
 
     /// Measures each path, reporting the running total of all of them in
-    /// bytes. The results come back in the order of `paths`.
-    func measure(_ paths: [String], progress: @escaping @Sendable (Int64) -> Void) async -> [Measurement] {
+    /// bytes. The results come back in the order of `paths`. With a `search`,
+    /// a path holding a git repository stops its walk there and counts nothing.
+    func measure(
+        _ paths: [String],
+        search: RepositorySearch? = nil,
+        progress: @escaping @Sendable (Int64) -> Void) async -> [Measurement]
+    {
         if self.concurrentFolders <= 1 || paths.count <= 1 {
             var results: [Measurement] = []
             var done: Int64 = 0
@@ -53,7 +58,7 @@ public struct ScanContext: Sendable {
                     break
                 }
                 let base = done * 1024
-                let measured = self.measurer.measure(path) { progress(base + $0) }
+                let measured = self.measurer.measure(path, search: search) { progress(base + $0) }
                 done += measured.kilobytes
                 results.append(measured)
             }
@@ -66,7 +71,7 @@ public struct ScanContext: Sendable {
                 let index = next
                 next += 1
                 group.addTask {
-                    let measured = await measurer.measureOffPool(paths[index]) { bytes in
+                    let measured = await measurer.measureOffPool(paths[index], search: search) { bytes in
                         progress(running.withLock { $0[index] = bytes; return $0.reduce(0, +) })
                     }
                     return (index, measured)
@@ -111,7 +116,11 @@ public protocol Scanner: Sendable {
 extension Scanner {
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
         let paths = await collect(in: context).sortedUniqueBytewise()
-        let measured = await context.measure(paths, progress: progress)
+        return await self.result(paths, measured: context.measure(paths, progress: progress), in: context)
+    }
+
+    /// The item's result for `paths`, measured in the same order.
+    func result(_ paths: [String], measured: [Measurement], in context: ScanContext) async -> ItemResult {
         let kilobytes = measured.reduce(0) { $0 + $1.kilobytes }
         let known = measured.allSatisfy(\.readable)
         return await ItemResult(
