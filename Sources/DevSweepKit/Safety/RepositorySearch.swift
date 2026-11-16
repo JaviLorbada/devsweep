@@ -5,7 +5,9 @@
 /// the folder.
 struct RepositorySearch: Sendable {
     /// Folders, relative to the build folder, whose clones a package manager
-    /// makes again by itself. A `.git` in them doesn't count.
+    /// makes again by itself, like SwiftPM's `checkouts` and `repositories`,
+    /// which `swift package resolve` clones again at the commits
+    /// `Package.resolved` pins. A `.git` in them doesn't count.
     let managedFolders: [String]
 
     init(managedFolders: [String] = []) {
