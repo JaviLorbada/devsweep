@@ -9,6 +9,9 @@ gets a line under Unreleased as it lands.
 - A build folder that holds a git repository, like a dependency cloned
   into `node_modules`, is kept with a warning. Your project's repository
   ignores the folder, so it can't see that clone's edits or commits.
+  SwiftPM's own clones in `.build/checkouts` and `.build/repositories`,
+  and in `.build/index-build` where SourceKit-LSP indexes, don't count:
+  `swift package resolve` clones them again.
 
 ## 0.7.0
 

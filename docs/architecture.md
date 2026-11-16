@@ -31,8 +31,12 @@ Build folders in projects have two more checks. `GitTracking` lists one
 only when git provably tracks nothing in it. `RepositorySearch` keeps one
 that holds a git repository, a `.git` of any kind at any depth, since the
 project's repository ignores the folder and can't see that clone's edits or
-commits. It runs inside the measurer's walk, which stops at the first `.git`,
-so no folder is walked twice.
+commits. SwiftPM's own clones, in `checkouts` and `repositories` directly
+inside `.build` or SourceKit-LSP's `.build/index-build` (or `SourcePackages`
+in an Xcode `build` folder), don't count: `swift package resolve` clones them
+again. The search runs inside the
+measurer's walk, which stops at the first `.git`, so no folder is walked
+twice.
 
 Deleting for good goes through `TreeRemover`, about twice as fast as
 `FileManager` on a DerivedData folder: four threads share the walk, and each

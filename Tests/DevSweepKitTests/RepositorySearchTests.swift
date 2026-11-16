@@ -64,6 +64,34 @@ struct RepositorySearchTests {
     }
 
     @Test
+    func `SwiftPM's own clones don't keep a folder, and a clone anywhere else does`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
+        for project in ["Resolved", "Edited"] {
+            home.touch("\(p)/\(project)/Package.swift")
+            home.fill("\(p)/\(project)/.build/checkouts/swift-nio/.git")
+            home.write("\(p)/\(project)/.build/checkouts/swift-nio/Vendor/zlib/.git", "gitdir: ../../.git/modules\n")
+            home.touch("\(p)/\(project)/.build/repositories/swift-nio-1a2b3c/HEAD")
+            // SourceKit-LSP's background index is another SwiftPM build, with its own clones.
+            home.fill("\(p)/\(project)/.build/index-build/checkouts/swift-nio/.git")
+            home.touch("\(p)/\(project)/.build/index-build/repositories/swift-nio-1a2b3c/HEAD")
+        }
+        home.fill("\(p)/Edited/.build/debug/checkouts/Clone/.git")
+        home.mkdir("\(p)/Xcode/App.xcodeproj")
+        home.fillXcodeBuild("\(p)/Xcode/build")
+        home.fill("\(p)/Xcode/build/SourcePackages/checkouts/swift-nio/.git")
+        home.touch("\(p)/Xcode/build/SourcePackages/repositories/swift-nio-1a2b3c/HEAD")
+
+        let engine = try engine(home, tools, includeExtras: false)
+        let events = await collect(engine)
+        let projects = "\(engine.policy.homeReal)/Workspace"
+        #expect(events.result(.swiftpmBuilds)?.paths == ["\(projects)/Resolved/.build"])
+        #expect(events.result(.xcodeBuilds)?.paths == ["\(projects)/Xcode/build"])
+        #expect(events.warnings == [
+            "Skipped \(projects)/Edited/.build: it holds a git repository, debug/checkouts/Clone.",
+        ])
+    }
+
+    @Test
     func `devsweep --run deletes the clean folder and keeps the one holding a clone`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         for project in ["Clean", "Cloned"] {

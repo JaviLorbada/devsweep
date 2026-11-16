@@ -8,6 +8,8 @@ public struct ProjectBuildScanner: Scanner {
     let folderName: String
     let describe: String
     let qualifies: @Sendable (String) -> Bool
+    /// Finds a git repository that keeps the folder.
+    let repositories: RepositorySearch
 
     public func location(in context: ScanContext) async -> String {
         self.describe
@@ -36,7 +38,7 @@ public struct ProjectBuildScanner: Scanner {
     /// repository stops its walk there, and is kept with a warning.
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
         let folders = await collect(in: context).sortedUniqueBytewise()
-        let search = context.config.keepsFoldersWithRepositories ? RepositorySearch() : nil
+        let search = context.config.keepsFoldersWithRepositories ? self.repositories : nil
         let sizes = await context.measure(folders, search: search, progress: progress)
         let measured = Array(zip(folders, sizes))
         for (folder, measurement) in measured {
@@ -60,19 +62,25 @@ public struct ProjectBuildScanner: Scanner {
         item: .swiftpmBuilds,
         folderName: ".build",
         describe: ".build next to a Package.swift, in project folders",
-        qualifies: beside("Package.swift"))
+        qualifies: beside("Package.swift"),
+        // SourceKit-LSP's background index builds in index-build, with its own clones.
+        repositories: RepositorySearch(managedFolders: [
+            "checkouts", "repositories", "index-build/checkouts", "index-build/repositories",
+        ]))
 
     public static let xcode = ProjectBuildScanner(
         item: .xcodeBuilds,
         folderName: "build",
         describe: "build with Xcode output next to a project or Package.swift, in project folders",
-        qualifies: isXcodeBuild)
+        qualifies: isXcodeBuild,
+        repositories: RepositorySearch(managedFolders: ["SourcePackages/checkouts", "SourcePackages/repositories"]))
 
     public static let gradle = ProjectBuildScanner(
         item: .gradleBuilds,
         folderName: "build",
         describe: "build next to a Gradle build file, in project folders",
-        qualifies: isGradleBuild)
+        qualifies: isGradleBuild,
+        repositories: RepositorySearch())
 
     // Other languages' folders of installed packages and build output, each
     // next to the file it comes back from.
@@ -81,19 +89,22 @@ public struct ProjectBuildScanner: Scanner {
         item: .cocoapodsPods,
         folderName: "Pods",
         describe: "Pods next to a Podfile.lock, in project folders",
-        qualifies: beside("Podfile.lock"))
+        qualifies: beside("Podfile.lock"),
+        repositories: RepositorySearch())
 
     public static let cargo = ProjectBuildScanner(
         item: .cargoBuilds,
         folderName: "target",
         describe: "target next to a Cargo.toml, in project folders",
-        qualifies: beside("Cargo.toml"))
+        qualifies: beside("Cargo.toml"),
+        repositories: RepositorySearch())
 
     public static let nodeModules = ProjectBuildScanner(
         item: .nodeModules,
         folderName: "node_modules",
         describe: "node_modules next to a package.json, in project folders",
-        qualifies: beside("package.json"))
+        qualifies: beside("package.json"),
+        repositories: RepositorySearch())
 
     /// Whether a file called `name` sits next to the folder.
     static func beside(_ name: String) -> @Sendable (String) -> Bool {
