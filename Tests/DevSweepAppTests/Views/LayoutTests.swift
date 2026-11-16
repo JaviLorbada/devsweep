@@ -33,6 +33,37 @@ struct LayoutTests {
 
 extension LayoutTests {
     @Test
+    func `the Simulators screen fits the narrowest center column`() {
+        let home = TemporaryHome()
+        let app = makeApp(home: home, extras: sampleExtras)
+        app.window.screen = .simulators
+        let size = minimumSize(of: SimulatorsContent(), app: app)
+        #expect(size.width <= WindowLayout.centerMinimumWidth, "needs \(size.width) points")
+    }
+
+    @Test
+    func `a simulator row takes only values, with no model in its environment`() {
+        let row = SimulatorRow(
+            simulator: sampleSimulators[2],
+            largest: Double(sampleSimulators[0].kilobytes),
+            staleDays: 90,
+            isSelected: true) {}
+        #expect(NSHostingController(rootView: row).sizeThatFits(in: .zero).height == 40)
+    }
+
+    @Test
+    func `the simulator inspector never asks the window for more height`() {
+        let home = TemporaryHome()
+        let app = makeApp(home: home, extras: sampleExtras)
+        app.window.screen = .simulators
+        app.simulators.select(sampleSimulators[3])
+        let size = minimumSize(of: SimulatorInspector(), app: app)
+        #expect(size.height <= WindowLayout.minimumHeight, "needs \(size.height) points")
+    }
+}
+
+extension LayoutTests {
+    @Test
     func `the Simulator runtimes screen fits the narrowest center column`() {
         let home = TemporaryHome()
         let app = makeApp(home: home, extras: sampleExtras)

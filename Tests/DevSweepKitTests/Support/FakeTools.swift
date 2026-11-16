@@ -25,7 +25,8 @@ final class FakeTools: @unchecked Sendable {
     var simctlInstalled = true
     var unavailableListing = ""
     var runtimesJSON: Data?
-    var devicesJSON: Data?
+    /// What `simctl list devices -j` prints for each device set.
+    var devicesJSON: [Simulator.DeviceSet: Data] = [:]
     var simctlDeleteSucceeds = true
     /// Runs when `simctl delete unavailable` is called.
     var onDeleteUnavailable: @Sendable () -> Void = {}
@@ -81,7 +82,13 @@ final class FakeTools: @unchecked Sendable {
     func stubRuntimes(now: Date = Date()) {
         let today = ISO8601DateFormatter().string(from: now)
         self.runtimesJSON = Data(fixture("simctl-runtimes.json").replacingOccurrences(of: "$TODAY", with: today).utf8)
-        self.devicesJSON = Data(fixture("simctl-devices.json").utf8)
+        self.devicesJSON[.default] = Data(fixture("simctl-devices.json").utf8)
+    }
+
+    /// Makes simctl list a preview device and a test clone in its other sets.
+    func stubDeviceSets() {
+        self.devicesJSON[.previews] = Data(fixture("simctl-devices-previews.json").utf8)
+        self.devicesJSON[.testing] = Data(fixture("simctl-devices-testing.json").utf8)
     }
 }
 
@@ -90,7 +97,7 @@ struct FakeSimctl: SimctlClient {
     let installed: Bool
     let listing: String
     let runtimes: Data?
-    let devices: Data?
+    let devices: [Simulator.DeviceSet: Data]
     let deleteSucceeds: Bool
     let onDelete: @Sendable () -> Void
 
@@ -108,9 +115,9 @@ struct FakeSimctl: SimctlClient {
         return self.runtimes
     }
 
-    func devicesJSON() async -> Data? {
-        self.log.record("xcrun simctl list devices -j")
-        return self.devices
+    func devicesJSON(in set: Simulator.DeviceSet) async -> Data? {
+        self.log.record((["xcrun", "simctl"] + set.simctlArguments + ["list", "devices", "-j"]).joined(separator: " "))
+        return self.devices[set]
     }
 
     func deleteUnavailable() async -> Bool {

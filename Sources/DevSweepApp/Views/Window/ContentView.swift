@@ -7,6 +7,7 @@ struct ContentView: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(XcodesViewModel.self) private var xcodes
     @Environment(RuntimesViewModel.self) private var runtimes
+    @Environment(SimulatorsViewModel.self) private var simulators
     @Environment(WorktreesViewModel.self) private var worktrees
     @Environment(AndroidViewModel.self) private var android
     @Environment(ScanModel.self) private var scan
@@ -47,6 +48,7 @@ struct ContentView: View {
                     case .overview: OverviewView()
                     case .xcodeVersions: XcodeVersionsView()
                     case .simulatorRuntimes: SimulatorRuntimesView()
+                    case .simulators: SimulatorsView()
                     case .androidStudios: AndroidStudiosView()
                     case .androidSDK: AndroidSDKView()
                     case .gradleCaches: GradleCachesView()
@@ -214,6 +216,7 @@ struct ContentView: View {
         case .overview: ItemInspector()
         case .xcodeVersions: XcodeInspector()
         case .simulatorRuntimes: RuntimeInspector()
+        case .simulators: SimulatorInspector()
         case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
         case .worktrees: WorktreeInspector()
         }
@@ -229,6 +232,7 @@ struct ContentView: View {
         case .overview: self.overview.subtitle
         case .xcodeVersions: self.xcodes.subtitle
         case .simulatorRuntimes: self.runtimes.subtitle
+        case .simulators: self.simulators.subtitle
         case .androidStudios, .androidSDK, .gradleCaches: self.android.subtitle
         case .worktrees: self.worktrees.subtitle
         }
@@ -239,6 +243,7 @@ struct ContentView: View {
         case .overview: "Overview"
         case .xcodeVersions: "Xcode versions"
         case .simulatorRuntimes: "Simulator runtimes"
+        case .simulators: "Simulators"
         case .androidStudios: "Android Studio versions"
         case .androidSDK: "SDK and emulators"
         case .gradleCaches: "Gradle caches"

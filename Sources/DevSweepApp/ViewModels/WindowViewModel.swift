@@ -6,6 +6,7 @@ enum Screen: Hashable {
     case overview
     case xcodeVersions
     case simulatorRuntimes
+    case simulators
     case androidStudios
     case androidSDK
     case gradleCaches

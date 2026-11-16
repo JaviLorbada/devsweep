@@ -115,7 +115,7 @@ private struct UnavailableTool: SimctlClient, BrewClient, XcodeDefaultsReading, 
 
     func unavailableDevicesListing() async -> String { "" }
     func runtimesJSON() async -> Data? { nil }
-    func devicesJSON() async -> Data? { nil }
+    func devicesJSON(in set: Simulator.DeviceSet) async -> Data? { nil }
     func deleteUnavailable() async -> Bool { false }
     func deleteRuntime(_ id: String) async -> Bool { false }
     func cleanupDryRun() async -> String { "" }

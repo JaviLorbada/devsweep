@@ -9,8 +9,8 @@ public protocol SimctlClient: Sendable {
     func unavailableDevicesListing() async -> String
     /// `simctl runtime list -j`, nil when it fails.
     func runtimesJSON() async -> Data?
-    /// `simctl list devices -j`, nil when it fails.
-    func devicesJSON() async -> Data?
+    /// `simctl list devices -j` for one device set, nil when it fails.
+    func devicesJSON(in set: Simulator.DeviceSet) async -> Data?
     /// `simctl delete unavailable`.
     func deleteUnavailable() async -> Bool
     /// `simctl runtime delete <id>`.
@@ -113,8 +113,8 @@ public struct LiveSimctlClient: SimctlClient {
         return output.standardOutput
     }
 
-    public func devicesJSON() async -> Data? {
-        await self.runner.run("xcrun", ["simctl", "list", "devices", "-j"])?.standardOutput
+    public func devicesJSON(in set: Simulator.DeviceSet) async -> Data? {
+        await self.runner.run("xcrun", ["simctl"] + set.simctlArguments + ["list", "devices", "-j"])?.standardOutput
     }
 
     public func deleteUnavailable() async -> Bool {

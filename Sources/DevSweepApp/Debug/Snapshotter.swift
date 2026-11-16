@@ -136,6 +136,9 @@ private struct SnapshotLayout: View {
                 case .simulatorRuntimes:
                     RuntimesContent()
                     Spacer(minLength: 0)
+                case .simulators:
+                    SimulatorsContent()
+                    Spacer(minLength: 0)
                 case .xcodeVersions:
                     XcodesContent()
                     Spacer(minLength: 0)
@@ -178,6 +181,7 @@ private struct SnapshotLayout: View {
                     }
                 }
             case .simulatorRuntimes: RuntimeInspector()
+            case .simulators: SimulatorInspector()
             case .xcodeVersions: XcodeInspector()
             case .androidStudios, .androidSDK, .gradleCaches: AndroidInspector()
             case .worktrees: WorktreeInspector()
