@@ -6,6 +6,10 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+## 0.7.1
+
+Project build folders that hold work of their own stay where they are.
+
 - A build folder that holds a git repository, like a dependency cloned
   into `node_modules`, is kept with a warning. Your project's repository
   ignores the folder, so it can't see that clone's edits or commits.
