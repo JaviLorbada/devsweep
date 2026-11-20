@@ -63,6 +63,24 @@ struct AppCoordinatorTests {
     }
 
     @Test
+    func `the Dock icon follows the windows and the preferences, through the Dock it is handed`() {
+        let storage = InMemoryPreferencesStore()
+        storage.set(false, forKey: Preferences.Key.showInDock)
+        let home = TemporaryHome()
+        let dockIcon = FakeDockIcon()
+        let app = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: storage),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable),
+            dockIcon: dockIcon)
+        app.dock.opened(.main)
+        app.dock.closed(.main)
+        #expect(dockIcon.changes == [false])
+    }
+
+    @Test
     func `the daily scan waits while a clean's question is open`() async {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/Atlas-abc")

@@ -23,6 +23,7 @@ final class AppCoordinator {
     let runningApps: RunningAppsModel
     let cleaning: CleaningModel
     let updates: UpdatesModel
+    let dock: DockModel
     let window: WindowViewModel
     let overview: OverviewViewModel
     let xcodes: XcodesViewModel
@@ -41,6 +42,8 @@ final class AppCoordinator {
     ///   - dependencies: the kit's side effects; `Dependencies.live` when nil.
     ///   - quitter: quits Xcode and Simulator; as choosing Quit would when nil.
     ///   - links: opens the Help menu's pages; the default browser when nil.
+    ///   - dockIcon: puts the app in the Dock or takes it out; the
+    ///     activation policy when nil.
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         store: (any ScanMemoryStore)? = nil,
@@ -49,7 +52,8 @@ final class AppCoordinator {
         updater: (any AppUpdating)? = nil,
         dependencies: Dependencies? = nil,
         quitter: (any AppQuitting)? = nil,
-        links: (any LinkOpening)? = nil)
+        links: (any LinkOpening)? = nil,
+        dockIcon: (any DockIconShowing)? = nil)
     {
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
@@ -95,6 +99,7 @@ final class AppCoordinator {
         self.runningApps = runningApps
         self.cleaning = cleaning
         self.updates = UpdatesModel(updater: updater)
+        self.dock = DockModel(preferences: preferences, dockIcon: dockIcon ?? ActivationPolicyDockIcon())
 
         // The view models, on the shared models.
         let window = WindowViewModel()

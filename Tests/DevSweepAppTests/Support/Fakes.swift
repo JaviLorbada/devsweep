@@ -282,6 +282,14 @@ final class FakeDeveloperApps: RunningAppsChecking, AppQuitting, @unchecked Send
     }
 }
 
+/// The Dock as a test sees it: each time the app was put in it, true, or
+/// taken out of it, false. The test runner's own icon never changes.
+@MainActor
+final class FakeDockIcon: DockIconShowing {
+    private(set) var changes: [Bool] = []
+    func setShown(_ shown: Bool) { self.changes.append(shown) }
+}
+
 /// Keeps what would have been posted.
 final class RecordingPoster: NotificationPoster {
     let posted = Mutex<[String]>([])
