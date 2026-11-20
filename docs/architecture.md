@@ -91,6 +91,7 @@ The app adds its own:
 | Quitting Xcode and Simulator | `AppQuitting` | `WorkspaceAppQuitter`, as choosing Quit would | `FakeDeveloperApps`, which also says what runs |
 | Opening a page in the browser | `LinkOpening` | `WorkspaceLinkOpener`, the default browser | `RecordingLinkOpener`, which keeps the links |
 | Updates | `AppUpdating` | `SparkleUpdater`, in a build with a feed; none in a development build | None, or `FakeUpdater`; screenshots use `StandInUpdater`, which checks nothing |
+| The Dock icon | `DockIconShowing` | `ActivationPolicyDockIcon`, the app's activation policy | `FakeDockIcon`, which keeps what was asked |
 
 No Swift test puts a stub on `PATH`; stubs on `PATH` live only in the bats
 suite, which runs the built binary as a user would.
@@ -132,6 +133,7 @@ flowchart TB
     Marks[MarksModel]
     Apps[RunningAppsModel]
     Updates[UpdatesModel]
+    Dock[DockModel]
   end
 
   subgraph Kit["DevSweepKit"]
@@ -142,7 +144,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
   GitHub[("GitHub<br/>the latest release's appcast")]
@@ -185,6 +187,7 @@ cells and ring segments take plain values.
 | `MarksModel` | What is ticked, items and parts, and the three biggest ticked by default. | Items list, inspector, `CleaningModel` |
 | `RunningAppsModel` | Whether Xcode and Simulator are open, and quitting them. | `CleaningModel`, the status line |
 | `UpdatesModel` | Whether the build updates itself, Check for Updates…, and the automatic checks, as Sparkle keeps them. | The app menu, Settings |
+| `DockModel` | Whether the app is in the Dock and the app switcher: which of the window and Settings are open, and the two settings `DockIcon` decides it from. | The scenes, as the window and Settings open and close |
 | `Tally` | Row order, totals, each family's share, the ring's weights. | `ScanModel`, the charts, the sidebar |
 | `StatusText` | The status lines, the subtitles' words, "3 minutes ago". | The view models, the menu bar |
 | `CleanPrompt` | The questions' words, by name up to three and by count past that. | `CleaningModel`, the window's alerts |
@@ -226,8 +229,8 @@ Three things have no protocol, on purpose:
 
 Below the models, the kit's own protocols fake the world: the disk,
 processes, simctl, brew, git, the Trash and the clock, in `Dependencies`;
-the app adds quitting apps, notifications, updates, the preferences store
-and the last scan's file.
+the app adds quitting apps, notifications, updates, the Dock icon, the
+preferences store and the last scan's file.
 
 ### Folders
 
@@ -239,9 +242,9 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
-| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, and `DockIcon`, when the app shows in the Dock. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
-| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle. |
+| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
 
 ### A scan

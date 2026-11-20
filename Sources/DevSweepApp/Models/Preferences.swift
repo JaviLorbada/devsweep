@@ -31,6 +31,7 @@ final class Preferences {
         static let scanOnLaunch = "scanOnLaunch"
         static let derivedDataGrowthGigabytes = "derivedDataGrowthGigabytes"
         static let showInMenuBar = "showInMenuBar"
+        static let showInDock = "showInDock"
     }
 
     /// Today's defaults, the folders the script searches.
@@ -76,6 +77,12 @@ final class Preferences {
         didSet { self.storage.set(self.showInMenuBar, forKey: Key.showInMenuBar) }
     }
 
+    /// The Dock icon while every window is closed. Off, the app is in the
+    /// menu bar only until a window opens; `DockIcon` says when it shows.
+    var showInDock: Bool {
+        didSet { self.storage.set(self.showInDock, forKey: Key.showInDock) }
+    }
+
     init(storage: PreferencesStore = UserDefaults.standard) {
         self.storage = storage
         self.projectFolders = storage.object(forKey: Key.projectFolders) as? [String] ?? Self.defaultProjectFolders
@@ -89,6 +96,7 @@ final class Preferences {
         let growth = storage.object(forKey: Key.derivedDataGrowthGigabytes) as? Int ?? Self.defaultGrowthGigabytes
         self.derivedDataGrowthGigabytes = min(max(growth, Self.growthRange.lowerBound), Self.growthRange.upperBound)
         self.showInMenuBar = storage.object(forKey: Key.showInMenuBar) as? Bool ?? true
+        self.showInDock = storage.object(forKey: Key.showInDock) as? Bool ?? true
     }
 
     var usesDefaultProjectFolders: Bool {

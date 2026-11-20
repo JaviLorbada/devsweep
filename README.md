@@ -259,7 +259,7 @@ make app          # build/DevSweep Dev.app, beside the released app
 
 One Swift package: `DevSweepKit` scans, measures and cleans; the
 `devsweep` command line and the app sit on it. The app is MVVM on
-Observation: a view model per screen, four shared models underneath, plain
+Observation: a view model per screen, six shared models underneath, plain
 values for the numbers and the words, and a coordinator that builds them.
 The models take each other through small protocols, so each one is tested
 with fakes in place of the others.
@@ -289,6 +289,7 @@ flowchart TB
     Marks[MarksModel]
     Apps[RunningAppsModel]
     Updates[UpdatesModel]
+    Dock[DockModel]
   end
 
   subgraph Kit["DevSweepKit"]
@@ -299,7 +300,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
   GitHub[("GitHub<br/>the latest release's appcast")]
