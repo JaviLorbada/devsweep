@@ -153,11 +153,12 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   your project folders, wherever the worktrees are. If a tool keeps its
   worktrees in a folder of its own, add that folder as a project folder.
 - **Settings** has your project folders, items to skip, when something
-  counts as unused, whether to clean to the Trash, scanning on opening, and
-  the menu bar item.
+  counts as unused, whether to clean to the Trash, scanning on opening, the
+  menu bar item and the Dock icon.
 - **The menu bar item** shows the free space and keeps DevSweep running after
-  you close the window, so it can scan once a day. Nothing starts it at
-  login.
+  you close the window, so it can scan once a day. Turn off Show in Dock
+  and, once its windows close, DevSweep is in the menu bar only. Nothing
+  starts it at login.
 - **Report a problem or suggest an idea** from the Help menu. It opens the
   issue form on GitHub, with the versions filled in, for you to finish and
   send.

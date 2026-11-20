@@ -6,6 +6,10 @@ gets a line under Unreleased as it lands.
 
 ## Unreleased
 
+- Settings > General has Show in Dock. Turned off, DevSweep leaves the
+  Dock and the app switcher when its windows close, and its menu bar item
+  opens it again.
+
 ## 0.7.1
 
 Project build folders that hold work of their own stay where they are.
