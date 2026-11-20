@@ -47,6 +47,8 @@ struct DevSweepApp: App {
             ContentView()
                 .environment(models: self.app)
                 .task { await self.app.windowAppeared() }
+                .onAppear { self.app.dock.opened(.main) }
+                .onDisappear { self.app.dock.closed(.main) }
                 .containerBackground(Palette.backdrop, for: .window)
                 // A fixed ideal size: SwiftUI animates the window to the
                 // content's ideal size whenever an animated change alters it,
@@ -79,6 +81,8 @@ struct DevSweepApp: App {
         Settings {
             SettingsView()
                 .environment(models: self.app)
+                .onAppear { self.app.dock.opened(.settings) }
+                .onDisappear { self.app.dock.closed(.settings) }
         }
         // Settings opens at this size each launch. Without it SwiftUI opens
         // it 900 by 450, whatever the content's ideal size.
@@ -109,7 +113,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
         // Run from a plain executable, the app has no bundle telling macOS it
-        // is a regular app with a Dock icon and a menu bar.
+        // is a regular app with a Dock icon and a menu bar. With Show in Dock
+        // off, it stays one until its windows close.
         NSApplication.shared.setActivationPolicy(.regular)
         NSApplication.shared.activate()
     }
