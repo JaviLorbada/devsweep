@@ -46,10 +46,6 @@ enum Palette {
         }
     }
 
-    /// Segments not measured yet: the ring is whole from the start and fills in.
-    static let placeholder = Color.primary.opacity(0.07)
-    /// Segments already cleaned.
-    static let cleaned = Color.primary.opacity(0.12)
     /// The reclaimable part of the disk meter.
     static let reclaimable = Color(light: 0x2A78D6, dark: 0x3987E5)
 

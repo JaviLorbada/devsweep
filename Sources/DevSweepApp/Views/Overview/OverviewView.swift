@@ -30,12 +30,13 @@ struct OverviewContent: View {
     @Environment(ScanModel.self) private var scan
 
     var body: some View {
+        let contrast = ChartContrast()
         VStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Group {
                     switch self.window.chartStyle {
-                    case .ring: RingChart()
-                    case .blocks: BlocksChart()
+                    case .ring: RingChart(contrast: contrast)
+                    case .blocks: BlocksChart(contrast: contrast)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -49,7 +50,7 @@ struct OverviewContent: View {
                     .padding(.horizontal, 4)
             }
 
-            ItemsCard()
+            ItemsCard(contrast: contrast)
 
             if !self.scan.warnings.isEmpty {
                 WarningsNote(warnings: self.scan.warnings)

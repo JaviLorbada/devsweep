@@ -6,6 +6,7 @@ import SwiftUI
 struct ItemsCard: View {
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
+    let contrast: ChartContrast
 
     /// The bar is the first column to go when the center column narrows.
     static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
@@ -46,7 +47,7 @@ struct ItemsCard: View {
 
             ForEach(rows) { row in
                 Divider().opacity(0.6)
-                ItemRow(row: row, largest: largest, showsBar: showsBar)
+                ItemRow(row: row, largest: largest, contrast: self.contrast, showsBar: showsBar)
             }
         }
     }
@@ -64,6 +65,7 @@ struct ItemRow: View {
     @Environment(\.appearsActive) private var appearsActive
     let row: ScanRow
     let largest: Double
+    let contrast: ChartContrast
     var showsBar = true
 
     var body: some View {
@@ -146,9 +148,9 @@ struct ItemRow: View {
 
     private var barColor: Color {
         switch self.row.state {
-        case .cleaned, .cleaning: Palette.cleaned
-        case .measuring: Palette.color(self.row.item).opacity(0.6)
-        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(0.25)
+        case .cleaned, .cleaning: self.contrast.cleaned
+        case .measuring: Palette.color(self.row.item).opacity(self.contrast.measuring)
+        case .waiting, .notMeasured: Palette.color(self.row.item).opacity(self.contrast.lastScan)
         case .measured: Palette.color(self.row.item)
         }
     }
