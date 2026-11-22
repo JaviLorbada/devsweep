@@ -28,9 +28,10 @@ struct OverviewView: View {
 struct OverviewContent: View {
     @Environment(WindowViewModel.self) private var window
     @Environment(ScanModel.self) private var scan
+    @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     var body: some View {
-        let contrast = ChartContrast()
+        let contrast = ChartContrast(self.colorSchemeContrast)
         VStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Group {

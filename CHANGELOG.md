@@ -11,6 +11,9 @@ gets a line under Unreleased as it lands.
   opens it again.
 - The menu bar item's panel lists Settings…, Check for Updates…, About
   and Quit, so a DevSweep out of the Dock needs no window to reach them.
+- With Increase Contrast on, the Overview's charts draw stronger: the
+  ring's segments sit further apart, faded ones keep more of their color,
+  and each block gets a darker outline.
 
 ## 0.7.1
 

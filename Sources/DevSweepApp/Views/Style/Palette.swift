@@ -12,22 +12,43 @@ import SwiftUI
 /// must stay in both appearances.
 enum Palette {
     static func color(_ item: Item) -> Color {
+        let hex = self.hex(item)
+        return Color(light: hex.light, dark: hex.dark)
+    }
+
+    /// An item's color in each appearance, as sRGB hex.
+    static func hex(_ item: Item) -> (light: UInt32, dark: UInt32) {
         switch item {
-        case .derivedData: Color(light: 0x104281, dark: 0x1C5CAB)
-        case .deviceSupport: Color(light: 0x1C5CAB, dark: 0x3987E5)
-        case .simulators: Color(light: 0x2A78D6, dark: 0x6DA7EC)
-        case .xcodeBuilds: Color(light: 0x5598E7, dark: 0x9EC5F4)
-        case .deviceInstalls: Color(light: 0x86B6EF, dark: 0xCDE2FB)
-        case .swiftpmCache: Color(light: 0xC94A1C, dark: 0xD95926)
-        case .swiftpmBuilds: Color(light: 0xEB6834, dark: 0xEE9A74)
-        case .homebrew: Color(light: 0x1BAF7A, dark: 0x199E70)
-        case .nodeModules: Color(light: 0xC68206, dark: 0xA46B04)
-        case .npmCache: Color(light: 0xEDA100, dark: 0xC98500)
-        case .cargoBuilds: Color(light: 0x792247, dark: 0x99335A)
-        case .cocoapodsPods: Color(light: 0xA03361, dark: 0xB73F6E)
-        case .toolCaches: Color(light: 0xC9497C, dark: 0xD55181)
-        case .gradleBuilds: Color(light: 0xE87BA4, dark: 0xEA9DBD)
+        case .derivedData: (0x104281, 0x1C5CAB)
+        case .deviceSupport: (0x1C5CAB, 0x3987E5)
+        case .simulators: (0x2A78D6, 0x6DA7EC)
+        case .xcodeBuilds: (0x5598E7, 0x9EC5F4)
+        case .deviceInstalls: (0x86B6EF, 0xCDE2FB)
+        case .swiftpmCache: (0xC94A1C, 0xD95926)
+        case .swiftpmBuilds: (0xEB6834, 0xEE9A74)
+        case .homebrew: (0x1BAF7A, 0x199E70)
+        case .nodeModules: (0xC68206, 0xA46B04)
+        case .npmCache: (0xEDA100, 0xC98500)
+        case .cargoBuilds: (0x792247, 0x99335A)
+        case .cocoapodsPods: (0xA03361, 0xB73F6E)
+        case .toolCaches: (0xC9497C, 0xD55181)
+        case .gradleBuilds: (0xE87BA4, 0xEA9DBD)
         }
+    }
+
+    /// An item's block edge with Increase Contrast: its hue a shade darker,
+    /// or lighter in the dark, so even the light hues stand 3:1 or more from
+    /// the card.
+    static func edge(_ item: Item) -> Color {
+        Color(nsColor: NSColor(name: nil) { appearance in
+            self.edge(item, dark: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua)
+        })
+    }
+
+    static func edge(_ item: Item, dark: Bool) -> NSColor {
+        let hex = self.hex(item)
+        let color = NSColor(rgb: dark ? hex.dark : hex.light)
+        return color.blended(withFraction: dark ? 0.35 : 0.45, of: dark ? .white : .black) ?? color
     }
 
     static func color(_ family: Family) -> Color {
