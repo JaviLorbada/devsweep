@@ -10,9 +10,9 @@ enum SettingsLayout {
     /// The tabs' content at its shortest: about as short as Settings was,
     /// which still shows the Folders tab whole.
     static let minimumHeight: CGFloat = 360
-    /// The tabs' content as Settings opens: General whole, its updates
-    /// included.
-    static let idealHeight: CGFloat = 705
+    /// The tabs' content as Settings opens: General whole, its updates and
+    /// Open at login included.
+    static let idealHeight: CGFloat = 758
     /// Settings' title bar and the tabs under it. The scene's default size
     /// counts them; the content's frame doesn't.
     static let toolbarHeight: CGFloat = 88

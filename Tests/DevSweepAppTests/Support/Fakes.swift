@@ -1,4 +1,5 @@
 import Foundation
+import ServiceManagement
 import Synchronization
 @testable import DevSweepApp
 
@@ -322,6 +323,39 @@ final class FakeActivator: AppActivating {
     private(set) var terminated = false
     func activate() { self.activations += 1 }
     func terminate() { self.terminated = true }
+}
+
+/// Login Items as a test sets them: the status macOS reports, what
+/// registering leaves, and an error for macOS refusing. Registering and
+/// unregistering change the status as macOS would, and are kept: true for
+/// each register, false for each unregister. Nothing reaches the real
+/// Login Items.
+@MainActor
+final class FakeLoginItem: LoginItemRegistering {
+    /// Never registered, macOS reports not found, a bundle or not.
+    var status = SMAppService.Status.notFound
+    var registeredStatus = SMAppService.Status.enabled
+    var refusal: (any Error)?
+    private(set) var asked: [Bool] = []
+    private(set) var openedLoginItems = 0
+
+    func register() throws {
+        self.asked.append(true)
+        if let refusal = self.refusal {
+            throw refusal
+        }
+        self.status = self.registeredStatus
+    }
+
+    func unregister() throws {
+        self.asked.append(false)
+        if let refusal = self.refusal {
+            throw refusal
+        }
+        self.status = .notRegistered
+    }
+
+    func openLoginItems() { self.openedLoginItems += 1 }
 }
 
 /// Keeps what would have been posted.

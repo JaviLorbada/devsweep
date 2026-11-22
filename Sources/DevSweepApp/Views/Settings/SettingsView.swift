@@ -30,9 +30,12 @@ private struct GeneralSettings: View {
     @Environment(Preferences.self) private var preferences
     @Environment(CleaningModel.self) private var cleaning
     @Environment(UpdatesModel.self) private var updates
+    @Environment(SettingsViewModel.self) private var settings
+    @Environment(\.appearsActive) private var appearsActive
 
     var body: some View {
         @Bindable var preferences = self.preferences
+        let settings = self.settings
         Form {
             Section {
                 Toggle("Scan when \(ProductInfo.name) opens", isOn: $preferences.scanOnLaunch)
@@ -62,12 +65,31 @@ private struct GeneralSettings: View {
                 Toggle("Show in menu bar", isOn: $preferences.showInMenuBar)
                 Toggle("Show in Dock", isOn: $preferences.showInDockSwitch)
                     .disabled(!preferences.showInMenuBar)
+                Toggle("Open at login", isOn: Binding(
+                    get: { settings.opensAtLogin },
+                    set: { opens in
+                        settings.setOpensAtLogin(opens)
+                    }))
             } footer: {
-                Text(
-                    "The free space at a glance, and a menu to scan or open \(ProductInfo.name). With it, "
-                        + "\(ProductInfo.name) keeps running, and scanning daily, after its window closes, and can "
-                        + "leave the Dock and the app switcher until you open it again from the menu bar.")
-                    .settingsFooter()
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(
+                        "The free space at a glance, and a menu to scan or open \(ProductInfo.name). With it, "
+                            + "\(ProductInfo.name) keeps running, and scanning daily, after its window closes, and "
+                            + "can leave the Dock and the app switcher until you open it again from the menu bar. "
+                            + "Open at login starts it, without its window, when you log in.")
+                        .settingsFooter()
+                    if let error = settings.loginItemError {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .font(.callout)
+                            .foregroundStyle(.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    if settings.needsApproval {
+                        Text("macOS opens \(ProductInfo.name) at login once you allow it in Login Items.")
+                            .settingsFooter()
+                        Button("Open Login Items") { settings.openLoginItems() }
+                    }
+                }
             }
             Section {
                 Stepper(value: $preferences.derivedDataGrowthGigabytes, in: Preferences.growthRange, step: 1) {
@@ -87,6 +109,10 @@ private struct GeneralSettings: View {
         }
         .formStyle(.grouped)
         .onChange(of: preferences.moveToTrash) { _, moveToTrash in self.cleaning.moveToTrash = moveToTrash }
+        // macOS keeps the login item, and System Settings can change it
+        // while Settings is in the back: read again on showing, and on
+        // coming to the front.
+        .onChange(of: self.appearsActive, initial: true) { settings.refresh() }
     }
 }
 

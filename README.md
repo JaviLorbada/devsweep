@@ -155,7 +155,7 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   worktrees in a folder of its own, add that folder as a project folder.
 - **Settings** has your project folders, items to skip, when something
   counts as unused, whether to clean to the Trash, scanning on opening, the
-  menu bar item and the Dock icon.
+  menu bar item, the Dock icon and opening at login.
 - **The menu bar item** shows the free space and keeps DevSweep running after
   you close the window, so it can scan once a day. Turn off Show in Dock
   and, once its windows close, DevSweep is in the menu bar only; the
@@ -163,7 +163,9 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   daily check finds an update, an orange dot sits in the item's ring until
   you look at it, and the same dot leads Update Available… at the top of
   the panel. When updates download on their own, the row reads Install
-  Update and Relaunch once the download is done. Nothing starts it at login.
+  Update and Relaunch once the download is done. Turn on Open at login and
+  it starts when you log in, without its window, so the daily scan carries
+  on after a restart.
 - **Report a problem or suggest an idea** from the Help menu. It opens the
   issue form on GitHub, with the versions filled in, for you to finish and
   send.
@@ -287,6 +289,7 @@ flowchart TB
     WorktreesVM[WorktreesViewModel]
     AndroidVM[AndroidViewModel]
     MenuBarVM[MenuBarViewModel]
+    SettingsVM[SettingsViewModel]
   end
 
   subgraph Models["Shared models · one source of truth"]
@@ -307,7 +310,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon · bringing forward, quitting"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon · bringing forward, quitting<br/>opening at login"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
   GitHub[("GitHub<br/>the latest release's appcast")]
