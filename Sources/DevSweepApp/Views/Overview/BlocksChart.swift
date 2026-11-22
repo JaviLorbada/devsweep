@@ -7,6 +7,7 @@ import SwiftUI
 struct BlocksChart: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
+    let contrast: ChartContrast
 
     var body: some View {
         HStack(alignment: .top, spacing: 20) {
@@ -45,7 +46,7 @@ struct BlocksChart: View {
             .frame(width: 150)
 
             GeometryReader { proxy in
-                TreemapCells(size: proxy.size)
+                TreemapCells(size: proxy.size, contrast: self.contrast)
             }
         }
     }
@@ -112,6 +113,7 @@ private struct TreemapCells: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(ScanModel.self) private var scan
     let size: CGSize
+    let contrast: ChartContrast
 
     var body: some View {
         let rows = self.scan.tally.ordered
@@ -122,7 +124,7 @@ private struct TreemapCells: View {
         ZStack(alignment: .topLeading) {
             if cells.isEmpty {
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(Palette.placeholder)
+                    .fill(self.contrast.placeholder)
                     .overlay {
                         Text(self.scan.isScanning ? "Measuring…" : "Nothing to clean")
                             .foregroundStyle(.muted)
@@ -130,7 +132,11 @@ private struct TreemapCells: View {
             }
             ForEach(BlocksChart.drawnCells(cells), id: \.id) { cell in
                 if let row = scan.rows[cell.id] {
-                    TreemapCell(row: row, frame: cell.frame, selected: self.overview.selection == cell.id)
+                    TreemapCell(
+                        row: row,
+                        frame: cell.frame,
+                        selected: self.overview.selection == cell.id,
+                        contrast: self.contrast)
                 }
             }
         }
@@ -144,6 +150,7 @@ private struct TreemapCell: View {
     let row: ScanRow
     let frame: CGRect
     let selected: Bool
+    let contrast: ChartContrast
 
     var body: some View {
         let color = Palette.color(self.row.item)
@@ -172,9 +179,9 @@ private struct TreemapCell: View {
             .frame(width: max(self.frame.width, 0), height: max(self.frame.height, 0), alignment: .topLeading)
             .background(color.opacity(self.selected ? 0.55 : 0.3), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(
-                self.selected ? color : color.opacity(0.6),
-                lineWidth: 1))
-            .opacity(self.row.isLive ? 1 : 0.5)
+                self.contrast.blockEdge(self.row.item, selected: self.selected),
+                lineWidth: self.contrast.blockEdgeWidth))
+            .opacity(self.row.isLive ? 1 : self.contrast.pending)
             .contentShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
