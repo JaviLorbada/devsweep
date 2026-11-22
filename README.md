@@ -282,6 +282,7 @@ flowchart TB
     RuntimesVM[RuntimesViewModel]
     WorktreesVM[WorktreesViewModel]
     AndroidVM[AndroidViewModel]
+    MenuBarVM[MenuBarViewModel]
   end
 
   subgraph Models["Shared models · one source of truth"]
@@ -302,7 +303,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon · bringing forward, quitting"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
   GitHub[("GitHub<br/>the latest release's appcast")]

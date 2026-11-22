@@ -81,6 +81,24 @@ struct AppCoordinatorTests {
     }
 
     @Test
+    func `the menu bar panel scans the app's scan, and quits through the activator it is handed`() {
+        let home = TemporaryHome()
+        let activator = FakeActivator()
+        let app = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: InMemoryPreferencesStore()),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable),
+            activator: activator)
+        app.menuBar.scanNow()
+        #expect(app.scan.isScanning)
+        app.scan.stopScan()
+        app.menuBar.quit()
+        #expect(activator.terminated)
+    }
+
+    @Test
     func `the daily scan waits while a clean's question is open`() async {
         let home = TemporaryHome()
         write(64, to: "\(home.path)/Library/Developer/Xcode/DerivedData/Atlas-abc")

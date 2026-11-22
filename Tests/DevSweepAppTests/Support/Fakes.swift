@@ -230,6 +230,27 @@ final class FakeRunningApps: RunningApps {
     }
 }
 
+/// The scan as Scan Now sees it, as a test sets it. Starting one counts it,
+/// and nothing is scanned.
+@MainActor
+final class FakeScanning: Scanning {
+    var isScanning = false
+    var isCleaning = false
+    var canScan = true
+    private(set) var scans = 0
+    func scan() { self.scans += 1 }
+}
+
+/// Check for Updates… as a test sets it. Checking counts it, and nothing
+/// asks the network.
+@MainActor
+final class FakeUpdateChecking: UpdateChecking {
+    var isAvailable = true
+    var canCheck = true
+    private(set) var checks = 0
+    func checkForUpdates() { self.checks += 1 }
+}
+
 /// This session's totals, as a test sets them.
 @MainActor
 final class FakeCleaningTotals: CleaningTotals {
@@ -288,6 +309,16 @@ final class FakeDeveloperApps: RunningAppsChecking, AppQuitting, @unchecked Send
 final class FakeDockIcon: DockIconShowing {
     private(set) var changes: [Bool] = []
     func setShown(_ shown: Bool) { self.changes.append(shown) }
+}
+
+/// The app itself as a test sees it: how often it was brought to the front,
+/// and whether it was asked to quit. The test runner does neither.
+@MainActor
+final class FakeActivator: AppActivating {
+    private(set) var activations = 0
+    private(set) var terminated = false
+    func activate() { self.activations += 1 }
+    func terminate() { self.terminated = true }
 }
 
 /// Keeps what would have been posted.
