@@ -97,6 +97,44 @@ struct AppCoordinatorTests {
     }
 
     @Test
+    func `a launch the person started brings the app to the front, in the Dock`() {
+        let home = TemporaryHome()
+        let dockIcon = FakeDockIcon()
+        let activator = FakeActivator()
+        let app = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: InMemoryPreferencesStore()),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable),
+            dockIcon: dockIcon,
+            activator: activator)
+        app.launched(atLogin: false)
+        #expect(dockIcon.changes == [true])
+        #expect(activator.activations == 1)
+    }
+
+    @Test
+    func `a launch at login leaves the front to the app in use, and the Dock with Show in Dock off`() {
+        let storage = InMemoryPreferencesStore()
+        storage.set(false, forKey: Preferences.Key.showInDock)
+        let home = TemporaryHome()
+        let dockIcon = FakeDockIcon()
+        let activator = FakeActivator()
+        let app = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: storage),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable),
+            dockIcon: dockIcon,
+            activator: activator)
+        app.launched(atLogin: true)
+        #expect(dockIcon.changes == [false])
+        #expect(activator.activations == 0)
+    }
+
+    @Test
     func `the menu bar panel scans the app's scan, and quits through the activator it is handed`() {
         let home = TemporaryHome()
         let activator = FakeActivator()

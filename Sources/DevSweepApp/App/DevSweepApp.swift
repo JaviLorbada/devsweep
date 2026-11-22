@@ -112,11 +112,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(Data("debug launch: launched, \(state)\n".utf8))
         }
         #endif
-        // Run from a plain executable, the app has no bundle telling macOS it
-        // is a regular app with a Dock icon and a menu bar. With Show in Dock
-        // off, it stays one until its windows close.
-        NSApplication.shared.setActivationPolicy(.regular)
-        NSApplication.shared.activate()
+        // The coordinator brings the app to the front and into the Dock, or
+        // leaves it in the background at login: `AppCoordinator.launched(atLogin:)`.
     }
 
     /// The menu bar item keeps the app, and its daily scan, running when the

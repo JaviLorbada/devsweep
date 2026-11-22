@@ -164,8 +164,8 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   you look at it, and the same dot leads Update Available… at the top of
   the panel. When updates download on their own, the row reads Install
   Update and Relaunch once the download is done. Turn on Open at login and
-  it starts when you log in, without its window, so the daily scan carries
-  on after a restart.
+  it starts when you log in, waiting in the menu bar without its window, so
+  the daily scan carries on after a restart.
 - **Report a problem or suggest an idea** from the Help menu. It opens the
   issue form on GitHub, with the versions filled in, for you to finish and
   send.

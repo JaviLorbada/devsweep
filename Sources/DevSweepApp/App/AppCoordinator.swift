@@ -9,6 +9,8 @@ import SwiftUI
 /// - A scan's items all measured tick the biggest and, unless it was
 ///   stopped, select the first.
 /// - A scan finished checks DerivedData's growth and may notify.
+/// - Launching finished brings the app to the front, unless macOS opened it
+///   at login.
 /// - Every half minute: the clock, the free space, and the daily scan.
 ///
 /// It is the one place that names the models' classes: they take each other
@@ -35,6 +37,8 @@ final class AppCoordinator {
     /// Opens the Help menu's pages in the browser.
     let links: any LinkOpening
     private let notifier: NotificationPoster
+    private let activator: any AppActivating
+    private let launch = LaunchObserver()
 
     /// Everything is live unless a test says otherwise.
     /// - Parameters:
@@ -118,10 +122,15 @@ final class AppCoordinator {
         self.runtimes = RuntimesViewModel(scan: scan, preferences: preferences)
         self.worktrees = WorktreesViewModel(scan: scan)
         self.android = AndroidViewModel(window: window, scan: scan, preferences: preferences)
-        self.menuBar = MenuBarViewModel(scan: scan, updates: updates, app: activator ?? ApplicationActivator())
+        let activator = activator ?? ApplicationActivator()
+        self.activator = activator
+        self.menuBar = MenuBarViewModel(scan: scan, updates: updates, app: activator)
         self.settings = SettingsViewModel(loginItem: loginItem ?? MainAppLoginItem())
 
         self.wire()
+        self.launch.onLaunch = { [weak self] atLogin in
+            self?.launched(atLogin: atLogin)
+        }
         workspaceApps.onChange = { [weak runningApps] in
             Task {
                 await runningApps?.refresh()
@@ -161,6 +170,19 @@ final class AppCoordinator {
         }
         self.scan.onFinished = { [weak self] in
             self?.checkGrowth()
+        }
+    }
+
+    /// Launching finished. The person opened the app: the window is on its
+    /// way, and the app comes to the front. macOS opened it at login:
+    /// SwiftUI opens no window then, so the app waits in the menu bar, in
+    /// the Dock only as `DockIcon` says with no window open, and leaves the
+    /// front to the app in use. The daily scan runs from the half-minute
+    /// tick either way.
+    func launched(atLogin: Bool) {
+        self.dock.launched(withWindow: !atLogin)
+        if !atLogin {
+            self.activator.activate()
         }
     }
 
