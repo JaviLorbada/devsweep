@@ -66,6 +66,24 @@ struct MenuBarTests {
             #expect(name > free * 1.2, "the name \(name):1, the free space \(free):1 in \(scheme)")
         }
     }
+
+    @Test
+    func `the panel's footer keeps Settings…, Check for Updates… and Quit on one line`() {
+        let home = TemporaryHome()
+        let updating = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: InMemoryPreferencesStore()),
+            notifier: SilentNotificationPoster(),
+            updater: FakeUpdater(),
+            dependencies: Dependencies(tools: .unavailable))
+        func height(_ app: AppCoordinator) -> CGFloat {
+            NSHostingController(rootView: MenuBarPanel().environment(models: app))
+                .sizeThatFits(in: CGSize(width: 280, height: 2000)).height
+        }
+        // Without an updater the footer has only Settings… and Quit.
+        #expect(height(updating) == height(makeApp(home: home)))
+    }
 }
 
 extension NSBitmapImageRep {

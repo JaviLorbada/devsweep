@@ -67,14 +67,18 @@ enum MenuBarGlyph {
 }
 
 /// What the menu bar item opens: what the last scan found per family, when
-/// that was, and the two things to do from here. It sits on a material, where
+/// that was, the two things to do from here, and a footer with Settings…,
+/// Check for Updates… and Quit, which with Show in Dock off are otherwise
+/// only in the window's menus. It sits on a material, where
 /// the hierarchical styles turn vibrant, and in the light appearance vibrancy
 /// drew `.secondary` darker than `.primary`: the volume name gray, its free
 /// space black. So the text is in plain colors, the label color's values over
 /// the window's muted color, which keep that order in both appearances.
 struct MenuBarPanel: View {
     @Environment(ScanModel.self) private var scan
+    @Environment(UpdatesModel.self) private var updates
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
 
     /// The system label color's values, as a plain color. The material makes
     /// `Color(nsColor: .labelColor)` vibrant, as it does `.primary`.
@@ -137,6 +141,24 @@ struct MenuBarPanel: View {
                 .buttonStyle(.prominentAction)
             }
             .controlSize(.large)
+            Divider()
+            HStack(spacing: 12) {
+                Button("Settings…") {
+                    self.openSettings()
+                    NSApplication.shared.activate()
+                }
+                .keyboardShortcut(",")
+                if self.updates.isAvailable {
+                    Button(AppCommands.checkForUpdatesTitle) { self.updates.checkForUpdates() }
+                        .disabled(!self.updates.canCheck)
+                }
+                Spacer()
+                Button("Quit") { NSApplication.shared.terminate(nil) }
+                    .keyboardShortcut("q")
+            }
+            .buttonStyle(.plain)
+            .font(.callout)
+            .foregroundStyle(.muted)
         }
         .padding(16)
         .frame(width: 280)
