@@ -11,6 +11,10 @@ shows and the update window leaves out.
 - Settings > General has Show in Dock. Turned off, DevSweep leaves the
   Dock and the app switcher when its windows close, and its menu bar item
   opens it again.
+- Settings > General has Open at login. Turned on, DevSweep starts when
+  you log in, without its window, so its daily scan carries on after a
+  restart. macOS keeps the setting: Login Items in System Settings
+  changes it too.
 - The menu bar item's panel lists About and Check for Updates…, then
   Settings…, then Quit, grouped as in a menu, so a DevSweep out of the
   Dock needs no window to reach them.

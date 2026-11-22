@@ -94,6 +94,7 @@ The app adds its own:
 | Updates | `AppUpdating` | `SparkleUpdater`, in a build with a feed; none in a development build | None, or `FakeUpdater`; screenshots use `StandInUpdater`, which checks nothing |
 | The Dock icon | `DockIconShowing` | `ActivationPolicyDockIcon`, the app's activation policy | `FakeDockIcon`, which keeps what was asked |
 | Bringing the app to the front, quitting it | `AppActivating` | `ApplicationActivator`, through `NSApplication` | `FakeActivator`, which keeps what was asked |
+| Opening at login | `LoginItemRegistering` | `MainAppLoginItem`, `SMAppService.mainApp` | `FakeLoginItem`, which keeps what was asked |
 
 No Swift test puts a stub on `PATH`; stubs on `PATH` live only in the bats
 suite, which runs the built binary as a user would.
@@ -127,6 +128,7 @@ flowchart TB
     WorktreesVM[WorktreesViewModel]
     AndroidVM[AndroidViewModel]
     MenuBarVM[MenuBarViewModel]
+    SettingsVM[SettingsViewModel]
   end
 
   subgraph Models["Shared models · one source of truth"]
@@ -147,7 +149,7 @@ flowchart TB
 
   Coordinator["AppCoordinator<br/>builds the models, hands each<br/>the others, wires their events"]
   Values["Tally · StatusText · CleanPrompt<br/>numbers and words, as plain values"]
-  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon · bringing forward, quitting"]
+  Seams["App seams<br/>preferences · last scan · notifications<br/>quitting · opening links · updates<br/>the Dock icon · bringing forward, quitting<br/>opening at login"]
   CLI["devsweep<br/>command line"]
   Mac[("macOS<br/>files · Trash · simctl · brew · git")]
   GitHub[("GitHub<br/>the latest release's appcast")]
@@ -185,6 +187,7 @@ cells and ring segments take plain values.
 | `WorktreesViewModel` | The selected worktree, its removal sheet, the subtitle, the git command. | Worktrees |
 | `AndroidViewModel` | A selection for each Android screen, their lists and subtitles. | The three Android screens |
 | `MenuBarViewModel` | An update that waits, Scan Now's title and whether it can start, Check for Updates…, bringing the app to the front once the window, Settings or About opens, Quit. | The menu bar item and its panel |
+| `SettingsViewModel` | Open at login: the login item's status, read again whenever Settings shows since macOS keeps it, turning it on or off, Login Items when it waits on approval, and why a change failed. | Settings > General |
 | `Removal` | One removal sheet's state: what is waiting, whether it runs, why it failed. | Runtimes, worktrees |
 | `ScanModel` | The rows, one per item, and the scan that fills them; the listings, the free space, the last scan kept for the next launch. Only it changes the rows, and a scan and a clean never run at once. | Every screen, the menu bar, `CleaningModel` |
 | `CleaningModel` | A clean from the question to the end: quitting Xcode, confirming, the Trash or deleting, Put Back, cleaning parts, this session's totals, the notices. | Overview footer, items list, inspector, the window's alerts |
@@ -236,8 +239,8 @@ Three things have no protocol, on purpose:
 Below the models, the kit's own protocols fake the world: the disk,
 processes, simctl, brew, git, the Trash and the clock, in `Dependencies`;
 the app adds quitting apps, notifications, updates, the Dock icon,
-bringing the app forward and quitting it, the preferences store and the
-last scan's file.
+bringing the app forward and quitting it, opening it at login, the
+preferences store and the last scan's file.
 
 ### Folders
 
@@ -251,7 +254,7 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `ViewModels` | A view model per screen, and `Removal`. |
 | `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, `DockIcon`, when the app shows in the Dock, and `WaitingUpdate`, an update found or downloaded, with its row's words. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
-| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon, bringing the app forward and quitting it. |
+| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon, bringing the app forward and quitting it, the login item. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
 
 ### A scan

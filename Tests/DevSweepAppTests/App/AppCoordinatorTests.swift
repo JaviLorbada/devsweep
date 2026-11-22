@@ -81,6 +81,22 @@ struct AppCoordinatorTests {
     }
 
     @Test
+    func `Settings turns Open at login on through the login item it is handed`() {
+        let home = TemporaryHome()
+        let loginItem = FakeLoginItem()
+        let app = AppCoordinator(
+            environment: testEnvironment(home: home),
+            store: InMemoryScanStore(),
+            preferences: Preferences(storage: InMemoryPreferencesStore()),
+            notifier: SilentNotificationPoster(),
+            dependencies: Dependencies(tools: .unavailable),
+            loginItem: loginItem)
+        app.settings.setOpensAtLogin(true)
+        #expect(loginItem.asked == [true])
+        #expect(app.settings.opensAtLogin)
+    }
+
+    @Test
     func `the menu bar panel scans the app's scan, and quits through the activator it is handed`() {
         let home = TemporaryHome()
         let activator = FakeActivator()

@@ -31,6 +31,7 @@ final class AppCoordinator {
     let worktrees: WorktreesViewModel
     let android: AndroidViewModel
     let menuBar: MenuBarViewModel
+    let settings: SettingsViewModel
     /// Opens the Help menu's pages in the browser.
     let links: any LinkOpening
     private let notifier: NotificationPoster
@@ -47,6 +48,8 @@ final class AppCoordinator {
     ///     activation policy when nil.
     ///   - activator: brings the app to the front and quits it, for the
     ///     menu bar panel; `NSApplication` when nil.
+    ///   - loginItem: opens the app at login, for Settings; Service
+    ///     Management when nil.
     init(
         environment: [String: String] = ProcessInfo.processInfo.environment,
         store: (any ScanMemoryStore)? = nil,
@@ -57,7 +60,8 @@ final class AppCoordinator {
         quitter: (any AppQuitting)? = nil,
         links: (any LinkOpening)? = nil,
         dockIcon: (any DockIconShowing)? = nil,
-        activator: (any AppActivating)? = nil)
+        activator: (any AppActivating)? = nil,
+        loginItem: (any LoginItemRegistering)? = nil)
     {
         let preferences = preferences ?? Preferences()
         self.preferences = preferences
@@ -115,6 +119,7 @@ final class AppCoordinator {
         self.worktrees = WorktreesViewModel(scan: scan)
         self.android = AndroidViewModel(window: window, scan: scan, preferences: preferences)
         self.menuBar = MenuBarViewModel(scan: scan, updates: updates, app: activator ?? ApplicationActivator())
+        self.settings = SettingsViewModel(loginItem: loginItem ?? MainAppLoginItem())
 
         self.wire()
         workspaceApps.onChange = { [weak runningApps] in
@@ -239,5 +244,6 @@ extension View {
             .environment(app.worktrees)
             .environment(app.android)
             .environment(app.menuBar)
+            .environment(app.settings)
     }
 }
