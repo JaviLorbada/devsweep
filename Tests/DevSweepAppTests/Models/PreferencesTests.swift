@@ -83,6 +83,20 @@ struct PreferencesTests {
     }
 
     @Test
+    func `Show in Dock reads off without the menu bar item, and the saved choice comes back with it`() {
+        let preferences = Preferences(storage: InMemoryPreferencesStore())
+        #expect(preferences.showInDockSwitch)
+        preferences.showInMenuBar = false
+        #expect(!preferences.showInDockSwitch)
+        #expect(preferences.showInDock, "the saved choice is kept")
+        preferences.showInMenuBar = true
+        #expect(preferences.showInDockSwitch)
+
+        preferences.showInDockSwitch = false
+        #expect(!preferences.showInDock)
+    }
+
+    @Test
     func `keep the threshold within its range`() {
         let storage = InMemoryPreferencesStore()
         storage.set(0, forKey: Preferences.Key.staleDays)

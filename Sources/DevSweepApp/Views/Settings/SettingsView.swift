@@ -60,7 +60,7 @@ private struct GeneralSettings: View {
             }
             Section {
                 Toggle("Show in menu bar", isOn: $preferences.showInMenuBar)
-                Toggle("Show in Dock", isOn: $preferences.showInDock)
+                Toggle("Show in Dock", isOn: $preferences.showInDockSwitch)
                     .disabled(!preferences.showInMenuBar)
             } footer: {
                 Text(
