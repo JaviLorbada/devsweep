@@ -183,7 +183,7 @@ cells and ring segments take plain values.
 | `RuntimesViewModel` | The selected runtime, its removal sheet, the subtitle. | Simulator runtimes |
 | `WorktreesViewModel` | The selected worktree, its removal sheet, the subtitle, the git command. | Worktrees |
 | `AndroidViewModel` | A selection for each Android screen, their lists and subtitles. | The three Android screens |
-| `MenuBarViewModel` | Scan Now's title and whether it can start, Check for Updates…, bringing the app to the front once the window or Settings opens, Quit. | The menu bar item's panel |
+| `MenuBarViewModel` | Scan Now's title and whether it can start, Check for Updates…, bringing the app to the front once the window, Settings or About opens, Quit. | The menu bar item's panel |
 | `Removal` | One removal sheet's state: what is waiting, whether it runs, why it failed. | Runtimes, worktrees |
 | `ScanModel` | The rows, one per item, and the scan that fills them; the listings, the free space, the last scan kept for the next launch. Only it changes the rows, and a scan and a clean never run at once. | Every screen, the menu bar, `CleaningModel` |
 | `CleaningModel` | A clean from the question to the end: quitting Xcode, confirming, the Trash or deleting, Put Back, cleaning parts, this session's totals, the notices. | Overview footer, items list, inspector, the window's alerts |

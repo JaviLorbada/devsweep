@@ -1,7 +1,7 @@
 import Observation
 
 /// The menu bar item's panel's own state and actions: Scan Now, Check for
-/// Updates…, bringing the app to the front once the window or Settings
+/// Updates…, bringing the app to the front once the window, Settings or About
 /// opens, and Quit. What the last scan found the panel reads from the scan
 /// as it is, through `Tally` and `StatusText`.
 @MainActor
@@ -47,9 +47,9 @@ final class MenuBarViewModel {
         self.updates.checkForUpdates()
     }
 
-    /// Once the panel has opened the window or Settings, which only a view
-    /// can, with SwiftUI's actions: with the app out of the Dock, they would
-    /// otherwise open behind the app in front.
+    /// Once the panel has opened the window, Settings or About, which only a
+    /// view can, with SwiftUI's actions: with the app out of the Dock, they
+    /// would otherwise open behind the app in front.
     func bringToFront() {
         self.app.activate()
     }

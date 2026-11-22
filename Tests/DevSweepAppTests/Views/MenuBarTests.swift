@@ -68,7 +68,7 @@ struct MenuBarTests {
     }
 
     @Test
-    func `the panel's footer keeps Settings…, Check for Updates… and Quit on one line`() {
+    func `the panel lists its actions a row each, Check for Updates… only in a build that updates itself`() {
         let home = TemporaryHome()
         let updating = AppCoordinator(
             environment: testEnvironment(home: home),
@@ -81,8 +81,9 @@ struct MenuBarTests {
             NSHostingController(rootView: MenuBarPanel().environment(models: app))
                 .sizeThatFits(in: CGSize(width: 280, height: 2000)).height
         }
-        // Without an updater the footer has only Settings… and Quit.
-        #expect(height(updating) == height(makeApp(home: home)))
+        // Without an updater the list has Settings…, About and Quit; with one,
+        // Check for Updates… takes a row of its own.
+        #expect(height(updating) >= height(makeApp(home: home)) + 20)
     }
 }
 
