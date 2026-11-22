@@ -12,7 +12,7 @@ enum SettingsLayout {
     static let minimumHeight: CGFloat = 360
     /// The tabs' content as Settings opens: General whole, its updates
     /// included.
-    static let idealHeight: CGFloat = 650
+    static let idealHeight: CGFloat = 705
     /// Settings' title bar and the tabs under it. The scene's default size
     /// counts them; the content's frame doesn't.
     static let toolbarHeight: CGFloat = 88
