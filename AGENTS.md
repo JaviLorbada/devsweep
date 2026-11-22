@@ -12,15 +12,21 @@
 - `docs/architecture.md` draws it, and the README shows its first diagram. The diagrams change in the same commit as the code they draw.
 - `AppCoordinator` builds the dependencies and every model, and wires one model's events to the others. No view reads it; the scenes put its models in the environment with `environment(models:)`.
 - Shared models hold what several screens read: `ScanModel` (the rows, the scan, the listings, the last scan; only it changes the rows), `CleaningModel`, `MarksModel`, `RunningAppsModel`, `UpdatesModel` (Sparkle, through `AppUpdating`), `DockModel` (the Dock icon, through `DockIconShowing`). Only they call the kit.
-- A view model per screen holds what that screen owns: `WindowViewModel`, `OverviewViewModel`, `XcodesViewModel`, `RuntimesViewModel`, `WorktreesViewModel`, `AndroidViewModel`, `MenuBarViewModel` (the menu bar item's panel). They call the shared models, never the kit.
+- A view model per screen, or per panel with actions of its own, holds what it owns: `WindowViewModel`, `OverviewViewModel`, `XcodesViewModel`, `RuntimesViewModel`, `WorktreesViewModel`, `AndroidViewModel`, `MenuBarViewModel` (the menu bar item's panel). They call the shared models, never the kit.
 - Models and view models take each other through the protocols in `Protocols`, each named for what its user reads: `ScanResults`, `Listings`, `ScanRows`, `Marking`, `RunningApps`, `CleaningTotals`, `Navigation`, `Scanning`, `UpdateChecking`; and `Cleaner`, the kit's engine as a clean sees it, which only taking the rows hands out. Only `AppCoordinator` names the classes. `Preferences` is passed as it is.
 - No protocol for the coordinator, which nothing depends on, or for a view model as its views see it: views take the class from the environment.
+- A protocol whose callers and conformers live on the main actor is `@MainActor` as a whole, not member by member, as `AppUpdating`, `AppActivating` and `DockIconShowing` are; each conformer says `@MainActor` itself. Only a protocol that crosses actors is `Sendable`.
 - Numbers and words are plain values, tested without a model: `Tally`, `StatusText`, `CleanPrompt`.
 - A view takes from the environment only the models it reads; rows, cells and ring segments take values.
+- A view holds no logic and calls no AppKit or system API. It binds, calls its models' methods and uses SwiftUI's own environment actions (`openWindow`, `openSettings`); anything else goes through its view model.
 - State is `private(set)`. Only what a view binds stays settable (the screen, the chart, the Trash toggle, an open sheet); everything else changes through a method named for what it does.
 - New state goes in the model that owns it. No model grows into the app: past SwiftLint's limits, it splits.
 - A new file goes in its kind's folder; a new screen gets a folder under `Views`, its view model goes in `ViewModels`, and its tests in the same folders under `Tests`.
 - Each model and view model has its own test file, named after it, that builds it with fakes for the protocols it takes (`Tests/DevSweepAppTests/Support/Fakes.swift`). Only the coordinator's tests, the end-to-end tests in `Flows` and the view tests build the whole app.
+
+## Apple's APIs
+- Before using an Apple API, read its current documentation, and for anything a person sees, the Human Interface Guidelines.
+- Follow what the current SDK recommends over older patterns.
 
 ## Build, test, lint
 - `make build`, `make test` (Swift Testing, in parallel), `make lint` (strict), `make format`.
@@ -45,6 +51,9 @@
 - The bats suite is the acceptance test: 57 of 57, and `Scripts/compare.sh` identical.
 
 ## Pull requests
-- What changed and why, and the commands run: `make lint test acceptance`.
+- One at a time, and small: under about 300 lines with its tests, and one change a person can notice.
+- A change that has to land whole comes with a review guide in a comment on the pull request: the commits in order, what to skim, and where judgement is needed.
+- What changed and why, a "How to try it" of a few steps, and the commands run: `make lint test acceptance`.
 - Screenshots for window changes, from `WIDTH=1280 Scripts/snapshot.sh`, and for menu bar changes, from `Scripts/snapshot.sh <folder> menubar-light`, before and after.
 - A line under Unreleased in `CHANGELOG.md` for anything a user would notice, and README.md kept current.
+- Before asking for review, check the diff against the App architecture list, item by item.

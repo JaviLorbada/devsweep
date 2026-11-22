@@ -118,7 +118,7 @@ built before a change to what goes into it (the sources, the package,
 `make app` first, and leaves the running copy alone. A commit that
 changes only docs doesn't count.
 
-## Commits
+## Commits and pull requests
 
-Imperative subject, a short body saying why, one coherent change per commit
-with tests passing. See `AGENTS.md` for the rest of the rules.
+`AGENTS.md` has the rules for both: what a commit says, how big a pull
+request is, what it says, and what to check before asking for review.
