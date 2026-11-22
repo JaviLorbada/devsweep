@@ -13,7 +13,7 @@ gets a line under Unreleased as it lands.
   and Quit, so a DevSweep out of the Dock needs no window to reach them.
 - With Increase Contrast on, the Overview's charts draw stronger: the
   ring's segments sit further apart, faded ones keep more of their color,
-  and each block gets a darker outline.
+  each block gets a darker outline, and quieter text darkens.
 
 ## 0.7.1
 

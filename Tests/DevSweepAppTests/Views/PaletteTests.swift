@@ -53,6 +53,22 @@ extension PaletteTests {
     }
 
     @Test
+    func `muted text reads at 4.5 to 1 or more on the panels and cards, and 7 to 1 with Increase Contrast`() {
+        for dark in [false, true] {
+            for increased in [false, true] {
+                let muted = NSColor(rgb: MutedStyle.rgb(dark: dark, increasedContrast: increased))
+                for surface in self.surfaces(dark: dark, increasedContrast: increased) {
+                    let ratio = self.contrast(muted, surface)
+                    #expect(ratio >= (increased ? 7 : 4.5), "dark \(dark), increased \(increased): \(ratio):1")
+                }
+            }
+        }
+        // Without Increase Contrast it is the gray it was.
+        #expect(MutedStyle.rgb(dark: false, increasedContrast: false) == 0x636368)
+        #expect(MutedStyle.rgb(dark: true, increasedContrast: false) == 0x9A9AA0)
+    }
+
+    @Test
     func `with Increase Contrast a block's edge stands 3 to 1 from the card in its own hue, light and dark`() {
         for item in Item.allCases {
             for dark in [false, true] {

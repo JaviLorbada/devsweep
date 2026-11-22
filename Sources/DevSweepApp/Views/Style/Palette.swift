@@ -137,15 +137,28 @@ extension PrimitiveButtonStyle where Self == ProminentActionStyle {
 }
 
 /// Text a step quieter than the primary label that still reads at 4.5:1 or
-/// more on every surface in the window, in both appearances; the system's
-/// secondary label is 3.9:1 on the light panels. On a selected row it turns
-/// light, as `.secondary` does.
+/// more on every surface in the window, in both appearances, and 7:1 with
+/// Increase Contrast; the system's secondary label is 3.9:1 on the light
+/// panels. On a selected row it turns light, as `.secondary` does.
 struct MutedStyle: ShapeStyle {
     func resolve(in environment: EnvironmentValues) -> Color {
+        let increased = environment.colorSchemeContrast == .increased
         if environment.backgroundProminence == .increased {
-            return Color.white.opacity(0.85)
+            return Color.white.opacity(increased ? 1 : 0.85)
         }
-        return Color(nsColor: NSColor(rgb: environment.colorScheme == .dark ? 0x9A9AA0 : 0x636368))
+        return Color(nsColor: NSColor(rgb: Self.rgb(
+            dark: environment.colorScheme == .dark,
+            increasedContrast: increased)))
+    }
+
+    /// The gray in each appearance, as sRGB hex.
+    static func rgb(dark: Bool, increasedContrast: Bool) -> UInt32 {
+        switch (dark, increasedContrast) {
+        case (false, false): 0x636368
+        case (true, false): 0x9A9AA0
+        case (false, true): 0x4A4A4F
+        case (true, true): 0xBDBDC2
+        }
     }
 }
 
