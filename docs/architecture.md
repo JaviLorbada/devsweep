@@ -194,11 +194,11 @@ cells and ring segments take plain values.
 | `MarksModel` | What is ticked, items and parts, and the three biggest ticked by default. | Items list, inspector, `CleaningModel` |
 | `RunningAppsModel` | Whether Xcode and Simulator are open, and quitting them. | `CleaningModel`, the status line |
 | `UpdatesModel` | Whether the build updates itself, Check for Updates…, the automatic checks, as Sparkle keeps them, and an update the daily check found waiting. | The app menu, Settings, the menu bar |
-| `DockModel` | Whether the app is in the Dock and the app switcher: which of the window and Settings are open, and the two settings `DockIcon` decides it from. | The scenes, as the window and Settings open and close |
+| `DockModel` | Whether the app is in the Dock and the app switcher: which of the window and Settings are open, whether launching opened the window (not at login), and the two settings `DockIcon` decides it from. | The scenes, as the window and Settings open and close; the coordinator, as launching finishes |
 | `Tally` | Row order, totals, each family's share, the ring's weights. | `ScanModel`, the charts, the sidebar |
 | `StatusText` | The status lines, the subtitles' words, "3 minutes ago". | The view models, the menu bar |
 | `CleanPrompt` | The questions' words, by name up to three and by count past that. | `CleaningModel`, the window's alerts |
-| `AppCoordinator` | Builds everything; wires a scan's start and end to the marks, the selection and the growth check; the half-minute tick and the daily scan, which waits while a clean runs or waits on an answer. | The app's scenes and menus |
+| `AppCoordinator` | Builds everything; wires a scan's start and end to the marks, the selection and the growth check; the half-minute tick and the daily scan, which waits while a clean runs or waits on an answer; what launching does: the app to the front, or, at login, left in the background. | The app's scenes and menus |
 
 State is `private(set)`. What a view binds stays settable (the screen, the
 chart, the Trash toggle, an open sheet); everything else changes through a
@@ -252,9 +252,9 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
-| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, `DockIcon`, when the app shows in the Dock, and `WaitingUpdate`, an update found or downloaded, with its row's words. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, `DockIcon`, when the app shows in the Dock, `WaitingUpdate`, an update found or downloaded, with its row's words, and `LaunchEvent`, whether macOS opened the app at login. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
-| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon, bringing the app forward and quitting it, the login item. |
+| `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon, bringing the app forward and quitting it, the login item, and when launching finishes. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
 
 ### A scan

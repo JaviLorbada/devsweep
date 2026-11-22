@@ -70,6 +70,36 @@ struct DockModelTests {
     }
 
     @Test
+    func `a launch with the window puts the app in the Dock, as a plain executable isn't on its own`() {
+        let dockIcon = FakeDockIcon()
+        let dock = DockModel(preferences: self.menuBarOnly(), dockIcon: dockIcon)
+        dock.launched(withWindow: true)
+        #expect(dockIcon.changes == [true])
+        #expect(dock.isIconShown)
+    }
+
+    @Test
+    func `a launch at login with Show in Dock off stays out of the Dock until a window opens`() {
+        let dockIcon = FakeDockIcon()
+        let dock = DockModel(preferences: self.menuBarOnly(), dockIcon: dockIcon)
+        dock.launched(withWindow: false)
+        #expect(dockIcon.changes == [false])
+        #expect(!dock.isIconShown)
+        dock.opened(.main)
+        #expect(dockIcon.changes == [false, true])
+    }
+
+    @Test
+    func `a launch at login without the menu bar item stays in the Dock, the way back`() {
+        let preferences = self.menuBarOnly()
+        preferences.showInMenuBar = false
+        let dockIcon = FakeDockIcon()
+        let dock = DockModel(preferences: preferences, dockIcon: dockIcon)
+        dock.launched(withWindow: false)
+        #expect(dockIcon.changes == [true])
+    }
+
+    @Test
     func `the menu bar item dragged out while every window is closed brings the icon back`() async {
         let preferences = self.menuBarOnly()
         let dockIcon = FakeDockIcon()
