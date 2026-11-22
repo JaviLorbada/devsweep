@@ -280,6 +280,7 @@ flowchart TB
     OverviewVM[OverviewViewModel]
     XcodesVM[XcodesViewModel]
     RuntimesVM[RuntimesViewModel]
+    SimulatorsVM[SimulatorsViewModel]
     WorktreesVM[WorktreesViewModel]
     AndroidVM[AndroidViewModel]
     MenuBarVM[MenuBarViewModel]

@@ -31,7 +31,7 @@ final class ScanModel: ScanResults, Listings, ScanRows, Scanning {
     /// Ticks every half minute so "3 minutes ago" stays true.
     private(set) var now = Date()
     private(set) var diskSpace: DiskSpace?
-    /// Installed Xcodes, runtimes and worktrees.
+    /// Installed Xcodes, runtimes, simulators and worktrees.
     private(set) var extras: Extras?
     /// What Android Studio keeps.
     private(set) var android: AndroidReport?
@@ -154,7 +154,7 @@ final class ScanModel: ScanResults, Listings, ScanRows, Scanning {
         self.diskSpace = self.engine?.diskSpace() ?? self.diskSpace
     }
 
-    /// Lists the Xcodes, runtimes and worktrees again.
+    /// Lists the Xcodes, runtimes, simulators and worktrees again.
     func refreshExtras() async {
         guard let engine else {
             return

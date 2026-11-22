@@ -53,7 +53,38 @@ let sampleExtras = Extras(
             daysSinceUsed: nil,
             simulatorCount: 1),
     ],
-    worktrees: sampleWorktrees)
+    worktrees: sampleWorktrees,
+    simulators: sampleSimulators)
+
+/// Simulators as the scan lists them, the largest first: booted, stale,
+/// never used, and two Xcode made on its own, one stale.
+let sampleSimulators = [
+    sampleSimulator("iPhone 18 Pro Max", runtime: "iOS 27.1", state: "Booted", kilobytes: 10_081_016, daysAgo: 1),
+    sampleSimulator("iPhone 16 Pro", runtime: "iOS 26.5", kilobytes: 7_011_000, daysAgo: 54),
+    sampleSimulator("iPhone Air", runtime: "iOS 26.5", kilobytes: 6_281_372, daysAgo: 98),
+    sampleSimulator("iPhone 17 Pro", kilobytes: 2_097_152, daysAgo: 30, set: .previews),
+    sampleSimulator("Clone 1 of iPhone 17 Pro Max", kilobytes: 1_048_576, daysAgo: 2, set: .testing),
+    sampleSimulator("iPad Pro 13-inch (M5)", kilobytes: 18020, daysAgo: nil),
+]
+
+func sampleSimulator(
+    _ name: String,
+    runtime: String = "iOS 27.1",
+    state: String = "Shutdown",
+    kilobytes: Int64,
+    daysAgo: Int?,
+    set: Simulator.DeviceSet = .default) -> Simulator
+{
+    Simulator(
+        id: "UDID-\(name)",
+        name: name,
+        runtime: runtime,
+        state: state,
+        kilobytes: kilobytes,
+        lastUsedDay: daysAgo.map { DayFormat.utc(Date(timeIntervalSince1970: 1_792_000_000 - Double($0) * 86400)) },
+        daysSinceUsed: daysAgo,
+        deviceSet: set)
+}
 
 /// Worktrees in each state: kept for changes, with nothing to lose, with
 /// commits on no branch, and locked, with long names.
