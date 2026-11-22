@@ -69,14 +69,16 @@ enum MenuBarGlyph {
 /// What the menu bar item opens: what the last scan found per family, when
 /// that was, the two things to do from here, and a footer with Settings…,
 /// Check for Updates… and Quit, which with Show in Dock off are otherwise
-/// only in the window's menus. It sits on a material, where
+/// only in the window's menus. Its buttons go through `MenuBarViewModel`,
+/// except for opening the window and Settings, which only a view can do.
+/// It sits on a material, where
 /// the hierarchical styles turn vibrant, and in the light appearance vibrancy
 /// drew `.secondary` darker than `.primary`: the volume name gray, its free
 /// space black. So the text is in plain colors, the label color's values over
 /// the window's muted color, which keep that order in both appearances.
 struct MenuBarPanel: View {
     @Environment(ScanModel.self) private var scan
-    @Environment(UpdatesModel.self) private var updates
+    @Environment(MenuBarViewModel.self) private var menuBar
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
@@ -131,12 +133,12 @@ struct MenuBarPanel: View {
                 .foregroundStyle(.muted)
                 .fixedSize(horizontal: false, vertical: true)
             HStack {
-                Button(self.scan.isScanning ? "Scanning…" : "Scan Now") { self.scan.scan() }
-                    .disabled(self.scan.isScanning || self.scan.isCleaning || !self.scan.canScan)
+                Button(self.menuBar.scanTitle) { self.menuBar.scanNow() }
+                    .disabled(!self.menuBar.canScanNow)
                 Spacer()
                 Button("Open \(ProductInfo.name)") {
                     self.openWindow(id: "main")
-                    NSApplication.shared.activate()
+                    self.menuBar.bringToFront()
                 }
                 .buttonStyle(.prominentAction)
             }
@@ -145,15 +147,15 @@ struct MenuBarPanel: View {
             HStack(spacing: 12) {
                 Button("Settings…") {
                     self.openSettings()
-                    NSApplication.shared.activate()
+                    self.menuBar.bringToFront()
                 }
                 .keyboardShortcut(",")
-                if self.updates.isAvailable {
-                    Button(AppCommands.checkForUpdatesTitle) { self.updates.checkForUpdates() }
-                        .disabled(!self.updates.canCheck)
+                if self.menuBar.showsCheckForUpdates {
+                    Button(AppCommands.checkForUpdatesTitle) { self.menuBar.checkForUpdates() }
+                        .disabled(!self.menuBar.canCheckForUpdates)
                 }
                 Spacer()
-                Button("Quit") { NSApplication.shared.terminate(nil) }
+                Button("Quit") { self.menuBar.quit() }
                     .keyboardShortcut("q")
             }
             .buttonStyle(.plain)

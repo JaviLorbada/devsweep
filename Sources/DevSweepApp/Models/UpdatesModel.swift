@@ -6,7 +6,7 @@ import Observation
 /// follows them when Sparkle's own question changes them.
 @MainActor
 @Observable
-final class UpdatesModel {
+final class UpdatesModel: UpdateChecking {
     /// Whether this build updates itself. A build without a feed, such as a
     /// development build, doesn't, and shows no update controls.
     let isAvailable: Bool
