@@ -5,23 +5,32 @@ public struct Extras: Sendable, Codable, Equatable {
     public var xcodes: [InstalledXcode]
     public var runtimes: [SimulatorRuntime]
     public var worktrees: [GitWorktree]
+    /// Every simulator, the largest first, when the scan lists them.
+    public let simulators: [Simulator]
 
-    public init(xcodes: [InstalledXcode] = [], runtimes: [SimulatorRuntime] = [], worktrees: [GitWorktree] = []) {
+    public init(
+        xcodes: [InstalledXcode] = [],
+        runtimes: [SimulatorRuntime] = [],
+        worktrees: [GitWorktree] = [],
+        simulators: [Simulator] = [])
+    {
         self.xcodes = xcodes
         self.runtimes = runtimes
         self.worktrees = worktrees
+        self.simulators = simulators
     }
 
     enum CodingKeys: String, CodingKey {
-        case xcodes, runtimes, worktrees
+        case xcodes, runtimes, worktrees, simulators
     }
 
-    /// Scans saved before worktrees were listed have none.
+    /// Scans saved before worktrees or simulators were listed have none.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.xcodes = try container.decode([InstalledXcode].self, forKey: .xcodes)
         self.runtimes = try container.decode([SimulatorRuntime].self, forKey: .runtimes)
         self.worktrees = try container.decodeIfPresent([GitWorktree].self, forKey: .worktrees) ?? []
+        self.simulators = try container.decodeIfPresent([Simulator].self, forKey: .simulators) ?? []
     }
 }
 

@@ -13,7 +13,8 @@ One Swift package, three products:
 `Engine` scans one home folder. `Engine.scan(_:)` returns an `AsyncStream<ScanEvent>`:
 the project folders it searches, then each item `started`, its `progress` and
 `finished`, `done` with the total, and then the extras (installed Xcodes and
-simulator runtimes) and, when the app asks for it, what Android Studio keeps.
+simulator runtimes, and for the app every simulator) and, when the app asks
+for it, what Android Studio keeps.
 The command line scans one item at a time in report order (`ScanOptions.report`);
 the app scans four at a time, quickest first (`ScanOptions.interactive`).
 

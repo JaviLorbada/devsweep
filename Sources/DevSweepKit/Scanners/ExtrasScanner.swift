@@ -1,13 +1,16 @@
 import Foundation
 
 /// Installed Xcodes, simulator runtimes and, when the config asks, git
-/// worktrees. Listed, never deleted by a scan.
+/// worktrees and every simulator. Listed, never deleted by a scan.
 enum ExtrasScanner {
     static func scan(in context: ScanContext) async -> Extras {
-        await Extras(
+        let now = context.clock.now()
+        let devices = context.config.includeSimulators ? await self.deviceLists(in: context) : [:]
+        return await Extras(
             xcodes: self.xcodes(in: context),
-            runtimes: self.runtimes(in: context),
-            worktrees: context.config.includeWorktrees ? WorktreeScanner.scan(in: context) : [])
+            runtimes: self.runtimes(in: context, now: now, devices: devices[.default]),
+            worktrees: context.config.includeWorktrees ? WorktreeScanner.scan(in: context) : [],
+            simulators: self.simulators(devices, now: now))
     }
 
     // MARK: Xcodes
@@ -42,11 +45,9 @@ enum ExtrasScanner {
 
     // MARK: Runtimes
 
-    static func runtimes(in context: ScanContext) async -> [SimulatorRuntime] {
-        await self.runtimes(in: context, now: context.clock.now())
-    }
-
-    static func runtimes(in context: ScanContext, now: Date) async -> [SimulatorRuntime] {
+    /// - Parameter devices: simctl's device list, when the scan already read
+    ///   it; otherwise read once there are runtimes, as the script reads it.
+    static func runtimes(in context: ScanContext, now: Date, devices: SimctlDeviceList?) async -> [SimulatorRuntime] {
         let simctl = context.tools.simctl
         guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(),
               !runtimesData.isEmpty
@@ -54,7 +55,11 @@ enum ExtrasScanner {
             return []
         }
         let list = SimctlRuntimeList(runtimesData)
-        let devices = await SimctlDeviceList(simctl.devicesJSON() ?? Data())
+        let devices = if let devices {
+            devices
+        } else {
+            await SimctlDeviceList(simctl.devicesJSON(in: .default) ?? Data())
+        }
         let downloads = self.downloads(list)
         return self.runtimes(list, devices: devices, now: now).map { runtime in
             guard let folder = downloads[runtime.id] else {
@@ -158,6 +163,20 @@ enum ExtrasScanner {
     }
 
     // MARK: Simulators
+
+    /// `simctl list devices -j` for each device set, read once: the runtimes
+    /// count their simulators in the default set's.
+    static func deviceLists(in context: ScanContext) async -> [Simulator.DeviceSet: SimctlDeviceList] {
+        let simctl = context.tools.simctl
+        guard simctl.isAvailable else {
+            return [:]
+        }
+        var lists: [Simulator.DeviceSet: SimctlDeviceList] = [:]
+        for set in Simulator.DeviceSet.allCases {
+            lists[set] = await SimctlDeviceList(simctl.devicesJSON(in: set) ?? Data())
+        }
+        return lists
+    }
 
     /// Every simulator in the device sets with a UDID, the largest first.
     static func simulators(_ lists: [Simulator.DeviceSet: SimctlDeviceList], now: Date) -> [Simulator] {

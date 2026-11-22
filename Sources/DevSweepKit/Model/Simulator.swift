@@ -10,6 +10,11 @@ public struct Simulator: Sendable, Identifiable, Equatable, Codable {
         case previews
         /// The clones Xcode makes to run tests in parallel.
         case testing
+
+        /// What tells simctl to work in this set.
+        var simctlArguments: [String] {
+            self == .default ? [] : ["--set", self.rawValue]
+        }
     }
 
     /// Its UDID.

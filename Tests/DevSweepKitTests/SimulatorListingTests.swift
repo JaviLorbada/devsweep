@@ -95,4 +95,56 @@ struct SimulatorListingTests {
         """#.utf8))
         #expect(ExtrasScanner.simulators([.default: list], now: self.now).map(\.id) == ["D", "C", "A", "B"])
     }
+
+    @Test
+    func `only the app's scan lists simulators, from all three sets, reading the default set once`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        tools.stubRuntimes()
+        tools.stubDeviceSets()
+        let commandLine = try engine(home, tools)
+        #expect(!commandLine.config.includeSimulators)
+        #expect(await commandLine.extras().simulators.isEmpty)
+        #expect(!tools.log.calls.contains { $0.contains("--set") })
+
+        var config = commandLine.config
+        config.includeSimulators = true
+        let calls = tools.log.calls.count
+        let extras = try await Engine(config: config, tools: tools.tools).extras()
+        #expect(extras.simulators.count == 5)
+        #expect(Set(extras.simulators.map(\.deviceSet)) == [.default, .previews, .testing])
+        #expect(extras.runtimes.first { $0.id == "RECENT-RUNTIME" }?.simulatorCount == 2)
+        let listings = tools.log.calls.dropFirst(calls).filter { $0.hasSuffix("list devices -j") }
+        #expect(listings == [
+            "xcrun simctl list devices -j",
+            "xcrun simctl --set previews list devices -j",
+            "xcrun simctl --set testing list devices -j",
+        ])
+    }
+
+    @Test
+    func `without simctl the app's scan lists no simulators and asks simctl nothing`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        tools.simctlInstalled = false
+        tools.stubRuntimes()
+        tools.stubDeviceSets()
+        var config = try engine(home, tools).config
+        config.includeSimulators = true
+        let extras = try await Engine(config: config, tools: tools.tools).extras()
+        #expect(extras.simulators.isEmpty)
+        #expect(!tools.log.calls.contains { $0.hasPrefix("xcrun simctl") })
+    }
+
+    @Test
+    func `each device set is listed by the name simctl gives it`() async {
+        let runner = RecordingRunner(output: "{}")
+        let simctl = LiveSimctlClient(runner: runner)
+        for set in Simulator.DeviceSet.allCases {
+            _ = await simctl.devicesJSON(in: set)
+        }
+        #expect(runner.calls == [
+            ["xcrun", "simctl", "list", "devices", "-j"],
+            ["xcrun", "simctl", "--set", "previews", "list", "devices", "-j"],
+            ["xcrun", "simctl", "--set", "testing", "list", "devices", "-j"],
+        ])
+    }
 }
