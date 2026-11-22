@@ -83,6 +83,15 @@ final class Preferences {
         didSet { self.storage.set(self.showInDock, forKey: Key.showInDock) }
     }
 
+    /// Show in Dock as its switch in Settings reads it: off without the menu
+    /// bar item, since closing the window then quits the app and leaves the
+    /// setting nothing to do. The saved choice stays, and shows again once
+    /// the item is back.
+    var showInDockSwitch: Bool {
+        get { self.showInMenuBar && self.showInDock }
+        set { self.showInDock = newValue }
+    }
+
     init(storage: PreferencesStore = UserDefaults.standard) {
         self.storage = storage
         self.projectFolders = storage.object(forKey: Key.projectFolders) as? [String] ?? Self.defaultProjectFolders
