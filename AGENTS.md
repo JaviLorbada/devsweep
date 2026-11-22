@@ -41,7 +41,8 @@
 - Never delete, move or trash anything under `~/Library` by hand.
 
 ## Commits
-- Imperative subject line, a short body saying why. One coherent change per commit, with tests passing.
+- The smallest set of atomic commits that tells the change's story: each one reviewable idea, and each leaves the repository building with its tests passing.
+- A short, self-explanatory subject in the imperative. A body only when the diff doesn't make the reason clear.
 - Changes land through pull requests that pass CI. Pushes and merges happen when the maintainer says so.
 
 ## Tests
