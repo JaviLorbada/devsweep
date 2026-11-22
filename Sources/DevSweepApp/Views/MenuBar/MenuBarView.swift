@@ -67,10 +67,11 @@ enum MenuBarGlyph {
 }
 
 /// What the menu bar item opens: what the last scan found per family, when
-/// that was, the two things to do from here, and a footer with Settings…,
-/// Check for Updates… and Quit, which with Show in Dock off are otherwise
-/// only in the window's menus. Its buttons go through `MenuBarViewModel`,
-/// except for opening the window and Settings, which only a view can do.
+/// that was, the two things to do from here, and, listed as menu items, what
+/// the app menu has: Settings…, Check for Updates…, About and Quit, which
+/// with Show in Dock off and the window closed are otherwise out of reach.
+/// Its buttons go through `MenuBarViewModel`, except for opening the
+/// window, Settings and About, which only a view can do.
 /// It sits on a material, where
 /// the hierarchical styles turn vibrant, and in the light appearance vibrancy
 /// drew `.secondary` darker than `.primary`: the volume name gray, its free
@@ -144,25 +145,55 @@ struct MenuBarPanel: View {
             }
             .controlSize(.large)
             Divider()
-            HStack(spacing: 12) {
-                Button("Settings…") {
+            VStack(spacing: 0) {
+                Button {
                     self.openSettings()
                     self.menuBar.bringToFront()
+                } label: {
+                    self.menuItem("Settings…", shortcut: "⌘,")
                 }
                 .keyboardShortcut(",")
                 if self.menuBar.showsCheckForUpdates {
-                    Button(AppCommands.checkForUpdatesTitle) { self.menuBar.checkForUpdates() }
-                        .disabled(!self.menuBar.canCheckForUpdates)
+                    Button {
+                        self.menuBar.checkForUpdates()
+                    } label: {
+                        self.menuItem(AppCommands.checkForUpdatesTitle)
+                    }
+                    .disabled(!self.menuBar.canCheckForUpdates)
                 }
-                Spacer()
-                Button("Quit") { self.menuBar.quit() }
-                    .keyboardShortcut("q")
+                Button {
+                    self.openWindow(id: "about")
+                    self.menuBar.bringToFront()
+                } label: {
+                    self.menuItem("About \(BuildIdentity.current.appName)")
+                }
+                Button {
+                    self.menuBar.quit()
+                } label: {
+                    self.menuItem("Quit \(BuildIdentity.current.appName)", shortcut: "⌘Q")
+                }
+                .keyboardShortcut("q")
             }
-            .buttonStyle(.plain)
-            .font(.callout)
-            .foregroundStyle(.muted)
+            .buttonStyle(PanelMenuItemStyle())
+            .foregroundStyle(Self.label)
+            // The highlights reach past the panel's padding, as a menu's do,
+            // and the titles line up with the text above.
+            .padding(.horizontal, -8)
         }
         .padding(16)
         .frame(width: 280)
+    }
+
+    /// A menu item's title, and its shortcut to the right, as a menu shows it.
+    private func menuItem(_ title: String, shortcut: String? = nil) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            if let shortcut {
+                Text(shortcut)
+                    .foregroundStyle(.muted)
+                    .accessibilityHidden(true)
+            }
+        }
     }
 }
