@@ -132,6 +132,10 @@ extension Extras {
         self.runtimes.reduce(0) { $0 + $1.kilobytes }
     }
 
+    var simulatorsKilobytes: Int64 {
+        self.simulators.reduce(0) { $0 + $1.kilobytes }
+    }
+
     /// What removing every worktree with nothing to lose would free. The
     /// sidebar shows this, not the total, since the others stay.
     var removableWorktreesKilobytes: Int64 {

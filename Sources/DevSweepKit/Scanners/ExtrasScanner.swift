@@ -1,13 +1,16 @@
 import Foundation
 
 /// Installed Xcodes, simulator runtimes and, when the config asks, git
-/// worktrees. Listed, never deleted by a scan.
+/// worktrees and every simulator. Listed, never deleted by a scan.
 enum ExtrasScanner {
     static func scan(in context: ScanContext) async -> Extras {
-        await Extras(
+        let now = context.clock.now()
+        let devices = context.config.includeSimulators ? await self.deviceLists(in: context) : [:]
+        return await Extras(
             xcodes: self.xcodes(in: context),
-            runtimes: self.runtimes(in: context),
-            worktrees: context.config.includeWorktrees ? WorktreeScanner.scan(in: context) : [])
+            runtimes: self.runtimes(in: context, now: now, devices: devices[.default]),
+            worktrees: context.config.includeWorktrees ? WorktreeScanner.scan(in: context) : [],
+            simulators: self.simulators(devices, now: now))
     }
 
     // MARK: Xcodes
@@ -42,11 +45,9 @@ enum ExtrasScanner {
 
     // MARK: Runtimes
 
-    static func runtimes(in context: ScanContext) async -> [SimulatorRuntime] {
-        await self.runtimes(in: context, now: context.clock.now())
-    }
-
-    static func runtimes(in context: ScanContext, now: Date) async -> [SimulatorRuntime] {
+    /// - Parameter devices: simctl's device list, when the scan already read
+    ///   it; otherwise read once there are runtimes, as the script reads it.
+    static func runtimes(in context: ScanContext, now: Date, devices: SimctlDeviceList?) async -> [SimulatorRuntime] {
         let simctl = context.tools.simctl
         guard simctl.isAvailable, let runtimesData = await simctl.runtimesJSON(),
               !runtimesData.isEmpty
@@ -54,7 +55,11 @@ enum ExtrasScanner {
             return []
         }
         let list = SimctlRuntimeList(runtimesData)
-        let devices = await SimctlDeviceList(simctl.devicesJSON() ?? Data())
+        let devices = if let devices {
+            devices
+        } else {
+            await SimctlDeviceList(simctl.devicesJSON(in: .default) ?? Data())
+        }
         let downloads = self.downloads(list)
         return self.runtimes(list, devices: devices, now: now).map { runtime in
             guard let folder = downloads[runtime.id] else {
@@ -115,11 +120,9 @@ enum ExtrasScanner {
                 platform: self.platform(of: identifier),
                 version: runtime.version ?? "?",
                 build: runtime.build ?? "?",
-                kilobytes: Int64(((runtime.sizeBytes ?? 0) / 1024 + 0.5).rounded(.down)),
-                lastUsedDay: runtime.lastUsedAt.flatMap { $0.isEmpty ? nil : String($0.prefix(10)) },
-                daysSinceUsed: runtime.lastUsedAt.flatMap { JavaScriptDate.parse($0) }.map {
-                    Int(((now.timeIntervalSince1970 * 1000 - $0) / 86_400_000).rounded(.down))
-                },
+                kilobytes: self.kilobytes(bytes: runtime.sizeBytes),
+                lastUsedDay: self.day(of: runtime.lastUsedAt),
+                daysSinceUsed: self.days(since: runtime.lastUsedAt, now: now),
                 simulatorCount: devices.count(for: identifier))
         }
         // A stable sort, like JavaScript's.
@@ -138,11 +141,91 @@ enum ExtrasScanner {
 
     /// "iOS" from "com.apple.CoreSimulator.SimRuntime.iOS-27-0".
     static func platform(of identifier: String) -> String {
+        String(self.runtimeWords(identifier).first ?? "")
+    }
+
+    /// "iOS 27.2" from "com.apple.CoreSimulator.SimRuntime.iOS-27-2", and
+    /// from "…iOS-27-2-iPhone19-4", a runtime made for one device.
+    static func runtimeName(of identifier: String) -> String {
+        let version = self.runtimeWords(identifier).dropFirst()
+            .prefix { !$0.isEmpty && $0.allSatisfy { $0.isASCII && $0.isNumber } }
+        return version.isEmpty ? self.platform(of: identifier)
+            : "\(self.platform(of: identifier)) \(version.joined(separator: "."))"
+    }
+
+    /// The identifier after its last "SimRuntime.", split at its dashes.
+    private static func runtimeWords(_ identifier: String) -> [Substring] {
         var rest = Substring(identifier)
         if let marker = identifier.range(of: "SimRuntime.", options: .backwards) {
             rest = identifier[marker.upperBound...]
         }
-        return String(rest.split(separator: "-", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
+        return rest.split(separator: "-", omittingEmptySubsequences: false)
+    }
+
+    // MARK: Simulators
+
+    /// `simctl list devices -j` for each device set, read once: the runtimes
+    /// count their simulators in the default set's.
+    static func deviceLists(in context: ScanContext) async -> [Simulator.DeviceSet: SimctlDeviceList] {
+        let simctl = context.tools.simctl
+        guard simctl.isAvailable else {
+            return [:]
+        }
+        var lists: [Simulator.DeviceSet: SimctlDeviceList] = [:]
+        for set in Simulator.DeviceSet.allCases {
+            lists[set] = await SimctlDeviceList(simctl.devicesJSON(in: set) ?? Data())
+        }
+        return lists
+    }
+
+    /// Every simulator in the device sets with a UDID, the largest first.
+    static func simulators(_ lists: [Simulator.DeviceSet: SimctlDeviceList], now: Date) -> [Simulator] {
+        let simulators = Simulator.DeviceSet.allCases.flatMap { set in
+            (lists[set]?.devices ?? []).compactMap { identifier, device -> Simulator? in
+                guard let udid = device.udid else {
+                    return nil
+                }
+                return Simulator(
+                    id: udid,
+                    name: device.name ?? "?",
+                    runtime: self.runtimeName(of: identifier),
+                    state: device.state ?? "?",
+                    kilobytes: self.kilobytes(bytes: device.dataPathSize),
+                    lastUsedDay: self.day(of: device.lastUsedAt),
+                    daysSinceUsed: self.days(since: device.lastUsedAt, now: now),
+                    deviceSet: set,
+                    isAvailable: device.isAvailable ?? true)
+            }
+        }
+        return simulators.sorted { a, b in
+            if a.kilobytes != b.kilobytes {
+                return a.kilobytes > b.kilobytes
+            }
+            if a.name != b.name {
+                return a.name < b.name
+            }
+            return a.id < b.id
+        }
+    }
+
+    // MARK: simctl's sizes and dates
+
+    /// Bytes as kilobytes, rounded half up, as the script rounds them.
+    static func kilobytes(bytes: Double?) -> Int64 {
+        Int64(((bytes ?? 0) / 1024 + 0.5).rounded(.down))
+    }
+
+    /// The day of a simctl date, `YYYY-MM-DD`; nil when there is none.
+    static func day(of date: String?) -> String? {
+        date.flatMap { $0.isEmpty ? nil : String($0.prefix(10)) }
+    }
+
+    /// Whole days from a simctl date to `now`; nil when there is none or it
+    /// doesn't parse.
+    static func days(since date: String?, now: Date) -> Int? {
+        date.flatMap { JavaScriptDate.parse($0) }.map {
+            Int(((now.timeIntervalSince1970 * 1000 - $0) / 86_400_000).rounded(.down))
+        }
     }
 }
 

@@ -12,9 +12,9 @@ import SwiftUI
 /// - `DEVSWEEP_SIDEBAR_WIDTH=298` then sets the sidebar that wide, as
 ///   dragging its edge would; `DEVSWEEP_SIDEBAR=hidden` or `shown` hides or
 ///   shows it, as its toolbar button does, when it isn't already.
-/// - `DEVSWEEP_SCREEN=xcodes|runtimes|android-studios|android-sdk|gradle|worktrees|overview` switches screens once the
-/// scan
-///   and the extras are done, the way a click in the sidebar does; `scanning`
+/// - `DEVSWEEP_SCREEN=xcodes|runtimes|simulators|android-studios|android-sdk|gradle|worktrees|overview`
+///   switches screens once the scan and the extras are done, the way a
+///   click in the sidebar does; `scanning`
 ///   instead winds the finished scan back to look half done, and `blocks`
 ///   shows the overview's blocks.
 /// - `DEVSWEEP_SELECT=swiftpm-builds` selects an item, a runtime by its id,
@@ -202,6 +202,7 @@ enum DebugLaunch {
         "overview": .overview,
         "xcodes": .xcodeVersions,
         "runtimes": .simulatorRuntimes,
+        "simulators": .simulators,
         "android-studios": .androidStudios,
         "android-sdk": .androidSDK,
         "gradle": .gradleCaches,

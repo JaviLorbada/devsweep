@@ -1,0 +1,17 @@
+{
+  "devices": {
+    "com.apple.CoreSimulator.SimRuntime.iOS-27-0": [
+      {
+        "dataPath": "/Users/someone/Library/Developer/XCTestDevices/4A6C8E0B-2D4F-4A6C-8E0B-2D4F6A8C0E2B/data",
+        "dataPathSize": 1073741824,
+        "logPath": "/Users/someone/Library/Logs/CoreSimulator/4A6C8E0B-2D4F-4A6C-8E0B-2D4F6A8C0E2B",
+        "udid": "4A6C8E0B-2D4F-4A6C-8E0B-2D4F6A8C0E2B",
+        "lastUsedAt": "2026-11-12T08:00:00Z",
+        "isAvailable": true,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-17",
+        "state": "Shutdown",
+        "name": "Clone 1 of iPhone 17"
+      }
+    ]
+  }
+}

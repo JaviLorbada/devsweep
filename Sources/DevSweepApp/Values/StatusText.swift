@@ -104,6 +104,25 @@ enum StatusText {
         return "\(SizeText.of(kilobytes: kilobytes)) in \(count). \(ProductInfo.name) never removes these on its own."
     }
 
+    /// What the simulators take, and what the ones flagged after `staleDays`
+    /// among them hold.
+    static func simulators(_ simulators: [Simulator]?, staleDays: Int, isLoading: Bool) -> String {
+        guard let simulators else {
+            return isLoading ? "Listing simulators" : ""
+        }
+        let count = simulators.count == 1 ? "1 simulator" : "\(simulators.count) simulators"
+        let total = SizeText.of(kilobytes: simulators.reduce(0) { $0 + $1.kilobytes })
+        let stale = simulators.filter { $0.flagReason(staleDays: staleDays) != nil }
+        let staleSize = SizeText.of(kilobytes: stale.reduce(0) { $0 + $1.kilobytes })
+        let unused = "unused for \(staleDays) days"
+        let held = switch stale.count {
+        case 0: ""
+        case 1: "; the one \(unused) holds \(staleSize)"
+        default: "; the \(stale.count) \(unused) hold \(staleSize)"
+        }
+        return "\(total) in \(count)\(held). \(ProductInfo.name) never removes these on its own."
+    }
+
     static func xcodes(_ xcodes: [InstalledXcode]?, isLoading: Bool) -> String {
         guard let xcodes else {
             return isLoading ? "Listing Xcodes" : ""

@@ -13,7 +13,8 @@ One Swift package, three products:
 `Engine` scans one home folder. `Engine.scan(_:)` returns an `AsyncStream<ScanEvent>`:
 the project folders it searches, then each item `started`, its `progress` and
 `finished`, `done` with the total, and then the extras (installed Xcodes and
-simulator runtimes) and, when the app asks for it, what Android Studio keeps.
+simulator runtimes, and for the app every simulator) and, when the app asks
+for it, what Android Studio keeps.
 The command line scans one item at a time in report order (`ScanOptions.report`);
 the app scans four at a time, quickest first (`ScanOptions.interactive`).
 
@@ -113,7 +114,7 @@ Observation, in four kinds of piece:
 flowchart TB
   subgraph Views["Views · SwiftUI"]
     direction LR
-    Screens["Overview · Xcodes · Runtimes<br/>Worktrees · Android"]
+    Screens["Overview · Xcodes · Runtimes<br/>Simulators · Worktrees · Android"]
     Chrome["Sidebar · header · inspector<br/>menu bar · Settings"]
   end
 
@@ -123,6 +124,7 @@ flowchart TB
     OverviewVM[OverviewViewModel]
     XcodesVM[XcodesViewModel]
     RuntimesVM[RuntimesViewModel]
+    SimulatorsVM[SimulatorsViewModel]
     WorktreesVM[WorktreesViewModel]
     AndroidVM[AndroidViewModel]
     MenuBarVM[MenuBarViewModel]
@@ -181,6 +183,7 @@ cells and ring segments take plain values.
 | `OverviewViewModel` | The selected item, picking a family, the status line. | Ring, Blocks, items list, inspector |
 | `XcodesViewModel` | The selected Xcode and the screen's subtitle. | Xcode versions |
 | `RuntimesViewModel` | The selected runtime, its removal sheet, the subtitle. | Simulator runtimes |
+| `SimulatorsViewModel` | The selected simulator; the ones Xcode and Simulator show, apart from those Xcode made for previews and tests; the subtitle and what each card says. | Simulators |
 | `WorktreesViewModel` | The selected worktree, its removal sheet, the subtitle, the git command. | Worktrees |
 | `AndroidViewModel` | A selection for each Android screen, their lists and subtitles. | The three Android screens |
 | `MenuBarViewModel` | Scan Now's title and whether it can start, Check for Updates…, bringing the app to the front once the window, Settings or About opens, Quit. | The menu bar item's panel |
@@ -211,7 +214,7 @@ hands it fakes instead, so a view model's test needs no scan.
 | Protocol | What it gives | Who conforms | Who takes it |
 |---|---|---|---|
 | `ScanResults` | The tally and the facts the status lines are written from. | `ScanModel` | `OverviewViewModel`, `MarksModel` |
-| `Listings` | The Xcodes, runtimes, worktrees and Android lists; removing a runtime or a worktree. | `ScanModel` | The Xcodes, runtimes, worktrees and Android view models |
+| `Listings` | The Xcodes, runtimes, simulators, worktrees and Android lists; removing a runtime or a worktree. | `ScanModel` | The Xcodes, runtimes, simulators, worktrees and Android view models |
 | `ScanRows` | The rows as a clean changes them, and the lock that keeps a scan and a clean apart: taking it hands over the `Cleaner`. | `ScanModel` | `CleaningModel` |
 | `Cleaner` | Cleaning an item or some of its parts, and Put Back. | The kit's `Engine` | `CleaningModel`, only from `ScanRows.beginCleaning()` |
 | `Marking` | The ticked parts, and clearing what was cleaned. | `MarksModel` | `CleaningModel` |
@@ -248,8 +251,8 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
-| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, and `DockIcon`, when the app shows in the Dock. |
-| `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' and the simulators' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, and `DockIcon`, when the app shows in the Dock. |
+| `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Simulators`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
 | `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon, bringing the app forward and quitting it. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
 

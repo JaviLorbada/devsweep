@@ -64,4 +64,19 @@ struct StatusTextTests {
             == "\(SizeText.of(kilobytes: 4_000_000)) in ~/.gradle. DevSweep never removes these.")
         #expect(StatusText.worktrees([], isLoading: false) == "Nothing to remove.")
     }
+
+    @Test
+    func `the simulators' subtitle sums them, and what the flagged ones hold`() {
+        let tail = " DevSweep never removes these on its own."
+        #expect(StatusText.simulators(sampleSimulators, staleDays: 90, isLoading: false)
+            == "27.2 GB in 7 simulators; the 2 unused for 90 days hold 6.4 GB." + tail)
+        #expect(StatusText.simulators(sampleSimulators, staleDays: 30, isLoading: false)
+            == "27.2 GB in 7 simulators; the 4 unused for 30 days hold 15.8 GB." + tail)
+        #expect(StatusText.simulators(Array(sampleSimulators.prefix(3)), staleDays: 90, isLoading: false)
+            == "23.9 GB in 3 simulators; the one unused for 90 days holds 6.4 GB." + tail)
+        #expect(StatusText.simulators([sampleSimulators[0]], staleDays: 90, isLoading: false)
+            == "10.3 GB in 1 simulator." + tail)
+        #expect(StatusText.simulators(nil, staleDays: 90, isLoading: true) == "Listing simulators")
+        #expect(StatusText.simulators(nil, staleDays: 90, isLoading: false).isEmpty)
+    }
 }

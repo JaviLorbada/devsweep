@@ -19,6 +19,10 @@ public struct ScanConfig: Sendable {
     /// folders with the extras. Run under the original script's name the tool
     /// runs no git for them, so its report and tool calls stay the script's.
     public var includeWorktrees: Bool
+    /// Whether to list every simulator with the extras, in each of simctl's
+    /// device sets. Only the app asks for it; the command line's report has
+    /// no such section.
+    public var includeSimulators: Bool
     /// Whether a project search keeps out of every build folder but the one
     /// it looks for, so a folder inside another counts only as part of the
     /// outer one. Run under the original script's name the searches are the
@@ -41,6 +45,7 @@ public struct ScanConfig: Sendable {
         includeExtras: Bool = true,
         includeAndroid: Bool = false,
         includeWorktrees: Bool = false,
+        includeSimulators: Bool = false,
         outermostBuildFolders: Bool = true,
         keepsFoldersWithRepositories: Bool = true,
         environment: [String: String] = [:])
@@ -53,6 +58,7 @@ public struct ScanConfig: Sendable {
         self.includeExtras = includeExtras
         self.includeAndroid = includeAndroid
         self.includeWorktrees = includeWorktrees
+        self.includeSimulators = includeSimulators
         self.outermostBuildFolders = outermostBuildFolders
         self.keepsFoldersWithRepositories = keepsFoldersWithRepositories
         self.environment = environment

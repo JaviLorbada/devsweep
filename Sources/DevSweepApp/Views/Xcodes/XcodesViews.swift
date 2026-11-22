@@ -112,17 +112,12 @@ private struct XcodeRow: View {
             }
             .rowControl()
         }
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .tableRowSelection(selected)
-        .contentShape(Rectangle())
-        .onTapGesture { self.xcodes.select(self.xcode) }
-        .focusable()
-        .onKeyPress(.space) { self.xcodes.select(self.xcode); return .handled }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(self.xcode.title), \(SizeText.of(kilobytes: self.xcode.kilobytes))")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.xcodes.select(self.xcode) }
+        .selectableRow(
+            selected: selected,
+            label: "\(self.xcode.title), \(SizeText.of(kilobytes: self.xcode.kilobytes))")
+        {
+            self.xcodes.select(self.xcode)
+        }
     }
 }
 
@@ -177,23 +172,15 @@ struct XcodeDetails: View {
                     .font(.callout.weight(.medium))
                     .foregroundStyle(.muted)
             }
-            VStack(alignment: .leading, spacing: 5) {
-                Eyebrow(text: "Where")
+            InspectorSection("Where") {
                 Text(self.scan.tilde(self.xcode.path))
                     .font(.caption.monospaced())
-                    .foregroundStyle(.muted)
                     .textSelection(.enabled)
                 Text(self.xcode.lastOpened
                     .map { "Last opened \(DayFormat.utc($0))." } ?? "Spotlight doesn't know when it was last opened.")
-                    .font(.callout)
-                    .foregroundStyle(.muted)
             }
-            VStack(alignment: .leading, spacing: 5) {
-                Eyebrow(text: "What happens")
+            InspectorSection("What happens") {
                 Text(XcodeWords.note(self.xcode, installedCount: self.installedCount))
-                    .font(.callout)
-                    .foregroundStyle(.muted)
-                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(.horizontal, 18)

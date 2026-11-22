@@ -52,7 +52,17 @@ struct SavedScanTests {
                     kilobytes: 7,
                     lastUsedDay: nil,
                     daysSinceUsed: nil,
-                    simulatorCount: 0)]))
+                    simulatorCount: 0)],
+                simulators: [Simulator(
+                    id: "S",
+                    name: "iPhone 18",
+                    runtime: "iOS 27.1",
+                    state: "Shutdown",
+                    kilobytes: 5,
+                    lastUsedDay: "2026-10-20",
+                    daysSinceUsed: 1,
+                    deviceSet: .previews,
+                    isAvailable: false)]))
     }
 
     @Test
@@ -79,5 +89,11 @@ struct SavedScanTests {
 
         try Data("{ not json".utf8).write(to: store.url)
         #expect(store.load(home: home.home) == nil)
+    }
+
+    @Test
+    func `A scan saved before simulators were listed comes back with none`() throws {
+        let extras = try JSONDecoder().decode(Extras.self, from: Data(#"{ "xcodes": [], "runtimes": [] }"#.utf8))
+        #expect(extras.simulators.isEmpty)
     }
 }

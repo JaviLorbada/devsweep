@@ -54,8 +54,8 @@ private struct GeneralSettings: View {
                 }
             } footer: {
                 Text(
-                    "Simulator runtimes, system images and emulators untouched this long are flagged. They are only "
-                        + "ever listed.")
+                    "Runtimes, simulators, system images and emulators untouched this long are flagged. "
+                        + "\(ProductInfo.name) never removes them on its own.")
                     .settingsFooter()
             }
             Section {

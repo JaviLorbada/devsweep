@@ -28,6 +28,7 @@ final class AppCoordinator {
     let overview: OverviewViewModel
     let xcodes: XcodesViewModel
     let runtimes: RuntimesViewModel
+    let simulators: SimulatorsViewModel
     let worktrees: WorktreesViewModel
     let android: AndroidViewModel
     let menuBar: MenuBarViewModel
@@ -112,6 +113,7 @@ final class AppCoordinator {
         self.overview = OverviewViewModel(window: window, scan: scan, cleaning: cleaning, apps: runningApps)
         self.xcodes = XcodesViewModel(scan: scan)
         self.runtimes = RuntimesViewModel(scan: scan, preferences: preferences)
+        self.simulators = SimulatorsViewModel(scan: scan, preferences: preferences)
         self.worktrees = WorktreesViewModel(scan: scan)
         self.android = AndroidViewModel(window: window, scan: scan, preferences: preferences)
         self.menuBar = MenuBarViewModel(scan: scan, updates: updates, app: activator ?? ApplicationActivator())
@@ -236,6 +238,7 @@ extension View {
             .environment(app.overview)
             .environment(app.xcodes)
             .environment(app.runtimes)
+            .environment(app.simulators)
             .environment(app.worktrees)
             .environment(app.android)
             .environment(app.menuBar)

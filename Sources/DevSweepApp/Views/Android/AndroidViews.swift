@@ -180,18 +180,13 @@ private struct AndroidRow: View {
             }
             .rowControl()
         }
-        .padding(.horizontal, 14)
-        .frame(height: 40)
-        .tableRowSelection(selected)
-        .contentShape(Rectangle())
-        .onTapGesture { self.android.select(self.entry) }
-        .focusable()
-        .onKeyPress(.space) { self.android.select(self.entry); return .handled }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            "\(self.entry.title), \(SizeText.of(kilobytes: self.entry.kilobytes))\(flagged ? ", looks unused" : "")")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityAction(named: "Select") { self.android.select(self.entry) }
+        .selectableRow(
+            selected: selected,
+            label: "\(self.entry.title), \(SizeText.of(kilobytes: self.entry.kilobytes))"
+                + (flagged ? ", looks unused" : ""))
+        {
+            self.android.select(self.entry)
+        }
     }
 }
 
@@ -247,7 +242,7 @@ struct AndroidDetails: View {
                     .font(.callout.weight(.medium))
                     .foregroundStyle(reason == nil ? AnyShapeStyle(.muted) : AnyShapeStyle(.orange))
             }
-            self.section("Where") {
+            InspectorSection("Where") {
                 Text(self.scan.tilde(self.entry.path))
                     .font(.caption.monospaced())
                     .textSelection(.enabled)
@@ -256,24 +251,14 @@ struct AndroidDetails: View {
                 }
             }
             if let usage = AndroidWords.usage(entry, staleDays: android.staleDays) {
-                self.section(reason == nil ? "Usage" : "Why it is flagged") { Text(usage) }
+                InspectorSection(reason == nil ? "Usage" : "Why it is flagged") { Text(usage) }
             }
-            self.section("To remove it") { Text(AndroidWords.removal(self.entry.kind)) }
+            InspectorSection("To remove it") { Text(AndroidWords.removal(self.entry.kind)) }
         }
         .padding(.horizontal, 18)
         .padding(.top, WindowLayout.inspectorTopPadding)
         .padding(.bottom, 20)
         .frame(maxWidth: .infinity, alignment: .topLeading)
-    }
-
-    private func section(_ title: String, @ViewBuilder content: () -> some View) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Eyebrow(text: title)
-            content()
-                .font(.callout)
-                .foregroundStyle(.muted)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 }
 

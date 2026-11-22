@@ -1,0 +1,17 @@
+{
+  "devices": {
+    "com.apple.CoreSimulator.SimRuntime.iOS-27-0": [
+      {
+        "dataPath": "/Users/someone/Library/Developer/Xcode/UserData/Previews/Simulator Devices/8E6A4C2B-7D5F-4E3A-B1C9-2F4D6E8A0B1C/data",
+        "dataPathSize": 2147483648,
+        "logPath": "/Users/someone/Library/Logs/CoreSimulator/8E6A4C2B-7D5F-4E3A-B1C9-2F4D6E8A0B1C",
+        "udid": "8E6A4C2B-7D5F-4E3A-B1C9-2F4D6E8A0B1C",
+        "lastUsedAt": "2026-10-15T09:00:00Z",
+        "isAvailable": true,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
+        "state": "Shutdown",
+        "name": "iPhone 17 Pro"
+      }
+    ]
+  }
+}
