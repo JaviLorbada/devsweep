@@ -139,6 +139,7 @@ final class Preferences {
         config.skipped = self.skippedItems
         config.staleDays = self.staleDays
         config.includeAndroid = true
+        config.includeSimulators = true
         return config
     }
 }

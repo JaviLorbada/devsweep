@@ -11,6 +11,11 @@ gets a line under Unreleased as it lands.
   opens it again.
 - The menu bar item's panel lists Settings…, Check for Updates…, About
   and Quit, so a DevSweep out of the Dock needs no window to reach them.
+- A Simulators screen, under Xcode in the sidebar, lists every simulator
+  with its runtime, state, size and last use, and flags the ones unused for
+  as long as Settings says, as it flags runtimes. The ones Xcode makes for
+  SwiftUI previews and for running tests in parallel are listed apart. It
+  only lists them: nothing is erased or deleted.
 
 ## 0.7.1
 
