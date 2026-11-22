@@ -53,7 +53,6 @@
 
 ## Pull requests
 - One at a time, and small: under about 300 lines with its tests, and one change a person can notice.
-- A change that has to land whole comes with a review guide in a comment on the pull request: the commits in order, what to skim, and where judgement is needed.
 - What changed and why, a "How to try it" of a few steps, and the commands run: `make lint test acceptance`.
 - Screenshots for window changes, from `WIDTH=1280 Scripts/snapshot.sh`, and for menu bar changes, from `Scripts/snapshot.sh <folder> menubar-light`, before and after.
 - A line under Unreleased in `CHANGELOG.md` for anything a user would notice, and README.md kept current.
