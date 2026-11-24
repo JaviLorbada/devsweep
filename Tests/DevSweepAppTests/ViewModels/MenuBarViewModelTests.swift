@@ -55,15 +55,30 @@ struct MenuBarViewModelTests {
     }
 
     @Test
-    func `an update that waits shows a dot and New Version Available…, which brings it up`() {
+    func `a found update shows a dot and a row that brings up Sparkle's window`() {
         let updates = FakeUpdateChecking()
         let menuBar = MenuBarViewModel(scan: FakeScanning(), updates: updates, app: FakeActivator())
-        #expect(!menuBar.showsUpdateAvailable)
+        #expect(!menuBar.showsUpdateDot)
+        #expect(menuBar.waitingUpdate == nil)
 
-        updates.isUpdateWaiting = true
-        #expect(menuBar.showsUpdateAvailable)
-        menuBar.checkForUpdates()
+        updates.waitingUpdate = .available
+        #expect(menuBar.showsUpdateDot)
+        #expect(menuBar.waitingUpdate == .available)
+        menuBar.chooseWaitingUpdate()
         #expect(updates.checks == 1, "Sparkle brings the waiting update to the front")
+        #expect(updates.installs == 0)
+    }
+
+    @Test
+    func `a downloaded update keeps the dot, and its row installs it`() {
+        let updates = FakeUpdateChecking()
+        let menuBar = MenuBarViewModel(scan: FakeScanning(), updates: updates, app: FakeActivator())
+        updates.waitingUpdate = .ready
+        #expect(menuBar.showsUpdateDot)
+        #expect(menuBar.waitingUpdate == .ready)
+        menuBar.chooseWaitingUpdate()
+        #expect(updates.installs == 1)
+        #expect(updates.checks == 0)
     }
 
     @Test

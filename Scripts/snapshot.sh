@@ -14,8 +14,9 @@
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
 #   SELECT picks an item, and SNAPSHOT_WIDTH=900 lays the drawing out that wide.
-#   UPDATE=waiting, with or without WIDTH, shows an update waiting, as after
-#   a scheduled check found one: the menu bar item's dot and its panel's row.
+#   UPDATE=available or ready, with or without WIDTH, shows an update waiting,
+#   as after the daily check found or downloaded one: the menu bar item's dot
+#   and its panel's row.
 #
 #        WIDTH=1100 Scripts/snapshot.sh [output folder] [screen...]
 #   opens the real window that wide instead and captures it as the screen

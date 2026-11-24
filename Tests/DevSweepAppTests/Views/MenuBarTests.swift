@@ -105,11 +105,11 @@ struct MenuBarTests {
     }
 
     @Test
-    func `while an update waits, New Version Available… heads the panel's items in a group of its own`() {
+    func `while an update waits, its row heads the panel's items in a group of its own`() {
         let updater = FakeUpdater()
         let app = self.updatingApp(home: TemporaryHome(), updater: updater)
         let height = self.panelHeight(app)
-        updater.setUpdateWaiting(true)
+        updater.setWaitingUpdate(.available)
         // A row, and a separator under it.
         #expect(self.panelHeight(app) >= height + 30)
     }

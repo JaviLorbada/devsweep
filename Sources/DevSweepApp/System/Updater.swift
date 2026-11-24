@@ -14,9 +14,10 @@ protocol AppUpdating: AnyObject {
     /// Whether an update it finds is downloaded and installed without
     /// asking, the next time the app quits.
     var downloadsAutomatically: Bool { get set }
-    /// Whether an update a scheduled check found waits for the person, from
-    /// when it is found until they look at it or the update ends.
-    var isUpdateWaiting: Bool { get }
+    /// An update the daily check found that waits for the person: from
+    /// when it is found until they look at it, or once downloaded, until it
+    /// installs. Nil while none waits.
+    var waitingUpdate: WaitingUpdate? { get }
     /// Called when any of the four above changes, here or in Sparkle's own
     /// windows.
     var onChange: (@MainActor () -> Void)? { get set }
@@ -26,6 +27,9 @@ protocol AppUpdating: AnyObject {
     var canRemindGently: (@MainActor () -> Bool)? { get set }
     /// Looks now, and shows what it finds in Sparkle's windows.
     func checkForUpdates()
+    /// Installs the update that is ready and relaunches the app, as Sparkle's
+    /// Install and Relaunch does.
+    func installUpdate()
 }
 
 /// Sparkle's standard updater: its windows for a check and an update, and
@@ -36,11 +40,14 @@ protocol AppUpdating: AnyObject {
 final class SparkleUpdater: NSObject, AppUpdating {
     var onChange: (@MainActor () -> Void)?
     var canRemindGently: (@MainActor () -> Bool)?
-    private(set) var isUpdateWaiting = false
-    /// Made once this is, since this is its user driver's delegate.
+    private(set) var waitingUpdate: WaitingUpdate?
+    /// What installs the downloaded update and relaunches the app, once
+    /// Sparkle hands it over.
+    private var installNow: (() -> Void)?
+    /// Made once this is, since this is its delegate and its user driver's.
     private lazy var controller = SPUStandardUpdaterController(
         startingUpdater: true,
-        updaterDelegate: nil,
+        updaterDelegate: self,
         userDriverDelegate: self)
     private var observations: [NSKeyValueObservation] = []
 
@@ -96,12 +103,24 @@ final class SparkleUpdater: NSObject, AppUpdating {
         self.controller.checkForUpdates(nil)
     }
 
-    private func setUpdateWaiting(_ waiting: Bool) {
-        guard waiting != self.isUpdateWaiting else {
+    func installUpdate() {
+        self.installNow?()
+    }
+
+    private func setWaitingUpdate(_ update: WaitingUpdate?) {
+        guard update != self.waitingUpdate else {
             return
         }
-        self.isUpdateWaiting = waiting
+        self.waitingUpdate = update
         self.onChange?()
+    }
+
+    /// Once the person has seen the update Sparkle found, or its session
+    /// ends. One that is ready waits until it installs.
+    private func clearAvailableUpdate() {
+        if self.waitingUpdate == .available {
+            self.setWaitingUpdate(nil)
+        }
     }
 }
 
@@ -128,17 +147,38 @@ extension SparkleUpdater: @MainActor SPUStandardUserDriverDelegate {
         forUpdate update: SUAppcastItem,
         state: SPUUserUpdateState)
     {
-        // One the person checked for is in front of them already.
+        // One the person checked for is in front of them already. Whatever
+        // its stage, Sparkle's window says whether it is downloaded, and
+        // offers what comes next.
         if !state.userInitiated {
-            self.setUpdateWaiting(true)
+            self.setWaitingUpdate(.available)
         }
     }
 
     func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
-        self.setUpdateWaiting(false)
+        self.clearAvailableUpdate()
     }
 
     func standardUserDriverWillFinishUpdateSession() {
-        self.setUpdateWaiting(false)
+        self.clearAvailableUpdate()
+    }
+}
+
+/// With automatic installs on, Sparkle downloads an update without a word,
+/// to install when the app quits. While the menu bar item can show it, the
+/// update waits there, ready to install now; otherwise Sparkle keeps to its
+/// own schedule, and may show it in its window days later.
+extension SparkleUpdater: SPUUpdaterDelegate {
+    func updater(
+        _ updater: SPUUpdater,
+        willInstallUpdateOnQuit item: SUAppcastItem,
+        immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool
+    {
+        guard self.canRemindGently?() == true else {
+            return false
+        }
+        self.installNow = immediateInstallHandler
+        self.setWaitingUpdate(.ready)
+        return true
     }
 }

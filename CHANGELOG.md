@@ -13,9 +13,10 @@ gets a line under Unreleased as it lands.
   Settings…, then Quit, grouped as in a menu, so a DevSweep out of the
   Dock needs no window to reach them.
 - An update the daily check finds no longer opens behind other apps: an
-  orange dot sits in the menu bar item's ring, and New Version Available…
-  at the top of its panel brings the update up. Without the menu bar item, the
-  update window opens as before.
+  orange dot sits in the menu bar item's ring, and Update Available… at the
+  top of its panel brings the update up. Once an automatic download is
+  done, the row reads Install Update and Relaunch, and installs it. Without
+  the menu bar item, the update window opens as before.
 
 ## 0.7.1
 
