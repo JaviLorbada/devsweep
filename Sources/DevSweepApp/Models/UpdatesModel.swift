@@ -23,14 +23,20 @@ final class UpdatesModel: UpdateChecking {
     private(set) var isUpdateWaiting = false
     @ObservationIgnored private let updater: (any AppUpdating)?
 
-    /// - Parameter updater: Sparkle, live; nil in a build without a feed,
-    ///   and in tests unless they hand it a fake.
-    init(updater: (any AppUpdating)?) {
+    /// - Parameters:
+    ///   - updater: Sparkle, live; nil in a build without a feed, and in
+    ///     tests unless they hand it a fake.
+    ///   - preferences: whether the menu bar item shows, the one place an
+    ///     update can wait. Without it Sparkle shows the update itself.
+    init(updater: (any AppUpdating)?, preferences: Preferences) {
         self.updater = updater
         self.isAvailable = updater != nil
         self.refresh()
         updater?.onChange = { [weak self] in
             self?.refresh()
+        }
+        updater?.canRemindGently = {
+            preferences.showInMenuBar
         }
     }
 
