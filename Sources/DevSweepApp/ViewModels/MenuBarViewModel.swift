@@ -44,16 +44,31 @@ final class MenuBarViewModel {
         self.updates.canCheck
     }
 
-    /// Also what New Version Available… does: Sparkle brings the update
-    /// that waits to the front.
     func checkForUpdates() {
         self.updates.checkForUpdates()
     }
 
-    /// While an update a scheduled check found waits: a dot on the menu bar
-    /// item, and New Version Available… above the panel's other items.
-    var showsUpdateAvailable: Bool {
-        self.updates.isUpdateWaiting
+    /// An update the daily check found that waits: its row heads the
+    /// panel's items, while the menu bar item shows a dot.
+    var waitingUpdate: WaitingUpdate? {
+        self.updates.waitingUpdate
+    }
+
+    var showsUpdateDot: Bool {
+        self.waitingUpdate != nil
+    }
+
+    /// The waiting update's row: Sparkle brings a found update to the front,
+    /// and a downloaded one installs and relaunches the app.
+    func chooseWaitingUpdate() {
+        switch self.waitingUpdate {
+        case .available:
+            self.updates.checkForUpdates()
+        case .ready:
+            self.updates.installUpdate()
+        case nil:
+            break
+        }
     }
 
     /// Once the panel has opened the window, Settings or About, which only a

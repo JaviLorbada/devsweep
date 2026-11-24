@@ -15,7 +15,7 @@ struct UpdatesModelTests {
         let model = self.model(nil)
         #expect(!model.isAvailable)
         #expect(!model.canCheck)
-        #expect(!model.isUpdateWaiting)
+        #expect(model.waitingUpdate == nil)
         model.checkForUpdates()
         model.setChecksAutomatically(true)
         #expect(!model.checksAutomatically)
@@ -78,14 +78,28 @@ struct UpdatesModelTests {
     }
 
     @Test
-    func `an update a scheduled check finds waits until the person looks at it`() {
+    func `an update the daily check finds waits until the person looks at it, or once downloaded until it installs`() {
         let updater = FakeUpdater()
         let model = self.model(updater)
-        #expect(!model.isUpdateWaiting)
-        updater.setUpdateWaiting(true)
-        #expect(model.isUpdateWaiting)
-        updater.setUpdateWaiting(false)
-        #expect(!model.isUpdateWaiting)
+        #expect(model.waitingUpdate == nil)
+        updater.setWaitingUpdate(.available)
+        #expect(model.waitingUpdate == .available)
+        updater.setWaitingUpdate(.ready)
+        #expect(model.waitingUpdate == .ready)
+        model.installUpdate()
+        #expect(updater.installs == 1)
+        updater.setWaitingUpdate(nil)
+        #expect(model.waitingUpdate == nil)
+    }
+
+    @Test
+    func `only a downloaded update installs`() {
+        let updater = FakeUpdater()
+        let model = self.model(updater)
+        model.installUpdate()
+        updater.setWaitingUpdate(.available)
+        model.installUpdate()
+        #expect(updater.installs == 0, "Sparkle's window decides what a found update does")
     }
 
     @Test

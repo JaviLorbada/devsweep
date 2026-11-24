@@ -241,15 +241,17 @@ final class FakeScanning: Scanning {
     func scan() { self.scans += 1 }
 }
 
-/// Check for Updates… as a test sets it. Checking counts it, and nothing
-/// asks the network.
+/// Check for Updates… as a test sets it. Checking and installing count
+/// themselves, and nothing asks the network.
 @MainActor
 final class FakeUpdateChecking: UpdateChecking {
     var isAvailable = true
     var canCheck = true
-    var isUpdateWaiting = false
+    var waitingUpdate: WaitingUpdate?
     private(set) var checks = 0
+    private(set) var installs = 0
     func checkForUpdates() { self.checks += 1 }
+    func installUpdate() { self.installs += 1 }
 }
 
 /// This session's totals, as a test sets them.
@@ -343,13 +345,18 @@ final class FakeUpdater: AppUpdating {
     var canCheckForUpdates = true
     var checksAutomatically = false
     var downloadsAutomatically = false
-    private(set) var isUpdateWaiting = false
+    private(set) var waitingUpdate: WaitingUpdate?
     var canRemindGently: (@MainActor () -> Bool)?
     var onChange: (@MainActor () -> Void)?
     private(set) var checks = 0
+    private(set) var installs = 0
 
     func checkForUpdates() {
         self.checks += 1
+    }
+
+    func installUpdate() {
+        self.installs += 1
     }
 
     /// A check starts or ends, and Check for Updates… follows.
@@ -366,10 +373,10 @@ final class FakeUpdater: AppUpdating {
         self.onChange?()
     }
 
-    /// A scheduled check finds an update that waits for the person, or
-    /// they look at it.
-    func setUpdateWaiting(_ waiting: Bool) {
-        self.isUpdateWaiting = waiting
+    /// A scheduled check finds an update that waits for the person, Sparkle
+    /// downloads it, or they look at it.
+    func setWaitingUpdate(_ update: WaitingUpdate?) {
+        self.waitingUpdate = update
         self.onChange?()
     }
 }

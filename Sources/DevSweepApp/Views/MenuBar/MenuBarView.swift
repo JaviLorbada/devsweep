@@ -10,7 +10,7 @@ struct MenuBarLabel: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(nsImage: MenuBarGlyph(showsUpdateDot: self.menuBar.showsUpdateAvailable).image)
+            Image(nsImage: MenuBarGlyph(showsUpdateDot: self.menuBar.showsUpdateDot).image)
             if let space = scan.diskSpace {
                 Text(Self.title(space))
                     .monospacedDigit()
@@ -101,8 +101,9 @@ struct MenuBarGlyph {
 /// that was, the two things to do from here, and, listed as menu items in
 /// groups, what the app menu has: About and Check for Updates…, then
 /// Settings…, then Quit, which with Show in Dock off and the window closed
-/// are otherwise out of reach. While an update waits, New Version
-/// Available… heads the list, in a group of its own.
+/// are otherwise out of reach. While an update waits, its row heads the
+/// list, in a group of its own: Update Available…, or Install Update and
+/// Relaunch once it is downloaded.
 /// Its buttons go through `MenuBarViewModel`, except for opening the
 /// window, Settings and About, which only a view can do.
 /// It sits on a material, where
@@ -177,11 +178,11 @@ struct MenuBarPanel: View {
             .controlSize(.large)
             Divider()
             VStack(spacing: 0) {
-                if self.menuBar.showsUpdateAvailable {
+                if let update = self.menuBar.waitingUpdate {
                     Button {
-                        self.menuBar.checkForUpdates()
+                        self.menuBar.chooseWaitingUpdate()
                     } label: {
-                        self.menuItem("New Version Available…")
+                        self.menuItem(update.title)
                     }
                     PanelMenuSeparator()
                 }

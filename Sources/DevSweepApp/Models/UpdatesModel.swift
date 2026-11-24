@@ -18,9 +18,10 @@ final class UpdatesModel: UpdateChecking {
     /// Whether an update it finds installs without asking. Never without
     /// the automatic checks, which find it.
     private(set) var downloadsAutomatically = false
-    /// Whether a scheduled check found an update that waits for the person:
-    /// the menu bar item shows a dot, and its panel a row that brings it up.
-    private(set) var isUpdateWaiting = false
+    /// An update the daily check found that waits for the person: the menu
+    /// bar item shows a dot, and its panel a row that brings it up or, once
+    /// it is downloaded, installs it.
+    private(set) var waitingUpdate: WaitingUpdate?
     @ObservationIgnored private let updater: (any AppUpdating)?
 
     /// - Parameters:
@@ -48,6 +49,15 @@ final class UpdatesModel: UpdateChecking {
         self.updater?.checkForUpdates()
     }
 
+    /// Installs the downloaded update and relaunches the app. Only one that
+    /// is ready: Sparkle's window decides what a found one does.
+    func installUpdate() {
+        guard self.waitingUpdate == .ready else {
+            return
+        }
+        self.updater?.installUpdate()
+    }
+
     /// Turns the daily check on or off, as the person chose in Settings.
     func setChecksAutomatically(_ checks: Bool) {
         self.updater?.checksAutomatically = checks
@@ -67,6 +77,6 @@ final class UpdatesModel: UpdateChecking {
         self.canCheck = updater.canCheckForUpdates
         self.checksAutomatically = updater.checksAutomatically
         self.downloadsAutomatically = updater.checksAutomatically && updater.downloadsAutomatically
-        self.isUpdateWaiting = updater.isUpdateWaiting
+        self.waitingUpdate = updater.waitingUpdate
     }
 }
