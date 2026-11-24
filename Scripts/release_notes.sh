@@ -6,7 +6,8 @@
 # they are in dist/. GitHub shows every newline in release notes, so the
 # lines a paragraph or a list item wraps onto are joined. With --changes,
 # only its section of CHANGELOG.md, as Markdown for the appcast, which
-# Sparkle's update window shows.
+# Sparkle's update window shows, without the section's Before and after
+# table: that window draws Markdown as styled text, with no pictures.
 #
 # Usage: Scripts/release_notes.sh <version> [--changes]
 
@@ -51,8 +52,19 @@ changes() {
   printf '%s\n' "$notes" | sed -e '/./,$!d' | unwrap | cat -s \
     | sed -E "s#\\]\\(([^):#]+)\\)#](https://github.com/$repository/blob/v$version/\\1)#g"
 }
+# Drops the Before and after table, up to the next heading, and the blank
+# lines it leaves at the end.
+without_pictures() {
+  awk '
+    /^### Before and after$/ { skip = 1; next }
+    skip && /^#/ { skip = 0 }
+    skip { next }
+    /^$/ { blanks++; next }
+    { while (blanks > 0) { print ""; blanks-- } print }
+  '
+}
 if [[ "${2:-}" == --changes ]]; then
-  changes
+  changes | without_pictures
   exit 0
 fi
 
