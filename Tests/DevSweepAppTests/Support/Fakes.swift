@@ -344,6 +344,7 @@ final class FakeUpdater: AppUpdating {
     var checksAutomatically = false
     var downloadsAutomatically = false
     private(set) var isUpdateWaiting = false
+    var canRemindGently: (@MainActor () -> Bool)?
     var onChange: (@MainActor () -> Void)?
     private(set) var checks = 0
 

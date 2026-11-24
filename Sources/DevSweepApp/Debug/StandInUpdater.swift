@@ -12,6 +12,7 @@ final class StandInUpdater: AppUpdating {
     var checksAutomatically = false
     var downloadsAutomatically = false
     let isUpdateWaiting = ProcessInfo.processInfo.environment["DEVSWEEP_UPDATE"] == "waiting"
+    var canRemindGently: (@MainActor () -> Bool)?
     var onChange: (@MainActor () -> Void)?
 
     func checkForUpdates() {}

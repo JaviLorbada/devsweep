@@ -20,6 +20,10 @@ protocol AppUpdating: AnyObject {
     /// Called when any of the four above changes, here or in Sparkle's own
     /// windows.
     var onChange: (@MainActor () -> Void)? { get set }
+    /// Asked when a scheduled check finds an update that Sparkle would show
+    /// behind other windows: whether it can wait as a gentle reminder
+    /// instead. When this says no, or isn't set, Sparkle shows it.
+    var canRemindGently: (@MainActor () -> Bool)? { get set }
     /// Looks now, and shows what it finds in Sparkle's windows.
     func checkForUpdates()
 }
@@ -31,6 +35,7 @@ protocol AppUpdating: AnyObject {
 @MainActor
 final class SparkleUpdater: NSObject, AppUpdating {
     var onChange: (@MainActor () -> Void)?
+    var canRemindGently: (@MainActor () -> Bool)?
     private(set) var isUpdateWaiting = false
     /// Made once this is, since this is its user driver's delegate.
     private lazy var controller = SPUStandardUpdaterController(
@@ -100,11 +105,24 @@ final class SparkleUpdater: NSObject, AppUpdating {
     }
 }
 
-/// An update a scheduled check finds waits for the person, as the menu bar
-/// item's dot, until they look at it: Sparkle's window may have opened
-/// behind the app in front.
+/// Sparkle's gentle reminders, for an app that is often in the menu bar
+/// alone: an update a scheduled check finds waits as the menu bar item's
+/// dot, rather than in a window behind the app in front, until the person
+/// looks at it. Sparkle still shows it when it would come to the front, and
+/// whenever there is no menu bar item to remind from.
 /// Sparkle's standard user driver, which calls these, is on the main actor.
 extension SparkleUpdater: @MainActor SPUStandardUserDriverDelegate {
+    var supportsGentleScheduledUpdateReminders: Bool {
+        true
+    }
+
+    func standardUserDriverShouldHandleShowingScheduledUpdate(
+        _ update: SUAppcastItem,
+        andInImmediateFocus immediateFocus: Bool) -> Bool
+    {
+        immediateFocus || self.canRemindGently?() != true
+    }
+
     func standardUserDriverWillHandleShowingUpdate(
         _ handleShowingUpdate: Bool,
         forUpdate update: SUAppcastItem,

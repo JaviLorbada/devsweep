@@ -102,7 +102,7 @@ final class AppCoordinator {
         self.marks = marks
         self.runningApps = runningApps
         self.cleaning = cleaning
-        let updates = UpdatesModel(updater: updater)
+        let updates = UpdatesModel(updater: updater, preferences: preferences)
         self.updates = updates
         self.dock = DockModel(preferences: preferences, dockIcon: dockIcon ?? ActivationPolicyDockIcon())
 
