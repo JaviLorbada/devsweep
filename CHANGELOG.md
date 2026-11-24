@@ -2,7 +2,9 @@
 
 What changed in each release, newest first. The release workflow takes a
 version's notes from its section here, so every change a user would notice
-gets a line under Unreleased as it lands.
+gets a line under Unreleased as it lands. A section can end with a Before
+and after table of its pull requests' screenshots, which the release page
+shows and the update window leaves out.
 
 ## Unreleased
 
@@ -18,6 +20,16 @@ gets a line under Unreleased as it lands.
   done, the row reads Install Update and Relaunch, and installs it. Without
   the menu bar item, the update window opens as before.
 
+### Before and after
+
+| | Before | After |
+|---|:---:|:---:|
+| Settings > General | <img width="400" alt="Settings' General tab before: Show in menu bar on its own" src="https://github.com/user-attachments/assets/7ff678cd-c8a3-49a4-8b35-3b240836af76" /> | <img width="400" alt="Settings' General tab after: Show in Dock under Show in menu bar" src="https://github.com/user-attachments/assets/50492ebb-057b-4052-b337-5d1703a330cb" /> |
+| The menu bar panel | <img width="296" alt="The menu bar panel before: Scan Now and Open DevSweep at the bottom, and nothing under them" src="https://github.com/user-attachments/assets/43b548f6-257c-43e2-836a-36a632b77501" /> | <img width="296" alt="The menu bar panel after: About DevSweep and Check for Updates…, then Settings…, then Quit DevSweep, with separators between the groups" src="https://github.com/user-attachments/assets/fa4233bb-1f6f-4d13-a443-fa86d35776cb" /> |
+| The menu bar item, with an update waiting | <img width="400" alt="The menu bar item before, in dark and light menu bars: the ring and the free space" src="https://github.com/user-attachments/assets/4f27d0c3-dd11-4654-acaf-cde9661f658b" /> | <img width="396" alt="The menu bar item with an update waiting, in dark and light menu bars: an orange dot in the middle of the ring" src="https://github.com/user-attachments/assets/5930f9fc-ee40-4994-bba6-da7e6dad3181" /> |
+| An update found | | <img width="296" alt="The menu bar panel with an update found: Update Available… in its own group at the top" src="https://github.com/user-attachments/assets/0768b76e-6782-4f0c-8c74-6076862b555a" /> |
+| An update downloaded | | <img width="296" alt="The menu bar panel with an update downloaded: Install Update and Relaunch in its own group at the top" src="https://github.com/user-attachments/assets/c453a77b-cff0-41bc-a9f8-d6af325aa8c8" /> |
+
 ## 0.7.1
 
 Project build folders that hold work of their own stay where they are.
@@ -28,6 +40,12 @@ Project build folders that hold work of their own stay where they are.
   SwiftPM's own clones in `.build/checkouts` and `.build/repositories`,
   and in `.build/index-build` where SourceKit-LSP indexes, don't count:
   `swift package resolve` clones them again.
+
+### Before and after
+
+| | Before | After |
+|---|:---:|:---:|
+| A `node_modules` with a git repository | <img width="400" alt="Before: node_modules folders (3), the dashboard's included, and no note" src="https://github.com/user-attachments/assets/cc54bd66-31fb-48e3-b7a6-f6492b50eded" /> | <img width="400" alt="After: node_modules folders (2), and a note that the dashboard's node_modules holds a git repository" src="https://github.com/user-attachments/assets/44c13331-2b86-435d-adeb-6c6e90ff2242" /> |
 
 ## 0.7.0
 
@@ -58,6 +76,17 @@ the versions before it have no updater.
   counted twice. The app never ticks them on its own; `devsweep --run`
   deletes them with the rest unless you `--skip` them.
 
+### Before and after
+
+| | Before | After |
+|---|:---:|:---:|
+| The overview | <img width="400" alt="Before: the overview with 11 items" src="https://github.com/user-attachments/assets/f7037bb1-a799-414e-ad79-7f6cb99735a5" /> | <img width="400" alt="After: 14 items, with node_modules folders third biggest and unticked" src="https://github.com/user-attachments/assets/2e2d07fa-f8bb-4f1f-b308-21bf3923d8ed" /> |
+| Settings > General | <img width="300" alt="Settings' General tab before the updater" src="https://github.com/user-attachments/assets/553fee22-a17e-4682-a3f0-b739e171c855" /> | <img width="300" alt="Settings' General tab with the daily check for updates on" src="https://github.com/user-attachments/assets/c897839b-7695-4002-a00a-3d650adc309b" /> |
+| Settings, as it opens | <img width="400" alt="Before: Settings' General tab as it opens, cut off after Show in menu bar" src="https://github.com/user-attachments/assets/12b7f377-fb2f-40c9-8127-d92dca7b3df9" /> | <img width="400" alt="After: Settings' General tab as it opens, tall enough to show the whole tab, down to the update settings" src="https://github.com/user-attachments/assets/73d29eee-96e1-4bab-876c-744b61b3c05b" /> |
+| The second launch | | <img width="420" alt="DevSweep asks whether to check for updates automatically" src="https://github.com/user-attachments/assets/d762682c-0f3a-4d6a-9770-b85f34b3dad1" /> |
+| The Help menu | <img width="311" alt="The Help menu before: DevSweep on GitHub, Report a Problem and Support DevSweep" src="https://github.com/user-attachments/assets/cf8b446e-ffa3-4a03-91aa-49c3ec5c6425" /> | <img width="311" alt="The Help menu after: DevSweep on GitHub, Report a Problem…, Suggest an Idea… and Support DevSweep" src="https://github.com/user-attachments/assets/791d6cf0-bf03-4b54-b354-57ef2a01f3aa" /> |
+| `devsweep --version` | <img width="400" alt="Before: devsweep --version is an unknown option" src="https://github.com/user-attachments/assets/f9145bbf-b100-46fb-8a12-54a670002347" /> | <img width="363" alt="After: devsweep --version prints devsweep 0.6.0 (202611141450)" src="https://github.com/user-attachments/assets/ec2f1b58-7f25-4ae0-8c59-34dfd0e6d4a4" /> |
+
 ## 0.6.0
 
 A new icon, and one way of counting everywhere: simulator runtimes with
@@ -74,6 +103,14 @@ the download macOS keeps for them, and the command line as the app counts.
   numbers now match the app's. Run as `devclean` it still matches the bash
   script, which counts the same way now.
 
+### Before and after
+
+| | Before | After |
+|---|:---:|:---:|
+| The icon | | <img width="256" alt="The new icon: DevSweep's five-colour ring floating over a frosted glass dish, on a porcelain tile" src="https://github.com/user-attachments/assets/1b36655c-1321-4840-9b5a-38ecf72e9150" /> |
+| A simulator runtime | <img width="400" alt="Before: iOS 18.5 at 8.2 GB, 21.4 GB in 3 runtimes, and no Size section in the inspector" src="https://github.com/user-attachments/assets/3642cdc6-76cf-410d-900e-02b65d88bcbf" /> | <img width="400" alt="After: iOS 18.5 at 17.3 GB, 30.5 GB in 3 runtimes, and the inspector's Size section: 8.2 GB is the runtime, and 9.1 GB a download macOS keeps for it" src="https://github.com/user-attachments/assets/51359311-28f2-4031-828e-04de01bee4a9" /> |
+| The command line | <img width="400" alt="Before: sizes in 1024s, DerivedData 18.5 GB, Total 33.5 GB, Free space now 320.2 GB" src="https://github.com/user-attachments/assets/eb42e326-7e98-49df-a4fe-8c6e25127984" /> | <img width="400" alt="After: sizes in thousands, DerivedData 20.2 GB, Total 36.3 GB, Free space now 354.2 GB, as the app shows them" src="https://github.com/user-attachments/assets/b12a4ae6-d516-430c-b1fe-7273aa9b2418" /> |
+
 ## 0.5.1
 
 The app's numbers now match your Mac's.
@@ -85,6 +122,12 @@ The app's numbers now match your Mac's.
 - Free space is what Finder and System Settings show: it counts the space
   macOS frees on its own, such as local snapshots, and the menu reads
   "337.6 GB free of 995 GB".
+
+### Before and after
+
+| | Before | After |
+|---|:---:|:---:|
+| The menu bar | <img width="296" alt="Before: the menu bar reads 381.7 GB, and the panel 381.7 GB free" src="https://github.com/user-attachments/assets/a8d218cc-b7f2-4969-bb42-65e665afc9ae" /> | <img width="296" alt="After: the menu bar reads 389.0 GB, and the panel 389.0 GB free of 995 GB" src="https://github.com/user-attachments/assets/8e7781d5-42cc-4e60-bd08-674389f71b89" /> |
 
 ## 0.5.0
 
