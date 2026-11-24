@@ -158,7 +158,7 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 - **The menu bar item** shows the free space and keeps DevSweep running after
   you close the window, so it can scan once a day. Turn off Show in Dock
   and, once its windows close, DevSweep is in the menu bar only; the
-  item's panel has Settings…, Check for Updates…, About and Quit. Nothing
+  item's panel has About, Check for Updates…, Settings… and Quit. Nothing
   starts it at login.
 - **Report a problem or suggest an idea** from the Help menu. It opens the
   issue form on GitHub, with the versions filled in, for you to finish and

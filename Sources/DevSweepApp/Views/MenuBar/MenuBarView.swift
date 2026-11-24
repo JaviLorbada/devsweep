@@ -67,9 +67,10 @@ enum MenuBarGlyph {
 }
 
 /// What the menu bar item opens: what the last scan found per family, when
-/// that was, the two things to do from here, and, listed as menu items, what
-/// the app menu has: Settings…, Check for Updates…, About and Quit, which
-/// with Show in Dock off and the window closed are otherwise out of reach.
+/// that was, the two things to do from here, and, listed as menu items in
+/// groups, what the app menu has: About and Check for Updates…, then
+/// Settings…, then Quit, which with Show in Dock off and the window closed
+/// are otherwise out of reach.
 /// Its buttons go through `MenuBarViewModel`, except for opening the
 /// window, Settings and About, which only a view can do.
 /// It sits on a material, where
@@ -147,12 +148,11 @@ struct MenuBarPanel: View {
             Divider()
             VStack(spacing: 0) {
                 Button {
-                    self.openSettings()
+                    self.openWindow(id: "about")
                     self.menuBar.bringToFront()
                 } label: {
-                    self.menuItem("Settings…", shortcut: "⌘,")
+                    self.menuItem("About \(BuildIdentity.current.appName)")
                 }
-                .keyboardShortcut(",")
                 if self.menuBar.showsCheckForUpdates {
                     Button {
                         self.menuBar.checkForUpdates()
@@ -161,12 +161,15 @@ struct MenuBarPanel: View {
                     }
                     .disabled(!self.menuBar.canCheckForUpdates)
                 }
+                PanelMenuSeparator()
                 Button {
-                    self.openWindow(id: "about")
+                    self.openSettings()
                     self.menuBar.bringToFront()
                 } label: {
-                    self.menuItem("About \(BuildIdentity.current.appName)")
+                    self.menuItem("Settings…", shortcut: "⌘,")
                 }
+                .keyboardShortcut(",")
+                PanelMenuSeparator()
                 Button {
                     self.menuBar.quit()
                 } label: {
@@ -177,8 +180,8 @@ struct MenuBarPanel: View {
             .buttonStyle(PanelMenuItemStyle())
             .foregroundStyle(Self.label)
             // The highlights reach past the panel's padding, as a menu's do,
-            // and the titles line up with the text above.
-            .padding(.horizontal, -8)
+            // and the titles and separators line up with the text above.
+            .padding(.horizontal, -PanelMenuItemStyle.inset)
         }
         .padding(16)
         .frame(width: 280)

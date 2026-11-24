@@ -9,8 +9,9 @@ gets a line under Unreleased as it lands.
 - Settings > General has Show in Dock. Turned off, DevSweep leaves the
   Dock and the app switcher when its windows close, and its menu bar item
   opens it again.
-- The menu bar item's panel lists Settings…, Check for Updates…, About
-  and Quit, so a DevSweep out of the Dock needs no window to reach them.
+- The menu bar item's panel lists About and Check for Updates…, then
+  Settings…, then Quit, grouped as in a menu, so a DevSweep out of the
+  Dock needs no window to reach them.
 
 ## 0.7.1
 
