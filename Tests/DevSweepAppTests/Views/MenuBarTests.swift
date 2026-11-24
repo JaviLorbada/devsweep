@@ -81,7 +81,7 @@ struct MenuBarTests {
             NSHostingController(rootView: MenuBarPanel().environment(models: app))
                 .sizeThatFits(in: CGSize(width: 280, height: 2000)).height
         }
-        // Without an updater the list has Settings…, About and Quit; with one,
+        // Without an updater the list has About, Settings… and Quit; with one,
         // Check for Updates… takes a row of its own.
         #expect(height(updating) >= height(makeApp(home: home)) + 20)
     }
