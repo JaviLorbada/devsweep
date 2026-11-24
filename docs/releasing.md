@@ -9,7 +9,12 @@ from a laptop.
 ## Steps
 
 1. **Changelog.** Move the lines under Unreleased in `CHANGELOG.md` into a new
-   section, `## 0.5.0`, and leave Unreleased empty.
+   section, `## 0.5.0`, and leave Unreleased empty. End the section with a
+   `### Before and after` table: a row for each change a person can see,
+   with the screenshots from its pull request's own table, by their
+   `user-attachments` URLs, so the repository gains no images. Something
+   new has no Before. The release page shows the table under the changes;
+   the update window leaves it out.
 2. **Version.** Set `MARKETING_VERSION` in `version.env`, and `BUILD_NUMBER` to
    the date and time in UTC, `date -u +%Y%m%d%H%M`: `202611131041` says when
    a build was cut, where a count wouldn't. Set the same two in
@@ -129,7 +134,7 @@ from here. The command line tool doesn't update itself.
 - **The appcast.** After the build, `Scripts/appcast.sh` runs Sparkle's
   `generate_appcast` on the app zip: one update, its length, its EdDSA
   signature, and this version's section of `CHANGELOG.md` as Markdown, which
-  Sparkle's update window shows. `Scripts/check_appcast.swift` then checks
+  Sparkle's update window shows, without its Before and after table. `Scripts/check_appcast.swift` then checks
   the signature against `UPDATE_PUBLIC_KEY`, so a wrong secret fails the
   release rather than every copy's update. A tag publishes `appcast.xml` with
   the zips. A tag without the secret, or without notarizing, stops before
