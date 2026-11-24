@@ -55,6 +55,18 @@ struct MenuBarViewModelTests {
     }
 
     @Test
+    func `an update that waits shows a dot and New Version Available…, which brings it up`() {
+        let updates = FakeUpdateChecking()
+        let menuBar = MenuBarViewModel(scan: FakeScanning(), updates: updates, app: FakeActivator())
+        #expect(!menuBar.showsUpdateAvailable)
+
+        updates.isUpdateWaiting = true
+        #expect(menuBar.showsUpdateAvailable)
+        menuBar.checkForUpdates()
+        #expect(updates.checks == 1, "Sparkle brings the waiting update to the front")
+    }
+
+    @Test
     func `opening the window or Settings brings the app to the front, and Quit quits it`() {
         let app = FakeActivator()
         let menuBar = MenuBarViewModel(scan: FakeScanning(), updates: FakeUpdateChecking(), app: app)

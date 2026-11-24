@@ -9,6 +9,7 @@ struct UpdatesModelTests {
         let model = UpdatesModel(updater: nil)
         #expect(!model.isAvailable)
         #expect(!model.canCheck)
+        #expect(!model.isUpdateWaiting)
         model.checkForUpdates()
         model.setChecksAutomatically(true)
         #expect(!model.checksAutomatically)
@@ -68,5 +69,16 @@ struct UpdatesModelTests {
         #expect(model.downloadsAutomatically)
         model.setChecksAutomatically(false)
         #expect(!model.downloadsAutomatically)
+    }
+
+    @Test
+    func `an update a scheduled check finds waits until the person looks at it`() {
+        let updater = FakeUpdater()
+        let model = UpdatesModel(updater: updater)
+        #expect(!model.isUpdateWaiting)
+        updater.setUpdateWaiting(true)
+        #expect(model.isUpdateWaiting)
+        updater.setUpdateWaiting(false)
+        #expect(!model.isUpdateWaiting)
     }
 }

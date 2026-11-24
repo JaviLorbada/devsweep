@@ -14,7 +14,11 @@ protocol AppUpdating: AnyObject {
     /// Whether an update it finds is downloaded and installed without
     /// asking, the next time the app quits.
     var downloadsAutomatically: Bool { get set }
-    /// Called when any of the three changes, here or in Sparkle's own windows.
+    /// Whether an update a scheduled check found waits for the person, from
+    /// when it is found until they look at it or the update ends.
+    var isUpdateWaiting: Bool { get }
+    /// Called when any of the four above changes, here or in Sparkle's own
+    /// windows.
     var onChange: (@MainActor () -> Void)? { get set }
     /// Looks now, and shows what it finds in Sparkle's windows.
     func checkForUpdates()
@@ -25,9 +29,14 @@ protocol AppUpdating: AnyObject {
 /// its updates are signed with come from the Info.plist that
 /// `Scripts/package_app.sh` writes.
 @MainActor
-final class SparkleUpdater: AppUpdating {
+final class SparkleUpdater: NSObject, AppUpdating {
     var onChange: (@MainActor () -> Void)?
-    private let controller: SPUStandardUpdaterController
+    private(set) var isUpdateWaiting = false
+    /// Made once this is, since this is its user driver's delegate.
+    private lazy var controller = SPUStandardUpdaterController(
+        startingUpdater: true,
+        updaterDelegate: nil,
+        userDriverDelegate: self)
     private var observations: [NSKeyValueObservation] = []
 
     /// The updater for this build, started; nil in a build without a feed,
@@ -40,11 +49,8 @@ final class SparkleUpdater: AppUpdating {
         return SparkleUpdater()
     }
 
-    private init() {
-        self.controller = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: nil)
+    override private init() {
+        super.init()
         let updater = self.controller.updater
         // Sparkle changes these on the main thread, and says so with KVO.
         let changed: @Sendable (SPUUpdater, NSKeyValueObservedChange<Bool>) -> Void = { [weak self] _, _ in
@@ -83,5 +89,38 @@ final class SparkleUpdater: AppUpdating {
 
     func checkForUpdates() {
         self.controller.checkForUpdates(nil)
+    }
+
+    private func setUpdateWaiting(_ waiting: Bool) {
+        guard waiting != self.isUpdateWaiting else {
+            return
+        }
+        self.isUpdateWaiting = waiting
+        self.onChange?()
+    }
+}
+
+/// An update a scheduled check finds waits for the person, as the menu bar
+/// item's dot, until they look at it: Sparkle's window may have opened
+/// behind the app in front.
+/// Sparkle's standard user driver, which calls these, is on the main actor.
+extension SparkleUpdater: @MainActor SPUStandardUserDriverDelegate {
+    func standardUserDriverWillHandleShowingUpdate(
+        _ handleShowingUpdate: Bool,
+        forUpdate update: SUAppcastItem,
+        state: SPUUserUpdateState)
+    {
+        // One the person checked for is in front of them already.
+        if !state.userInitiated {
+            self.setUpdateWaiting(true)
+        }
+    }
+
+    func standardUserDriverDidReceiveUserAttention(forUpdate update: SUAppcastItem) {
+        self.setUpdateWaiting(false)
+    }
+
+    func standardUserDriverWillFinishUpdateSession() {
+        self.setUpdateWaiting(false)
     }
 }

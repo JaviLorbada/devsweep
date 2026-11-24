@@ -183,13 +183,13 @@ cells and ring segments take plain values.
 | `RuntimesViewModel` | The selected runtime, its removal sheet, the subtitle. | Simulator runtimes |
 | `WorktreesViewModel` | The selected worktree, its removal sheet, the subtitle, the git command. | Worktrees |
 | `AndroidViewModel` | A selection for each Android screen, their lists and subtitles. | The three Android screens |
-| `MenuBarViewModel` | Scan Now's title and whether it can start, Check for Updates…, bringing the app to the front once the window, Settings or About opens, Quit. | The menu bar item's panel |
+| `MenuBarViewModel` | An update that waits, Scan Now's title and whether it can start, Check for Updates…, bringing the app to the front once the window, Settings or About opens, Quit. | The menu bar item and its panel |
 | `Removal` | One removal sheet's state: what is waiting, whether it runs, why it failed. | Runtimes, worktrees |
 | `ScanModel` | The rows, one per item, and the scan that fills them; the listings, the free space, the last scan kept for the next launch. Only it changes the rows, and a scan and a clean never run at once. | Every screen, the menu bar, `CleaningModel` |
 | `CleaningModel` | A clean from the question to the end: quitting Xcode, confirming, the Trash or deleting, Put Back, cleaning parts, this session's totals, the notices. | Overview footer, items list, inspector, the window's alerts |
 | `MarksModel` | What is ticked, items and parts, and the three biggest ticked by default. | Items list, inspector, `CleaningModel` |
 | `RunningAppsModel` | Whether Xcode and Simulator are open, and quitting them. | `CleaningModel`, the status line |
-| `UpdatesModel` | Whether the build updates itself, Check for Updates…, and the automatic checks, as Sparkle keeps them. | The app menu, Settings |
+| `UpdatesModel` | Whether the build updates itself, Check for Updates…, the automatic checks, as Sparkle keeps them, and an update the daily check found waiting. | The app menu, Settings, the menu bar |
 | `DockModel` | Whether the app is in the Dock and the app switcher: which of the window and Settings are open, and the two settings `DockIcon` decides it from. | The scenes, as the window and Settings open and close |
 | `Tally` | Row order, totals, each family's share, the ring's weights. | `ScanModel`, the charts, the sidebar |
 | `StatusText` | The status lines, the subtitles' words, "3 minutes ago". | The view models, the menu bar |
@@ -219,7 +219,7 @@ hands it fakes instead, so a view model's test needs no scan.
 | `CleaningTotals` | What this session moved to the Trash and deleted. | `CleaningModel` | `OverviewViewModel` |
 | `Navigation` | The screen on show, and showing another. | `WindowViewModel` | `OverviewViewModel`, `AndroidViewModel` |
 | `Scanning` | Whether a scan runs or a clean holds the rows, whether there is a home to scan, and starting a scan. | `ScanModel` | `MenuBarViewModel` |
-| `UpdateChecking` | Whether the build updates itself, whether a check can start, and starting one. | `UpdatesModel` | `MenuBarViewModel` |
+| `UpdateChecking` | Whether the build updates itself, whether a check can start, starting one, and whether an update waits. | `UpdatesModel` | `MenuBarViewModel` |
 
 Three things have no protocol, on purpose:
 

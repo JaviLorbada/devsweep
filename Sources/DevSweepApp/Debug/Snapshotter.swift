@@ -76,7 +76,13 @@ enum Snapshotter {
             .environment(models: app)
             .environment(\.colorScheme, dark ? .dark : .light))
         renderer.scale = 2
-        if let image = renderer.cgImage {
+        // An image that draws itself, as the menu bar glyph with the update
+        // dot does, picks its colors from the appearance it draws in.
+        var image: CGImage?
+        NSAppearance(named: dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance {
+            image = renderer.cgImage
+        }
+        if let image {
             let rep = NSBitmapImageRep(cgImage: image)
             try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: output))
         }
