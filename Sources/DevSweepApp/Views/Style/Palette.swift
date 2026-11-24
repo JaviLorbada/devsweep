@@ -72,6 +72,14 @@ enum Palette {
         return Palette.darkened(accent, dark: isDark)
     })
 
+    /// The menu bar's text color, for its item's ring and its panel's text:
+    /// the system label color's values, as a plain color. There the label
+    /// color is vibrant, and drew the panel's text out of order and the ring
+    /// lighter than the item's text.
+    static let menuBarTextColor = NSColor(name: nil) { appearance in
+        NSColor(white: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 1 : 0, alpha: 0.85)
+    }
+
     /// A bright color as text: mixed toward black, or white in the dark, so
     /// it reads on the panels.
     static func text(_ color: Color, dark: Bool) -> Color {

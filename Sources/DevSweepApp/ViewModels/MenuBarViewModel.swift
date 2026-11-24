@@ -1,9 +1,10 @@
 import Observation
 
-/// The menu bar item's panel's own state and actions: Scan Now, Check for
-/// Updates…, bringing the app to the front once the window, Settings or About
-/// opens, and Quit. What the last scan found the panel reads from the scan
-/// as it is, through `Tally` and `StatusText`.
+/// The menu bar item's own state and actions, and its panel's: an update
+/// that waits, Scan Now, Check for Updates…, bringing the app to the front
+/// once the window, Settings or About opens, and Quit. What the last scan
+/// found the panel reads from the scan as it is, through `Tally` and
+/// `StatusText`.
 @MainActor
 @Observable
 final class MenuBarViewModel {
@@ -43,8 +44,16 @@ final class MenuBarViewModel {
         self.updates.canCheck
     }
 
+    /// Also what New Version Available… does: Sparkle brings the update
+    /// that waits to the front.
     func checkForUpdates() {
         self.updates.checkForUpdates()
+    }
+
+    /// While an update a scheduled check found waits: a dot on the menu bar
+    /// item, and New Version Available… above the panel's other items.
+    var showsUpdateAvailable: Bool {
+        self.updates.isUpdateWaiting
     }
 
     /// Once the panel has opened the window, Settings or About, which only a

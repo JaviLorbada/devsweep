@@ -6,11 +6,11 @@ import SwiftUI
 /// free space.
 struct MenuBarLabel: View {
     @Environment(ScanModel.self) private var scan
+    @Environment(MenuBarViewModel.self) private var menuBar
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(nsImage: MenuBarGlyph.image)
-                .renderingMode(.template)
+            Image(nsImage: MenuBarGlyph(showsUpdateDot: self.menuBar.showsUpdateAvailable).image)
             if let space = scan.diskSpace {
                 Text(Self.title(space))
                     .monospacedDigit()
@@ -29,48 +29,80 @@ struct MenuBarLabel: View {
     }
 }
 
-/// The menu bar item's glyph: the icon's ring in one color. It is a template
-/// image, so the menu bar draws it in its own text color, light or dark. At
-/// this size the icon's gaps would be half a point, so they are wider here.
+/// The menu bar item's glyph: the icon's ring in one color, and an orange
+/// dot in its middle while an update waits. At this size the icon's gaps
+/// would be half a point, so they are wider here.
 @MainActor
-enum MenuBarGlyph {
+struct MenuBarGlyph {
     static let side: CGFloat = 16
     static let lineWidth: CGFloat = 2
     /// The ring's radius to the middle of its stroke, a point in from the edge.
     static let radius = side / 2 - 1 - lineWidth / 2
     /// The gap between two segments, as a share of the ring.
     static let gap = 0.045
+    /// The update dot's diameter: inside the ring, two points clear of it.
+    static let dotDiameter: CGFloat = 6
 
-    static let image: NSImage = {
-        let segments = IconRing.segments(gap: gap).map { (from: $0.from, to: $0.to) }
-        let image = NSImage(size: NSSize(width: side, height: side), flipped: false) { [radius, lineWidth] rect in
-            NSColor.black.setStroke()
-            for segment in segments {
-                // Clockwise from the top, as the icon draws it.
-                let path = NSBezierPath()
-                path.appendArc(
-                    withCenter: NSPoint(x: rect.midX, y: rect.midY),
-                    radius: radius,
-                    startAngle: 90 - segment.from * 360,
-                    endAngle: 90 - segment.to * 360,
-                    clockwise: true)
-                path.lineWidth = lineWidth
-                path.lineCapStyle = .butt
-                path.stroke()
-            }
+    let showsUpdateDot: Bool
+
+    /// Without the dot, a template image, so the menu bar draws it in its own
+    /// text color, light or dark. With it, not a template, or the menu bar
+    /// would draw the dot in its text color too: the ring takes that color
+    /// itself. VoiceOver reads the item by the image's description.
+    var image: NSImage {
+        let image = NSImage(size: NSSize(width: Self.side, height: Self.side), flipped: false) { rect in
+            self.draw(in: rect)
             return true
         }
-        image.isTemplate = true
-        image.accessibilityDescription = ProductInfo.name
+        image.isTemplate = !self.showsUpdateDot
+        image.accessibilityDescription = self.showsUpdateDot
+            ? "\(ProductInfo.name), update available"
+            : ProductInfo.name
         return image
-    }()
+    }
+
+    private func draw(in rect: NSRect) {
+        (self.showsUpdateDot ? Palette.menuBarTextColor : .black).setStroke()
+        self.drawRing(in: rect)
+        if self.showsUpdateDot {
+            self.drawDot(in: rect)
+        }
+    }
+
+    /// The ring's segments, clockwise from the top as the icon draws them,
+    /// in the stroke color set.
+    private func drawRing(in rect: NSRect) {
+        for segment in IconRing.segments(gap: Self.gap) {
+            let path = NSBezierPath()
+            path.appendArc(
+                withCenter: NSPoint(x: rect.midX, y: rect.midY),
+                radius: Self.radius,
+                startAngle: 90 - segment.from * 360,
+                endAngle: 90 - segment.to * 360,
+                clockwise: true)
+            path.lineWidth = Self.lineWidth
+            path.lineCapStyle = .butt
+            path.stroke()
+        }
+    }
+
+    private func drawDot(in rect: NSRect) {
+        let dot = NSRect(
+            x: rect.midX - Self.dotDiameter / 2,
+            y: rect.midY - Self.dotDiameter / 2,
+            width: Self.dotDiameter,
+            height: Self.dotDiameter)
+        NSColor.systemOrange.setFill()
+        NSBezierPath(ovalIn: dot).fill()
+    }
 }
 
 /// What the menu bar item opens: what the last scan found per family, when
 /// that was, the two things to do from here, and, listed as menu items in
 /// groups, what the app menu has: About and Check for Updates…, then
 /// Settings…, then Quit, which with Show in Dock off and the window closed
-/// are otherwise out of reach.
+/// are otherwise out of reach. While an update waits, New Version
+/// Available… heads the list, in a group of its own.
 /// Its buttons go through `MenuBarViewModel`, except for opening the
 /// window, Settings and About, which only a view can do.
 /// It sits on a material, where
@@ -84,11 +116,9 @@ struct MenuBarPanel: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
-    /// The system label color's values, as a plain color. The material makes
+    /// The menu bar's text color, plain. The material makes
     /// `Color(nsColor: .labelColor)` vibrant, as it does `.primary`.
-    static let label = Color(nsColor: NSColor(name: nil) { appearance in
-        NSColor(white: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 1 : 0, alpha: 0.85)
-    })
+    private static let textColor = Color(nsColor: Palette.menuBarTextColor)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -105,7 +135,7 @@ struct MenuBarPanel: View {
                         .layoutPriority(1)
                 }
             }
-            .foregroundStyle(Self.label)
+            .foregroundStyle(Self.textColor)
             VStack(spacing: 6) {
                 ForEach(Family.allCases) { family in
                     HStack(spacing: 8) {
@@ -129,7 +159,7 @@ struct MenuBarPanel: View {
                 .font(.callout)
                 .accessibilityElement(children: .combine)
             }
-            .foregroundStyle(Self.label)
+            .foregroundStyle(Self.textColor)
             Text(StatusText.menuBar(self.scan.statusFacts))
                 .font(.caption)
                 .foregroundStyle(.muted)
@@ -147,6 +177,14 @@ struct MenuBarPanel: View {
             .controlSize(.large)
             Divider()
             VStack(spacing: 0) {
+                if self.menuBar.showsUpdateAvailable {
+                    Button {
+                        self.menuBar.checkForUpdates()
+                    } label: {
+                        self.menuItem("New Version Available…")
+                    }
+                    PanelMenuSeparator()
+                }
                 Button {
                     self.openWindow(id: "about")
                     self.menuBar.bringToFront()
@@ -178,7 +216,7 @@ struct MenuBarPanel: View {
                 .keyboardShortcut("q")
             }
             .buttonStyle(PanelMenuItemStyle())
-            .foregroundStyle(Self.label)
+            .foregroundStyle(Self.textColor)
             // The highlights reach past the panel's padding, as a menu's do,
             // and the titles and separators line up with the text above.
             .padding(.horizontal, -PanelMenuItemStyle.inset)

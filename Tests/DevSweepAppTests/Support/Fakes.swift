@@ -247,6 +247,7 @@ final class FakeScanning: Scanning {
 final class FakeUpdateChecking: UpdateChecking {
     var isAvailable = true
     var canCheck = true
+    var isUpdateWaiting = false
     private(set) var checks = 0
     func checkForUpdates() { self.checks += 1 }
 }
@@ -335,13 +336,14 @@ final class RecordingLinkOpener: LinkOpening {
 }
 
 /// Sparkle as a test sets it: what it can do and how it is set, the checks
-/// asked of it, and Sparkle's own windows changing its settings. It never
-/// asks the network.
+/// asked of it, the updates its scheduled checks find, and Sparkle's own
+/// windows changing its settings. It never asks the network.
 @MainActor
 final class FakeUpdater: AppUpdating {
     var canCheckForUpdates = true
     var checksAutomatically = false
     var downloadsAutomatically = false
+    private(set) var isUpdateWaiting = false
     var onChange: (@MainActor () -> Void)?
     private(set) var checks = 0
 
@@ -360,6 +362,13 @@ final class FakeUpdater: AppUpdating {
     func answer(checks: Bool, downloads: Bool) {
         self.checksAutomatically = checks
         self.downloadsAutomatically = downloads
+        self.onChange?()
+    }
+
+    /// A scheduled check finds an update that waits for the person, or
+    /// they look at it.
+    func setUpdateWaiting(_ waiting: Bool) {
+        self.isUpdateWaiting = waiting
         self.onChange?()
     }
 }

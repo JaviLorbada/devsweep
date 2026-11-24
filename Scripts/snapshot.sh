@@ -14,6 +14,8 @@
 #   cleaned and putback clean what starts marked, in the fake home only, with
 #   the Trash pointed at a folder inside it, and list what that folder holds.
 #   SELECT picks an item, and SNAPSHOT_WIDTH=900 lays the drawing out that wide.
+#   UPDATE=waiting, with or without WIDTH, shows an update waiting, as after
+#   a scheduled check found one: the menu bar item's dot and its panel's row.
 #
 #        WIDTH=1100 Scripts/snapshot.sh [output folder] [screen...]
 #   opens the real window that wide instead and captures it as the screen
@@ -280,13 +282,14 @@ for screen in "${screens[@]}"; do
       DEVSWEEP_PRESS="${PRESS:-}" DEVSWEEP_PERFORM="${PERFORM:-}" DEVSWEEP_SETTINGS="${SETTINGS:-}" DEVSWEEP_HEIGHT="${HEIGHT:-}" DEVSWEEP_MENU="${MENU:-}" \
       DEVSWEEP_CLICK="${CLICK:-}" DEVSWEEP_THEN_WIDTHS="${THEN_WIDTHS:-}" DEVSWEEP_PROBE="${PROBE:+$out/$name.txt}" \
       DEVSWEEP_SIDEBAR_TIMING="${SIDEBAR_TIMING:-}" DEVSWEEP_SIDEBAR_WIDTH="${SIDEBAR_WIDTH:-}" DEVSWEEP_SIDEBAR="${SIDEBAR:-}" \
+      DEVSWEEP_UPDATE="${UPDATE:-}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" -"NSWindow Frame main" "100 200 $WIDTH ${HEIGHT:-860} 0 0 2560 1409 " >/dev/null 2>"$log" &
   else
     HOME="$home" PATH="$stubs:/usr/bin:/bin:/usr/sbin:/sbin" DEVSWEEP_TRASH_FOLDER="$work/trash-$name" \
       DEVSWEEP_APPLICATIONS_DIRS="$home/Applications" \
       DEVSWEEP_SNAPSHOT="$out/$name.png" DEVSWEEP_SNAPSHOT_SCREEN="$screen" \
       DEVSWEEP_SNAPSHOT_APPEARANCE="$appearance" DEVSWEEP_SNAPSHOT_SELECT="${SELECT:-$select}" \
-      DEVSWEEP_SNAPSHOT_WIDTH="${SNAPSHOT_WIDTH:-}" \
+      DEVSWEEP_SNAPSHOT_WIDTH="${SNAPSHOT_WIDTH:-}" DEVSWEEP_UPDATE="${UPDATE:-}" \
       "$app/Contents/MacOS/DevSweep" "${defaults_args[@]}" >/dev/null 2>&1 &
   fi
   pid=$!

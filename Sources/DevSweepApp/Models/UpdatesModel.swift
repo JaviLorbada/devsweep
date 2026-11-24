@@ -1,7 +1,8 @@
 import Observation
 
-/// Updates, as the app menu and Settings show them: whether this build
-/// updates itself at all, Check for Updates…, and the automatic checks.
+/// Updates, as the app menu, Settings and the menu bar item show them:
+/// whether this build updates itself at all, Check for Updates…, the
+/// automatic checks, and an update one of them found waiting for the person.
 /// Sparkle does the work and keeps the settings; this mirrors them, and
 /// follows them when Sparkle's own question changes them.
 @MainActor
@@ -17,6 +18,9 @@ final class UpdatesModel: UpdateChecking {
     /// Whether an update it finds installs without asking. Never without
     /// the automatic checks, which find it.
     private(set) var downloadsAutomatically = false
+    /// Whether a scheduled check found an update that waits for the person:
+    /// the menu bar item shows a dot, and its panel a row that brings it up.
+    private(set) var isUpdateWaiting = false
     @ObservationIgnored private let updater: (any AppUpdating)?
 
     /// - Parameter updater: Sparkle, live; nil in a build without a feed,
@@ -57,5 +61,6 @@ final class UpdatesModel: UpdateChecking {
         self.canCheck = updater.canCheckForUpdates
         self.checksAutomatically = updater.checksAutomatically
         self.downloadsAutomatically = updater.checksAutomatically && updater.downloadsAutomatically
+        self.isUpdateWaiting = updater.isUpdateWaiting
     }
 }

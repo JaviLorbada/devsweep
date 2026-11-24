@@ -133,11 +133,18 @@ extension DebugLaunch {
         }
         if itemOnly {
             // The window server hands back nothing for a status item's window,
-            // so its button draws itself instead, on a clear background.
+            // so its button draws itself instead, on a clear background, as a
+            // light or dark menu bar would draw it when the capture asks for one.
             if let button = self.findStatusButton(in: statusWindow?.contentView),
                let rep = button.bitmapImageRepForCachingDisplay(in: button.bounds),
                let output
             {
+                self.trace("menu bar appearance \(button.effectiveAppearance.name.rawValue)")
+                switch ProcessInfo.processInfo.environment["DEVSWEEP_APPEARANCE"] {
+                case "light": button.appearance = NSAppearance(named: .vibrantLight)
+                case "dark": button.appearance = NSAppearance(named: .vibrantDark)
+                default: break
+                }
                 button.cacheDisplay(in: button.bounds, to: rep)
                 let written = (try? rep.representation(using: .png, properties: [:])?
                     .write(to: URL(fileURLWithPath: output))) != nil
