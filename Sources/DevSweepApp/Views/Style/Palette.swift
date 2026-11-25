@@ -80,6 +80,10 @@ enum Palette {
         NSColor(white: appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? 1 : 0, alpha: 0.85)
     }
 
+    /// The dot that marks a waiting update, on the menu bar item's ring and
+    /// on its row in the panel.
+    static let updateDotColor = NSColor.systemOrange
+
     /// A bright color as text: mixed toward black, or white in the dark, so
     /// it reads on the panels.
     static func text(_ color: Color, dark: Bool) -> Color {

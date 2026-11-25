@@ -15,10 +15,11 @@ shows and the update window leaves out.
   Settings…, then Quit, grouped as in a menu, so a DevSweep out of the
   Dock needs no window to reach them.
 - An update the daily check finds no longer opens behind other apps: an
-  orange dot sits in the menu bar item's ring, and Update Available… at the
-  top of its panel brings the update up. Once an automatic download is
-  done, the row reads Install Update and Relaunch, and installs it. Without
-  the menu bar item, the update window opens as before.
+  orange dot sits in the menu bar item's ring, and the same dot leads
+  Update Available… at the top of its panel, which brings the update up.
+  Once an automatic download is done, the row reads Install Update and
+  Relaunch, and installs it. Without the menu bar item, the update window
+  opens as before.
 
 ### Before and after
 
@@ -27,8 +28,8 @@ shows and the update window leaves out.
 | Settings > General | <img width="400" alt="Settings' General tab before: Show in menu bar on its own" src="https://github.com/user-attachments/assets/7ff678cd-c8a3-49a4-8b35-3b240836af76" /> | <img width="400" alt="Settings' General tab after: Show in Dock under Show in menu bar" src="https://github.com/user-attachments/assets/50492ebb-057b-4052-b337-5d1703a330cb" /> |
 | The menu bar panel | <img width="296" alt="The menu bar panel before: Scan Now and Open DevSweep at the bottom, and nothing under them" src="https://github.com/user-attachments/assets/43b548f6-257c-43e2-836a-36a632b77501" /> | <img width="296" alt="The menu bar panel after: About DevSweep and Check for Updates…, then Settings…, then Quit DevSweep, with separators between the groups" src="https://github.com/user-attachments/assets/fa4233bb-1f6f-4d13-a443-fa86d35776cb" /> |
 | The menu bar item, with an update waiting | <img width="400" alt="The menu bar item before, in dark and light menu bars: the ring and the free space" src="https://github.com/user-attachments/assets/4f27d0c3-dd11-4654-acaf-cde9661f658b" /> | <img width="396" alt="The menu bar item with an update waiting, in dark and light menu bars: an orange dot in the middle of the ring" src="https://github.com/user-attachments/assets/5930f9fc-ee40-4994-bba6-da7e6dad3181" /> |
-| An update found | | <img width="296" alt="The menu bar panel with an update found: Update Available… in its own group at the top" src="https://github.com/user-attachments/assets/0768b76e-6782-4f0c-8c74-6076862b555a" /> |
-| An update downloaded | | <img width="296" alt="The menu bar panel with an update downloaded: Install Update and Relaunch in its own group at the top" src="https://github.com/user-attachments/assets/c453a77b-cff0-41bc-a9f8-d6af325aa8c8" /> |
+| An update found | | <img width="296" alt="The menu bar panel with an update found: the orange dot leads Update Available…, in its own group at the top" src="https://github.com/user-attachments/assets/93c0211e-cd2e-4ef1-938f-d4a1f521022a" /> |
+| An update downloaded | | <img width="296" alt="The menu bar panel with an update downloaded: the orange dot leads Install Update and Relaunch, in its own group at the top" src="https://github.com/user-attachments/assets/f57265cc-ae23-4ad6-bb53-efd9c78d83f7" /> |
 
 ## 0.7.1
 

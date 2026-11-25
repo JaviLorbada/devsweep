@@ -160,9 +160,9 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   and, once its windows close, DevSweep is in the menu bar only; the
   item's panel has About, Check for Updates…, Settings… and Quit. When the
   daily check finds an update, an orange dot sits in the item's ring until
-  you look at it, with Update Available… at the top of the panel. When
-  updates download on their own, the row reads Install Update and Relaunch
-  once the download is done. Nothing starts it at login.
+  you look at it, and the same dot leads Update Available… at the top of
+  the panel. When updates download on their own, the row reads Install
+  Update and Relaunch once the download is done. Nothing starts it at login.
 - **Report a problem or suggest an idea** from the Help menu. It opens the
   issue form on GitHub, with the versions filled in, for you to finish and
   send.
