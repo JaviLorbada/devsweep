@@ -33,6 +33,7 @@ shows and the update window leaves out.
 | The menu bar item, with an update waiting | <img width="400" alt="The menu bar item before, in dark and light menu bars: the ring and the free space" src="https://github.com/user-attachments/assets/4f27d0c3-dd11-4654-acaf-cde9661f658b" /> | <img width="396" alt="The menu bar item with an update waiting, in dark and light menu bars: an orange dot in the middle of the ring" src="https://github.com/user-attachments/assets/5930f9fc-ee40-4994-bba6-da7e6dad3181" /> |
 | An update found | | <img width="296" alt="The menu bar panel with an update found: the orange dot leads Update Available…, in its own group at the top" src="https://github.com/user-attachments/assets/93c0211e-cd2e-4ef1-938f-d4a1f521022a" /> |
 | An update downloaded | | <img width="296" alt="The menu bar panel with an update downloaded: the orange dot leads Install Update and Relaunch, in its own group at the top" src="https://github.com/user-attachments/assets/f57265cc-ae23-4ad6-bb53-efd9c78d83f7" /> |
+| A `.build` Xcode builds into | <img width="400" alt="Before: SwiftPM .build folders (4), without Compass, and 1 note from the scan" src="https://github.com/user-attachments/assets/0000081b-959f-4ecd-9e7a-92f90003cbf2" /> | <img width="400" alt="After: SwiftPM .build folders (5), with Compass's .build at 10 MB, and no note" src="https://github.com/user-attachments/assets/796f8a29-9d18-4f30-ae5e-cd66eae90370" /> |
 
 ## 0.7.1
 
