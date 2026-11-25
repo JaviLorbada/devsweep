@@ -114,6 +114,22 @@ struct MenuBarTests {
         #expect(self.panelHeight(app) >= height + 30)
     }
 
+    @Test
+    func `while an update waits, its row leads with the menu bar item's orange dot, light and dark`() throws {
+        let updater = FakeUpdater()
+        let app = self.updatingApp(home: TemporaryHome(), updater: updater)
+        for scheme in [ColorScheme.light, .dark] {
+            #expect(try self.updateDotPixels(app, scheme: scheme) == 0, "\(scheme)")
+        }
+        for update in [WaitingUpdate.available, .ready] {
+            updater.setWaitingUpdate(update)
+            for scheme in [ColorScheme.light, .dark] {
+                // An 8-point dot at twice the size: some 200 pixels.
+                #expect(try self.updateDotPixels(app, scheme: scheme) > 100, "\(update) in \(scheme)")
+            }
+        }
+    }
+
     private func updatingApp(home: TemporaryHome, updater: FakeUpdater) -> AppCoordinator {
         AppCoordinator(
             environment: testEnvironment(home: home),
@@ -127,6 +143,39 @@ struct MenuBarTests {
     private func panelHeight(_ app: AppCoordinator) -> CGFloat {
         NSHostingController(rootView: MenuBarPanel().environment(models: app))
             .sizeThatFits(in: CGSize(width: 280, height: 2000)).height
+    }
+
+    /// How many of the panel's pixels, drawn at twice its size, are the
+    /// update dot's color. No family's color is that close to it.
+    private func updateDotPixels(_ app: AppCoordinator, scheme: ColorScheme) throws -> Int {
+        let renderer = ImageRenderer(content: MenuBarPanel()
+            .environment(models: app)
+            .environment(\.colorScheme, scheme))
+        renderer.scale = 2
+        let image = try NSBitmapImageRep(cgImage: #require(renderer.cgImage))
+        var dotColor: NSColor?
+        NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)?.performAsCurrentDrawingAppearance {
+            dotColor = Palette.updateDotColor.usingColorSpace(.sRGB)
+        }
+        let dot = try #require(dotColor)
+        var count = 0
+        for y in 0..<image.pixelsHigh {
+            for x in 0..<image.pixelsWide {
+                // The renderer's pixels are sRGB, and `colorAt` labels them
+                // calibrated RGB: converting them would shift them, so their
+                // components are compared as they are.
+                guard let color = image.colorAt(x: x, y: y) else {
+                    continue
+                }
+                if abs(color.redComponent - dot.redComponent) < 0.02,
+                   abs(color.greenComponent - dot.greenComponent) < 0.02,
+                   abs(color.blueComponent - dot.blueComponent) < 0.02
+                {
+                    count += 1
+                }
+            }
+        }
+        return count
     }
 }
 

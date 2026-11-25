@@ -92,7 +92,7 @@ struct MenuBarGlyph {
             y: rect.midY - Self.dotDiameter / 2,
             width: Self.dotDiameter,
             height: Self.dotDiameter)
-        NSColor.systemOrange.setFill()
+        Palette.updateDotColor.setFill()
         NSBezierPath(ovalIn: dot).fill()
     }
 }
@@ -102,8 +102,8 @@ struct MenuBarGlyph {
 /// groups, what the app menu has: About and Check for Updates…, then
 /// Settings…, then Quit, which with Show in Dock off and the window closed
 /// are otherwise out of reach. While an update waits, its row heads the
-/// list, in a group of its own: Update Available…, or Install Update and
-/// Relaunch once it is downloaded.
+/// list, in a group of its own, after the item's orange dot: Update
+/// Available…, or Install Update and Relaunch once it is downloaded.
 /// Its buttons go through `MenuBarViewModel`, except for opening the
 /// window, Settings and About, which only a view can do.
 /// It sits on a material, where
@@ -120,6 +120,7 @@ struct MenuBarPanel: View {
     /// The menu bar's text color, plain. The material makes
     /// `Color(nsColor: .labelColor)` vibrant, as it does `.primary`.
     private static let textColor = Color(nsColor: Palette.menuBarTextColor)
+    private static let updateDotColor = Color(nsColor: Palette.updateDotColor)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -182,7 +183,13 @@ struct MenuBarPanel: View {
                     Button {
                         self.menuBar.chooseWaitingUpdate()
                     } label: {
-                        self.menuItem(update.title)
+                        // The item's dot leads here, as the families' dots
+                        // lead their rows. The title says what it means.
+                        HStack(spacing: 8) {
+                            Dot(color: Self.updateDotColor)
+                                .accessibilityHidden(true)
+                            self.menuItem(update.title)
+                        }
                     }
                     PanelMenuSeparator()
                 }
