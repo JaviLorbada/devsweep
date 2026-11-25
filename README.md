@@ -66,7 +66,8 @@ built to err on the side of keeping things.
   warning: your project's repository ignores the folder, so it can't see
   that clone's edits or commits. SwiftPM's own clones, in `.build/checkouts`
   and `.build/repositories` (and in `.build/index-build`, where SourceKit-LSP
-  indexes), don't count: SwiftPM clones them again.
+  indexes), and Xcode's, in `SourcePackages`, don't count: resolving the
+  packages clones them again.
 - **Your projects' installs are yours to tick.** `node_modules`, Pods and
   Cargo `target` folders never start ticked in the app: a project needs
   `npm install`, `pod install` or a full build before it runs again. On the
