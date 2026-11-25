@@ -41,7 +41,9 @@
 #   worktrees, and PROJECT_FOLDERS='("~/.agents/worktrees")' sets the
 #   project folders, ~/Developer otherwise, where the repository is.
 #   CLONE=1 clones a dependency with git into dashboard's node_modules, a
-#   repository that keeps the folder.
+#   repository that keeps the folder. XCODE_CLONE=1 makes Compass, a package,
+#   build into its .build as `xcodebuild -derivedDataPath .build` does, with
+#   a package Xcode cloned into its SourcePackages, which doesn't.
 #   The debug build is build/debug/DevSweep Dev.app, apart from the one you open.
 #   While you work in another app, macOS won't let the app activate itself,
 #   and its window would draw inactive; so once the scan is done the script
@@ -130,6 +132,12 @@ make_home() {
   if [[ -n "${CLONE:-}" ]]; then
     blob "$ws/dashboard/node_modules/chart-kit/blob" 2
     HOME="$home" git -C "$ws/dashboard/node_modules/chart-kit" init -q
+  fi
+  if [[ -n "${XCODE_CLONE:-}" ]]; then
+    touch "$ws/Compass/Package.swift" 2>/dev/null || { mkdir -p "$ws/Compass"; touch "$ws/Compass/Package.swift"; }
+    blob "$ws/Compass/.build/Build/Intermediates.noindex/blob" 8
+    blob "$ws/Compass/.build/SourcePackages/checkouts/swift-collections/blob" 1
+    HOME="$home" git -C "$ws/Compass/.build/SourcePackages/checkouts/swift-collections" init -q
   fi
   blob "$ws/Recipes/Pods/Alamofire/blob" 4
   touch "$ws/Recipes/Podfile.lock"
