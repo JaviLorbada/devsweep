@@ -20,6 +20,9 @@ shows and the update window leaves out.
   Once an automatic download is done, the row reads Install Update and
   Relaunch, and installs it. Without the menu bar item, the update window
   opens as before.
+- A `.build` folder Xcode builds into, with `-derivedDataPath .build`, is
+  listed again. Since 0.7.1 the package clones Xcode keeps in its
+  `SourcePackages` kept the whole folder, as if they were work of your own.
 
 ### Before and after
 

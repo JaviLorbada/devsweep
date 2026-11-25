@@ -92,6 +92,27 @@ struct RepositorySearchTests {
     }
 
     @Test
+    func `Xcode's clones in a .build it builds into don't keep the folder, and a worktree does`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
+        // `xcodebuild -derivedDataPath .build`, next to a Package.swift.
+        for project in ["Derived", "Worktree"] {
+            home.touch("\(p)/\(project)/Package.swift")
+            home.fill("\(p)/\(project)/.build/DerivedData")
+            home.fill("\(p)/\(project)/.build/SourcePackages/checkouts/SignIn/.git")
+            home.touch("\(p)/\(project)/.build/SourcePackages/repositories/SignIn-1a2b3c/HEAD")
+        }
+        home.write("\(p)/Worktree/.build/worktrees/before/.git", "gitdir: /elsewhere\n")
+
+        let engine = try engine(home, tools, includeExtras: false)
+        let events = await collect(engine)
+        let projects = "\(engine.policy.homeReal)/Workspace"
+        #expect(events.result(.swiftpmBuilds)?.paths == ["\(projects)/Derived/.build"])
+        #expect(events.warnings == [
+            "Skipped \(projects)/Worktree/.build: it holds a git repository, worktrees/before.",
+        ])
+    }
+
+    @Test
     func `devsweep --run deletes the clean folder and keeps the one holding a clone`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         for project in ["Clean", "Cloned"] {

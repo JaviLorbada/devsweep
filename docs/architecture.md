@@ -32,9 +32,10 @@ only when git provably tracks nothing in it. `RepositorySearch` keeps one
 that holds a git repository, a `.git` of any kind at any depth, since the
 project's repository ignores the folder and can't see that clone's edits or
 commits. SwiftPM's own clones, in `checkouts` and `repositories` directly
-inside `.build` or SourceKit-LSP's `.build/index-build` (or `SourcePackages`
-in an Xcode `build` folder), don't count: `swift package resolve` clones them
-again. The search runs inside the
+inside `.build` or SourceKit-LSP's `.build/index-build`, and Xcode's, in
+`SourcePackages` in a `build` folder or in a `.build` Xcode builds into with
+`-derivedDataPath`, don't count: resolving the packages clones them again.
+The search runs inside the
 measurer's walk, which stops at the first `.git`, so no folder is walked
 twice.
 
