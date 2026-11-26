@@ -8,6 +8,12 @@ shows and the update window leaves out.
 
 ## Unreleased
 
+## 0.8.0
+
+DevSweep can live in the menu bar alone now: out of the Dock, started when
+you log in, with updates waiting in its menu bar item. And a `.build` folder
+Xcode builds into is listed again.
+
 - Settings > General has Show in Dock. Turned off, DevSweep leaves the
   Dock and the app switcher when its windows close, and its menu bar item
   opens it again.
