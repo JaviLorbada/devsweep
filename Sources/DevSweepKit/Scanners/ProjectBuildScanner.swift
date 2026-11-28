@@ -68,22 +68,14 @@ public struct ProjectBuildScanner: Scanner {
         folderName: ".build",
         describe: ".build next to a Package.swift, in project folders",
         qualifies: beside("Package.swift"),
-        // SourceKit-LSP's background index builds in index-build, with its
-        // own clones, and Xcode clones into .build when it builds there, with
-        // `-derivedDataPath .build`.
-        repositories: RepositorySearch(managedFolders: [
-            "checkouts", "repositories", "index-build/checkouts", "index-build/repositories",
-        ] + xcodeClones))
+        repositories: RepositorySearch(skipsPackageClones: true))
 
     public static let xcode = ProjectBuildScanner(
         item: .xcodeBuilds,
         folderName: "build",
         describe: "build with Xcode output next to a project or Package.swift, in project folders",
         qualifies: isXcodeBuild,
-        repositories: RepositorySearch(managedFolders: xcodeClones))
-
-    /// Where Xcode clones a project's packages, in the folder it builds into.
-    static let xcodeClones = ["SourcePackages/checkouts", "SourcePackages/repositories"]
+        repositories: RepositorySearch(skipsPackageClones: true))
 
     public static let gradle = ProjectBuildScanner(
         item: .gradleBuilds,

@@ -65,10 +65,10 @@ built to err on the side of keeping things.
   repository, like a dependency cloned into `node_modules`, gets a yellow
   warning in the app, which asks before cleaning it, and `devsweep` keeps it
   with a warning: your project's repository ignores the folder, so it can't
-  see that clone's edits or commits. SwiftPM's own clones, in `.build/checkouts`
-  and `.build/repositories` (and in `.build/index-build`, where SourceKit-LSP
-  indexes), and Xcode's, in `SourcePackages`, don't count: resolving the
-  packages clones them again.
+  see that clone's edits or commits. The clones SwiftPM and Xcode make of
+  your packages don't count, wherever a build puts them: each sits in a
+  `checkouts` folder next to the `repositories` it came from, and resolving
+  the packages clones it again.
 - **Your projects' installs are yours to tick.** `node_modules`, Pods and
   Cargo `target` folders never start ticked in the app: a project needs
   `npm install`, `pod install` or a full build before it runs again. On the
