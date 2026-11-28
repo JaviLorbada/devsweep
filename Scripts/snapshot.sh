@@ -40,8 +40,9 @@
 #   README's screenshots. WORKTREES=none makes no
 #   worktrees, and PROJECT_FOLDERS='("~/.agents/worktrees")' sets the
 #   project folders, ~/Developer otherwise, where the repository is.
-#   CLONE=1 clones a dependency with git into dashboard's node_modules, a
-#   repository that keeps the folder. XCODE_CLONE=1 makes Compass, a package,
+#   CLONE=1 clones a dependency with git into dashboard's node_modules, and
+#   a build script's sources into ferris's target, repositories that keep
+#   those folders. XCODE_CLONE=1 makes Compass, a package,
 #   build into its .build as `xcodebuild -derivedDataPath .build` does, with
 #   a package Xcode cloned into its SourcePackages, which doesn't.
 #   The debug build is build/debug/DevSweep Dev.app, apart from the one you open.
@@ -132,6 +133,8 @@ make_home() {
   if [[ -n "${CLONE:-}" ]]; then
     blob "$ws/dashboard/node_modules/chart-kit/blob" 2
     HOME="$home" git -C "$ws/dashboard/node_modules/chart-kit" init -q
+    blob "$ws/ferris/target/debug/build/zlib-sys/out/zlib/blob" 1
+    HOME="$home" git -C "$ws/ferris/target/debug/build/zlib-sys/out/zlib" init -q
   fi
   if [[ -n "${XCODE_CLONE:-}" ]]; then
     touch "$ws/Compass/Package.swift" 2>/dev/null || { mkdir -p "$ws/Compass"; touch "$ws/Compass/Package.swift"; }
