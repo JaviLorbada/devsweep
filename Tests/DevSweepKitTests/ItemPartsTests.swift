@@ -147,6 +147,32 @@ struct ItemPartsTests {
     }
 
     @Test
+    func `a kept folder goes only when ticked on its own, and Put Back brings it back`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home)
+        home.touch("\(home.projects)/Ledger/Package.swift")
+        home.writeZeros("\(home.projects)/Ledger/.build/debug/blob", kilobytes: 128)
+        home.fill("\(home.projects)/Ledger/.build/Tool/.git")
+        let engine = try engine(home, tools)
+        let result = try #require(await collect(engine).result(.swiftpmBuilds))
+        let kept = try #require(result.kept?.first)
+        #expect(result.paths.isEmpty)
+        #expect(result.kilobytes(of: .folder(kept.path)) == kept.kilobytes)
+
+        _ = await engine.clean(result, mode: .trash)
+        #expect(home.exists(kept.path))
+        let outcome = await engine.clean([.folder(kept.path)], of: result, mode: .trash)
+        #expect(outcome.cleaned == [.folder(kept.path)])
+        #expect(!home.exists(kept.path))
+        let left = result.removing(outcome.cleaned)
+        #expect(left.kept == [])
+        #expect(left.kilobytes == 0)
+
+        let putBack = await engine.putBack(outcome.outcome)
+        #expect(home.exists(kept.path))
+        #expect(left.restoring(outcome.restored(by: putBack), from: result) == result)
+    }
+
+    @Test
     func `a folder that isn't one of the item's is left alone`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         let (engine, result, atlas, _) = try await scannedBuilds(home, tools)

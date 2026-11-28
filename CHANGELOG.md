@@ -11,7 +11,8 @@ shows and the update window leaves out.
 - A build folder kept because it holds a git repository no longer hides in
   the scan's notes: its item's row says how many were kept, and the
   inspector lists each one under Kept, with its size and the repository
-  inside it.
+  inside it. Tick one there to clean it; it asks first, and nothing else
+  takes it.
 
 ## 0.8.0
 

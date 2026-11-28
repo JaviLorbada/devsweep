@@ -62,7 +62,10 @@ struct ItemDetails: View {
                     selectable: self.row.result != nil && [.measured, .cleaning].contains(self.row.state))
             }
             if let kept = row.shownResult?.kept, !kept.isEmpty, row.wasMeasured || row.showsPrevious {
-                KeptList(folders: kept)
+                KeptList(
+                    item: item,
+                    folders: kept,
+                    selectable: self.row.result != nil && [.measured, .cleaning].contains(self.row.state))
             }
         }
         .padding(.horizontal, 18)
@@ -173,7 +176,7 @@ struct InspectorAction: View {
         switch self.row.state {
         case .waiting, .measuring:
             self.wide(Button("Measuring") {}.buttonStyle(.prominentAction).disabled(true))
-        case .measured where self.row.isLive && !self.marks.markedParts(of: self.row.item).isEmpty:
+        case .measured where self.row.hasPartsToClean && !self.marks.markedParts(of: self.row.item).isEmpty:
             let item = self.row.item
             let marked = self.marks.markedParts(of: item)
             let parts = "\(CleanPrompt.partsSummary(marked, in: item)), "

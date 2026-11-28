@@ -27,6 +27,9 @@ struct PendingClean: Identifiable {
     let xcodeOpen: Bool
     /// The project to close in Xcode, for one part; empty for several.
     let xcodeName: String
+    /// What goes with the kept folders among the parts: "Ledger/.build
+    /// holds a git repository, Tool: its edits and commits go too."
+    let keptNote: String
 
     init(
         items: [Item],
@@ -37,7 +40,8 @@ struct PendingClean: Identifiable {
         partsPlural: Bool = false,
         blockedPartNames: [String] = [],
         xcodeOpen: Bool = false,
-        xcodeName: String = "")
+        xcodeName: String = "",
+        keptNote: String = "")
     {
         self.items = items
         self.stage = stage
@@ -48,6 +52,7 @@ struct PendingClean: Identifiable {
         self.blockedPartNames = blockedPartNames
         self.xcodeOpen = xcodeOpen
         self.xcodeName = xcodeName
+        self.keptNote = keptNote
     }
 
     /// What of it can be cleaned with Xcode and Simulator open: some of the
