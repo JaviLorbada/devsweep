@@ -28,6 +28,7 @@ final class AppCoordinator {
     let dock: DockModel
     let window: WindowViewModel
     let overview: OverviewViewModel
+    let keptFolders: KeptFoldersViewModel
     let xcodes: XcodesViewModel
     let runtimes: RuntimesViewModel
     let worktrees: WorktreesViewModel
@@ -118,6 +119,7 @@ final class AppCoordinator {
         let window = WindowViewModel()
         self.window = window
         self.overview = OverviewViewModel(window: window, scan: scan, cleaning: cleaning, apps: runningApps)
+        self.keptFolders = KeptFoldersViewModel(scan: scan, marks: marks)
         self.xcodes = XcodesViewModel(scan: scan)
         self.runtimes = RuntimesViewModel(scan: scan, preferences: preferences)
         self.worktrees = WorktreesViewModel(scan: scan)
@@ -261,6 +263,7 @@ extension View {
             .environment(app.updates)
             .environment(app.window)
             .environment(app.overview)
+            .environment(app.keptFolders)
             .environment(app.xcodes)
             .environment(app.runtimes)
             .environment(app.worktrees)

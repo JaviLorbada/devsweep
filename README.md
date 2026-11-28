@@ -288,6 +288,7 @@ flowchart TB
     direction LR
     WindowVM[WindowViewModel]
     OverviewVM[OverviewViewModel]
+    KeptVM[KeptFoldersViewModel]
     XcodesVM[XcodesViewModel]
     RuntimesVM[RuntimesViewModel]
     WorktreesVM[WorktreesViewModel]
