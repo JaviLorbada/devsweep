@@ -44,7 +44,9 @@
 #   a build script's sources into ferris's target, repositories that keep
 #   those folders. XCODE_CLONE=1 makes Compass, a package,
 #   build into its .build as `xcodebuild -derivedDataPath .build` does, with
-#   a package Xcode cloned into its SourcePackages, which doesn't.
+#   a package Xcode cloned into its SourcePackages, which doesn't. NOTE=1
+#   points Pebble's .git at a missing disk, so git can't say whether it
+#   tracks site's node_modules: a note from the scan.
 #   The debug build is build/debug/DevSweep Dev.app, apart from the one you open.
 #   While you work in another app, macOS won't let the app activate itself,
 #   and its window would draw inactive; so once the scan is done the script
@@ -141,6 +143,9 @@ make_home() {
     blob "$ws/Compass/.build/Build/Intermediates.noindex/blob" 8
     blob "$ws/Compass/.build/SourcePackages/checkouts/swift-collections/blob" 1
     HOME="$home" git -C "$ws/Compass/.build/SourcePackages/checkouts/swift-collections" init -q
+  fi
+  if [[ -n "${NOTE:-}" ]]; then
+    ln -s "$home/Volumes/Missing/Pebble.git" "$ws/Pebble/.git"
   fi
   blob "$ws/Recipes/Pods/Alamofire/blob" 4
   touch "$ws/Recipes/Podfile.lock"
