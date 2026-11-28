@@ -60,7 +60,8 @@ struct OverviewContent: View {
     }
 }
 
-/// Things the scan skipped and why, in the script's words.
+/// Things the scan skipped and why, in the script's words, in yellow so
+/// they aren't missed.
 struct WarningsNote: View {
     let warnings: [String]
     @State private var expanded = false
@@ -75,15 +76,18 @@ struct WarningsNote: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 4)
         } label: {
-            Label(
-                self.warnings.count == 1 ? "1 note from the scan" : "\(self.warnings.count) notes from the scan",
-                systemImage: "exclamationmark.triangle")
-                .font(.callout)
-                .foregroundStyle(.muted)
+            Label {
+                Text(self.warnings.count == 1 ? "1 note from the scan" : "\(self.warnings.count) notes from the scan")
+            } icon: {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.black, .yellow)
+            }
+            .font(.callout)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .card()
+        .background(.yellow.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(.yellow.opacity(0.5)))
     }
 }
 

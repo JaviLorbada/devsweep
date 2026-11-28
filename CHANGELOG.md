@@ -13,6 +13,7 @@ shows and the update window leaves out.
   the inspector lists it under Kept, with its size and the repository
   inside it. A clean that takes one asks first, even to the Trash, and an
   item holding one never starts ticked. The command line still keeps it.
+- The scan's notes stand out in yellow.
 
 ## 0.8.0
 
