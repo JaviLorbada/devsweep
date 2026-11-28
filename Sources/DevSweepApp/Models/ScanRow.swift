@@ -35,9 +35,10 @@ struct ScanRow: Identifiable {
         self.result?.kilobytes ?? self.progressBytes / 1024
     }
 
-    /// While cleaning, what is still on disk, counting down as it goes.
+    /// While cleaning, what is still on disk, counting down as it goes: of
+    /// the item, or of the kept folders being cleaned, which it never counted.
     var leftKilobytes: Int64 {
-        max(0, self.kilobytes - self.removedBytes / 1024)
+        max(0, max(self.kilobytes, self.cleaningKilobytes ?? 0) - self.removedBytes / 1024)
     }
 
     /// How far deleting has got, once it has removed something; moving
@@ -88,6 +89,12 @@ struct ScanRow: Identifiable {
     /// How many build folders this scan kept because each holds a git repository.
     var keptCount: Int {
         self.result?.kept?.count ?? 0
+    }
+
+    /// Measured, with folders the inspector can tick: ones it lists, or ones
+    /// it kept, which only a tick cleans.
+    var hasPartsToClean: Bool {
+        self.isLive || (self.state == .measured && self.keptCount > 0)
     }
 
     /// Measured at some point, whatever happened since.

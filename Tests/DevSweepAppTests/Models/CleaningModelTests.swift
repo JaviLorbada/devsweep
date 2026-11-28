@@ -204,6 +204,38 @@ struct CleaningModelTests {
     }
 
     @Test
+    func `a kept folder goes only once ticked, and asks first even to the Trash`() async throws {
+        let ledger = "/Users/someone/Developer/Ledger/.build"
+        let kept = KeptFolder(path: ledger, repository: "\(ledger)/Tool", kilobytes: 2048)
+        let found = ItemResult(
+            item: .swiftpmBuilds,
+            paths: [],
+            kilobytes: 0,
+            location: "",
+            folderKilobytes: [:],
+            kept: [kept])
+        let rows = FakeScanRows([found])
+        let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps(), moveToTrash: true)
+
+        await cleaning.requestClean([.swiftpmBuilds])
+        #expect(cleaning.pendingClean == nil)
+        #expect(rows.cleansBegun == 0, "a whole clean takes no kept folder")
+
+        self.marks.parts[.swiftpmBuilds] = [.folder(ledger)]
+        await cleaning.requestCleanParts(of: .swiftpmBuilds)
+        await waitUntil { cleaning.pendingClean != nil }
+        let confirm = try #require(cleaning.pendingClean)
+        #expect(confirm.kilobytes == 2048)
+        #expect(confirm.keptNote == "Ledger/.build holds a git repository, Tool: its edits and commits go too.")
+        #expect(rows.cleansBegun == 0, "nothing goes before the answer")
+
+        await cleaning.confirmClean(confirm)
+        #expect(rows.rows[.swiftpmBuilds]?.result?.kept == [])
+        #expect(rows.rows[.swiftpmBuilds]?.result?.kilobytes == 0)
+        #expect(cleaning.trashedThisSession == 2048)
+    }
+
+    @Test
     func `a project cleaned on its own leaves the rest, says what went, and Put Back restores it`() async throws {
         let before = try #require(sampleResults.first { $0.item == .derivedData })
         let project = try #require(before.derivedData?.projects.first).folder

@@ -148,7 +148,8 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
   work the same way. A project can go while Xcode is open, after a question.
 - **See what it kept.** A build folder that holds a git repository is listed
   under Kept in its item's inspector, with its size and where the
-  repository sits, and its row says how many were kept.
+  repository sits, and its row says how many were kept. Tick one to clean
+  it: it asks first, and nothing else takes it.
 - **Look at what it won't clean.** The sidebar's Also worth a look lists
   installed Xcodes, simulator runtimes, Android Studio's files and git
   worktrees, with their sizes, flagging what looks unused. A worktree can

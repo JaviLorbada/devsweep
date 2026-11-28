@@ -58,6 +58,9 @@ enum CleanPrompt {
                 message = "\(subject) will be deleted and can't be put back. Each comes back as you build again; "
                 message += "projects you no longer build stay gone."
             }
+            if !pending.keptNote.isEmpty {
+                message += " \(pending.keptNote)"
+            }
             if pending.xcodeOpen, !pending.xcodeName.isEmpty {
                 message += " Xcode is open: if \(pending.xcodeName) is open in it, close it there first. Xcode builds "
                 message += "it again either way."
@@ -97,6 +100,18 @@ enum CleanPrompt {
             return sizeA != sizeB ? sizeA > sizeB : a.sentenceName(in: result) < b.sentenceName(in: result)
         }
         let subject = self.partsSubject(sorted, of: item, in: result)
+        // "Ledger/.build holds a git repository, Tool", for each kept folder.
+        let kept: [String] = sorted.compactMap { part in
+            guard case let .folder(path) = part, let folder = result.keptFolder(path) else {
+                return nil
+            }
+            return "\(part.sentenceName(in: result)) \(folder.keptBecause)"
+        }
+        let keptNote = switch kept.count {
+        case 0: ""
+        case 1: "\(kept[0]): its edits and commits go too."
+        default: "\(kept.count) of them hold a git repository: their edits and commits go too."
+        }
         return PendingClean(
             items: [item],
             stage: stage,
@@ -106,7 +121,8 @@ enum CleanPrompt {
             partsPlural: subject.plural,
             blockedPartNames: sorted.filter { $0.needsXcodeClosed(in: item) }.map { $0.sentenceName(in: result) },
             xcodeOpen: item.xcodeBuildsInto && xcodeOpen,
-            xcodeName: parts.count == 1 ? sorted[0].listName(in: result) : "")
+            xcodeName: parts.count == 1 ? sorted[0].listName(in: result) : "",
+            keptNote: keptNote)
     }
 
     /// What the question calls `sorted`, the parts largest first, and
@@ -125,7 +141,8 @@ enum CleanPrompt {
             return (self.names(sorted.map { $0.sentenceName(in: result) }), sorted.count > 1)
         }
         // ".build folders", "build folders": what the item's folders are called.
-        let folders = result.paths.first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
+        let first = result.paths.first ?? result.kept?.first?.path
+        let folders = first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
         let text = item == .derivedData ? "\(sorted.count) parts of DerivedData" : "\(sorted.count) \(folders) folders"
         return (text, true)
     }

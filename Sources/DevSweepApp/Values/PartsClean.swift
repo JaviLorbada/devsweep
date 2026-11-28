@@ -10,7 +10,7 @@ struct PartsClean {
     let parts: Set<ItemPart>
     /// What is left of the item.
     let left: ItemResult
-    /// What it took from the item's size.
+    /// What it freed, kept folders too.
     let kilobytes: Int64
     /// "2 projects", "3 folders".
     let summary: String
@@ -20,7 +20,7 @@ struct PartsClean {
         self.before = before
         self.parts = outcome.cleaned
         self.left = before.removing(self.parts)
-        self.kilobytes = before.kilobytes - self.left.kilobytes
+        self.kilobytes = self.parts.reduce(0) { $0 + before.kilobytes(of: $1) }
         self.summary = CleanPrompt.partsSummary(self.parts, in: before.item)
     }
 

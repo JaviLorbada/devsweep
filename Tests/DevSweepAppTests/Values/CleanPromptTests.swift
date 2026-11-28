@@ -76,6 +76,25 @@ struct CleanPromptTests {
     }
 
     @Test
+    func `a kept folder's question names its repository, whose edits and commits go too`() {
+        let kept = [
+            KeptFolder(path: "/code/E/.build", repository: "/code/E/.build/Tool", kilobytes: 50),
+            KeptFolder(path: "/code/F/.build", repository: "/code/F/.build", kilobytes: 5),
+        ]
+        var builds = self.builds
+        builds.kept = kept
+        let one = self.question([.folder("/code/A/.build"), .folder("/code/E/.build")], in: builds)
+        #expect(one.kilobytes == 90)
+        #expect(one.keptNote == "E/.build holds a git repository, Tool: its edits and commits go too.")
+        #expect(CleanPrompt.message(for: one, moveToTrash: true) == "E/.build and A/.build go to the Trash, so they "
+            + "can be put back. E/.build holds a git repository, Tool: its edits and commits go too.")
+
+        let both = self.question(Set(kept.map { .folder($0.path) }), in: builds)
+        #expect(both.keptNote == "2 of them hold a git repository: their edits and commits go too.")
+        #expect(self.question([.folder("/code/A/.build")], in: builds).keptNote.isEmpty)
+    }
+
+    @Test
     func `one project is the one to close, when Xcode is open and builds into it`() {
         let project = self.question([.folder("/dd/Atlas-abc")], in: self.derivedData, xcodeOpen: true)
         #expect(project.partsSubject == "DerivedData for Atlas")
