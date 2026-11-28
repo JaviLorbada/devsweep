@@ -123,6 +123,7 @@ flowchart TB
     direction LR
     WindowVM[WindowViewModel]
     OverviewVM[OverviewViewModel]
+    KeptVM[KeptFoldersViewModel]
     XcodesVM[XcodesViewModel]
     RuntimesVM[RuntimesViewModel]
     WorktreesVM[WorktreesViewModel]
@@ -182,6 +183,7 @@ cells and ring segments take plain values.
 |---|---|---|
 | `WindowViewModel` | The screen on show, Ring or Blocks, whether the inspector shows and where: docked, or floating once the window is too narrow. | Sidebar, header, the View menu |
 | `OverviewViewModel` | The selected item, picking a family, the status line. | Ring, Blocks, items list, inspector |
+| `KeptFoldersViewModel` | The build folders a scan kept for their git repositories, as the inspector lists them, and ticking one to clean it. | The inspector's Kept list |
 | `XcodesViewModel` | The selected Xcode and the screen's subtitle. | Xcode versions |
 | `RuntimesViewModel` | The selected runtime, its removal sheet, the subtitle. | Simulator runtimes |
 | `WorktreesViewModel` | The selected worktree, its removal sheet, the subtitle, the git command. | Worktrees |
@@ -214,11 +216,11 @@ hands it fakes instead, so a view model's test needs no scan.
 
 | Protocol | What it gives | Who conforms | Who takes it |
 |---|---|---|---|
-| `ScanResults` | The tally and the facts the status lines are written from. | `ScanModel` | `OverviewViewModel`, `MarksModel` |
+| `ScanResults` | The tally, the facts the status lines are written from, whether a clean holds the rows, and paths with a `~`. | `ScanModel` | `OverviewViewModel`, `MarksModel`, `KeptFoldersViewModel` |
 | `Listings` | The Xcodes, runtimes, worktrees and Android lists; removing a runtime or a worktree. | `ScanModel` | The Xcodes, runtimes, worktrees and Android view models |
 | `ScanRows` | The rows as a clean changes them, and the lock that keeps a scan and a clean apart: taking it hands over the `Cleaner`. | `ScanModel` | `CleaningModel` |
 | `Cleaner` | Cleaning an item or some of its parts, and Put Back. | The kit's `Engine` | `CleaningModel`, only from `ScanRows.beginCleaning()` |
-| `Marking` | The ticked parts, and clearing what was cleaned. | `MarksModel` | `CleaningModel` |
+| `Marking` | The ticked parts, ticking one, and clearing what was cleaned. | `MarksModel` | `CleaningModel`, `KeptFoldersViewModel` |
 | `RunningApps` | Whether Xcode and Simulator are open, and quitting them. | `RunningAppsModel` | `CleaningModel`, `OverviewViewModel` |
 | `CleaningTotals` | What this session moved to the Trash and deleted. | `CleaningModel` | `OverviewViewModel` |
 | `Navigation` | The screen on show, and showing another. | `WindowViewModel` | `OverviewViewModel`, `AndroidViewModel` |

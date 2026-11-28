@@ -15,9 +15,15 @@ import Synchronization
 final class FakeScanResults: ScanResults {
     var tally: Tally
     var statusFacts = StatusText.Facts()
+    var isCleaning = false
 
     init(_ results: [ItemResult] = []) {
         self.tally = .measured(results)
+    }
+
+    /// The sample data's home, `/Users/someone`, as `~`.
+    func tilde(_ path: String) -> String {
+        path.hasPrefix("/Users/someone/") ? "~" + path.dropFirst("/Users/someone".count) : path
     }
 }
 
@@ -195,6 +201,14 @@ final class FakeMarking: Marking {
 
     func markedParts(of item: Item) -> Set<ItemPart> {
         self.parts[item] ?? []
+    }
+
+    func setMarked(_ part: ItemPart, of item: Item, _ isMarked: Bool) {
+        if isMarked {
+            self.parts[item, default: []].insert(part)
+        } else {
+            self.parts[item]?.remove(part)
+        }
     }
 
     func cleaned(_ item: Item) {
