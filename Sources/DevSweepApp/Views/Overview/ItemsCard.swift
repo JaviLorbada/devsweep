@@ -165,7 +165,7 @@ struct ItemRow: View {
             if !self.row.sizeKnown, self.row.kilobytes == 0 {
                 "Unknown"
             } else if self.row.result?.isEmpty ?? true {
-                "none"
+                self.row.keptCount > 0 ? "\(self.row.keptCount) kept" : "none"
             } else {
                 SizeText.of(kilobytes: self.row.kilobytes)
             }

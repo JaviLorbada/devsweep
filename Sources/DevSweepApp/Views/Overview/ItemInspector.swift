@@ -61,6 +61,9 @@ struct ItemDetails: View {
                     color: Palette.color(item),
                     selectable: self.row.result != nil && [.measured, .cleaning].contains(self.row.state))
             }
+            if let kept = row.shownResult?.kept, !kept.isEmpty, row.wasMeasured || row.showsPrevious {
+                KeptList(folders: kept)
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, WindowLayout.inspectorTopPadding)
