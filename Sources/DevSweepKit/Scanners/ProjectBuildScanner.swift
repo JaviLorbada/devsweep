@@ -35,27 +35,28 @@ public struct ProjectBuildScanner: Scanner {
     }
 
     /// Lists and measures, one walk per folder. A folder holding a git
-    /// repository stops its walk there, and is kept with a warning.
+    /// repository is kept, with its size and a warning.
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
         let folders = await collect(in: context).sortedUniqueBytewise()
         let search = context.config.keepsFoldersWithRepositories ? self.repositories : nil
         let sizes = await context.measure(folders, search: search, progress: progress)
         let measured = Array(zip(folders, sizes))
-        for (folder, measurement) in measured {
-            if let repository = measurement.repository {
-                context.warn(Self.kept(folder, holding: repository, policy: context.policy))
+        let kept = measured.compactMap { folder, measurement in
+            measurement.repository.map {
+                KeptFolder(path: folder, repository: $0, kilobytes: measurement.kilobytes)
             }
         }
+        for folder in kept {
+            context.warn(self.warning(folder, policy: context.policy))
+        }
         let listed = measured.filter { $0.1.repository == nil }
-        return await self.result(listed.map(\.0), measured: listed.map(\.1), in: context)
+        return await self.result(listed.map(\.0), measured: listed.map(\.1), kept: kept, in: context)
     }
 
     /// Why a folder holding a git repository is kept.
-    static func kept(_ folder: String, holding repository: String, policy: PathPolicy) -> String {
-        let reason = repository.bytesEqual(folder)
-            ? "it is a git repository"
-            : "it holds a git repository, \(repository.removingPrefix("\(folder)/"))"
-        return "Skipped \(policy.tilde(folder)): \(reason)."
+    func warning(_ folder: KeptFolder, policy: PathPolicy) -> String {
+        let reason = folder.repositoryInside.map { "it holds a git repository, \($0)" } ?? "it is a git repository"
+        return "Skipped \(policy.tilde(folder.path)): \(reason)."
     }
 
     public static let swiftpm = ProjectBuildScanner(

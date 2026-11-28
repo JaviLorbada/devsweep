@@ -15,6 +15,10 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
     public var sizeKnown: Bool
     /// Each folder's size, by path, when the item measured them one by one.
     public var folderKilobytes: [String: Int64]?
+    /// Build folders left out of `paths` because each holds a git
+    /// repository, in path order. Nil for items that never keep a folder,
+    /// and in scans saved before.
+    public var kept: [KeptFolder]?
 
     public var id: Item {
         self.item
@@ -40,7 +44,8 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
         location: String,
         derivedData: DerivedDataBreakdown? = nil,
         sizeKnown: Bool = true,
-        folderKilobytes: [String: Int64]? = nil)
+        folderKilobytes: [String: Int64]? = nil,
+        kept: [KeptFolder]? = nil)
     {
         self.item = item
         self.paths = paths
@@ -49,6 +54,7 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
         self.derivedData = derivedData
         self.sizeKnown = sizeKnown
         self.folderKilobytes = folderKilobytes
+        self.kept = kept
     }
 }
 

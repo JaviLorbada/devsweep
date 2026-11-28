@@ -8,8 +8,8 @@ public struct Measurement: Sendable, Equatable {
     /// False when the folder itself could not be read, for example because macOS
     /// denied access to another app's container. The size is then unknown, not zero.
     public var readable: Bool
-    /// The git repository a `RepositorySearch` found, where the walk stopped:
-    /// the folder is kept, so its size counts nothing.
+    /// The first git repository a `RepositorySearch` found: the folder is
+    /// kept, so its size is its own and not the item's.
     public var repository: String?
 
     public init(kilobytes: Int64, readable: Bool = true, repository: String? = nil) {
@@ -38,8 +38,8 @@ public struct SizeMeasurer: Sendable {
         self.measure(path, search: nil, progress: progress)
     }
 
-    /// Measures one path, unless `search` finds a git repository in it: the
-    /// walk stops there, and the measurement names it and counts nothing.
+    /// Measures one path, naming the first git repository `search` finds in
+    /// it. Progress counts nothing of a folder from then on.
     func measure(_ path: String, search: RepositorySearch?, progress: ((Int64) -> Void)?) -> Measurement {
         self.measure(path, search: search, shouldStop: { Task.isCancelled }, progress: progress)
     }
@@ -51,7 +51,7 @@ public struct SizeMeasurer: Sendable {
         await self.measureOffPool(path, search: nil, progress: progress)
     }
 
-    /// `measureOffPool`, stopping at a git repository `search` finds.
+    /// `measureOffPool`, naming a git repository `search` finds.
     func measureOffPool(
         _ path: String,
         search: RepositorySearch?,
@@ -86,16 +86,18 @@ public struct SizeMeasurer: Sendable {
         var repository: String?
 
         FileTree.walk(path) { entry in
-            if let found = search?.repository(at: entry, in: path) {
+            if repository == nil, let found = search?.repository(at: entry, in: path) {
                 repository = found
-                return .stop
+                progress?(0)
             }
             visited += 1
             if visited.isMultiple(of: self.progressInterval) {
                 if shouldStop() {
                     return .stop
                 }
-                progress?((blocks + 1) / 2 * 1024)
+                if repository == nil {
+                    progress?((blocks + 1) / 2 * 1024)
+                }
             }
             switch entry.kind {
             case .directory:
@@ -121,13 +123,11 @@ public struct SizeMeasurer: Sendable {
             return .proceed
         }
 
-        if let repository {
-            progress?(0)
-            return Measurement(kilobytes: 0, repository: repository)
-        }
         let kilobytes = (blocks + 1) / 2
-        progress?(kilobytes * 1024)
-        return Measurement(kilobytes: kilobytes, readable: readable)
+        if repository == nil {
+            progress?(kilobytes * 1024)
+        }
+        return Measurement(kilobytes: kilobytes, readable: readable, repository: repository)
     }
 
     private struct FileID: Hashable {
