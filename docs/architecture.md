@@ -31,15 +31,16 @@ Build folders in projects have two more checks. `GitTracking` lists one
 only when git provably tracks nothing in it. `RepositorySearch` keeps one
 that holds a git repository, a `.git` of any kind at any depth, since the
 project's repository ignores the folder and can't see that clone's edits or
-commits. SwiftPM's own clones, in `checkouts` and `repositories` directly
-inside `.build` or SourceKit-LSP's `.build/index-build`, and Xcode's, in
-`SourcePackages` in a `build` folder or in a `.build` Xcode builds into with
-`-derivedDataPath`, don't count: resolving the packages clones them again.
-The search runs inside the
-measurer's walk, which goes on past the first `.git` to measure the kept
-folder, so no folder is walked twice. The command line leaves a kept folder
-out with a warning; the app's scan lists it with the others, flagged in the
-result's `kept` (`ScanConfig.listsKeptFolders`), and warns at its row.
+commits. In a `.build` or an Xcode `build` folder, the clones SwiftPM makes
+as it resolves packages, and Xcode through it, don't count: each sits in a
+`checkouts` folder next to the `repositories` it was cloned from, at any
+depth (in `.build`, SourceKit-LSP's `.build/index-build`, or the
+`SourcePackages` of any folder Xcode builds into), and resolving the
+packages clones it again. The search runs inside the measurer's walk, which
+goes on past the first `.git` to measure the kept folder, so no folder is
+walked twice. The command line leaves a kept folder out with a warning; the
+app's scan lists it with the others, flagged in the result's `kept`
+(`ScanConfig.listsKeptFolders`), and warns at its row.
 
 Deleting for good goes through `TreeRemover`, about twice as fast as
 `FileManager` on a DerivedData folder: four threads share the walk, and each

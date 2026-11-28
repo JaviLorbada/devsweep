@@ -130,6 +130,32 @@ struct RepositorySearchTests {
     }
 
     @Test
+    func `package clones keep no folder, wherever the build put them`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
+        home.touch("\(p)/Package/Package.swift")
+        home.mkdir("\(p)/Xcode/App.xcodeproj")
+        home.fillXcodeBuild("\(p)/Xcode/build")
+        // A build script's DerivedData, one per branch, and a scratch path of its own.
+        let clones = [
+            "Package/.build/DerivedData/main/App-dqhkzvxnbaeolfrw/SourcePackages",
+            "Package/.build/Scripts",
+            "Xcode/build/DerivedData/main/App-dqhkzvxnbaeolfrw/SourcePackages",
+        ]
+        for folder in clones {
+            home.fill("\(p)/\(folder)/checkouts/SignIn/.git")
+            home.write("\(p)/\(folder)/checkouts/SignIn/Vendor/zlib/.git", "gitdir: ../../.git/modules\n")
+            home.touch("\(p)/\(folder)/repositories/SignIn-1a2b3c/HEAD")
+        }
+
+        let engine = try engine(home, tools, includeExtras: false)
+        let events = await collect(engine)
+        let projects = "\(engine.policy.homeReal)/Workspace"
+        #expect(events.result(.swiftpmBuilds)?.paths == ["\(projects)/Package/.build"])
+        #expect(events.result(.xcodeBuilds)?.paths == ["\(projects)/Xcode/build"])
+        #expect(events.warnings.isEmpty)
+    }
+
+    @Test
     func `devsweep --run deletes the clean folder and keeps the one holding a clone`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
         for project in ["Clean", "Cloned"] {

@@ -4,14 +4,16 @@
 /// folder, the file of a worktree or submodule, a symlink) at any depth keeps
 /// the folder.
 struct RepositorySearch: Sendable {
-    /// Folders, relative to the build folder, whose clones a package manager
-    /// makes again by itself, like SwiftPM's `checkouts` and `repositories`,
-    /// which `swift package resolve` clones again at the commits
-    /// `Package.resolved` pins. A `.git` in them doesn't count.
-    let managedFolders: [String]
+    /// Whether the clones SwiftPM makes while it resolves packages, and Xcode
+    /// through it, don't count. Each sits in a `checkouts` folder next to the
+    /// `repositories` it was cloned from, wherever the build put the pair:
+    /// in `.build`, in SourceKit-LSP's `.build/index-build`, or in the
+    /// `SourcePackages` of any folder Xcode builds into. Resolving the
+    /// packages clones them again at the commits `Package.resolved` pins.
+    let skipsPackageClones: Bool
 
-    init(managedFolders: [String] = []) {
-        self.managedFolders = managedFolders
+    init(skipsPackageClones: Bool = false) {
+        self.skipsPackageClones = skipsPackageClones
     }
 
     /// The repository `entry` is the `.git` of, when it counts: the folder
@@ -20,7 +22,25 @@ struct RepositorySearch: Sendable {
         guard entry.name == ".git" else {
             return nil
         }
-        let managed = self.managedFolders.contains { entry.path.hasBytePrefix("\(folder)/\($0)/") }
-        return managed ? nil : FileSystem.dirname(entry.path)
+        if self.skipsPackageClones, self.isInPackageClone(entry.path, in: folder) {
+            return nil
+        }
+        return FileSystem.dirname(entry.path)
+    }
+
+    /// Whether `path`, below its repository's folder, sits in a `checkouts`
+    /// folder inside `folder` that has `repositories` next to it.
+    private func isInPackageClone(_ path: String, in folder: String) -> Bool {
+        var current = FileSystem.dirname(FileSystem.dirname(path))
+        while current.hasBytePrefix("\(folder)/") {
+            let parent = FileSystem.dirname(current)
+            if FileSystem.basename(current).bytesEqual("checkouts"),
+               FileSystem.isDirectory("\(parent)/repositories")
+            {
+                return true
+            }
+            current = parent
+        }
+        return false
     }
 }

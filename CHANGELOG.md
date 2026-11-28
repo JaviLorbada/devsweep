@@ -14,6 +14,10 @@ shows and the update window leaves out.
   inside it. A clean that takes one asks first, even to the Trash, and an
   item holding one never starts ticked. The command line still keeps it.
 - The scan's notes stand out in yellow.
+- A `.build` folder with Xcode's DerivedData deeper inside it, where a
+  build script can put it, no longer counts as holding a git repository.
+  The package clones Xcode keeps there come back when it resolves the
+  packages, so the folder is listed, and cleaned, like any other.
 
 ## 0.8.0
 
