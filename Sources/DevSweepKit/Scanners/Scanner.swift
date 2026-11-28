@@ -44,7 +44,7 @@ public struct ScanContext: Sendable {
 
     /// Measures each path, reporting the running total of all of them in
     /// bytes. The results come back in the order of `paths`. With a `search`,
-    /// a path holding a git repository stops its walk there and counts nothing.
+    /// a path holding a git repository names it, and the total leaves it out.
     func measure(
         _ paths: [String],
         search: RepositorySearch? = nil,
@@ -59,7 +59,7 @@ public struct ScanContext: Sendable {
                 }
                 let base = done * 1024
                 let measured = self.measurer.measure(path, search: search) { progress(base + $0) }
-                done += measured.kilobytes
+                done += measured.repository == nil ? measured.kilobytes : 0
                 results.append(measured)
             }
             return results
@@ -120,7 +120,12 @@ extension Scanner {
     }
 
     /// The item's result for `paths`, measured in the same order.
-    func result(_ paths: [String], measured: [Measurement], in context: ScanContext) async -> ItemResult {
+    func result(
+        _ paths: [String],
+        measured: [Measurement],
+        kept: [KeptFolder]? = nil,
+        in context: ScanContext) async -> ItemResult
+    {
         let kilobytes = measured.reduce(0) { $0 + $1.kilobytes }
         let known = measured.allSatisfy(\.readable)
         return await ItemResult(
@@ -129,7 +134,8 @@ extension Scanner {
             kilobytes: kilobytes,
             location: location(in: context),
             sizeKnown: known,
-            folderKilobytes: Dictionary(uniqueKeysWithValues: zip(paths, measured.map(\.kilobytes))))
+            folderKilobytes: Dictionary(uniqueKeysWithValues: zip(paths, measured.map(\.kilobytes))),
+            kept: kept)
     }
 }
 

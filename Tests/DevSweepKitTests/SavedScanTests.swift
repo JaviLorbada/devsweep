@@ -29,6 +29,16 @@ struct SavedScanTests {
                     location: "~/dd",
                     derivedData: breakdown),
                 ItemResult(
+                    item: .swiftpmBuilds,
+                    paths: [],
+                    kilobytes: 0,
+                    location: ".build next to a Package.swift, in project folders",
+                    folderKilobytes: [:],
+                    kept: [KeptFolder(
+                        path: "\(home)/App/.build",
+                        repository: "\(home)/App/.build/Clone",
+                        kilobytes: 146)]),
+                ItemResult(
                     item: .homebrew,
                     paths: [],
                     kilobytes: 0,

@@ -41,6 +41,18 @@ struct RepositorySearchTests {
         let folders = try #require(result.folderKilobytes)
         #expect(folders.keys.sorted() == [clean])
         #expect(result.kilobytes == folders[clean])
+        let cloned = "\(projects)/Cloned/\(kind.folder)", linked = "\(projects)/Linked/\(kind.folder)"
+        let worktree = "\(projects)/Worktree/\(kind.folder)"
+        func kept(_ folder: String, _ repository: String) -> KeptFolder {
+            KeptFolder(path: folder, repository: repository, kilobytes: SizeMeasurer().measure(folder).kilobytes)
+        }
+        #expect(result.kept == [
+            kept(cloned, "\(cloned)/lib/dependency"),
+            kept(linked, linked),
+            kept(worktree, "\(worktree)/dependency"),
+        ])
+        #expect(result.kept?.allSatisfy { $0.kilobytes > 0 } == true)
+        #expect(result.kept?.map(\.repositoryInside) == ["lib/dependency", nil, "dependency"])
         #expect(events.warnings == [
             "Skipped \(projects)/Cloned/\(kind.folder): it holds a git repository, lib/dependency.",
             "Skipped \(projects)/Linked/\(kind.folder): it is a git repository.",
@@ -57,9 +69,14 @@ struct RepositorySearchTests {
 
         let engine = try engine(home, tools, includeExtras: false)
         let events = await collect(engine)
+        let build = "\(engine.policy.homeReal)/Workspace/App/build"
         #expect(events.result(.xcodeBuilds)?.paths == [])
+        let kilobytes = SizeMeasurer().measure(build).kilobytes
+        #expect(events.result(.xcodeBuilds)?.kept == [
+            KeptFolder(path: build, repository: "\(build)/Tool", kilobytes: kilobytes),
+        ])
         #expect(events.warnings == [
-            "Skipped \(engine.policy.homeReal)/Workspace/App/build: it holds a git repository, Tool.",
+            "Skipped \(build): it holds a git repository, Tool.",
         ])
     }
 
@@ -151,15 +168,19 @@ struct RepositorySearchTests {
     }
 
     @Test
-    func `measuring stops at the repository and counts nothing`() {
+    func `measuring names the repository, and counts the whole folder outside the progress`() {
         let home = FakeHome()
         let folder = home.fill(home.path("Workspace/App/node_modules"))
         home.writeZeros("\(folder)/big", kilobytes: 64)
         home.fill("\(folder)/dependency/.git")
 
-        let measured = SizeMeasurer().measure(folder, search: RepositorySearch(), progress: nil)
+        var progress: [Int64] = []
+        let measured = SizeMeasurer().measure(folder, search: RepositorySearch()) { progress.append($0) }
+        let whole = SizeMeasurer().measure(folder)
         #expect(measured.repository == "\(folder)/dependency")
-        #expect(measured.kilobytes == 0)
-        #expect(SizeMeasurer().measure(folder).repository == nil)
+        #expect(measured.kilobytes == whole.kilobytes)
+        #expect(measured.kilobytes >= 64)
+        #expect(progress.last == 0)
+        #expect(whole.repository == nil)
     }
 }
