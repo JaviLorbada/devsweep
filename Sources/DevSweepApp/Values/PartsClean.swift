@@ -10,7 +10,7 @@ struct PartsClean {
     let parts: Set<ItemPart>
     /// What is left of the item.
     let left: ItemResult
-    /// What it freed, kept folders too.
+    /// What it took from the item's size.
     let kilobytes: Int64
     /// "2 projects", "3 folders".
     let summary: String

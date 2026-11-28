@@ -147,19 +147,18 @@ struct ItemPartsTests {
     }
 
     @Test
-    func `a kept folder goes only when ticked on its own, and Put Back brings it back`() async throws {
+    func `the app's kept folder is one of the item's, goes on its own, and comes back flagged`() async throws {
         let home = FakeHome(), tools = FakeTools(home: home)
         home.touch("\(home.projects)/Ledger/Package.swift")
         home.writeZeros("\(home.projects)/Ledger/.build/debug/blob", kilobytes: 128)
         home.fill("\(home.projects)/Ledger/.build/Tool/.git")
-        let engine = try engine(home, tools)
+        let engine = try engine(home, tools, listsKeptFolders: true)
         let result = try #require(await collect(engine).result(.swiftpmBuilds))
         let kept = try #require(result.kept?.first)
-        #expect(result.paths.isEmpty)
-        #expect(result.kilobytes(of: .folder(kept.path)) == kept.kilobytes)
+        #expect(result.paths == [kept.path])
+        #expect(result.kilobytes == kept.kilobytes)
+        #expect(result.keeps(.folder(kept.path)))
 
-        _ = await engine.clean(result, mode: .trash)
-        #expect(home.exists(kept.path))
         let outcome = await engine.clean([.folder(kept.path)], of: result, mode: .trash)
         #expect(outcome.cleaned == [.folder(kept.path)])
         #expect(!home.exists(kept.path))

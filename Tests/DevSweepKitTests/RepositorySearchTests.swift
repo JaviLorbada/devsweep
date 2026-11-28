@@ -183,4 +183,26 @@ struct RepositorySearchTests {
         #expect(progress.last == 0)
         #expect(whole.repository == nil)
     }
+
+    @Test
+    func `the app lists a kept folder among the item's, flagged, without a warning`() async throws {
+        let home = FakeHome(), tools = FakeTools(home: home), p = home.projects
+        for project in ["Clean", "Cloned"] {
+            home.touch("\(p)/\(project)/package.json")
+            home.fill("\(p)/\(project)/node_modules")
+        }
+        home.fill("\(p)/Cloned/node_modules/dependency/.git")
+
+        let engine = try engine(home, tools, includeExtras: false, listsKeptFolders: true)
+        let events = await collect(engine)
+        let result = try #require(events.result(.nodeModules))
+        let projects = "\(engine.policy.homeReal)/Workspace"
+        let cloned = "\(projects)/Cloned/node_modules"
+        let size = SizeMeasurer().measure(cloned).kilobytes
+        #expect(result.paths == ["\(projects)/Clean/node_modules", cloned])
+        #expect(result.kept == [KeptFolder(path: cloned, repository: "\(cloned)/dependency", kilobytes: size)])
+        #expect(result.folderKilobytes?[cloned] == size)
+        #expect(result.kilobytes == result.folderKilobytes?.values.reduce(0, +))
+        #expect(events.warnings.isEmpty)
+    }
 }

@@ -27,7 +27,7 @@ struct PendingClean: Identifiable {
     let xcodeOpen: Bool
     /// The project to close in Xcode, for one part; empty for several.
     let xcodeName: String
-    /// What goes with the kept folders among the parts: "Ledger/.build
+    /// What goes with the kept folders the clean takes: "Ledger/.build
     /// holds a git repository, Tool: its edits and commits go too."
     let keptNote: String
 
@@ -75,6 +75,10 @@ struct PendingClean: Identifiable {
 extension PendingClean {
     /// The question about cleaning `items` whole, as big as their `rows`.
     init(items: [Item], stage: Stage, rows: [Item: ScanRow]) {
-        self.init(items: items, stage: stage, kilobytes: items.compactMap { rows[$0]?.kilobytes }.reduce(0, +))
+        self.init(
+            items: items,
+            stage: stage,
+            kilobytes: items.compactMap { rows[$0]?.kilobytes }.reduce(0, +),
+            keptNote: KeptNote(wholes: items.compactMap { rows[$0]?.result }).text)
     }
 }

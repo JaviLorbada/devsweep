@@ -26,6 +26,7 @@ struct PreferencesTests {
         let config = preferences.scanConfig(environment: ["HOME": "/Users/someone"])
         #expect(config.projectDirectories.map { $0.replacingOccurrences(of: "~", with: "/Users/someone") }
             == ScanConfig.splitList(ScanConfig.defaultProjectDirectories(home: "/Users/someone")))
+        #expect(config.listsKeptFolders, "the app counts kept folders, and warns at their rows")
     }
 
     @Test

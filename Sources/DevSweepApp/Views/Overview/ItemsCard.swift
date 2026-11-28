@@ -6,12 +6,15 @@ import SwiftUI
 struct ItemsCard: View {
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
+    @Environment(KeptFoldersViewModel.self) private var kept
 
     /// The bar is the first column to go when the center column narrows.
     static func showsBar(forWidth width: CGFloat) -> Bool { width >= 600 }
 
     static let headerHeight: CGFloat = 34
     static let rowHeight: CGFloat = 33
+    /// The line under a row that holds a kept folder.
+    static let warningHeight: CGFloat = 20
 
     /// Sized from the width it is given (its height is fixed by its rows), so
     /// its minimum never follows the width it last had.
@@ -20,7 +23,8 @@ struct ItemsCard: View {
         GeometryReader { proxy in
             self.table(rows: rows, showsBar: Self.showsBar(forWidth: proxy.size.width))
         }
-        .frame(height: Self.headerHeight + CGFloat(rows.count) * Self.rowHeight)
+        .frame(height: Self.headerHeight + CGFloat(rows.count) * Self.rowHeight
+            + CGFloat(rows.count { self.kept.warning(for: $0.item) != nil }) * Self.warningHeight)
         .card()
         // The last row's selection follows the card's corners.
         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -61,6 +65,7 @@ struct ItemsCard: View {
 struct ItemRow: View {
     @Environment(OverviewViewModel.self) private var overview
     @Environment(MarksModel.self) private var marks
+    @Environment(KeptFoldersViewModel.self) private var kept
     @Environment(\.appearsActive) private var appearsActive
     let row: ScanRow
     let largest: Double
@@ -71,6 +76,29 @@ struct ItemRow: View {
         // On the selection color, marks turn white like a table's icons, or a
         // dark blue item would vanish on it.
         let emphasized = selected && self.appearsActive
+        let warning = self.kept.warning(for: self.row.item)
+        VStack(alignment: .leading, spacing: 0) {
+            self.columns(emphasized: emphasized)
+                .frame(height: 32)
+            if let warning {
+                self.warningLine(warning, emphasized: emphasized)
+            }
+        }
+        .padding(.horizontal, 14)
+        .tableRowSelection(selected)
+        .contentShape(Rectangle())
+        .onTapGesture { self.overview.select(self.row.item) }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            "\(self.row.result?.label ?? self.row.item.name), "
+                + "\(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)"
+                + (warning.map { ". \($0)" } ?? ""))
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
+    }
+
+    /// The mark, the color, the name, the bar, the size and what can be done.
+    private func columns(emphasized: Bool) -> some View {
         HStack(spacing: 12) {
             Toggle("Mark \(self.row.item.name) for cleaning", isOn: Binding(
                 get: { self.marks.marked.contains(self.row.item) && self.row.isLive },
@@ -125,17 +153,24 @@ struct ItemRow: View {
             RowAction(row: self.row)
                 .frame(width: 84)
         }
-        .padding(.horizontal, 14)
-        .frame(height: 32)
-        .tableRowSelection(selected)
-        .contentShape(Rectangle())
-        .onTapGesture { self.overview.select(self.row.item) }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            "\(self.row.result?.label ?? self.row.item.name), "
-                + "\(self.sizeText.isEmpty ? RowWords.state(self.row) : self.sizeText)")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .animation(Motion.animation(.easeInOut(duration: 0.4)), value: self.row.kilobytes)
+    }
+
+    /// Under the name, in yellow: a folder of it holds a git repository.
+    private func warningLine(_ warning: String, emphasized: Bool) -> some View {
+        HStack(spacing: 6) {
+            // A dark mark on the yellow, as a caution sign, in either appearance.
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.black, .yellow)
+                .accessibilityHidden(true)
+            Text(warning)
+                .foregroundStyle(emphasized ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+        .font(.caption)
+        // Under the name: past the mark, the color and their gaps.
+        .padding(.leading, 48)
+        .frame(height: ItemsCard.warningHeight, alignment: .top)
     }
 
     private var name: some View {
@@ -165,7 +200,7 @@ struct ItemRow: View {
             if !self.row.sizeKnown, self.row.kilobytes == 0 {
                 "Unknown"
             } else if self.row.result?.isEmpty ?? true {
-                self.row.keptCount > 0 ? "\(self.row.keptCount) kept" : "none"
+                "none"
             } else {
                 SizeText.of(kilobytes: self.row.kilobytes)
             }

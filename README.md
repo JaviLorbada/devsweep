@@ -61,10 +61,11 @@ built to err on the side of keeping things.
   since the scan is skipped with a warning.
 - **Never what git tracks.** Build folders are removed only when git provably
   tracks nothing in them. Any doubt keeps the folder.
-- **Never a repository inside.** A build folder that holds a git
-  repository, like a dependency cloned into `node_modules`, is kept with a
-  warning: your project's repository ignores the folder, so it can't see
-  that clone's edits or commits. SwiftPM's own clones, in `.build/checkouts`
+- **Never a repository inside, unasked.** A build folder that holds a git
+  repository, like a dependency cloned into `node_modules`, gets a yellow
+  warning in the app, which asks before cleaning it, and `devsweep` keeps it
+  with a warning: your project's repository ignores the folder, so it can't
+  see that clone's edits or commits. SwiftPM's own clones, in `.build/checkouts`
   and `.build/repositories` (and in `.build/index-build`, where SourceKit-LSP
   indexes), and Xcode's, in `SourcePackages`, don't count: resolving the
   packages clones them again.
@@ -146,10 +147,11 @@ Scripts/install-cli.sh         # links devsweep into ~/.local/bin
 - **Keep part of an item.** Select DerivedData and tick single projects, or
   a shared cache, in the inspector, then clean just those. Build folders
   work the same way. A project can go while Xcode is open, after a question.
-- **See what it kept.** A build folder that holds a git repository is listed
-  under Kept in its item's inspector, with its size and where the
-  repository sits, and its row says how many were kept. Tick one to clean
-  it: it asks first, and nothing else takes it.
+- **See what holds a repository.** A build folder that holds a git
+  repository counts with its item, with a yellow warning under the row, and
+  its inspector lists it under Kept, with its size and where the repository
+  sits, to tick and clean on its own. An item holding one never starts
+  ticked, and cleaning it asks first.
 - **Look at what it won't clean.** The sidebar's Also worth a look lists
   installed Xcodes, simulator runtimes, Android Studio's files and git
   worktrees, with their sizes, flagging what looks unused. A worktree can

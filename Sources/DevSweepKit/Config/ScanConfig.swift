@@ -28,6 +28,10 @@ public struct ScanConfig: Sendable {
     /// warning. Run under the original script's name the folders are the
     /// script's, which lists them.
     public var keepsFoldersWithRepositories: Bool
+    /// Whether such a folder is listed with the item's, flagged in its
+    /// `kept`, rather than left out with a warning: the app counts it, and
+    /// warns at its row.
+    public var listsKeptFolders = false
     /// The environment the scan runs in. Git's `GIT_DIR` and `GIT_WORK_TREE`
     /// come from here.
     public var environment: [String: String]

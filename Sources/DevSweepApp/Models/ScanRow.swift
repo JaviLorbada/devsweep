@@ -35,10 +35,9 @@ struct ScanRow: Identifiable {
         self.result?.kilobytes ?? self.progressBytes / 1024
     }
 
-    /// While cleaning, what is still on disk, counting down as it goes: of
-    /// the item, or of the kept folders being cleaned, which it never counted.
+    /// While cleaning, what is still on disk, counting down as it goes.
     var leftKilobytes: Int64 {
-        max(0, max(self.kilobytes, self.cleaningKilobytes ?? 0) - self.removedBytes / 1024)
+        max(0, self.kilobytes - self.removedBytes / 1024)
     }
 
     /// How far deleting has got, once it has removed something; moving
@@ -91,10 +90,19 @@ struct ScanRow: Identifiable {
         self.result?.kept?.count ?? 0
     }
 
-    /// Measured, with folders the inspector can tick: ones it lists, or ones
-    /// it kept, which only a tick cleans.
-    var hasPartsToClean: Bool {
-        self.isLive || (self.state == .measured && self.keptCount > 0)
+    /// Whether cleaning it takes a folder kept for its git repository: any
+    /// of them when it goes whole, or one of `parts`.
+    func cleanTakesKeptFolder(_ parts: Set<ItemPart>) -> Bool {
+        guard let result else {
+            return false
+        }
+        return parts.isEmpty ? self.keptCount > 0 : parts.contains(where: result.keeps)
+    }
+
+    /// Whether it starts ticked once a scan is done: never while it holds a
+    /// kept folder, whose clone a clean would take too.
+    var canStartTicked: Bool {
+        self.item.canStartTicked && self.keptCount == 0
     }
 
     /// Measured at some point, whatever happened since.
