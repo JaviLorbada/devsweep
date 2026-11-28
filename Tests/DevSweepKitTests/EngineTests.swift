@@ -6,10 +6,12 @@ func engine(
     _ home: FakeHome,
     _ tools: FakeTools,
     skipped: Set<Item> = [],
-    includeExtras: Bool = true) throws -> Engine
+    includeExtras: Bool = true,
+    listsKeptFolders: Bool = false) throws -> Engine
 {
     var config = ScanConfig.fromEnvironment(home.environment, skipped: skipped, includeExtras: includeExtras)
     config.environment = home.environment
+    config.listsKeptFolders = listsKeptFolders
     return try Engine(config: config, tools: tools.tools, measurer: SizeMeasurer(progressInterval: 2))
 }
 

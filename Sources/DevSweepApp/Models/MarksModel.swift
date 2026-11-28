@@ -61,7 +61,7 @@ final class MarksModel: Marking {
         guard !self.touched else {
             return
         }
-        self.marked = Set(self.scan.tally.live.filter(\.item.canStartTicked).prefix(3).map(\.item))
+        self.marked = Set(self.scan.tally.live.filter(\.canStartTicked).prefix(3).map(\.item))
     }
 
     /// `item` was cleaned, so it can't be ticked any more.

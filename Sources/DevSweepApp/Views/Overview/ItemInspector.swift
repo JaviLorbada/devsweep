@@ -171,7 +171,7 @@ struct InspectorAction: View {
         switch self.row.state {
         case .waiting, .measuring:
             self.wide(Button("Measuring") {}.buttonStyle(.prominentAction).disabled(true))
-        case .measured where self.row.hasPartsToClean && !self.marks.markedParts(of: self.row.item).isEmpty:
+        case .measured where self.row.isLive && !self.marks.markedParts(of: self.row.item).isEmpty:
             let item = self.row.item
             let marked = self.marks.markedParts(of: item)
             let parts = "\(CleanPrompt.partsSummary(marked, in: item)), "

@@ -82,7 +82,7 @@ final class CleaningModel: CleaningTotals {
     /// can go while Xcode is open, after a question when Xcode builds into
     /// the item, since it may have the project open.
     func requestCleanParts(of item: Item) async {
-        guard !self.scan.isScanning, !self.isCleaning, self.scan.rows[item]?.hasPartsToClean == true else {
+        guard !self.scan.isScanning, !self.isCleaning, self.scan.rows[item]?.isLive == true else {
             return
         }
         let parts = self.marks.markedParts(of: item)
@@ -132,21 +132,12 @@ final class CleaningModel: CleaningTotals {
     /// Whether these items need a yes first: everything does when deleting
     /// for good, and Simulators and Homebrew always, since their tools delete
     /// them. Parts of what Xcode builds into do while Xcode is open, which
-    /// may have the project open, and a folder kept for its git repository
-    /// always does.
+    /// may have the project open, and a clean that takes a folder kept for
+    /// its git repository always does.
     func needsConfirmation(_ items: [Item], parts: Set<ItemPart> = []) -> Bool {
         !self.moveToTrash || items.contains(where: \.cleanedByItsTool)
             || (!parts.isEmpty && self.apps.running.contains(.xcode) && items.contains(where: \.xcodeBuildsInto))
-            || self.keepsAny(parts, of: items.first)
-    }
-
-    /// Whether one of `parts` is a folder the scan kept for its git
-    /// repository, which always asks first.
-    private func keepsAny(_ parts: Set<ItemPart>, of item: Item?) -> Bool {
-        guard let result = item.flatMap({ self.scan.rows[$0]?.result }) else {
-            return false
-        }
-        return parts.contains(where: result.keeps)
+            || items.contains { self.scan.rows[$0]?.cleanTakesKeptFolder(parts) ?? false }
     }
 
     /// - Parameter afterAlert: an alert is closing, so give it a moment
@@ -230,7 +221,7 @@ final class CleaningModel: CleaningTotals {
         guard !self.scan.isScanning, !self.isCleaning else {
             return self.show(.rowsTaken)
         }
-        guard let row = self.scan.rows[item], row.hasPartsToClean, let result = row.result else {
+        guard let row = self.scan.rows[item], row.isLive, let result = row.result else {
             return
         }
         // Xcode may have been opened since the question was asked.

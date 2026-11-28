@@ -15,9 +15,10 @@ public struct ItemResult: Sendable, Identifiable, Codable, Equatable {
     public var sizeKnown: Bool
     /// Each folder's size, by path, when the item measured them one by one.
     public var folderKilobytes: [String: Int64]?
-    /// Build folders left out of `paths` because each holds a git
-    /// repository, in path order. Nil for items that never keep a folder,
-    /// and in scans saved before.
+    /// Build folders kept because each holds a git repository, in path
+    /// order: left out of `paths`, or among them when the scan lists them
+    /// (`ScanConfig.listsKeptFolders`). Nil for items that never keep a
+    /// folder, and in scans saved before.
     public var kept: [KeptFolder]?
 
     public var id: Item {

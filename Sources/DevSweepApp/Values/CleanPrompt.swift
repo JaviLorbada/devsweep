@@ -24,19 +24,23 @@ enum CleanPrompt {
             return "\(self.names(blocked)) can't be cleaned while \(self.names(apps.map(\.rawValue))) \(verb) open. "
                 + "Xcode asks to save unsaved work before it quits."
         case .confirm:
-            if !moveToTrash {
-                return "\(self.names(pending.items.map(\.shortName))) will be deleted and can't be put back. "
-                    + "Each comes back as you build, resolve or download again."
-            }
             let byTool = pending.items.filter(\.cleanedByItsTool)
             let rest = pending.items.filter { !$0.cleanedByItsTool }
-            var message = "\(names(byTool.map(\.shortName))) \(byTool.count == 1 ? "is" : "are") removed by "
-                + "\(self.names(byTool.map { $0 == .simulators ? "simctl" : "brew" })), so "
-                + "\(byTool.count == 1 ? "it" : "they") can't be put back."
-            if !rest.isEmpty {
-                message += " The rest moves to the Trash."
+            var message: String
+            if !moveToTrash {
+                message = "\(self.names(pending.items.map(\.shortName))) will be deleted and can't be put back. "
+                    + "Each comes back as you build, resolve or download again."
+            } else if byTool.isEmpty {
+                message = "Everything moves to the Trash, so it can be put back."
+            } else {
+                message = "\(self.names(byTool.map(\.shortName))) \(byTool.count == 1 ? "is" : "are") removed by "
+                    + "\(self.names(byTool.map { $0 == .simulators ? "simctl" : "brew" })), so "
+                    + "\(byTool.count == 1 ? "it" : "they") can't be put back."
+                if !rest.isEmpty {
+                    message += " The rest moves to the Trash."
+                }
             }
-            return message
+            return pending.keptNote.isEmpty ? message : "\(message) \(pending.keptNote)"
         }
     }
 
@@ -100,18 +104,6 @@ enum CleanPrompt {
             return sizeA != sizeB ? sizeA > sizeB : a.sentenceName(in: result) < b.sentenceName(in: result)
         }
         let subject = self.partsSubject(sorted, of: item, in: result)
-        // "Ledger/.build holds a git repository, Tool", for each kept folder.
-        let kept: [String] = sorted.compactMap { part in
-            guard case let .folder(path) = part, let folder = result.keptFolder(path) else {
-                return nil
-            }
-            return "\(part.sentenceName(in: result)) \(folder.keptBecause)"
-        }
-        let keptNote = switch kept.count {
-        case 0: ""
-        case 1: "\(kept[0]): its edits and commits go too."
-        default: "\(kept.count) of them hold a git repository: their edits and commits go too."
-        }
         return PendingClean(
             items: [item],
             stage: stage,
@@ -122,7 +114,7 @@ enum CleanPrompt {
             blockedPartNames: sorted.filter { $0.needsXcodeClosed(in: item) }.map { $0.sentenceName(in: result) },
             xcodeOpen: item.xcodeBuildsInto && xcodeOpen,
             xcodeName: parts.count == 1 ? sorted[0].listName(in: result) : "",
-            keptNote: keptNote)
+            keptNote: KeptNote(sorted, of: result).text)
     }
 
     /// What the question calls `sorted`, the parts largest first, and
@@ -141,8 +133,7 @@ enum CleanPrompt {
             return (self.names(sorted.map { $0.sentenceName(in: result) }), sorted.count > 1)
         }
         // ".build folders", "build folders": what the item's folders are called.
-        let first = result.paths.first ?? result.kept?.first?.path
-        let folders = first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
+        let folders = result.paths.first.map { URL(fileURLWithPath: $0).lastPathComponent } ?? ""
         let text = item == .derivedData ? "\(sorted.count) parts of DerivedData" : "\(sorted.count) \(folders) folders"
         return (text, true)
     }

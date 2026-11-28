@@ -35,7 +35,8 @@ public struct ProjectBuildScanner: Scanner {
     }
 
     /// Lists and measures, one walk per folder. A folder holding a git
-    /// repository is kept, with its size and a warning.
+    /// repository is kept, with its size: left out with a warning, or for
+    /// the app listed with the others.
     public func scan(in context: ScanContext, progress: @escaping @Sendable (Int64) -> Void) async -> ItemResult {
         let folders = await collect(in: context).sortedUniqueBytewise()
         let search = context.config.keepsFoldersWithRepositories ? self.repositories : nil
@@ -45,6 +46,9 @@ public struct ProjectBuildScanner: Scanner {
             measurement.repository.map {
                 KeptFolder(path: folder, repository: $0, kilobytes: measurement.kilobytes)
             }
+        }
+        if context.config.listsKeptFolders {
+            return await self.result(folders, measured: sizes, kept: kept, in: context)
         }
         for folder in kept {
             context.warn(self.warning(folder, policy: context.policy))

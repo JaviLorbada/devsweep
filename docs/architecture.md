@@ -37,7 +37,9 @@ inside `.build` or SourceKit-LSP's `.build/index-build`, and Xcode's, in
 `-derivedDataPath`, don't count: resolving the packages clones them again.
 The search runs inside the
 measurer's walk, which goes on past the first `.git` to measure the kept
-folder, so no folder is walked twice.
+folder, so no folder is walked twice. The command line leaves a kept folder
+out with a warning; the app's scan lists it with the others, flagged in the
+result's `kept` (`ScanConfig.listsKeptFolders`), and warns at its row.
 
 Deleting for good goes through `TreeRemover`, about twice as fast as
 `FileManager` on a DerivedData folder: four threads share the walk, and each
@@ -183,7 +185,7 @@ cells and ring segments take plain values.
 |---|---|---|
 | `WindowViewModel` | The screen on show, Ring or Blocks, whether the inspector shows and where: docked, or floating once the window is too narrow. | Sidebar, header, the View menu |
 | `OverviewViewModel` | The selected item, picking a family, the status line. | Ring, Blocks, items list, inspector |
-| `KeptFoldersViewModel` | The build folders a scan kept for their git repositories, as the inspector lists them, and ticking one to clean it. | The inspector's Kept list |
+| `KeptFoldersViewModel` | The build folders a scan kept for their git repositories: the warning under their row, the inspector's list of them, and ticking one to clean it. | Items list, the inspector's Kept list |
 | `XcodesViewModel` | The selected Xcode and the screen's subtitle. | Xcode versions |
 | `RuntimesViewModel` | The selected runtime, its removal sheet, the subtitle. | Simulator runtimes |
 | `WorktreesViewModel` | The selected worktree, its removal sheet, the subtitle, the git command. | Worktrees |

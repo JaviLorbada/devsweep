@@ -46,8 +46,9 @@ enum DerivedDataParts {
 
 /// An item's parts, largest first, each with a box to clean it on its own:
 /// DerivedData's shared caches, projects with their last build, and the
-/// rest; or a build item's folders, by the project each belongs to. Past
-/// the five largest projects or folders, the rest open to show each.
+/// rest; or a build item's folders, by the project each belongs to, but
+/// the kept ones, which `KeptList` shows. Past the five largest projects or
+/// folders, the rest open to show each.
 struct PartsList: View {
     @Environment(ScanModel.self) private var scan
     @Environment(MarksModel.self) private var marks
@@ -95,6 +96,7 @@ struct PartsList: View {
             return self.lines(breakdown)
         }
         let folders = self.result.paths
+            .filter { !self.result.keeps(.folder($0)) }
             .map { (path: $0, kilobytes: self.result.folderKilobytes?[$0] ?? 0) }
             .sorted { $0.kilobytes > $1.kilobytes }
         let names = Self.folderNames(self.result.paths)
@@ -179,9 +181,17 @@ struct PartsList: View {
     var body: some View {
         let lines = lines
         let largest = Double(max(lines.map(\.kilobytes).max() ?? 1, 1))
+        let partsClean = self.selectable ? self.cleaning.lastPartsClean(of: self.result.item) : nil
+        // Nothing to list when every folder was kept, until one is cleaned.
+        if !lines.isEmpty || partsClean != nil {
+            self.list(lines, largest: largest, partsClean: partsClean)
+        }
+    }
+
+    private func list(_ lines: [Line], largest: Double, partsClean: PartsClean?) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Eyebrow(text: self.isDerivedData ? "Inside" : "Folders")
-            if self.selectable, let partsClean = self.cleaning.lastPartsClean(of: self.result.item) {
+            if let partsClean {
                 self.lastClean(partsClean)
             }
             ForEach(lines) { line in

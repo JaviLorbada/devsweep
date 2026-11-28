@@ -1,6 +1,6 @@
 /// A build folder kept because it holds a git repository: the project's
 /// repository ignores the folder, so it can't see that clone's edits or
-/// commits. It is measured like the folders the item lists, but not counted.
+/// commits. It is measured like the folders the item lists.
 public struct KeptFolder: Sendable, Equatable, Codable {
     /// The folder, resolved.
     public let path: String

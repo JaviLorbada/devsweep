@@ -76,22 +76,31 @@ struct CleanPromptTests {
     }
 
     @Test
-    func `a kept folder's question names its repository, whose edits and commits go too`() {
+    func `a question names the kept folders it takes, ticked or whole, with their repositories`() {
         let kept = [
             KeptFolder(path: "/code/E/.build", repository: "/code/E/.build/Tool", kilobytes: 50),
             KeptFolder(path: "/code/F/.build", repository: "/code/F/.build", kilobytes: 5),
         ]
-        var builds = self.builds
-        builds.kept = kept
+        let builds = ItemResult(
+            item: .swiftpmBuilds,
+            paths: ["/code/A/.build", "/code/E/.build", "/code/F/.build"],
+            kilobytes: 95,
+            location: "~/code",
+            folderKilobytes: ["/code/A/.build": 40, "/code/E/.build": 50, "/code/F/.build": 5],
+            kept: kept)
         let one = self.question([.folder("/code/A/.build"), .folder("/code/E/.build")], in: builds)
         #expect(one.kilobytes == 90)
         #expect(one.keptNote == "E/.build holds a git repository, Tool: its edits and commits go too.")
         #expect(CleanPrompt.message(for: one, moveToTrash: true) == "E/.build and A/.build go to the Trash, so they "
             + "can be put back. E/.build holds a git repository, Tool: its edits and commits go too.")
-
         let both = self.question(Set(kept.map { .folder($0.path) }), in: builds)
-        #expect(both.keptNote == "2 of them hold a git repository: their edits and commits go too.")
+        #expect(both.keptNote == "2 folders hold a git repository: their edits and commits go too.")
         #expect(self.question([.folder("/code/A/.build")], in: builds).keptNote.isEmpty)
+
+        let whole = PendingClean(items: [.swiftpmBuilds], stage: .confirm, rows: measuredRows([builds]))
+        #expect(whole.kilobytes == 95)
+        #expect(CleanPrompt.message(for: whole, moveToTrash: true) == "Everything moves to the Trash, so it can be "
+            + "put back. 2 folders hold a git repository: their edits and commits go too.")
     }
 
     @Test

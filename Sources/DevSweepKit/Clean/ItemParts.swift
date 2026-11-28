@@ -72,7 +72,7 @@ extension DerivedDataBreakdown {
 
 extension ItemResult {
     /// What a part takes: from DerivedData's breakdown, or the folder's own
-    /// size when the scan measured each folder, kept ones too.
+    /// size when the scan measured each folder.
     public func kilobytes(of part: ItemPart) -> Int64 {
         if let derivedData {
             return derivedData.kilobytes(of: part)
@@ -80,10 +80,10 @@ extension ItemResult {
         guard case let .folder(path) = part else {
             return 0
         }
-        return self.folderKilobytes?[path] ?? self.keptFolder(path)?.kilobytes ?? 0
+        return self.folderKilobytes?[path] ?? 0
     }
 
-    /// The kept folder at `path`, which a part can clean once ticked.
+    /// The kept folder at `path`.
     public func keptFolder(_ path: String) -> KeptFolder? {
         self.kept?.first { $0.path.bytesEqual(path) }
     }
@@ -96,15 +96,10 @@ extension ItemResult {
         return self.keptFolder(path) != nil
     }
 
-    /// What a part adds to `kilobytes`: a kept folder never counted.
-    private func countedKilobytes(of part: ItemPart) -> Int64 {
-        self.keeps(part) ? 0 : self.kilobytes(of: part)
-    }
-
     /// The result once `parts` are gone, so the numbers drop without a scan.
     public func removing(_ parts: Set<ItemPart>) -> ItemResult {
         var result = self
-        result.kilobytes -= parts.reduce(0) { $0 + self.countedKilobytes(of: $1) }
+        result.kilobytes -= parts.reduce(0) { $0 + self.kilobytes(of: $1) }
         if let derivedData {
             result.derivedData = derivedData.removing(parts)
         } else {
@@ -120,7 +115,7 @@ extension ItemResult {
     /// The result with `parts` back as `before` measured them.
     public func restoring(_ parts: Set<ItemPart>, from before: ItemResult) -> ItemResult {
         var result = self
-        result.kilobytes += parts.reduce(0) { $0 + before.countedKilobytes(of: $1) }
+        result.kilobytes += parts.reduce(0) { $0 + before.kilobytes(of: $1) }
         if let derivedData, let original = before.derivedData {
             result.derivedData = derivedData.restoring(parts, from: original)
         } else {
@@ -169,11 +164,10 @@ public struct PartsCleanOutcome: Sendable {
 }
 
 extension Engine {
-    /// Cleans some parts of a scanned item: some of its folders, kept ones
-    /// too, or parts of DerivedData. Each part's folders go as a whole
-    /// item's do, checked with the policy right before. A folder that isn't
-    /// one of the item's, or for DerivedData directly inside the scanned
-    /// folder, is left alone.
+    /// Cleans some parts of a scanned item: some of its folders, or parts of
+    /// DerivedData. Each part's folders go as a whole item's do, checked
+    /// with the policy right before. A folder that isn't one of the item's,
+    /// or for DerivedData directly inside the scanned folder, is left alone.
     public func clean(
         _ parts: Set<ItemPart>,
         of result: ItemResult,
@@ -188,8 +182,7 @@ extension Engine {
     }
 
     func paths(of parts: Set<ItemPart>, in result: ItemResult) -> [ItemPart: [String]] {
-        // DerivedData's folder, or a build item's first folder, kept ones too.
-        guard let first = result.paths.first ?? result.kept?.first?.path else {
+        guard let first = result.paths.first else {
             return [:]
         }
         let isDerivedData = result.item == .derivedData
@@ -199,8 +192,7 @@ extension Engine {
             case let .folder(path) where isDerivedData:
                 paths[part] = FileSystem.dirname(path).bytesEqual(first) && !path.bytesEqual(first) ? [path] : []
             case let .folder(path):
-                let listed = result.paths.contains { $0.bytesEqual(path) }
-                paths[part] = listed || result.keptFolder(path) != nil ? [path] : []
+                paths[part] = result.paths.contains { $0.bytesEqual(path) } ? [path] : []
             case .compilationCache where isDerivedData: paths[part] = ["\(first)/CompilationCache.noindex"]
             case .moduleCache where isDerivedData: paths[part] = ["\(first)/ModuleCache.noindex"]
             case .other where isDerivedData:

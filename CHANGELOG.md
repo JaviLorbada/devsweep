@@ -8,11 +8,11 @@ shows and the update window leaves out.
 
 ## Unreleased
 
-- A build folder kept because it holds a git repository no longer hides in
-  the scan's notes: its item's row says how many were kept, and the
-  inspector lists each one under Kept, with its size and the repository
-  inside it. Tick one there to clean it; it asks first, and nothing else
-  takes it.
+- A build folder that holds a git repository no longer hides in the scan's
+  notes: the app counts it, with a yellow warning under its item's row, and
+  the inspector lists it under Kept, with its size and the repository
+  inside it. A clean that takes one asks first, even to the Trash, and an
+  item holding one never starts ticked. The command line still keeps it.
 
 ## 0.8.0
 

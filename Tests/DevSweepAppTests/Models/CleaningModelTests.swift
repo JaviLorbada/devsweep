@@ -203,31 +203,45 @@ struct CleaningModelTests {
         #expect(rows.cleansBegun == 0, "nothing goes before the answer")
     }
 
-    @Test
-    func `a kept folder goes only once ticked, and asks first even to the Trash`() async throws {
-        let ledger = "/Users/someone/Developer/Ledger/.build"
-        let kept = KeptFolder(path: ledger, repository: "\(ledger)/Tool", kilobytes: 2048)
-        let found = ItemResult(
+    /// A `.build` holding a clone, counted with the item as the app's scan lists it.
+    let ledger = "/Users/someone/Developer/Ledger/.build"
+    var keptBuilds: ItemResult {
+        ItemResult(
             item: .swiftpmBuilds,
-            paths: [],
-            kilobytes: 0,
+            paths: [self.ledger],
+            kilobytes: 2048,
             location: "",
-            folderKilobytes: [:],
-            kept: [kept])
-        let rows = FakeScanRows([found])
+            folderKilobytes: [self.ledger: 2048],
+            kept: [KeptFolder(path: self.ledger, repository: "\(self.ledger)/Tool", kilobytes: 2048)])
+    }
+
+    @Test
+    func `cleaning an item that holds a kept folder asks first, even to the Trash, and names it`() async throws {
+        let rows = FakeScanRows([self.keptBuilds])
         let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps(), moveToTrash: true)
 
         await cleaning.requestClean([.swiftpmBuilds])
-        #expect(cleaning.pendingClean == nil)
-        #expect(rows.cleansBegun == 0, "a whole clean takes no kept folder")
-
-        self.marks.parts[.swiftpmBuilds] = [.folder(ledger)]
-        await cleaning.requestCleanParts(of: .swiftpmBuilds)
         await waitUntil { cleaning.pendingClean != nil }
         let confirm = try #require(cleaning.pendingClean)
         #expect(confirm.kilobytes == 2048)
         #expect(confirm.keptNote == "Ledger/.build holds a git repository, Tool: its edits and commits go too.")
         #expect(rows.cleansBegun == 0, "nothing goes before the answer")
+
+        await cleaning.confirmClean(confirm)
+        #expect(rows.cleansBegun == 1)
+        #expect(cleaning.trashedThisSession == 2048)
+    }
+
+    @Test
+    func `a kept folder ticked on its own asks first too, and goes with its flag`() async throws {
+        let rows = FakeScanRows([self.keptBuilds])
+        self.marks.parts[.swiftpmBuilds] = [.folder(self.ledger)]
+        let cleaning = CleaningModel(scan: rows, marks: self.marks, apps: FakeRunningApps(), moveToTrash: true)
+
+        await cleaning.requestCleanParts(of: .swiftpmBuilds)
+        await waitUntil { cleaning.pendingClean != nil }
+        let confirm = try #require(cleaning.pendingClean)
+        #expect(confirm.keptNote == "Ledger/.build holds a git repository, Tool: its edits and commits go too.")
 
         await cleaning.confirmClean(confirm)
         #expect(rows.rows[.swiftpmBuilds]?.result?.kept == [])

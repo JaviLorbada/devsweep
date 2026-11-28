@@ -22,6 +22,23 @@ struct MarksModelTests {
     }
 
     @Test
+    func `an item holding a kept folder never starts ticked, however big`() {
+        let ledger = "/Users/someone/Developer/Ledger/.build"
+        let scan = FakeScanResults([
+            ItemResult(
+                item: .swiftpmBuilds,
+                paths: [ledger],
+                kilobytes: 4096,
+                location: "",
+                kept: [KeptFolder(path: ledger, repository: ledger, kilobytes: 4096)]),
+            result(.derivedData, kilobytes: 256),
+        ])
+        let marks = MarksModel(scan: scan)
+        marks.applyDefaults()
+        #expect(marks.marked == [.derivedData])
+    }
+
+    @Test
     func `other languages' build folders never start ticked, however big`() {
         let scan = FakeScanResults([
             result(.nodeModules, kilobytes: 4096),

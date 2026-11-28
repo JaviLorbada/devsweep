@@ -3,8 +3,8 @@ import SwiftUI
 
 /// The build folders the scan kept because each holds a git repository,
 /// each by the project it belongs to, with its size and where the
-/// repository sits in it. None counts in the item's size, and none is
-/// cleaned unless ticked here. Nothing shows when the item kept none.
+/// repository sits in it, to tick and clean on its own. Nothing shows when
+/// the item kept none.
 struct KeptList: View {
     @Environment(KeptFoldersViewModel.self) private var kept
     let item: Item
@@ -18,7 +18,7 @@ struct KeptList: View {
                     self.line(line)
                 }
                 Text("Your project's repository ignores a build folder, so it can't see a clone's edits or commits. "
-                    + "Check one before you tick it.")
+                    + "Check one before you clean it.")
                     .font(.caption)
                     .foregroundStyle(.muted)
                     .fixedSize(horizontal: false, vertical: true)

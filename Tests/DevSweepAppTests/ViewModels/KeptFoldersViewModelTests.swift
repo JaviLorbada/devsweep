@@ -38,6 +38,22 @@ struct KeptFoldersViewModelTests {
     }
 
     @Test
+    func `the row warns of one kept folder by name, and of several by count`() {
+        let (two, _) = self.kept(ScanRow(item: .cargoBuilds, state: .measured, result: self.found))
+        #expect(two.warning(for: .cargoBuilds) == "2 folders have a git repository. Check them before you clean.")
+
+        let one = ItemResult(item: .cargoBuilds, paths: [], kilobytes: 0, location: "", kept: [self.ferris])
+        let (single, _) = self.kept(ScanRow(item: .cargoBuilds, state: .measured, result: one))
+        #expect(single.warning(for: .cargoBuilds) == "ferris/target has a git repository. Check it before you clean.")
+
+        let plain = result(.cargoBuilds, kilobytes: 4)
+        let (none, _) = self.kept(ScanRow(item: .cargoBuilds, state: .measured, result: plain))
+        #expect(none.warning(for: .cargoBuilds) == nil)
+        let (measuring, _) = self.kept(ScanRow(item: .cargoBuilds, state: .measuring, previous: self.found))
+        #expect(measuring.warning(for: .cargoBuilds) == nil)
+    }
+
+    @Test
     func `the last scan's show dimmed until this one measures them, and only this scan's can be ticked`() {
         let (measured, _) = self.kept(ScanRow(item: .cargoBuilds, state: .measured, result: self.found))
         #expect(measured.showsTicks(for: .cargoBuilds))

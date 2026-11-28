@@ -1,9 +1,9 @@
 import DevSweepKit
 import Observation
 
-/// The inspector's Kept list: the build folders a scan kept because each
-/// holds a git repository, and ticking one to clean it, which nothing else
-/// does.
+/// The build folders a scan kept because each holds a git repository: the
+/// warning under their item's row, and the inspector's Kept list, where
+/// ticking one cleans it on its own.
 @MainActor
 @Observable
 final class KeptFoldersViewModel {
@@ -49,6 +49,21 @@ final class KeptFoldersViewModel {
                 size: SizeText.of(kilobytes: folder.kilobytes),
                 reason: folder.reason)
         }
+    }
+
+    /// What `item`'s row warns: "kite-1/.build has a git repository. Check
+    /// it before you clean."; nil when it keeps none.
+    func warning(for item: Item) -> String? {
+        guard let row = self.row(of: item), row.wasMeasured || row.showsPrevious,
+              let result = row.shownResult, let kept = result.kept, !kept.isEmpty
+        else {
+            return nil
+        }
+        guard kept.count == 1 else {
+            return "\(kept.count) folders have a git repository. Check them before you clean."
+        }
+        return "\(ItemPart.folder(kept[0].path).sentenceName(in: result)) has a git repository. "
+            + "Check it before you clean."
     }
 
     /// Whether `item`'s kept folders can be ticked: this scan's, not the last one's.
