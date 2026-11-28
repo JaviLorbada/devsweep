@@ -8,6 +8,12 @@ shows and the update window leaves out.
 
 ## Unreleased
 
+## 0.8.1
+
+A build folder kept because it holds a git repository no longer hides in
+the scan's notes: the app counts it, warns at its row and lists it under
+Kept. And a `.build` with Xcode's DerivedData deeper inside is listed again.
+
 - A build folder that holds a git repository no longer hides in the scan's
   notes: the app counts it, with a yellow warning under its item's row, and
   the inspector lists it under Kept, with its size and the repository
@@ -23,6 +29,11 @@ shows and the update window leaves out.
 
 | | Before | After |
 |---|:---:|:---:|
+| A build folder kept for a git repository | <img width="400" alt="Before: Cargo target folders reads none, and its inspector 0 KB, nothing to clean" src="https://github.com/user-attachments/assets/174eeee2-c9d9-4284-95dd-8b47169e8c3c" /> | <img width="400" alt="After: Cargo target folders reads 1 kept, and its inspector lists ferris under Kept, 8 MB, ticked, with Clean 1 folder, 8 MB" src="https://github.com/user-attachments/assets/c90f1ff1-016d-46c6-86b4-84860cca3654" /> |
+| Kept, in the inspector | <img width="400" alt="Before: node_modules lists two folders, and nothing says dashboard's was kept" src="https://github.com/user-attachments/assets/a4097ad7-28e0-4cfc-ba43-0ce4ed933634" /> | <img width="400" alt="After: node_modules lists two folders, then dashboard under Kept, 5 MB, holding a git repository, chart-kit" src="https://github.com/user-attachments/assets/8f30f25c-7bc3-41fc-90d6-1feb1d2cc5ca" /> |
+| A kept folder, counted and warned at its row | <img width="400" alt="Before: node_modules counts 25 MB, with dashboard's 5 MB left out, and 3 grey notes from the scan" src="https://github.com/user-attachments/assets/2ca7cf24-873a-4912-b236-e5a1ab01cd31" /> | <img width="400" alt="After: node_modules counts 30 MB, with a yellow line saying dashboard/node_modules has a git repository, and 1 yellow note" src="https://github.com/user-attachments/assets/918bd365-3def-4791-9275-49b7dd2c92c3" /> |
+| A kept target folder, counted | <img width="400" alt="Before: Cargo target folders reads 1 kept, and its inspector 0 KB, nothing to clean" src="https://github.com/user-attachments/assets/897f0bc2-1474-4557-b34e-3fc4e081c15e" /> | <img width="400" alt="After: Cargo target folders counts 8 MB, with a yellow line saying ferris/target has a git repository" src="https://github.com/user-attachments/assets/44ff5b46-4fbe-406c-8f34-eaa4904dc6e3" /> |
+| The menu bar panel's totals | <img width="296" alt="Before: the menu bar panel, npm 39 MB, Other tools 18 MB, 283 MB reclaimable" src="https://github.com/user-attachments/assets/d64009cd-1635-4d89-8d48-a1f66f50446a" /> | <img width="296" alt="After: the menu bar panel counts the kept folders, npm 44 MB, Other tools 26 MB, 296 MB reclaimable" src="https://github.com/user-attachments/assets/aa557648-9258-423b-8c21-6c35cfb33df8" /> |
 | A `.build` with Xcode's DerivedData deeper inside | <img width="400" alt="Before: SwiftPM .build folders (5) with a yellow warning that Lantern/.build has a git repository, and Lantern under Kept" src="https://github.com/user-attachments/assets/843f17b7-bf8e-46c0-b9de-6c1de09031a5" /> | <img width="400" alt="After: SwiftPM .build folders (5) ticked, with Lantern's .build under Folders at 14 MB and no warning" src="https://github.com/user-attachments/assets/b57f01a3-c02f-45c7-9854-bbf3116943ad" /> |
 
 ## 0.8.0
