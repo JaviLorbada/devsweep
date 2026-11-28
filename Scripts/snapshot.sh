@@ -44,7 +44,10 @@
 #   a build script's sources into ferris's target, repositories that keep
 #   those folders. XCODE_CLONE=1 makes Compass, a package,
 #   build into its .build as `xcodebuild -derivedDataPath .build` does, with
-#   a package Xcode cloned into its SourcePackages, which doesn't. NOTE=1
+#   a package Xcode cloned into its SourcePackages, which doesn't.
+#   NESTED_CLONE=1 makes Lantern, a package whose build script keeps Xcode's
+#   DerivedData per branch deeper in its .build, with a clone there too,
+#   which doesn't keep it either. NOTE=1
 #   points Pebble's .git at a missing disk, so git can't say whether it
 #   tracks site's node_modules: a note from the scan.
 #   The debug build is build/debug/DevSweep Dev.app, apart from the one you open.
@@ -143,6 +146,15 @@ make_home() {
     blob "$ws/Compass/.build/Build/Intermediates.noindex/blob" 8
     blob "$ws/Compass/.build/SourcePackages/checkouts/swift-collections/blob" 1
     HOME="$home" git -C "$ws/Compass/.build/SourcePackages/checkouts/swift-collections" init -q
+    HOME="$home" git init -q --bare "$ws/Compass/.build/SourcePackages/repositories/swift-collections-1a2b3c"
+  fi
+  if [[ -n "${NESTED_CLONE:-}" ]]; then
+    mkdir -p "$ws/Lantern"; touch "$ws/Lantern/Package.swift"
+    local derived="$ws/Lantern/.build/DerivedData/main/Lantern-dqhkzvxnbaeolfrw"
+    blob "$derived/Build/Intermediates.noindex/blob" 12
+    blob "$derived/SourcePackages/checkouts/swift-collections/blob" 1
+    HOME="$home" git -C "$derived/SourcePackages/checkouts/swift-collections" init -q
+    HOME="$home" git init -q --bare "$derived/SourcePackages/repositories/swift-collections-1a2b3c"
   fi
   if [[ -n "${NOTE:-}" ]]; then
     ln -s "$home/Volumes/Missing/Pebble.git" "$ws/Pebble/.git"
