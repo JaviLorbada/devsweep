@@ -19,6 +19,12 @@ shows and the update window leaves out.
   The package clones Xcode keeps there come back when it resolves the
   packages, so the folder is listed, and cleaned, like any other.
 
+### Before and after
+
+| | Before | After |
+|---|:---:|:---:|
+| A `.build` with Xcode's DerivedData deeper inside | <img width="400" alt="Before: SwiftPM .build folders (5) with a yellow warning that Lantern/.build has a git repository, and Lantern under Kept" src="https://github.com/user-attachments/assets/843f17b7-bf8e-46c0-b9de-6c1de09031a5" /> | <img width="400" alt="After: SwiftPM .build folders (5) ticked, with Lantern's .build under Folders at 14 MB and no warning" src="https://github.com/user-attachments/assets/b57f01a3-c02f-45c7-9854-bbf3116943ad" /> |
+
 ## 0.8.0
 
 DevSweep can live in the menu bar alone now: out of the Dock, started when
