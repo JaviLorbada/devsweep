@@ -85,6 +85,11 @@ struct ScanRow: Identifiable {
         self.result?.sizeKnown ?? true
     }
 
+    /// How many build folders this scan kept because each holds a git repository.
+    var keptCount: Int {
+        self.result?.kept?.count ?? 0
+    }
+
     /// Measured at some point, whatever happened since.
     var wasMeasured: Bool {
         [.measured, .cleaning, .cleaned].contains(self.state)

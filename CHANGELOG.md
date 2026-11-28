@@ -8,6 +8,11 @@ shows and the update window leaves out.
 
 ## Unreleased
 
+- A build folder kept because it holds a git repository no longer hides in
+  the scan's notes: its item's row says how many were kept, and the
+  inspector lists each one under Kept, with its size and the repository
+  inside it.
+
 ## 0.8.0
 
 DevSweep can live in the menu bar alone now: out of the Dock, started when

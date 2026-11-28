@@ -36,8 +36,8 @@ inside `.build` or SourceKit-LSP's `.build/index-build`, and Xcode's, in
 `SourcePackages` in a `build` folder or in a `.build` Xcode builds into with
 `-derivedDataPath`, don't count: resolving the packages clones them again.
 The search runs inside the
-measurer's walk, which stops at the first `.git`, so no folder is walked
-twice.
+measurer's walk, which goes on past the first `.git` to measure the kept
+folder, so no folder is walked twice.
 
 Deleting for good goes through `TreeRemover`, about twice as fast as
 `FileManager` on a DerivedData folder: four threads share the walk, and each
@@ -252,7 +252,7 @@ The app's folders follow those kinds, and its tests use the same ones.
 | `Protocols` | What the models and view models see of each other. |
 | `Models` | The shared models and `Preferences`. |
 | `ViewModels` | A view model per screen, and `Removal`. |
-| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, `DockIcon`, when the app shows in the Dock, `WaitingUpdate`, an update found or downloaded, with its row's words, and `LaunchEvent`, whether macOS opened the app at login. |
+| `Values` | `Tally`, `StatusText`, `CleanPrompt`, `CleanNotice` (what the window says after a clean), `PendingClean` (the question a clean waits on), `PartsClean` (what a parts clean took, and putting it back), `FeedbackLink` (the issue forms, filled in), the items' words and a kept folder's, free space and a disk's capacity as Finder writes them (sizes are the kit's `SizeText`), the window's and Settings' sizes (`WindowLayout`, `SettingsLayout`), `ScanStopwatch`, which times a scan, `DockIcon`, when the app shows in the Dock, `WaitingUpdate`, an update found or downloaded, with its row's words, and `LaunchEvent`, whether macOS opened the app at login. |
 | `Views` | A folder per screen (`Overview`, `Xcodes`, `Runtimes`, `Worktrees`, `Android`), the window's frame (`Window`), `MenuBar`, `Settings`, pieces the screens share (`Shared`), and `Style`: the palette and the icon. |
 | `System` | The app's own ways into macOS: quitting Xcode, Reveal in Finder, opening a page in the browser, Sparkle, the Dock icon, bringing the app forward and quitting it, the login item, and when launching finishes. |
 | `Debug` | Development builds only: the debug launch and the screenshots. |
